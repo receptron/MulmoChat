@@ -38,6 +38,7 @@
         @select-result="handleSelectResult"
         @send-text-message="sendTextMessage"
         @update:user-input="userInput = $event"
+        @upload-image="handleUploadImage"
       />
 
       <!-- Main content -->
@@ -118,6 +119,11 @@ import {
 import type { StartApiResponse } from "../server/types";
 import Sidebar from "./components/Sidebar.vue";
 
+interface UploadedImage {
+  base64: string;
+  name: string;
+}
+
 const SYSTEM_PROMPT_KEY = "system_prompt_v2";
 const DEFAULT_SYSTEM_PROMPT =
   "You are a teacher who explains various things in a way that even middle school students can easily understand. When words alone are not enough, you MUST use the generateImage API to draw pictures and use them to help explain. When you are talking about places, objects, people, movies, books and other things, you MUST use the generateImage API to draw pictures to make the conversation more engaging.";
@@ -135,6 +141,7 @@ const pendingToolArgs: Record<string, string> = {};
 const showConfigPopup = ref(false);
 const selectedResult = ref<ToolResult | null>(null);
 const userInput = ref("");
+const uploadedImages = ref<UploadedImage[]>([]);
 const startResponse = ref<StartApiResponse | null>(null);
 
 watch(systemPrompt, (val) => {
@@ -417,8 +424,65 @@ async function sendTextMessage(providedText?: string): Promise<void> {
   const text = (providedText || userInput.value).trim();
   if (!text) return;
 
+  // Check if there are uploaded images to process with the text
+  if (uploadedImages.value.length > 0) {
+    // Process image with user's instructions using Gemini API
+    isGeneratingImage.value = true;
+    generatingMessage.value = "Processing image with your instructions...";
+
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: text,
+          images: uploadedImages.value.map((img) => img.base64),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.imageData) {
+        const result: ToolResult = {
+          toolName: "generateImage",
+          imageData: data.imageData,
+          message: data.message || "Image transformed successfully",
+          instructions: `The image has been transformed based on the user's instructions: "${text}"`,
+        };
+        pluginResults.value.push(result);
+        selectedResult.value = result;
+        sidebarRef.value?.scrollToBottom();
+      } else {
+        alert(`Could not transform the image. AI response: ${data.message}`);
+      }
+
+      // Clear uploaded images after processing
+      uploadedImages.value = [];
+    } catch (error) {
+      console.error("Error processing image with instructions:", error);
+      alert(
+        "Error processing the image. Please check the console for details.",
+      );
+    } finally {
+      isGeneratingImage.value = false;
+      generatingMessage.value = "";
+    }
+
+    if (!providedText) {
+      userInput.value = "";
+    }
+    return;
+  }
+
+  // Normal text message without image processing
   // Wait for conversation to be active (up to 5 seconds)
-  for (let i = 0; i < 5 && conversationActive.value; i++) {
+  for (let i = 0; i < 5 && !conversationActive.value; i++) {
     console.log(`WAIT:${i} \n`, text);
     await sleep(1000);
   }
@@ -463,6 +527,43 @@ async function sendTextMessage(providedText?: string): Promise<void> {
 function handleSelectResult(result: ToolResult): void {
   selectedResult.value = result;
   scrollCurrentResultToTop();
+}
+
+/**
+ * Handle image upload from file input
+ * Stores uploaded images for later processing with user instructions
+ */
+async function handleUploadImage(files: FileList): Promise<void> {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        const base64 = e.target.result as string;
+        const base64Data = base64.split(",")[1]; // Remove data:image/jpeg;base64, prefix for API
+
+        // Store the uploaded image temporarily for later processing
+        uploadedImages.value.push({
+          base64: base64Data,
+          name: file.name,
+        });
+
+        // Display the uploaded image in the sidebar
+        const result: ToolResult = {
+          toolName: "generateImage", // Reuse existing image display component
+          imageData: base64Data,
+          message: `Image uploaded: ${file.name}. Enter instructions to transform this image.`,
+          instructions: `The user uploaded an image "${file.name}". It's ready for transformation based on their instructions.`,
+        };
+        pluginResults.value.push(result);
+        selectedResult.value = result;
+        sidebarRef.value?.scrollToBottom();
+      }
+    };
+
+    reader.readAsDataURL(file);
+  }
 }
 
 function stopChat(): void {

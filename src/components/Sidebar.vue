@@ -60,24 +60,66 @@
     </div>
 
     <div class="space-y-2 flex-shrink-0">
-      <input
-        :value="userInput"
-        @input="
-          $emit('update:userInput', ($event.target as HTMLInputElement).value)
-        "
-        @keyup.enter.prevent="$emit('sendTextMessage')"
-        :disabled="!chatActive"
-        type="text"
-        placeholder="Type a message"
-        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-      />
-      <button
-        @click="$emit('sendTextMessage')"
-        :disabled="!chatActive || !userInput.trim()"
-        class="w-full px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-      >
-        Send Message
-      </button>
+      <!-- Message input with plus button -->
+      <div class="flex gap-2 items-center">
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          multiple
+          @change="handleFileUpload"
+          class="hidden"
+        />
+        <button
+          @click="$refs.fileInput?.click()"
+          :disabled="!chatActive"
+          class="w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full disabled:opacity-50 flex items-center justify-center"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+        </button>
+        <input
+          :value="userInput"
+          @input="
+            $emit('update:userInput', ($event.target as HTMLInputElement).value)
+          "
+          @keyup.enter.prevent="$emit('sendTextMessage')"
+          :disabled="!chatActive"
+          type="text"
+          placeholder="Type a message"
+          class="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        />
+        <button
+          @click="$emit('sendTextMessage')"
+          :disabled="!chatActive || !userInput.trim()"
+          class="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full disabled:opacity-50 flex items-center justify-center"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+            />
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -97,16 +139,26 @@ defineProps<{
   userInput: string;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   startChat: [];
   stopChat: [];
   selectResult: [result: ToolResult];
   sendTextMessage: [];
   "update:userInput": [value: string];
+  uploadImage: [files: FileList];
 }>();
 
 const audioEl = ref<HTMLAudioElement | null>(null);
 const imageContainer = ref<HTMLDivElement | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+
+function handleFileUpload(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files.length > 0) {
+    emit("uploadImage", input.files);
+    input.value = ""; // Reset input
+  }
+}
 
 function scrollToBottom(): void {
   nextTick(() => {
