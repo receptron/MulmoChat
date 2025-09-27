@@ -5,6 +5,7 @@ import * as MulmocastPlugin from "./mulmocast";
 import * as MapPlugin from "./map";
 import * as ExaPlugin from "./exa";
 import * as OthelloPlugin from "./othello";
+import * as CanvasPlugin from "./canvas";
 import type { StartApiResponse } from "../../server/types";
 
 export interface ToolContext {
@@ -28,7 +29,7 @@ export interface ToolPlugin {
     type: "function";
     name: string;
     description: string;
-    parameters: {
+    parameters?: {
       type: "object";
       properties: {
         [key: string]: any;
@@ -56,6 +57,7 @@ const pluginList = [
   MapPlugin,
   ExaPlugin,
   OthelloPlugin,
+  CanvasPlugin,
 ];
 
 export const pluginTools = (startResponse?: StartApiResponse) => {

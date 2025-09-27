@@ -1,0 +1,265 @@
+<template>
+  <div class="w-full h-full flex flex-col bg-white">
+    <div class="flex-shrink-0 p-4 border-b bg-gray-50">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <div class="flex gap-1">
+              <button
+                v-for="size in [2, 5, 10, 20]"
+                :key="size"
+                @click="brushSize = size"
+                :class="[
+                  'w-8 h-8 rounded border-2 transition-colors',
+                  brushSize === size
+                    ? 'border-blue-500 bg-blue-100'
+                    : 'border-gray-300 bg-white hover:bg-gray-50',
+                ]"
+              >
+                <div
+                  :class="'bg-gray-800 rounded-full mx-auto'"
+                  :style="{
+                    width: Math.max(2, size * 1) + 'px',
+                    height: Math.max(2, size * 1) + 'px',
+                  }"
+                ></div>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input
+              v-model="brushColor"
+              type="color"
+              class="w-12 h-8 rounded border"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <button
+            @click="undo"
+            class="w-8 h-8 flex items-center justify-center rounded border-2 border-gray-300 bg-white hover:bg-gray-50"
+            title="Undo"
+          >
+            <span class="material-icons text-gray-600">undo</span>
+          </button>
+          <button
+            @click="redo"
+            class="w-8 h-8 flex items-center justify-center rounded border-2 border-gray-300 bg-white hover:bg-gray-50"
+            title="Redo"
+          >
+            <span class="material-icons text-gray-600">redo</span>
+          </button>
+          <button
+            @click="clear"
+            class="w-8 h-8 flex items-center justify-center rounded border-2 border-red-300 bg-white hover:bg-red-50"
+            title="Clear"
+          >
+            <span class="material-icons text-red-600">delete</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 p-4 overflow-hidden">
+      <VueDrawingCanvas
+        ref="canvasRef"
+        v-model:image="canvasImage"
+        :width="canvasWidth"
+        :height="canvasHeight"
+        :stroke-type="'dash'"
+        :line-cap="'round'"
+        :line-join="'round'"
+        :fill-shape="false"
+        :eraser="false"
+        :lineWidth="brushSize"
+        :color="brushColor"
+        :background-color="'#FFFFFF'"
+        :background-image="undefined"
+        :watermark="undefined"
+        :initial-image="initialStrokes"
+        saveAs="png"
+        :styles="{
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+        }"
+        :lock="false"
+        @mouseup="handleDrawingEnd"
+        @touchend="handleDrawingEnd"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue";
+import VueDrawingCanvas from "vue-drawing-canvas";
+import type { ToolResult } from "../type";
+
+const props = defineProps<{
+  selectedResult: ToolResult | null;
+}>();
+
+const emit = defineEmits<{
+  updateResult: [result: ToolResult];
+}>();
+
+const canvasRef = ref<any>(null);
+const canvasImage = ref("");
+const brushSize = ref(5);
+const brushColor = ref("#000000");
+const initialStrokes = ref([]);
+const canvasWidth = ref(800);
+const canvasHeight = ref(600);
+
+const restoreDrawingState = () => {
+  if (props.selectedResult?.jsonData?.drawingState) {
+    const state = props.selectedResult.jsonData.drawingState;
+
+    brushSize.value = state.brushSize || 5;
+    brushColor.value = state.brushColor || "#000000";
+    canvasWidth.value = state.canvasWidth || 800;
+    canvasHeight.value = state.canvasHeight || 600;
+
+    if (state.strokes) {
+      initialStrokes.value = state.strokes;
+    } else {
+      initialStrokes.value = [];
+    }
+  } else {
+    initialStrokes.value = [];
+  }
+};
+restoreDrawingState();
+
+const undo = async () => {
+  if (canvasRef.value) {
+    try {
+      canvasRef.value.undo();
+      // Wait for the canvas to update, then save state
+      //await nextTick();
+      setTimeout(saveDrawingState, 50);
+    } catch (error) {
+      console.warn("Undo operation failed:", error);
+    }
+  }
+};
+
+const redo = async () => {
+  if (canvasRef.value) {
+    try {
+      canvasRef.value.redo();
+      // Wait for the canvas to update, then save state
+      //await nextTick();
+      setTimeout(saveDrawingState, 50);
+    } catch (error) {
+      console.warn("Redo operation failed:", error);
+    }
+  }
+};
+
+const clear = () => {
+  if (canvasRef.value) {
+    try {
+      canvasRef.value.reset();
+      saveDrawingState();
+    } catch (error) {
+      console.warn("Clear operation failed:", error);
+    }
+  }
+};
+
+const handleDrawingEnd = () => {
+  saveDrawingState();
+};
+
+const saveDrawingState = async () => {
+  if (canvasRef.value && props.selectedResult) {
+    try {
+      const imageData = await canvasRef.value.save();
+      const strokes = canvasRef.value.getAllStrokes();
+      const drawingState = {
+        strokes,
+        brushSize: brushSize.value,
+        brushColor: brushColor.value,
+        canvasWidth: canvasWidth.value,
+        canvasHeight: canvasHeight.value,
+      };
+
+      const updatedResult = {
+        ...props.selectedResult,
+        imageData: imageData.replace(/^data:image\/[^;]+;base64,/, ""),
+        jsonData: {
+          ...props.selectedResult.jsonData,
+          drawingState,
+        },
+      };
+
+      emit("updateResult", updatedResult);
+    } catch (error) {
+      console.error("Failed to save drawing state:", error);
+    }
+  }
+};
+
+// Watch for changes to automatically save drawing state
+watch([brushSize, brushColor], () => {
+  saveDrawingState();
+});
+
+/*
+// Watch for canvas size changes and give the canvas time to recalibrate
+watch([canvasWidth, canvasHeight], async () => {
+  await nextTick();
+  // Small delay to allow the canvas to adjust its internal coordinates
+  setTimeout(() => {
+    if (canvasRef.value) {
+      // Force the canvas to recalculate its dimensions
+      canvasRef.value.$forceUpdate?.();
+    }
+  }, 100);
+});
+*/
+const updateCanvasSize = () => {
+  // Get the canvas container (the div with flex-1 p-4 overflow-hidden)
+  const canvasContainer = canvasRef.value?.$el?.parentElement;
+  if (canvasContainer) {
+    const containerRect = canvasContainer.getBoundingClientRect();
+
+    // Be more conservative with width - subtract more for padding, borders, scrollbars
+    const availableWidth = containerRect.width - 64; // More margin for width
+    const availableHeight = containerRect.height - 64; // More margin for height
+
+    // Cap the width to ensure it doesn't overflow
+    const newWidth = Math.max(300, Math.min(600, Math.floor(availableWidth)));
+    const newHeight = Math.max(200, Math.min(400, Math.floor(availableHeight)));
+
+    // Only update if the size actually changed to avoid unnecessary re-renders
+    if (newWidth !== canvasWidth.value || newHeight !== canvasHeight.value) {
+      canvasWidth.value = newWidth;
+      canvasHeight.value = newHeight;
+    }
+  }
+};
+
+onMounted(async () => {
+  await nextTick();
+  updateCanvasSize();
+
+  // Listen for window resize to update canvas size
+  window.addEventListener("resize", updateCanvasSize);
+
+  /*
+  // Restore state after canvas is mounted with a delay
+  setTimeout(() => {
+    restoreDrawingState();
+  }, 200);
+  */
+});
+
+// Clean up resize listener
+onUnmounted(() => {
+  window.removeEventListener("resize", updateCanvasSize);
+});
+</script>

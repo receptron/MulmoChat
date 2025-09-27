@@ -33,8 +33,10 @@
         :generating-message="generatingMessage"
         :selected-result="selectedResult"
         :user-input="userInput"
+        :is-muted="isMuted"
         @start-chat="startChat"
         @stop-chat="stopChat"
+        @toggle-mute="toggleMute"
         @select-result="handleSelectResult"
         @send-text-message="sendTextMessage"
         @update:user-input="userInput = $event"
@@ -53,6 +55,7 @@
             :selected-result="selectedResult"
             :send-text-message="sendTextMessage"
             :google-map-key="startResponse?.googleMapKey || null"
+            @update-result="handleUpdateResult"
           />
           <div
             v-if="!selectedResult"
@@ -150,6 +153,7 @@ watch(systemPrompt, (val) => {
 
 const chatActive = ref(false);
 const conversationActive = ref(false);
+const isMuted = ref(false);
 
 const webrtc = {
   pc: null as RTCPeerConnection | null,
@@ -566,6 +570,18 @@ async function handleUploadImage(files: FileList): Promise<void> {
   }
 }
 
+function handleUpdateResult(updatedResult: ToolResult): void {
+  // Update the result in the pluginResults array
+  const index = pluginResults.value.findIndex(
+    (r) => r === selectedResult.value
+  );
+  if (index !== -1) {
+    pluginResults.value[index] = updatedResult;
+  }
+  // Update the selected result
+  selectedResult.value = updatedResult;
+}
+
 function stopChat(): void {
   if (webrtc.pc) {
     webrtc.pc.close();
@@ -587,6 +603,17 @@ function stopChat(): void {
     sidebarRef.value.audioEl.srcObject = null;
   }
   chatActive.value = false;
+  isMuted.value = false;
+}
+
+function toggleMute(): void {
+  if (webrtc.localStream) {
+    const audioTracks = webrtc.localStream.getAudioTracks();
+    audioTracks.forEach((track) => {
+      track.enabled = !track.enabled;
+    });
+    isMuted.value = !isMuted.value;
+  }
 }
 </script>
 

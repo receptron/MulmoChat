@@ -23,8 +23,10 @@
     "dotenv": "^17.2.2",
     "exa-js": "^1.9.3",
     "express": "^5.1.0",
+    "material-icons": "^1.13.14",
     "mulmocast": "^1.2.36",
-    "vue": "^3.5.22"
+    "vue": "^3.5.22",
+    "vue-drawing-canvas": "^1.0.14"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
