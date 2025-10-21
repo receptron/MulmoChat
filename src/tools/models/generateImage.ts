@@ -199,8 +199,7 @@ export const plugin: ToolPlugin<ImageToolData> = {
     acceptedTypes: ["image/png", "image/jpeg"],
     handleUpload: createUploadedImageResult,
   },
-  systemPrompt:
-    "When you are talking about places, objects, people, movies, books and other things, you MUST use the generateImage API to draw pictures to make the conversation more engaging.",
+  systemPrompt: `When you are talking about places, objects, people, movies, books and other things, you MUST use the ${toolName} API to draw pictures to make the conversation more engaging.`,
   config: {
     key: "imageGenerationBackend",
     defaultValue: {

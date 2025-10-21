@@ -117,6 +117,5 @@ export const plugin: ToolPlugin = {
   generatingMessage: "Switching mode...",
   isEnabled: () => true,
   previewComponent: SwitchModePreview,
-  systemPrompt:
-    "When users ask to change the mode, personality, or behavior of the AI (e.g., 'switch to tutor mode', 'change to listener mode', 'be a teacher'), use the switchMode function. Note that switching modes will disconnect and reconnect the conversation.",
+  systemPrompt: `When users ask to change the mode, personality, or behavior of the AI (e.g., 'switch to tutor mode', 'change to listener mode', 'be a teacher'), use the ${toolName} function. Note that switching modes will disconnect and reconnect the conversation.`,
 };

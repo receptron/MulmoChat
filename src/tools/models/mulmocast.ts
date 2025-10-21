@@ -185,6 +185,5 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: MulmocastView,
   previewComponent: MulmocastPreview,
-  systemPrompt:
-    "Call the showPresentation API to display presentations when the user is asking for a presentation.",
+  systemPrompt: `Call the ${toolName} API to display presentations when the user is asking for a presentation.`,
 };

@@ -397,6 +397,5 @@ export const plugin: ToolPlugin<TodoToolData> = {
   isEnabled: () => true,
   viewComponent: TodoView,
   previewComponent: TodoPreview,
-  systemPrompt:
-    "When users mention tasks they need to do, things to remember, or ask about their todo list, use the manageTodoList function to help them track these items.",
+  systemPrompt: `When users mention tasks they need to do, things to remember, or ask about their todo list, use the ${toolName} function to help them track these items.`,
 };
