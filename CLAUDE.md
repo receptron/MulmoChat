@@ -11,12 +11,10 @@ This is a Vue 3 application called "MulmoChat" that provides a multi-modal voice
 - **Development server**: `npm run dev` (runs both client and server concurrently)
 - **Client only**: `npm run dev:client`
 - **Server only**: `npm run dev:server` or `npm run server`
-- **Build for production**: `npm run build` (builds both client and server)
-- **Build server only**: `npm run build:server`
 - **Lint**: `npm run lint`
 - **Format code**: `npm run format`
-- **Preview production build**: `npm run preview`
-- **Start production**: `npm run start`
+
+**IMPORTANT**: Do NOT run build commands (`npm run build`, `npm run build:server`, `npm run preview`, `npm run start`) as they create unnecessary build artifacts.
 
 ## Architecture
 
