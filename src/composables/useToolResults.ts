@@ -129,7 +129,10 @@ export function useToolResults(
         getPluginConfig: options.getPluginConfig,
       };
 
-      if (plugin?.waitingMessage) {
+      // Note: waitingMessage is only sent for realtime sessions
+      // For text sessions, it would cause an error because we need to send
+      // tool output before any new LLM generation can happen
+      if (plugin?.waitingMessage && options.isDataChannelOpen()) {
         options.sendInstructions(plugin.waitingMessage);
       }
 
