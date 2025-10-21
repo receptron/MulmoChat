@@ -10,6 +10,8 @@ const toolDefinition = {
   name: toolName,
   description:
     "Open a drawing canvas for the user to create drawings, sketches, or diagrams.",
+  systemPrompt:
+    `When the user asks 'I want to drawn an image.', call ${toolName} API to open the canvas.`,
   parameters: {
     type: "object" as const,
     properties: {},

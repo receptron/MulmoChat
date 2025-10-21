@@ -193,7 +193,7 @@ router.post(
     const widthValue = toNumber(body.width, 512);
     const heightValue = toNumber(body.height, 512);
     const stepsValue = toNumber(body.steps, 20);
-    const cfgScaleValue = toNumber(body.cfgScale, 1.5);
+    const cfgScaleValue = toNumber(body.cfgScale, 8); // was 1.5
     const defaultSeed = Math.floor(Math.random() * 2 ** 32);
     const seedValue = toNumber(body.seed, defaultSeed);
     const samplerValue =

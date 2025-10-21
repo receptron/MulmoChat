@@ -9,6 +9,8 @@ const toolDefinition = {
   type: "function" as const,
   name: toolName,
   description: "Edit the previously generated image based on a text prompt.",
+  systemPrompt:
+    `When the user asks 'turn this image into ...', call ${toolName} API to generate a new image.`,
   parameters: {
     type: "object" as const,
     properties: {
