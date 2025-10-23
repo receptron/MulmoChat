@@ -69,18 +69,18 @@ interface FormViewState {
 }
 
 const props = defineProps<{
-  selectedResult: ToolResult | null;
+  result: ToolResult;
 }>();
 
 const formData = computed<FormData | null>(() => {
-  if (props.selectedResult?.toolName === "createForm") {
-    return props.selectedResult.jsonData as FormData;
+  if (props.result?.toolName === "createForm") {
+    return props.result.jsonData as FormData;
   }
   return null;
 });
 
 const viewState = computed<FormViewState | null>(() => {
-  return (props.selectedResult?.viewState as FormViewState) || null;
+  return (props.result?.viewState as FormViewState) || null;
 });
 
 const fieldCount = computed(() => {

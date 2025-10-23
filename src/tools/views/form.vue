@@ -403,79 +403,68 @@ const touched = ref<Set<string>>(new Set());
 const fieldErrors = ref<Map<string, FieldError>>(new Map());
 const submitted = ref<boolean>(false);
 const showErrorSummary = ref<boolean>(false);
+const isRestoring = ref<boolean>(false);
 
 // Initialize form data and restore state
 watch(
   () => props.selectedResult,
-  (newResult) => {
+  (newResult, oldResult) => {
     if (newResult?.toolName === "createForm" && newResult.jsonData) {
-      formData.value = newResult.jsonData as FormData;
+      // Only restore if this is a different result (uuid changed) or first load
+      const isNewResult = !oldResult || oldResult.uuid !== newResult.uuid;
 
-      // Initialize formValues for all fields
-      formValues.value = {};
-      formData.value.fields.forEach((field) => {
-        formValues.value[field.id] = getDefaultValue(field);
-      });
+      if (isNewResult) {
+        isRestoring.value = true;
+        formData.value = newResult.jsonData as FormData;
 
-      // Restore from viewState if available
-      if (newResult.viewState) {
-        const viewState = newResult.viewState as FormViewState;
+        // Initialize formValues for all fields
+        formValues.value = {};
+        formData.value.fields.forEach((field) => {
+          formValues.value[field.id] = getDefaultValue(field);
+        });
 
-        if (viewState.userResponses) {
-          Object.assign(formValues.value, viewState.userResponses);
+        // Restore from viewState if available
+        if (newResult.viewState) {
+          const viewState = newResult.viewState as FormViewState;
+
+          if (viewState.userResponses) {
+            Object.assign(formValues.value, viewState.userResponses);
+          }
+
+          if (viewState.touched) {
+            touched.value = new Set(viewState.touched);
+            // Re-validate touched fields
+            viewState.touched.forEach((fieldId) => {
+              validateField(fieldId);
+            });
+          }
+
+          if (viewState.submitted !== undefined) {
+            submitted.value = viewState.submitted;
+          }
         }
-
-        if (viewState.touched) {
-          touched.value = new Set(viewState.touched);
-          // Re-validate touched fields
-          viewState.touched.forEach((fieldId) => {
-            validateField(fieldId);
-          });
-        }
-
-        if (viewState.submitted !== undefined) {
-          submitted.value = viewState.submitted;
-        }
+        isRestoring.value = false;
       }
     }
   },
   { immediate: true },
 );
 
-// Auto-save formValues changes to viewState
+// Save state to viewState - watch all state changes together
 watch(
-  formValues,
-  (newFormValues) => {
-    if (props.selectedResult) {
-      const updatedResult: ToolResult = {
-        ...props.selectedResult,
-        viewState: {
-          userResponses: { ...newFormValues },
-          touched: Array.from(touched.value),
-          submitted: submitted.value,
-        },
-      };
-      emit("updateResult", updatedResult);
-    }
-  },
-  { deep: true },
-);
-
-// Auto-save touched state changes
-watch(
-  touched,
+  [formValues, touched, submitted],
   () => {
-    if (props.selectedResult) {
-      const updatedResult: ToolResult = {
-        ...props.selectedResult,
-        viewState: {
-          userResponses: { ...formValues.value },
-          touched: Array.from(touched.value),
-          submitted: submitted.value,
-        },
-      };
-      emit("updateResult", updatedResult);
-    }
+    if (isRestoring.value || !props.selectedResult) return;
+
+    const updatedResult: ToolResult = {
+      ...props.selectedResult,
+      viewState: {
+        userResponses: { ...formValues.value },
+        touched: Array.from(touched.value),
+        submitted: submitted.value,
+      },
+    };
+    emit("updateResult", updatedResult);
   },
   { deep: true },
 );
