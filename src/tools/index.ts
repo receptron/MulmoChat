@@ -9,6 +9,7 @@ import * as GoPlugin from "./models/go";
 import * as CanvasPlugin from "./models/canvas";
 import * as MarkdownPlugin from "./models/markdown";
 import * as QuizPlugin from "./models/quiz";
+import * as FormPlugin from "./models/form";
 import * as MusicPlugin from "./models/music";
 // import * as HtmlPlugin from "./models/html";
 import * as GenerateHtmlPlugin from "./models/generateHtml";
@@ -41,6 +42,7 @@ const pluginList = [
   CanvasPlugin,
   MarkdownPlugin,
   QuizPlugin,
+  FormPlugin,
   MusicPlugin,
   // HtmlPlugin,
   GenerateHtmlPlugin,
