@@ -270,21 +270,6 @@ export function useTextSession(
         ];
       }
 
-      // Handle tool calls if present
-      if (toolCalls && toolCalls.length > 0) {
-        for (const toolCall of toolCalls) {
-          handlers.onToolCall?.(
-            {
-              type: "response.function_call_arguments.done",
-              name: toolCall.name,
-              call_id: toolCall.id,
-            },
-            toolCall.id,
-            toolCall.arguments,
-          );
-        }
-      }
-
       // Always show text response if there's any text
       if (assistantText) {
         handlers.onTextDelta?.(assistantText);
@@ -305,6 +290,21 @@ export function useTextSession(
             transportKind: "text-rest",
           }),
         );
+      }
+
+      // Handle tool calls if present
+      if (toolCalls && toolCalls.length > 0) {
+        for (const toolCall of toolCalls) {
+          handlers.onToolCall?.(
+            {
+              type: "response.function_call_arguments.done",
+              name: toolCall.name,
+              call_id: toolCall.id,
+            },
+            toolCall.id,
+            toolCall.arguments,
+          );
+        }
       }
 
       return true;
