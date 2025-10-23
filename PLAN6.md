@@ -175,12 +175,15 @@ type FormResult = ToolResult<never, FormData>;
 - `title` (optional): Form title
 - `description` (optional): Overall form description
 - `fields` (required): Array of field objects, each with:
-  - `id`: Unique identifier (auto-generated if not provided)
-  - `type`: Field type enum
-  - `label`: Field label
-  - `description`: Optional field description
-  - `required`: Optional boolean
-  - Type-specific properties (choices, min, max, etc.)
+  - `id` (required): Unique identifier string (e.g., "email", "birthdate", "country")
+    - Must be unique within the form
+    - Will be used as the key in the JSON response
+    - Should be descriptive and follow camelCase/snake_case conventions
+  - `type` (required): Field type enum ('text', 'textarea', 'radio', 'dropdown', 'checkbox', 'date', 'time', 'number')
+  - `label` (required): Field label displayed to the user
+  - `description` (optional): Help text explaining the field
+  - `required` (optional): Boolean indicating if field is required
+  - Type-specific properties (choices, min, max, validation, etc.)
 
 ## Implementation Files
 
@@ -219,7 +222,7 @@ type FormResult = ToolResult<never, FormData>;
 
 ## JSON Output Format
 
-When user submits the form, a JSON message is sent:
+When user submits the form, a JSON message is sent. The property names in the `responses` object correspond to the `field.id` values specified when creating the form:
 
 ```json
 {
@@ -236,6 +239,69 @@ When user submits the form, a JSON message is sent:
   }
 }
 ```
+
+### Example: Creating a Form with Field IDs
+
+When the AI creates the form, it specifies the `id` for each field:
+
+```javascript
+// AI calls createForm with:
+{
+  "title": "User Registration",
+  "fields": [
+    {
+      "id": "name",           // ← This becomes the key in responses
+      "type": "text",
+      "label": "Full Name",
+      "required": true
+    },
+    {
+      "id": "email",          // ← This becomes the key in responses
+      "type": "text",
+      "label": "Email Address",
+      "validation": "email",
+      "required": true
+    },
+    {
+      "id": "birthdate",      // ← This becomes the key in responses
+      "type": "date",
+      "label": "Date of Birth"
+    },
+    {
+      "id": "country",        // ← This becomes the key in responses
+      "type": "dropdown",
+      "label": "Country",
+      "choices": ["United States", "Canada", "United Kingdom", "..."]
+    },
+    {
+      "id": "interests",      // ← This becomes the key in responses
+      "type": "checkbox",
+      "label": "Interests",
+      "choices": ["Technology", "Sports", "Music", "Art"]
+    },
+    {
+      "id": "newsletterFrequency",  // ← This becomes the key in responses
+      "type": "radio",
+      "label": "Newsletter Frequency",
+      "choices": ["daily", "weekly", "monthly", "never"]
+    }
+  ]
+}
+```
+
+### Field ID Requirements
+
+- **Must be unique**: Each field must have a unique `id` within the form
+- **Auto-generated if omitted**: If the AI doesn't provide an `id`, the system can auto-generate one (e.g., `field_0`, `field_1`)
+- **Recommended format**: Use camelCase or snake_case for programmatic access (e.g., `emailAddress` or `email_address`)
+- **Descriptive names**: IDs should be meaningful for the AI to understand the response data (e.g., `userAge` not `field_3`)
+
+### Why Field IDs Matter
+
+The `field.id` serves as the key in the response JSON, allowing the AI to:
+1. **Parse responses easily**: Know which value corresponds to which field
+2. **Process structured data**: Use the responses in follow-up actions
+3. **Reference fields**: Ask clarifying questions about specific fields
 
 ## Validation Strategy
 
