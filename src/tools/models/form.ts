@@ -352,8 +352,12 @@ const createForm = async (
       fields,
     };
 
+    const fieldCount = `${fields.length} field${fields.length > 1 ? "s" : ""}`;
+    const titleSuffix = title ? `: ${title}` : "";
+    const message = `Form created with ${fieldCount}${titleSuffix}`;
+
     return {
-      message: `Form created with ${fields.length} field${fields.length > 1 ? "s" : ""}${title ? `: ${title}` : ""}`,
+      message,
       jsonData: formData,
       instructions:
         "The form has been presented to the user. Wait for the user to fill out and submit the form. They will send their responses as a JSON message.",
