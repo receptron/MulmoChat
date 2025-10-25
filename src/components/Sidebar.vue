@@ -362,7 +362,9 @@
               This mode uses a curated set of plugins optimized for its purpose.
               Switch to General mode to customize plugins.
             </p>
-            <div class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border rounded p-2 bg-gray-50">
+            <div
+              class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border rounded p-2 bg-gray-50"
+            >
               <span
                 v-for="pluginName in availablePluginsForCurrentMode"
                 :key="pluginName"
@@ -498,9 +500,9 @@ const availablePluginsForCurrentMode = computed(() => {
   if (!pluginNames) return []; // Customizable mode, shouldn't happen here
 
   return pluginNames
-    .map(name => {
+    .map((name) => {
       const pluginModule = getPluginList().find(
-        p => p.plugin.toolDefinition.name === name
+        (p) => p.plugin.toolDefinition.name === name,
       );
       return pluginModule ? pluginModule.plugin.toolDefinition.name : null;
     })

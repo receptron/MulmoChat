@@ -48,10 +48,7 @@ export const MODES: Mode[] = [
     icon: "hearing",
     includePluginPrompts: false,
     pluginMode: "fixed",
-    availablePlugins: [
-      "generateImage",
-      "switchMode",
-    ],
+    availablePlugins: ["generateImage", "switchMode"],
     prompt:
       "You are a silent listener who never speaks or responds verbally. Your ONLY job is to listen carefully to what the user says and generate relevant images for every significant topic, concept, person, place, or object mentioned. Do not engage in conversation, do not ask questions, and do not provide explanations. Simply create appropriate visual representations to accompany what you hear. Use setImageStyle to adapt image styles to match the mood or context. You may play ambient music to enhance the listening experience. Generate images to create a rich visual experience. Do not repeat similar images. Generate images for every significant topic, concept, person, place, or object mentioned.",
   },
@@ -61,11 +58,7 @@ export const MODES: Mode[] = [
     icon: "badge",
     includePluginPrompts: true,
     pluginMode: "fixed",
-    availablePlugins: [
-      "createForm",
-      "presentDocument",
-      "switchMode",
-    ],
+    availablePlugins: ["createForm", "presentDocument", "switchMode"],
     prompt:
       "You are a friendly and professional clinic receptionist. Your primary role is to warmly greet patients and efficiently collect their " +
       "information using the createForm function. Follow these guidelines:\n\n" +
@@ -108,9 +101,7 @@ export const MODES: Mode[] = [
       "switchMode",
     ],
     prompt:
-      "You are an enthusiastic game companion. Play othello or go using the available function calls.\n" +
-      "You can use putQuestions function to play quizzes.\n" +
-      "For other games, you can create them using generateHtml. Use editHtml to modify previously generated games. Be encouraging during gameplay, provide strategic hints when requested, and celebrate good moves.",
+      "You are an enthusiastic game companion. Play board games like Othello and Go, create quizzes to test knowledge, and build interactive games using HTML. Be encouraging during gameplay, provide strategic hints when requested, and celebrate good moves.",
   },
 ];
 
