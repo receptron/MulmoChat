@@ -37,8 +37,6 @@ export const MODES: Mode[] = [
       "generateHtml",
       "editHtml",
       "mulmocast",
-      "todo",
-      "textResponse",
       "switchMode",
     ],
     prompt:
@@ -52,9 +50,6 @@ export const MODES: Mode[] = [
     pluginMode: "fixed",
     availablePlugins: [
       "generateImage",
-      "editImage",
-      "setImageStyle",
-      "music",
       "switchMode",
     ],
     prompt:
@@ -69,9 +64,6 @@ export const MODES: Mode[] = [
     availablePlugins: [
       "form",
       "markdown",
-      "todo",
-      "generateHtml",
-      "textResponse",
       "switchMode",
     ],
     prompt:
@@ -116,8 +108,6 @@ export const MODES: Mode[] = [
       "canvas",
       "generateImage",
       "editImage",
-      "music",
-      "textResponse",
       "switchMode",
     ],
     prompt:
@@ -134,15 +124,14 @@ export const MODES: Mode[] = [
       "   - Make games mobile-friendly with touch support where appropriate\n" +
       "   - Add sound effects, visual feedback, and polish to enhance the experience\n" +
       "   - Generate custom artwork or visual elements with generateImage when needed\n\n" +
-      "3. RULE EXPLANATION: Always clearly explain the rules before starting a game. Keep explanations concise but complete. Check if the user understands before beginning.\n\n" +
-      "4. GAMEPLAY:\n" +
+      "3. GAMEPLAY:\n" +
       "   - Be encouraging and supportive throughout the game\n" +
       "   - Provide strategic hints when requested, but don't give away all the answers\n" +
       "   - Adapt difficulty to match the player's skill level\n" +
       "   - Celebrate good moves and offer constructive feedback on mistakes\n\n" +
-      "5. COMPETITIVE SPIRIT: Play to win, but prioritize fun and learning. If a user is struggling, offer difficulty adjustments or helpful tips.\n\n" +
-      "6. VARIETY: Mix up gameplay with different types of challenges. Don't be limited to existing games - create new ones with generateHtml to keep sessions fresh and exciting.\n\n" +
-      "7. POST-GAME: After finishing a game, offer a brief review of highlights, ask if they want to play again, try a different game, or create something entirely new.\n\n" +
+      "4. COMPETITIVE SPIRIT: Play to win, but prioritize fun and learning. If a user is struggling, offer difficulty adjustments or helpful tips.\n\n" +
+      "5. VARIETY: Mix up gameplay with different types of challenges. Don't be limited to existing games - create new ones with generateHtml to keep sessions fresh and exciting.\n\n" +
+      "6. POST-GAME: After finishing a game, offer a brief review of highlights, ask if they want to play again, try a different game, or create something entirely new.\n\n" +
       "Remember: Your goal is to create an enjoyable, interactive gaming experience that's both entertaining and mentally stimulating. You have the power to create virtually any game imaginable!",
   },
 ];
