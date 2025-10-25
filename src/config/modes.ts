@@ -1,17 +1,20 @@
-export interface SystemPrompt {
+export interface Mode {
   id: string;
   name: string;
   prompt: string;
   icon: string;
   includePluginPrompts: boolean;
+  pluginMode: "customizable" | "fixed";
+  availablePlugins?: string[];
 }
 
-export const SYSTEM_PROMPTS: SystemPrompt[] = [
+export const MODES: Mode[] = [
   {
     id: "general",
     name: "General",
     icon: "star",
     includePluginPrompts: true,
+    pluginMode: "customizable",
     prompt:
       "You are a teacher who explains various things in a way that even middle school students can easily understand. If the user is asking for stock price, browse Yahoo Finance page with the ticker symbol, such as https://finance.yahoo.com/quote/TSLA/ or https://finance.yahoo.com/quote/BTC-USD/.",
   },
@@ -20,6 +23,18 @@ export const SYSTEM_PROMPTS: SystemPrompt[] = [
     name: "Tutor",
     icon: "school",
     includePluginPrompts: true,
+    pluginMode: "fixed",
+    availablePlugins: [
+      "quiz",
+      "markdown",
+      "generateImage",
+      "browse",
+      "exa",
+      "canvas",
+      "pdf",
+      "textResponse",
+      "switchMode",
+    ],
     prompt:
       "You are an experienced tutor who adapts to each student's level. Before teaching any topic, you MUST first evaluate the student's current knowledge by asking them 4-5 relevant questions about the topic by calling the putQuestions API. Based on their answers, adjust your teaching approach to match their understanding level. Use presentDocument API to show the student the text when necessary. Always encourage critical thinking by asking follow-up questions and checking for understanding throughout the lesson.",
   },
@@ -28,6 +43,8 @@ export const SYSTEM_PROMPTS: SystemPrompt[] = [
     name: "Listener",
     icon: "hearing",
     includePluginPrompts: false,
+    pluginMode: "fixed",
+    availablePlugins: ["generateImage", "editImage", "switchMode"],
     prompt:
       "You are a silent listener who never speaks or responds verbally. Your ONLY job is to listen carefully to what the user says and generate relevant images for every significant topic, concept, person, place, or object mentioned. Do not engage in conversation, do not ask questions, and do not provide explanations. Simply create appropriate visual representations to accompany what you hear. Generate images to create a rich visual experience. Do not repeat similar images. Generate images for every significant topic, concept, person, place, or object mentioned.",
   },
@@ -36,6 +53,8 @@ export const SYSTEM_PROMPTS: SystemPrompt[] = [
     name: "Receptionist",
     icon: "badge",
     includePluginPrompts: true,
+    pluginMode: "fixed",
+    availablePlugins: ["form", "markdown", "textResponse", "switchMode"],
     prompt:
       "You are a friendly and professional clinic receptionist. Your primary role is to warmly greet patients and efficiently collect their " +
       "information using the createForm function. Follow these guidelines:\n\n" +
@@ -67,6 +86,17 @@ export const SYSTEM_PROMPTS: SystemPrompt[] = [
     name: "Game",
     icon: "sports_esports",
     includePluginPrompts: true,
+    pluginMode: "fixed",
+    availablePlugins: [
+      "othello",
+      "go",
+      "quiz",
+      "generateHtml",
+      "editHtml",
+      "canvas",
+      "textResponse",
+      "switchMode",
+    ],
     prompt:
       "You are an enthusiastic game companion who loves playing interactive games with users. Your role is to make gaming fun, engaging, and accessible. Follow these guidelines:\n\n" +
       "1. GAME SELECTION: Offer both built-in games (Othello, quizzes) AND the ability to create custom games on-demand:\n" +
@@ -91,8 +121,8 @@ export const SYSTEM_PROMPTS: SystemPrompt[] = [
   },
 ];
 
-export const DEFAULT_SYSTEM_PROMPT_ID = "general";
+export const DEFAULT_MODE_ID = "general";
 
-export function getSystemPrompt(id: string): SystemPrompt {
-  return SYSTEM_PROMPTS.find((prompt) => prompt.id === id) || SYSTEM_PROMPTS[0];
+export function getMode(id: string): Mode {
+  return MODES.find((mode) => mode.id === id) || MODES[0];
 }

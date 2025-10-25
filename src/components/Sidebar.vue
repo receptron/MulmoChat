@@ -235,7 +235,7 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              System Prompt
+              Mode
             </label>
             <div class="relative">
               <span
@@ -244,21 +244,17 @@
                 {{ getModeIcon() }}
               </span>
               <select
-                :value="systemPromptId"
+                :value="modeId"
                 @change="
                   $emit(
-                    'update:systemPromptId',
+                    'update:modeId',
                     ($event.target as HTMLSelectElement).value,
                   )
                 "
                 class="w-full border rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option
-                  v-for="prompt in SYSTEM_PROMPTS"
-                  :key="prompt.id"
-                  :value="prompt.id"
-                >
-                  {{ prompt.name }}
+                <option v-for="mode in MODES" :key="mode.id" :value="mode.id">
+                  {{ mode.name }}
                 </option>
               </select>
             </div>
@@ -327,7 +323,7 @@
             </p>
           </div>
 
-          <div>
+          <div v-if="isCurrentModeCustomizable">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Enabled Plugins
             </label>
@@ -358,13 +354,23 @@
             </div>
           </div>
 
+          <div v-else class="plugins-info">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Available Plugins
+            </label>
+            <p class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+              This mode uses a curated set of plugins optimized for its purpose.
+              Switch to General mode to customize plugins.
+            </p>
+          </div>
+
           <div v-if="hasAnyPluginConfig()">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Plugin Settings
             </label>
             <div class="space-y-4">
               <component
-                v-for="pluginModule in getPluginsWithConfig()"
+                v-for="pluginModule in getPluginsWithConfig(modeId)"
                 :key="pluginModule.plugin.config!.key"
                 :is="pluginModule.plugin.config!.component"
                 :value="
@@ -405,9 +411,10 @@ import {
   getPluginList,
   getPluginsWithConfig,
   hasAnyPluginConfig,
+  isModeCustomizable,
 } from "../tools";
 import { LANGUAGES } from "../config/languages";
-import { SYSTEM_PROMPTS } from "../config/systemPrompts";
+import { MODES } from "../config/modes";
 import { REALTIME_MODELS } from "../config/models";
 
 interface TextModelOption {
@@ -427,7 +434,7 @@ const props = defineProps<{
   isMuted: boolean;
   userLanguage: string;
   suppressInstructions: boolean;
-  systemPromptId: string;
+  modeId: string;
   isConversationActive: boolean;
   enabledPlugins: Record<string, boolean>;
   customInstructions: string;
@@ -450,7 +457,7 @@ const emit = defineEmits<{
   "update:userInput": [value: string];
   "update:userLanguage": [value: string];
   "update:suppressInstructions": [value: boolean];
-  "update:systemPromptId": [value: string];
+  "update:modeId": [value: string];
   "update:enabledPlugins": [value: Record<string, boolean>];
   "update:customInstructions": [value: string];
   "update:modelId": [value: string];
@@ -472,6 +479,9 @@ const isVoiceMode = computed(() => props.modelKind === "voice-realtime");
 const connectButtonLabel = computed(() =>
   isVoiceMode.value ? "Connect" : "Start Session",
 );
+const isCurrentModeCustomizable = computed(() => {
+  return isModeCustomizable(props.modeId);
+});
 
 function scrollToBottom(): void {
   nextTick(() => {
@@ -538,10 +548,8 @@ function getModeIcon(): string {
   if (props.modelKind === "text-rest") {
     return "edit_note";
   }
-  const systemPrompt = SYSTEM_PROMPTS.find(
-    (prompt) => prompt.id === props.systemPromptId,
-  );
-  return systemPrompt?.icon || "graphic_eq";
+  const mode = MODES.find((m) => m.id === props.modeId);
+  return mode?.icon || "graphic_eq";
 }
 
 function handleEnterKey(event: KeyboardEvent): void {

@@ -21,6 +21,7 @@ import * as TextResponsePlugin from "./models/textResponse";
 import * as SetImageStylePlugin from "./models/setImageStyle";
 import type { StartApiResponse } from "../../server/types";
 import { v4 as uuidv4 } from "uuid";
+import { getMode } from "../config/modes";
 import type {
   ToolContext,
   ToolResult,
@@ -56,18 +57,96 @@ const pluginList = [
 
 export const getPluginList = () => pluginList;
 
+/**
+ * Gets the list of available plugins for a given mode
+ * @param modeId - The current mode ID
+ * @returns Array of plugin names available in this mode, or null if all plugins available
+ */
+export function getAvailablePluginsForMode(modeId: string): string[] | null {
+  const mode = getMode(modeId);
+
+  // If mode not found, default to all available
+  if (!mode) {
+    return null;
+  }
+
+  // Customizable mode: all plugins available for user to choose
+  if (mode.pluginMode === "customizable") {
+    return null;
+  }
+
+  // Fixed mode: return the exact list
+  if (mode.pluginMode === "fixed") {
+    return mode.availablePlugins || [];
+  }
+
+  // Fallback: all available
+  return null;
+}
+
+/**
+ * Checks if a plugin is available in the given mode
+ * @param pluginName - The name of the plugin
+ * @param modeId - The current mode ID
+ * @returns true if plugin is available in the mode
+ */
+export function isPluginAvailableInMode(
+  pluginName: string,
+  modeId: string,
+): boolean {
+  const availablePlugins = getAvailablePluginsForMode(modeId);
+
+  // null means all plugins available (customizable mode)
+  if (availablePlugins === null) {
+    return true;
+  }
+
+  // Check if plugin is in the fixed list
+  return availablePlugins.includes(pluginName);
+}
+
+/**
+ * Checks if the current mode allows user customization of plugins
+ * @param modeId - The current mode ID
+ * @returns true if user can toggle plugins in this mode
+ */
+export function isModeCustomizable(modeId: string): boolean {
+  const mode = getMode(modeId);
+  return mode?.pluginMode === "customizable";
+}
+
 export const pluginTools = (
   startResponse?: StartApiResponse,
   enabledPlugins?: Record<string, boolean>,
+  modeId?: string,
 ) => {
   return pluginList
     .filter((plugin) => {
       const toolName = plugin.plugin.toolDefinition.name;
-      // Check if plugin is enabled in user settings (default to true if not set)
-      const isEnabledByUser = enabledPlugins?.[toolName] ?? true;
-      // Check if plugin is enabled based on API response
-      const isEnabledByApi = plugin.plugin.isEnabled(startResponse);
-      return isEnabledByUser && isEnabledByApi;
+
+      // Server-level: Does plugin have required API credentials?
+      if (!plugin.plugin.isEnabled(startResponse)) {
+        return false;
+      }
+
+      // If no mode specified, default to enabled
+      if (!modeId) {
+        return enabledPlugins?.[toolName] ?? true;
+      }
+
+      // Mode-level filtering
+      const availableInMode = isPluginAvailableInMode(toolName, modeId);
+      if (!availableInMode) {
+        return false;
+      }
+
+      // User-level: Only applies to customizable modes
+      if (isModeCustomizable(modeId)) {
+        return enabledPlugins?.[toolName] ?? true;
+      }
+
+      // Fixed mode: plugin is in the list, so it's enabled
+      return true;
     })
     .map((plugin) => plugin.plugin.toolDefinition);
 };
@@ -75,15 +154,31 @@ export const pluginTools = (
 export const getPluginSystemPrompts = (
   startResponse?: StartApiResponse,
   enabledPlugins?: Record<string, boolean>,
+  modeId?: string,
 ): string => {
   const prompts = pluginList
     .filter((plugin) => {
       const toolName = plugin.plugin.toolDefinition.name;
-      // Check if plugin is enabled in user settings (default to true if not set)
-      const isEnabledByUser = enabledPlugins?.[toolName] ?? true;
-      // Check if plugin is enabled based on API response
-      const isEnabledByApi = plugin.plugin.isEnabled(startResponse);
-      return isEnabledByUser && isEnabledByApi && plugin.plugin.systemPrompt;
+
+      // Same filtering logic as pluginTools
+      if (!plugin.plugin.isEnabled(startResponse)) {
+        return false;
+      }
+
+      if (!modeId) {
+        return enabledPlugins?.[toolName] ?? true;
+      }
+
+      const availableInMode = isPluginAvailableInMode(toolName, modeId);
+      if (!availableInMode) {
+        return false;
+      }
+
+      if (isModeCustomizable(modeId)) {
+        return enabledPlugins?.[toolName] ?? true;
+      }
+
+      return true;
     })
     .map((plugin) => plugin.plugin.systemPrompt)
     .filter((prompt): prompt is string => !!prompt);
@@ -138,8 +233,12 @@ export const getAcceptedFileTypes = () => {
   return Array.from(new Set(allTypes));
 };
 
-export const getPluginsWithConfig = () => {
-  return pluginList.filter((plugin) => plugin.plugin.config);
+export const getPluginsWithConfig = (modeId?: string) => {
+  return pluginList.filter((plugin) => {
+    if (!plugin.plugin.config) return false;
+    if (!modeId) return true;
+    return isPluginAvailableInMode(plugin.plugin.toolDefinition.name, modeId);
+  });
 };
 
 export const hasAnyPluginConfig = () => {

@@ -23,7 +23,7 @@
         :is-muted="isMuted"
         :user-language="userPreferences.userLanguage"
         :suppress-instructions="userPreferences.suppressInstructions"
-        :system-prompt-id="userPreferences.systemPromptId"
+        :mode-id="userPreferences.modeId"
         :is-conversation-active="conversationActive"
         :enabled-plugins="userPreferences.enabledPlugins"
         :custom-instructions="userPreferences.customInstructions"
@@ -45,7 +45,7 @@
         @update:suppress-instructions="
           userPreferences.suppressInstructions = $event
         "
-        @update:system-prompt-id="userPreferences.systemPromptId = $event"
+        @update:mode-id="userPreferences.modeId = $event"
         @update:enabled-plugins="userPreferences.enabledPlugins = $event"
         @update:custom-instructions="
           userPreferences.customInstructions = $event
@@ -277,9 +277,7 @@ const {
   scrollCurrentResultToTop: scrolling.scrollCanvasToTop,
 });
 
-const isListenerMode = computed(
-  () => userPreferences.systemPromptId === "listener",
-);
+const isListenerMode = computed(() => userPreferences.modeId === "listener");
 const lastSpeechStartedTime = ref<number | null>(null);
 
 registerEventHandlers({
@@ -405,14 +403,14 @@ function setMute(muted: boolean): void {
   sessionSetMute(muted);
 }
 
-async function switchMode(newSystemPromptId: string): Promise<void> {
+async function switchMode(newModeId: string): Promise<void> {
   // Step 1: Disconnect if connected
   if (chatActive.value) {
     stopChat();
   }
 
-  // Step 2: Switch to the specified system prompt mode
-  userPreferences.systemPromptId = newSystemPromptId;
+  // Step 2: Switch to the specified mode
+  userPreferences.modeId = newModeId;
 
   // Wait a brief moment to ensure cleanup is complete
   await sleep(500);

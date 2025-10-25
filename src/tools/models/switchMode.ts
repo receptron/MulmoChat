@@ -1,12 +1,12 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
-import { SYSTEM_PROMPTS } from "../../config/systemPrompts";
+import { MODES } from "../../config/modes";
 import SwitchModePreview from "../previews/switchMode.vue";
 
 const toolName = "switchMode";
 
-const modeEntries = SYSTEM_PROMPTS.map((prompt) => ({
-  id: prompt.id,
-  name: prompt.name,
+const modeEntries = MODES.map((mode) => ({
+  id: mode.id,
+  name: mode.name,
 }));
 
 const modeOptionsDescription = modeEntries
