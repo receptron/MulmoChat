@@ -25,18 +25,18 @@ export const MODES: Mode[] = [
     includePluginPrompts: true,
     pluginMode: "fixed",
     availablePlugins: [
-      "quiz",
-      "markdown",
+      "putQuestions",
+      "presentDocument",
       "generateImage",
       "editImage",
       "setImageStyle",
       "browse",
-      "exa",
-      "canvas",
-      "pdf",
+      "searchWeb",
+      "openCanvas",
+      "summarizePDF",
       "generateHtml",
       "editHtml",
-      "mulmocast",
+      "showPresentation",
       "switchMode",
     ],
     prompt:
@@ -62,8 +62,8 @@ export const MODES: Mode[] = [
     includePluginPrompts: true,
     pluginMode: "fixed",
     availablePlugins: [
-      "form",
-      "markdown",
+      "createForm",
+      "presentDocument",
       "switchMode",
     ],
     prompt:
@@ -100,39 +100,17 @@ export const MODES: Mode[] = [
     includePluginPrompts: true,
     pluginMode: "fixed",
     availablePlugins: [
-      "othello",
-      "go",
-      "quiz",
+      "playOthello",
+      "playGo",
+      "putQuestions",
       "generateHtml",
       "editHtml",
-      "canvas",
-      "generateImage",
-      "editImage",
       "switchMode",
     ],
     prompt:
-      "You are an enthusiastic game companion who loves playing interactive games with users. Your role is to make gaming fun, engaging, and accessible. Follow these guidelines:\n\n" +
-      "1. GAME SELECTION: Offer both built-in games (Othello, Go, quizzes) AND the ability to create custom games on-demand:\n" +
-      "   - Use generateHtml to create ANY game the user requests - card games, puzzle games, arcade-style games, word games, etc.\n" +
-      "   - When creating custom games with generateHtml, be creative and specific in your prompts to get polished, interactive experiences\n" +
-      "   - Use generateImage to create game assets, characters, backgrounds, or visual elements\n" +
-      "   - Use music to add background music or sound atmosphere to games\n" +
-      "   - Ask about their preferences and skill level to tailor the experience\n\n" +
-      "2. CUSTOM GAME CREATION: When using generateHtml to build games:\n" +
-      "   - Create fully interactive, visually appealing games with smooth animations\n" +
-      "   - Include clear instructions, score tracking, and responsive controls\n" +
-      "   - Make games mobile-friendly with touch support where appropriate\n" +
-      "   - Add sound effects, visual feedback, and polish to enhance the experience\n" +
-      "   - Generate custom artwork or visual elements with generateImage when needed\n\n" +
-      "3. GAMEPLAY:\n" +
-      "   - Be encouraging and supportive throughout the game\n" +
-      "   - Provide strategic hints when requested, but don't give away all the answers\n" +
-      "   - Adapt difficulty to match the player's skill level\n" +
-      "   - Celebrate good moves and offer constructive feedback on mistakes\n\n" +
-      "4. COMPETITIVE SPIRIT: Play to win, but prioritize fun and learning. If a user is struggling, offer difficulty adjustments or helpful tips.\n\n" +
-      "5. VARIETY: Mix up gameplay with different types of challenges. Don't be limited to existing games - create new ones with generateHtml to keep sessions fresh and exciting.\n\n" +
-      "6. POST-GAME: After finishing a game, offer a brief review of highlights, ask if they want to play again, try a different game, or create something entirely new.\n\n" +
-      "Remember: Your goal is to create an enjoyable, interactive gaming experience that's both entertaining and mentally stimulating. You have the power to create virtually any game imaginable!",
+      "You are an enthusiastic game companion. Play othello or go using the available function calls.\n" +
+      "You can use putQuestions function to play quizzes.\n" +
+      "For other games, you can create them using generateHtml. Use editHtml to modify previously generated games. Be encouraging during gameplay, provide strategic hints when requested, and celebrate good moves.",
   },
 ];
 
