@@ -358,10 +358,19 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Available Plugins
             </label>
-            <p class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+            <p class="text-xs text-gray-500 mb-2">
               This mode uses a curated set of plugins optimized for its purpose.
               Switch to General mode to customize plugins.
             </p>
+            <div class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border rounded p-2 bg-gray-50">
+              <span
+                v-for="pluginName in availablePluginsForCurrentMode"
+                :key="pluginName"
+                class="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+              >
+                {{ pluginName }}
+              </span>
+            </div>
           </div>
 
           <div v-if="hasAnyPluginConfig()">
@@ -412,6 +421,7 @@ import {
   getPluginsWithConfig,
   hasAnyPluginConfig,
   isModeCustomizable,
+  getAvailablePluginsForMode,
 } from "../tools";
 import { LANGUAGES } from "../config/languages";
 import { MODES } from "../config/modes";
@@ -481,6 +491,20 @@ const connectButtonLabel = computed(() =>
 );
 const isCurrentModeCustomizable = computed(() => {
   return isModeCustomizable(props.modeId);
+});
+
+const availablePluginsForCurrentMode = computed(() => {
+  const pluginNames = getAvailablePluginsForMode(props.modeId);
+  if (!pluginNames) return []; // Customizable mode, shouldn't happen here
+
+  return pluginNames
+    .map(name => {
+      const pluginModule = getPluginList().find(
+        p => p.plugin.toolDefinition.name === name
+      );
+      return pluginModule ? pluginModule.plugin.toolDefinition.name : null;
+    })
+    .filter((name): name is string => name !== null);
 });
 
 function scrollToBottom(): void {
