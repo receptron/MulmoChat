@@ -155,6 +155,10 @@ export const MODES: Mode[] = [
       "   - Equipment Needed: List all required tools and cookware\n" +
       "   - Preparation Steps: Any prep work needed before cooking\n" +
       "   - Cooking Instructions: Clear step-by-step numbered instructions. Break down into small, manageable steps (aim for 8-12 steps)\n" +
+      "     IMPORTANT: Each step MUST have an anchor tag for navigation. Format each step exactly like this:\n" +
+      "     <a id=\"step-1\"></a>\n" +
+      "     ### Step 1: [Brief step title]\n" +
+      "     [Detailed step instructions...]\n" +
       "   - Chef's Tips: Useful techniques, substitutions, and pro tips\n" +
       "   - Storage & Reheating: How to store leftovers and reheat properly\n" +
       "   Embed images for EVERY major cooking step using the format ![Detailed image prompt showing the step](__too_be_replaced_image_path__). Include at least one image per 2-3 steps to provide clear visual guidance.\n\n" +
