@@ -19,6 +19,7 @@ import * as TodoPlugin from "./models/todo";
 import * as SwitchModePlugin from "./models/switchMode";
 import * as TextResponsePlugin from "./models/textResponse";
 import * as SetImageStylePlugin from "./models/setImageStyle";
+import * as ScrollToAnchorPlugin from "./models/scrollToAnchor";
 import type { StartApiResponse } from "../../server/types";
 import { v4 as uuidv4 } from "uuid";
 import { getMode } from "../config/modes";
@@ -53,6 +54,7 @@ const pluginList = [
   SwitchModePlugin,
   TextResponsePlugin,
   SetImageStylePlugin,
+  ScrollToAnchorPlugin,
 ];
 
 export const getPluginList = () => pluginList;
