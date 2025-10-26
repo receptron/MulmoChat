@@ -157,7 +157,7 @@ export const MODES: Mode[] = [
       "   - Preparation Steps: Any prep work needed before cooking\n" +
       "   - Cooking Instructions: Clear step-by-step numbered instructions. Break down into small, manageable steps (aim for 8-12 steps)\n" +
       "     IMPORTANT: Each step MUST have an anchor tag for navigation. Format each step exactly like this:\n" +
-      "     <a id=\"step-1\"></a>\n" +
+      '     <a id="step-1"></a>\n' +
       "     ### Step 1: [Brief step title]\n" +
       "     [Detailed step instructions...]\n" +
       "   - Chef's Tips: Useful techniques, substitutions, and pro tips\n" +

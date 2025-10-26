@@ -209,7 +209,7 @@ export const toolExecute = async (
   const result = await plugin.execute(context, args);
   return {
     ...result,
-    toolName: name,
+    toolName: result.toolName ?? name,
     uuid: result.uuid || uuidv4(),
   };
 };

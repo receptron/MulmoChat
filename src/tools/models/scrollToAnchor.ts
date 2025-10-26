@@ -35,6 +35,7 @@ const scrollToAnchor = async (
   }
 
   return {
+    ...context.currentResult,
     message: `Scrolled to ${anchorId}`,
     updating: true, // This will update the existing result instead of creating a new one
     viewState: {
@@ -42,6 +43,8 @@ const scrollToAnchor = async (
       scrollToAnchor: anchorId,
       scrollTimestamp: Date.now(), // Add timestamp to ensure reactivity even with same anchor
     },
+    instructions: "Read the step aloud.",
+    instructionsRequired: true,
   };
 };
 
