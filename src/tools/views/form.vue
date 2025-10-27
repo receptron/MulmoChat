@@ -470,6 +470,35 @@ watch(
 );
 
 function getDefaultValue(field: FormField): any {
+  // Check if field has a defaultValue property
+  const fieldWithDefault = field as any;
+
+  if (fieldWithDefault.defaultValue !== undefined) {
+    switch (field.type) {
+      case "radio":
+      case "dropdown":
+        // Convert string value to index in choices
+        const choiceIndex = field.choices.indexOf(
+          fieldWithDefault.defaultValue,
+        );
+        return choiceIndex !== -1 ? choiceIndex : null;
+
+      case "checkbox":
+        // Convert array of string values to array of indices
+        if (Array.isArray(fieldWithDefault.defaultValue)) {
+          return fieldWithDefault.defaultValue
+            .map((val: string) => field.choices.indexOf(val))
+            .filter((idx: number) => idx !== -1);
+        }
+        return [];
+
+      default:
+        // For text, textarea, number, date, time - return defaultValue directly
+        return fieldWithDefault.defaultValue;
+    }
+  }
+
+  // Fall back to hardcoded defaults if no defaultValue is set
   switch (field.type) {
     case "text":
     case "textarea":

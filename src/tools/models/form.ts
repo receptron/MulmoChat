@@ -29,6 +29,7 @@ export interface TextField extends BaseField {
   type: "text";
   placeholder?: string;
   validation?: "email" | "url" | "phone" | string; // string for regex pattern
+  defaultValue?: string;
 }
 
 export interface TextareaField extends BaseField {
@@ -37,17 +38,20 @@ export interface TextareaField extends BaseField {
   minLength?: number;
   maxLength?: number;
   rows?: number;
+  defaultValue?: string;
 }
 
 export interface RadioField extends BaseField {
   type: "radio";
   choices: string[]; // 2-6 items
+  defaultValue?: string; // must be one of the choices
 }
 
 export interface DropdownField extends BaseField {
   type: "dropdown";
   choices: string[];
   searchable?: boolean;
+  defaultValue?: string; // must be one of the choices
 }
 
 export interface CheckboxField extends BaseField {
@@ -55,6 +59,7 @@ export interface CheckboxField extends BaseField {
   choices: string[];
   minSelections?: number;
   maxSelections?: number;
+  defaultValue?: string[]; // must be subset of choices
 }
 
 export interface DateField extends BaseField {
@@ -62,11 +67,13 @@ export interface DateField extends BaseField {
   minDate?: string;
   maxDate?: string;
   format?: string;
+  defaultValue?: string; // ISO date format YYYY-MM-DD
 }
 
 export interface TimeField extends BaseField {
   type: "time";
   format?: "12hr" | "24hr";
+  defaultValue?: string; // time string
 }
 
 export interface NumberField extends BaseField {
@@ -74,6 +81,7 @@ export interface NumberField extends BaseField {
   min?: number;
   max?: number;
   step?: number;
+  defaultValue?: number;
 }
 
 // Union type for all fields
@@ -214,6 +222,10 @@ const toolDefinition = {
               type: "number",
               description: "Step increment for number fields",
             },
+            defaultValue: {
+              description:
+                "Optional default/pre-filled value for the field. Type varies by field: string for text/textarea/radio/dropdown/date/time, number for number fields, array of strings for checkbox fields. For radio/dropdown, must be one of the choices. For checkbox, must be a subset of choices.",
+            },
           },
           required: ["id", "type", "label"],
         },
@@ -342,6 +354,131 @@ const createForm = async (
           throw new Error(
             `Field '${field.id}': maxSelections cannot exceed number of choices`,
           );
+        }
+      }
+
+      // Validate defaultValue
+      if (field.defaultValue !== undefined) {
+        switch (field.type) {
+          case "text":
+          case "textarea":
+            if (typeof field.defaultValue !== "string") {
+              throw new Error(
+                `Field '${field.id}': defaultValue must be a string`,
+              );
+            }
+            if (
+              field.minLength !== undefined &&
+              field.defaultValue.length < field.minLength
+            ) {
+              throw new Error(
+                `Field '${field.id}': defaultValue length is less than minLength`,
+              );
+            }
+            if (
+              field.maxLength !== undefined &&
+              field.defaultValue.length > field.maxLength
+            ) {
+              throw new Error(
+                `Field '${field.id}': defaultValue length exceeds maxLength`,
+              );
+            }
+            break;
+
+          case "radio":
+          case "dropdown":
+            if (typeof field.defaultValue !== "string") {
+              throw new Error(
+                `Field '${field.id}': defaultValue must be a string`,
+              );
+            }
+            if (!field.choices.includes(field.defaultValue)) {
+              throw new Error(
+                `Field '${field.id}': defaultValue '${field.defaultValue}' is not in choices`,
+              );
+            }
+            break;
+
+          case "checkbox":
+            if (!Array.isArray(field.defaultValue)) {
+              throw new Error(
+                `Field '${field.id}': defaultValue must be an array`,
+              );
+            }
+            for (const value of field.defaultValue) {
+              if (!field.choices.includes(value)) {
+                throw new Error(
+                  `Field '${field.id}': defaultValue contains '${value}' which is not in choices`,
+                );
+              }
+            }
+            if (
+              field.minSelections !== undefined &&
+              field.defaultValue.length < field.minSelections
+            ) {
+              throw new Error(
+                `Field '${field.id}': defaultValue has fewer selections than minSelections`,
+              );
+            }
+            if (
+              field.maxSelections !== undefined &&
+              field.defaultValue.length > field.maxSelections
+            ) {
+              throw new Error(
+                `Field '${field.id}': defaultValue has more selections than maxSelections`,
+              );
+            }
+            break;
+
+          case "number":
+            if (typeof field.defaultValue !== "number") {
+              throw new Error(
+                `Field '${field.id}': defaultValue must be a number`,
+              );
+            }
+            if (field.min !== undefined && field.defaultValue < field.min) {
+              throw new Error(
+                `Field '${field.id}': defaultValue is less than min`,
+              );
+            }
+            if (field.max !== undefined && field.defaultValue > field.max) {
+              throw new Error(
+                `Field '${field.id}': defaultValue is greater than max`,
+              );
+            }
+            break;
+
+          case "date":
+            if (typeof field.defaultValue !== "string") {
+              throw new Error(
+                `Field '${field.id}': defaultValue must be a string (ISO date format)`,
+              );
+            }
+            if (
+              field.minDate !== undefined &&
+              field.defaultValue < field.minDate
+            ) {
+              throw new Error(
+                `Field '${field.id}': defaultValue is before minDate`,
+              );
+            }
+            if (
+              field.maxDate !== undefined &&
+              field.defaultValue > field.maxDate
+            ) {
+              throw new Error(
+                `Field '${field.id}': defaultValue is after maxDate`,
+              );
+            }
+            break;
+
+          case "time":
+            if (typeof field.defaultValue !== "string") {
+              throw new Error(
+                `Field '${field.id}': defaultValue must be a string`,
+              );
+            }
+            break;
         }
       }
     }

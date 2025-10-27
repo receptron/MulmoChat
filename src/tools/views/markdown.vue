@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, nextTick } from "vue";
 import { marked } from "marked";
 import type { ToolResult } from "../types";
 import type { MarkdownToolData } from "../models/markdown";
@@ -170,6 +170,24 @@ watch(
     }
   },
   { immediate: true },
+);
+
+// Watch for scroll requests from viewState
+watch(
+  () => props.selectedResult?.viewState?.scrollToAnchor,
+  (anchorId) => {
+    if (!anchorId) return;
+
+    // Use nextTick to ensure the DOM is updated
+    nextTick(() => {
+      const element = document.getElementById(anchorId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        console.warn(`Anchor element with id "${anchorId}" not found`);
+      }
+    });
+  },
 );
 
 const downloadMarkdown = () => {
