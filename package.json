@@ -7,6 +7,8 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"vite\"",
+    "kill": "pkill -f 'tsx server/index.ts' && pkill -f 'vite'",
+    "route": "sudo route delete -net 192.168.1",
     "dev:client": "vite",
     "dev:server": "tsx server/index.ts",
     "server": "tsx server/index.ts",
