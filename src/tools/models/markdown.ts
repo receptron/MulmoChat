@@ -3,6 +3,7 @@ import MarkdownView from "../views/markdown.vue";
 import MarkdownPreview from "../previews/markdown.vue";
 import { loadBlankImageBase64 } from "./mulmocast";
 import { generateImageWithBackend } from "./generateImage";
+import { generateUUID } from "../../utils/uuid";
 
 const toolName = "presentDocument";
 
@@ -45,7 +46,7 @@ const pushMarkdown = async (
 
   if (matches.length > 0) {
     // Generate a UUID for this markdown document
-    docUuid = crypto.randomUUID();
+    docUuid = generateUUID();
     const images: Record<string, string> = {};
 
     // Load blank image for image generation

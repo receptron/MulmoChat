@@ -4,6 +4,7 @@ import { ref, type Ref } from "vue";
 import type { ToolContext, ToolResult } from "../tools";
 import type { UserPreferencesState } from "./useUserPreferences";
 import { SESSION_CONFIG } from "../config/session";
+import { generateUUID } from "../utils/uuid";
 
 type ToolExecuteFn = typeof import("../tools").toolExecute;
 type GetToolPluginFn = typeof import("../tools").getToolPlugin;
@@ -192,7 +193,7 @@ export function useToolResults(
     for (const result of results) {
       const completeResult: ToolResult = {
         ...result,
-        uuid: result.uuid ?? crypto.randomUUID(),
+        uuid: result.uuid ?? generateUUID(),
       };
 
       toolResults.value.push(completeResult);

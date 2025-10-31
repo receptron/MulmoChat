@@ -100,6 +100,7 @@ import { useScrolling } from "./composables/useScrolling";
 import { SESSION_CONFIG } from "./config/session";
 import { DEFAULT_TEXT_MODEL } from "./config/textModels";
 import type { TextProvidersResponse } from "../server/types";
+import { generateUUID } from "./utils/uuid";
 
 const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
 const preferences = useUserPreferences();
@@ -357,7 +358,7 @@ async function sendTextMessage(providedText?: string): Promise<void> {
   // Only add if it's from the user input box (not providedText from other sources)
   if (!providedText) {
     const userMessageResult: ToolResult = {
-      uuid: crypto.randomUUID(),
+      uuid: generateUUID(),
       toolName: "text-response",
       message: text,
       title: "You",
