@@ -68,14 +68,30 @@ export function useGoogleLiveSession(
     return true;
   };
 
-  const handleWebSocketMessage = (event: MessageEvent) => {
+  const handleWebSocketMessage = async (event: MessageEvent) => {
     let data: any;
 
     try {
-      data = JSON.parse(event.data);
+      // Google Live API sends messages as Blobs, not strings
+      let jsonString: string;
+      if (event.data instanceof Blob) {
+        jsonString = await event.data.text();
+      } else {
+        jsonString = event.data;
+      }
+
+      data = JSON.parse(jsonString);
+      console.log("GOOGLE LIVE MESSAGE:", JSON.stringify(data, null, 2));
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
       handlers.onError?.(error);
+      return;
+    }
+
+    // Handle errors from Google
+    if (data.error) {
+      console.error("Google Live API error:", data.error);
+      handlers.onError?.(data.error);
       return;
     }
 
@@ -171,8 +187,16 @@ export function useGoogleLiveSession(
     handlers.onError?.(error);
   };
 
-  const handleWebSocketClose = () => {
-    console.log("WebSocket closed");
+  const handleWebSocketClose = (event: CloseEvent) => {
+    console.log(
+      `WebSocket closed - Code: ${event.code}, Reason: ${event.reason}, Clean: ${event.wasClean}`,
+    );
+
+    // Stop audio capture when WebSocket closes
+    if (googleLive.audioManager) {
+      googleLive.audioManager.stopCapture();
+    }
+
     googleLive.ws = null;
     chatActive.value = false;
     conversationActive.value = false;
@@ -189,35 +213,56 @@ export function useGoogleLiveSession(
     const googleTools = convertToGoogleToolFormat(tools);
 
     // Send setup message
-    const setupMessage = {
+    // Start with minimal config to debug
+    const setupMessage: any = {
       setup: {
-        model: `models/${modelId}`,
-        generationConfig: {
-          responseModalities: ["TEXT", "AUDIO"],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: "Aoede",
-              },
-            },
-          },
-        },
-        systemInstruction: {
-          parts: [
-            {
-              text: instructions,
-            },
-          ],
-        },
-        tools:
-          googleTools.length > 0
-            ? [{ functionDeclarations: googleTools }]
-            : undefined,
+        model: modelId.startsWith("models/") ? modelId : `models/${modelId}`,
       },
     };
 
+    // Add generation config if needed
+    setupMessage.setup.generationConfig = {
+      responseModalities: ["AUDIO"],
+    };
+
+    // Add system instruction if provided
+    if (instructions && instructions.trim()) {
+      setupMessage.setup.systemInstruction = {
+        parts: [{ text: instructions }],
+      };
+    }
+
+    // Add tools if any
+    if (googleTools.length > 0) {
+      setupMessage.setup.tools = [{ functionDeclarations: googleTools }];
+    }
+
     console.log("GOOGLE LIVE SETUP:", JSON.stringify(setupMessage, null, 2));
     sendWebSocketMessage(setupMessage);
+
+    // Now that WebSocket is open, start audio capture
+    if (googleLive.localStream && googleLive.audioManager) {
+      console.log("Starting audio capture now that WebSocket is open");
+      googleLive.audioManager.startCapture(
+        googleLive.localStream,
+        (pcmChunk) => {
+          // Only send if WebSocket is still open
+          if (googleLive.ws?.readyState === WebSocket.OPEN) {
+            sendWebSocketMessage({
+              realtimeInput: {
+                mediaChunks: [
+                  {
+                    data: pcmChunk,
+                    mimeType: "audio/pcm",
+                  },
+                ],
+              },
+            });
+          }
+        },
+        16000, // Target sample rate for Google
+      );
+    }
   };
 
   const attachRemoteAudioElement = (audio: BrowserHTMLAudioElement | null) => {
@@ -314,7 +359,7 @@ export function useGoogleLiveSession(
       googleLive.ws.onerror = handleWebSocketError;
       googleLive.ws.onclose = handleWebSocketClose;
 
-      // Request microphone access
+      // Request microphone access (but don't start capture yet)
       googleLive.localStream =
         await globalThis.navigator.mediaDevices.getUserMedia({
           audio: {
@@ -325,25 +370,8 @@ export function useGoogleLiveSession(
           },
         });
 
-      // Initialize audio stream manager
+      // Initialize audio stream manager (capture will start when WebSocket opens)
       googleLive.audioManager = new AudioStreamManager();
-      googleLive.audioManager.startCapture(
-        googleLive.localStream,
-        (pcmChunk) => {
-          // Send audio chunk to Google
-          sendWebSocketMessage({
-            realtimeInput: {
-              mediaChunks: [
-                {
-                  data: pcmChunk,
-                  mimeType: "audio/pcm",
-                },
-              ],
-            },
-          });
-        },
-        16000, // Target sample rate for Google
-      );
 
       chatActive.value = true;
     } catch (err) {

@@ -27,8 +27,13 @@ export interface GoogleLiveModelOption {
 export const GOOGLE_LIVE_MODELS: GoogleLiveModelOption[] = [
   {
     id: "gemini-2.0-flash-exp",
-    label: "Gemini 2.0 Flash",
-    description: "Google's multimodal model for real-time conversations",
+    label: "Gemini 2.0 Flash Experimental",
+    description: "Google's latest experimental multimodal model",
+  },
+  {
+    id: "models/gemini-2.0-flash-exp",
+    label: "Gemini 2.0 Flash Exp (with models/ prefix)",
+    description: "Alternative format with models/ prefix",
   },
 ];
 

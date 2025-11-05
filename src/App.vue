@@ -99,6 +99,7 @@ import { useToolResults } from "./composables/useToolResults";
 import { useScrolling } from "./composables/useScrolling";
 import { SESSION_CONFIG } from "./config/session";
 import { DEFAULT_TEXT_MODEL } from "./config/textModels";
+import { DEFAULT_GOOGLE_LIVE_MODEL_ID, GOOGLE_LIVE_MODELS } from "./config/models";
 import type { TextProvidersResponse } from "../server/types";
 import { generateUUID } from "./utils/uuid";
 
@@ -153,7 +154,13 @@ const session = useSessionTransport({
       return userPreferences.modelId;
     }
     if (userPreferences.modelKind === "voice-google-live") {
-      return userPreferences.modelId; // For now, reuse modelId for Google models
+      // Check if current modelId is a valid Google model
+      const isValidGoogleModel = GOOGLE_LIVE_MODELS.some(
+        (m) => m.id === userPreferences.modelId
+      );
+      return isValidGoogleModel
+        ? userPreferences.modelId
+        : DEFAULT_GOOGLE_LIVE_MODEL_ID;
     }
     return userPreferences.textModelId;
   },
