@@ -10,7 +10,10 @@ import { useGoogleLiveSession } from "./useGoogleLiveSession";
 
 type MaybeRef<T> = T | Ref<T>;
 
-export type SessionTransportKind = "voice-realtime" | "text-rest" | "voice-google-live";
+export type SessionTransportKind =
+  | "voice-realtime"
+  | "text-rest"
+  | "voice-google-live";
 
 export interface SessionTransportCapabilities {
   supportsAudioInput: boolean;

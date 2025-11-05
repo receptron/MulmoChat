@@ -1,6 +1,10 @@
 /* eslint-env browser */
 
-import { encodeAudioToPCM16, decodePCM16ToFloat32, resampleAudio } from "./audioCodec";
+import {
+  encodeAudioToPCM16,
+  decodePCM16ToFloat32,
+  resampleAudio,
+} from "./audioCodec";
 
 /**
  * Manages audio capture from microphone and playback for Google Live API

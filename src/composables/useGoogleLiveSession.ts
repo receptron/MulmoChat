@@ -153,9 +153,7 @@ export function useGoogleLiveSession(
           name: toolCall.functionCalls?.[0]?.name || "",
         };
 
-        const argStr = JSON.stringify(
-          toolCall.functionCalls?.[0]?.args || {},
-        );
+        const argStr = JSON.stringify(toolCall.functionCalls?.[0]?.args || {});
         console.log(`MSG: toolcall\n${argStr}`);
         processedToolCalls.add(callId);
         handlers.onToolCall?.(toolCallMsg, callId, argStr);
@@ -211,7 +209,10 @@ export function useGoogleLiveSession(
             },
           ],
         },
-        tools: googleTools.length > 0 ? [{ functionDeclarations: googleTools }] : undefined,
+        tools:
+          googleTools.length > 0
+            ? [{ functionDeclarations: googleTools }]
+            : undefined,
       },
     };
 
@@ -314,16 +315,15 @@ export function useGoogleLiveSession(
       googleLive.ws.onclose = handleWebSocketClose;
 
       // Request microphone access
-      googleLive.localStream = await globalThis.navigator.mediaDevices.getUserMedia(
-        {
+      googleLive.localStream =
+        await globalThis.navigator.mediaDevices.getUserMedia({
           audio: {
             sampleRate: 16000,
             channelCount: 1,
             echoCancellation: true,
             noiseSuppression: true,
           },
-        },
-      );
+        });
 
       // Initialize audio stream manager
       googleLive.audioManager = new AudioStreamManager();
@@ -358,10 +358,12 @@ export function useGoogleLiveSession(
   };
 
   const sendUserMessage = async (text: string) => {
-    if (!chatActive.value || !googleLive.ws || googleLive.ws.readyState !== WebSocket.OPEN) {
-      console.warn(
-        "Cannot send text message because WebSocket is not ready.",
-      );
+    if (
+      !chatActive.value ||
+      !googleLive.ws ||
+      googleLive.ws.readyState !== WebSocket.OPEN
+    ) {
+      console.warn("Cannot send text message because WebSocket is not ready.");
       return false;
     }
 
@@ -418,8 +420,7 @@ export function useGoogleLiveSession(
     return sendUserMessage(instructions);
   };
 
-  const isDataChannelOpen = () =>
-    googleLive.ws?.readyState === WebSocket.OPEN;
+  const isDataChannelOpen = () => googleLive.ws?.readyState === WebSocket.OPEN;
 
   return {
     chatActive,

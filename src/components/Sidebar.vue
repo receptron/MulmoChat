@@ -516,8 +516,10 @@ const showConfigPopup = ref(false);
 
 const acceptedFileTypes = computed(() => getAcceptedFileTypes().join(","));
 const fileUploadPlugins = computed(() => getFileUploadPlugins());
-const isVoiceMode = computed(() =>
-  props.modelKind === "voice-realtime" || props.modelKind === "voice-google-live"
+const isVoiceMode = computed(
+  () =>
+    props.modelKind === "voice-realtime" ||
+    props.modelKind === "voice-google-live",
 );
 const isOpenAIRealtime = computed(() => props.modelKind === "voice-realtime");
 const isGoogleLive = computed(() => props.modelKind === "voice-google-live");
