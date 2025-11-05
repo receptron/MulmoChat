@@ -5,6 +5,8 @@ export interface StartApiResponse {
   googleMapKey: string | undefined;
   hasExaApiKey: boolean;
   hasAnthropicApiKey: boolean;
+  googleApiKey: string | undefined;
+  hasGoogleApiKey: boolean;
 }
 
 export interface TextProvidersResponse {

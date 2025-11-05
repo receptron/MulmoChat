@@ -168,16 +168,17 @@
               "
               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="voice-realtime">Voice (Realtime)</option>
+              <option value="voice-realtime">Voice (OpenAI Realtime)</option>
+              <option value="voice-google-live">Voice (Google Live)</option>
               <option value="text-rest">Text (REST)</option>
             </select>
             <p class="text-xs text-gray-500 mt-1">
-              Choose between the WebRTC voice experience and the REST text
+              Choose between OpenAI WebRTC, Google WebSocket, or REST text
               interface.
             </p>
           </div>
 
-          <div v-if="isVoiceMode">
+          <div v-if="isOpenAIRealtime">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Realtime Model
             </label>
@@ -204,7 +205,34 @@
             </p>
           </div>
 
-          <div v-else>
+          <div v-if="isGoogleLive">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Google Live Model
+            </label>
+            <select
+              :value="modelId"
+              @change="
+                $emit(
+                  'update:modelId',
+                  ($event.target as HTMLSelectElement).value,
+                )
+              "
+              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option
+                v-for="model in GOOGLE_LIVE_MODELS"
+                :key="model.id"
+                :value="model.id"
+              >
+                {{ model.label }}
+              </option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">
+              Chooses the Google Gemini model used for real-time conversations.
+            </p>
+          </div>
+
+          <div v-if="modelKind === 'text-rest'">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Text Model
             </label>
@@ -228,8 +256,8 @@
               </option>
             </select>
             <p class="text-xs text-gray-500 mt-1">
-              Select the REST text model. Providers marked “credentials
-              required” need an API key set on the server.
+              Select the REST text model. Providers marked "credentials
+              required" need an API key set on the server.
             </p>
           </div>
 
@@ -427,7 +455,8 @@ import {
 } from "../tools";
 import { LANGUAGES } from "../config/languages";
 import { MODES } from "../config/modes";
-import { REALTIME_MODELS } from "../config/models";
+import { REALTIME_MODELS, GOOGLE_LIVE_MODELS } from "../config/models";
+import type { SessionTransportKind } from "../composables/useSessionTransport";
 
 interface TextModelOption {
   id: string;
@@ -451,7 +480,7 @@ const props = defineProps<{
   enabledPlugins: Record<string, boolean>;
   customInstructions: string;
   modelId: string;
-  modelKind: "voice-realtime" | "text-rest";
+  modelKind: SessionTransportKind;
   textModelId: string;
   textModelOptions: TextModelOption[];
   supportsAudioInput: boolean;
@@ -473,7 +502,7 @@ const emit = defineEmits<{
   "update:enabledPlugins": [value: Record<string, boolean>];
   "update:customInstructions": [value: string];
   "update:modelId": [value: string];
-  "update:modelKind": [value: "voice-realtime" | "text-rest"];
+  "update:modelKind": [value: SessionTransportKind];
   "update:textModelId": [value: string];
   "update:imageGenerationBackend": [value: "gemini" | "comfyui"];
   "update:pluginConfigs": [value: Record<string, any>];
@@ -487,7 +516,11 @@ const showConfigPopup = ref(false);
 
 const acceptedFileTypes = computed(() => getAcceptedFileTypes().join(","));
 const fileUploadPlugins = computed(() => getFileUploadPlugins());
-const isVoiceMode = computed(() => props.modelKind === "voice-realtime");
+const isVoiceMode = computed(() =>
+  props.modelKind === "voice-realtime" || props.modelKind === "voice-google-live"
+);
+const isOpenAIRealtime = computed(() => props.modelKind === "voice-realtime");
+const isGoogleLive = computed(() => props.modelKind === "voice-google-live");
 const connectButtonLabel = computed(() =>
   isVoiceMode.value ? "Connect" : "Start Session",
 );

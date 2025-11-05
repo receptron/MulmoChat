@@ -32,8 +32,10 @@ router.use(comfyRouter);
 router.get("/start", async (req: Request, res: Response): Promise<void> => {
   const openaiKey = process.env.OPENAI_API_KEY;
   const googleMapKey = process.env.GOOGLE_MAP_API_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY;
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const hasAnthropicApiKey = !!anthropicApiKey;
+  const hasGoogleApiKey = !!geminiApiKey;
 
   if (!openaiKey) {
     res
@@ -77,6 +79,8 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
       googleMapKey,
       hasExaApiKey,
       hasAnthropicApiKey,
+      googleApiKey: geminiApiKey,
+      hasGoogleApiKey,
     };
     res.json(responseData);
   } catch (error: unknown) {

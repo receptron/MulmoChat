@@ -148,10 +148,15 @@ const session = useSessionTransport({
   transportKind,
   buildInstructions: (context) => buildPreferenceInstructions(context),
   buildTools: (context) => buildPreferenceTools(context),
-  getModelId: () =>
-    userPreferences.modelKind === "voice-realtime"
-      ? userPreferences.modelId
-      : userPreferences.textModelId,
+  getModelId: () => {
+    if (userPreferences.modelKind === "voice-realtime") {
+      return userPreferences.modelId;
+    }
+    if (userPreferences.modelKind === "voice-google-live") {
+      return userPreferences.modelId; // For now, reuse modelId for Google models
+    }
+    return userPreferences.textModelId;
+  },
 });
 
 const {

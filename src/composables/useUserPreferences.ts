@@ -7,6 +7,7 @@ import { pluginTools, getPluginSystemPrompts } from "../tools";
 import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
 import { DEFAULT_TEXT_MODEL } from "../config/textModels";
 import type { BuildContext } from "./types";
+import type { SessionTransportKind } from "./useSessionTransport";
 
 const USER_LANGUAGE_KEY = "user_language_v1";
 const SUPPRESS_INSTRUCTIONS_KEY = "suppress_instructions_v1";
@@ -52,7 +53,7 @@ export interface UserPreferencesState {
   customInstructions: string;
   enabledPlugins: Record<string, boolean>;
   modelId: string;
-  modelKind: "voice-realtime" | "text-rest";
+  modelKind: SessionTransportKind;
   textModelId: string;
   imageGenerationBackend: "gemini" | "comfyui";
   pluginConfigs: Record<string, any>;
@@ -86,8 +87,9 @@ const initPluginConfigs = (): Record<string, any> => {
 
 const resolveStoredModelKind = (
   stored: string | null,
-): UserPreferencesState["modelKind"] => {
+): SessionTransportKind => {
   if (stored === "text-rest") return "text-rest";
+  if (stored === "voice-google-live") return "voice-google-live";
   return "voice-realtime";
 };
 
