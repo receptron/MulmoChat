@@ -83,7 +83,9 @@ export function useGoogleLiveSession(
       data = JSON.parse(jsonString);
 
       // Only log non-audio messages to reduce spam
-      if (!data.serverContent?.modelTurn?.parts?.some((p: any) => p.inlineData)) {
+      if (
+        !data.serverContent?.modelTurn?.parts?.some((p: any) => p.inlineData)
+      ) {
         console.log("GOOGLE LIVE MESSAGE:", JSON.stringify(data, null, 2));
       }
     } catch (error) {
@@ -118,7 +120,6 @@ export function useGoogleLiveSession(
 
           // Handle audio response
           if (part.inlineData) {
-            console.log(`Received audio chunk, mime: ${part.inlineData.mimeType}, size: ${part.inlineData.data?.length || 0}`);
             const audioData = part.inlineData.data;
             if (googleLive.audioManager && audioData) {
               googleLive.audioManager.queueAudio(audioData);
@@ -212,20 +213,17 @@ export function useGoogleLiveSession(
     tools: any[],
     modelId: string,
   ) => {
-    console.log("WebSocket opened, sending setup message");
-
     // Convert tools to Google format
     const googleTools = convertToGoogleToolFormat(tools);
 
     // Send setup message
-    // Start with minimal config to debug
     const setupMessage: any = {
       setup: {
         model: modelId.startsWith("models/") ? modelId : `models/${modelId}`,
       },
     };
 
-    // Add generation config if needed
+    // Add generation config
     setupMessage.setup.generationConfig = {
       responseModalities: ["AUDIO"],
     };
@@ -242,12 +240,10 @@ export function useGoogleLiveSession(
       setupMessage.setup.tools = [{ functionDeclarations: googleTools }];
     }
 
-    console.log("GOOGLE LIVE SETUP:", JSON.stringify(setupMessage, null, 2));
     sendWebSocketMessage(setupMessage);
 
     // Now that WebSocket is open, start audio capture
     if (googleLive.localStream && googleLive.audioManager) {
-      console.log("Starting audio capture now that WebSocket is open");
       googleLive.audioManager.startCapture(
         googleLive.localStream,
         (pcmChunk) => {

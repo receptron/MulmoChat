@@ -97,11 +97,9 @@ export class AudioStreamManager {
   queueAudio(pcmData: string): void {
     const float32 = decodePCM16ToFloat32(pcmData);
     this.playbackQueue.push(float32);
-    console.log(`Queued audio: ${float32.length} samples, queue size: ${this.playbackQueue.length}, playing: ${this.isPlayingAudio}`);
 
     // Auto-start playback if not already playing
     if (!this.isPlayingAudio) {
-      console.log("Starting audio playback");
       this.startPlayback();
     }
   }
