@@ -81,13 +81,6 @@ export function useGoogleLiveSession(
       }
 
       data = JSON.parse(jsonString);
-
-      // Only log non-audio messages to reduce spam
-      if (
-        !data.serverContent?.modelTurn?.parts?.some((p: any) => p.inlineData)
-      ) {
-        console.log("GOOGLE LIVE MESSAGE:", JSON.stringify(data, null, 2));
-      }
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
       handlers.onError?.(error);
@@ -101,7 +94,7 @@ export function useGoogleLiveSession(
       return;
     }
 
-    // Handle audio data (Google's actual format)
+    // Handle audio data (Google's actual format from sample code: turn.data)
     if (data.data) {
       const audioData = data.data;
       if (googleLive.audioManager && audioData) {
@@ -118,11 +111,8 @@ export function useGoogleLiveSession(
 
         // Check for duplicates
         if (processedToolCalls.has(callId)) {
-          console.warn(`⚠️ Skipping duplicate tool call: ${callId} (${fc.name})`);
           continue;
         }
-
-        console.log(`✅ Processing new tool call: ${callId} (${fc.name})`);
 
         // Mark as processed BEFORE calling handler to prevent double execution
         processedToolCalls.add(callId);
@@ -134,7 +124,6 @@ export function useGoogleLiveSession(
         };
 
         const argStr = JSON.stringify(fc.args || {});
-        console.log(`Tool call: ${fc.name}(${argStr})`);
 
         // Call handler immediately - don't store in pendingToolCalls since we're handling it now
         handlers.onToolCall?.(toolCallMsg, callId, argStr);
@@ -165,7 +154,7 @@ export function useGoogleLiveSession(
             handlers.onTextDelta?.(part.text);
           }
 
-          // Handle audio response
+          // Handle audio response (inlineData format)
           if (part.inlineData) {
             const audioData = part.inlineData.data;
             if (googleLive.audioManager && audioData) {
@@ -183,55 +172,6 @@ export function useGoogleLiveSession(
               pendingToolCalls.set(callId, functionCall);
             }
           }
-
-          // Handle executable code - parse it and convert to function call
-          if (part.executableCode && part.executableCode.language === "PYTHON") {
-            const code = part.executableCode.code;
-            console.log("Parsing Python code to extract function call:", code);
-
-            // Parse Python code like: default_api.functionName(arg1='value1', arg2='value2')
-            const match = code.match(/default_api\.(\w+)\((.*?)\)/);
-            if (match) {
-              const functionName = match[1];
-              const argsString = match[2];
-
-              // Parse arguments (simple parser for key='value' pairs)
-              const args: any = {};
-              const argMatches = argsString.matchAll(/(\w+)=([^,]+)/g);
-              for (const argMatch of argMatches) {
-                const key = argMatch[1];
-                let value = argMatch[2].trim();
-                // Remove quotes
-                if (
-                  (value.startsWith("'") && value.endsWith("'")) ||
-                  (value.startsWith('"') && value.endsWith('"'))
-                ) {
-                  value = value.slice(1, -1);
-                }
-                args[key] = value;
-              }
-
-              console.log(
-                `Converted code execution to function call: ${functionName}`,
-                args,
-              );
-
-              // Create a synthetic function call
-              const callId = `code-exec-${Date.now()}`;
-              const syntheticFunctionCall = {
-                id: callId,
-                name: functionName,
-                args: args,
-              };
-
-              pendingToolCalls.set(callId, syntheticFunctionCall);
-            } else {
-              console.warn(
-                "Could not parse executable code into function call:",
-                code,
-              );
-            }
-          }
         }
 
         // Check if turn is complete
@@ -241,7 +181,6 @@ export function useGoogleLiveSession(
           // Process all pending tool calls (from old serverContent.modelTurn.parts format)
           for (const [callId, functionCall] of pendingToolCalls.entries()) {
             if (!processedToolCalls.has(callId)) {
-              console.log(`⚠️ Processing pending tool call from turnComplete: ${callId}`);
               const toolCallMsg: ToolCallMessage = {
                 type: "response.function_call_arguments.done",
                 call_id: callId,
@@ -249,11 +188,8 @@ export function useGoogleLiveSession(
               };
 
               const argStr = JSON.stringify(functionCall.args || {});
-              console.log(`MSG: toolcall\n${argStr}`);
               processedToolCalls.add(callId);
               handlers.onToolCall?.(toolCallMsg, callId, argStr);
-            } else {
-              console.log(`✓ Skipping already processed tool call: ${callId}`);
             }
           }
 
@@ -266,7 +202,7 @@ export function useGoogleLiveSession(
 
     // Handle setup complete
     if (data.setupComplete) {
-      console.log("Google Live API setup complete");
+      // Setup is complete, connection is ready
     }
   };
 
@@ -434,8 +370,6 @@ export function useGoogleLiveSession(
           startResponse: startResponse.value,
         }) ?? DEFAULT_GOOGLE_LIVE_MODEL_ID;
 
-      console.log(`INSTRUCTIONS:\n${instructions}`);
-
       // Establish WebSocket connection
       const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${startResponse.value.googleApiKey}`;
 
@@ -483,8 +417,6 @@ export function useGoogleLiveSession(
       return false;
     }
 
-    console.log(`MSG:\n`, text);
-
     // Google Live API accepts simple string for turns
     const success = sendWebSocketMessage({
       clientContent: {
@@ -524,7 +456,6 @@ export function useGoogleLiveSession(
   const sendInstructions = (instructions: string) => {
     // Google Live API doesn't support mid-conversation instruction updates
     // We'll send it as a user message instead
-    console.log("Sending instructions as user message:", instructions);
     return sendUserMessage(instructions);
   };
 

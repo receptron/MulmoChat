@@ -3,7 +3,7 @@
 import {
   encodeAudioToPCM16,
   decodePCM16ToFloat32,
-  resampleAudio,
+  resampleAudioSync,
 } from "./audioCodec";
 
 /**
@@ -13,10 +13,13 @@ export class AudioStreamManager {
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private processorNode: ScriptProcessorNode | null = null;
+  private filterNode: BiquadFilterNode | null = null;
   private playbackQueue: Float32Array[] = [];
   private isPlayingAudio = false;
   private playbackSourceNode: AudioBufferSourceNode | null = null;
   private nextPlaybackTime = 0;
+  private playbackGainNode: GainNode | null = null;
+  private scheduledBuffersCount = 0;
 
   /**
    * Start capturing audio from microphone
@@ -41,6 +44,13 @@ export class AudioStreamManager {
     // Create source from microphone stream
     this.sourceNode = this.audioContext.createMediaStreamSource(stream);
 
+    // Create low-pass filter to reduce noise and prevent aliasing
+    // Set cutoff frequency just below Nyquist frequency of target sample rate
+    this.filterNode = this.audioContext.createBiquadFilter();
+    this.filterNode.type = "lowpass";
+    this.filterNode.frequency.value = targetSampleRate / 2 - 1000; // ~7kHz for 16kHz output
+    this.filterNode.Q.value = 0.7; // Moderate resonance
+
     // Create script processor (buffer size 4096)
     // Note: ScriptProcessorNode is deprecated but AudioWorklet requires more setup
     this.processorNode = this.audioContext.createScriptProcessor(4096, 1, 1);
@@ -48,10 +58,10 @@ export class AudioStreamManager {
     this.processorNode.onaudioprocess = (event) => {
       const inputData = event.inputBuffer.getChannelData(0);
 
-      // Resample if needed
+      // Resample if needed using synchronous cubic interpolation (better quality than linear)
       const resampled =
         sourceSampleRate !== targetSampleRate
-          ? resampleAudio(inputData, sourceSampleRate, targetSampleRate)
+          ? resampleAudioSync(inputData, sourceSampleRate, targetSampleRate)
           : inputData;
 
       // Encode to PCM16 and send via callback
@@ -59,13 +69,14 @@ export class AudioStreamManager {
       onAudioChunk(pcm);
     };
 
-    // Connect the nodes
+    // Connect the nodes: source -> filter -> processor -> gain (muted) -> destination
     // We need to connect to destination for ScriptProcessorNode to work,
     // but we use a gain node set to 0 to prevent feedback
     const gainNode = this.audioContext.createGain();
     gainNode.gain.value = 0; // Mute the passthrough audio
 
-    this.sourceNode.connect(this.processorNode);
+    this.sourceNode.connect(this.filterNode);
+    this.filterNode.connect(this.processorNode);
     this.processorNode.connect(gainNode);
     gainNode.connect(this.audioContext.destination);
   }
@@ -77,6 +88,11 @@ export class AudioStreamManager {
     if (this.processorNode) {
       this.processorNode.disconnect();
       this.processorNode = null;
+    }
+
+    if (this.filterNode) {
+      this.filterNode.disconnect();
+      this.filterNode = null;
     }
 
     if (this.sourceNode) {
@@ -95,12 +111,22 @@ export class AudioStreamManager {
    * @param pcmData - Base64-encoded PCM data from Google
    */
   queueAudio(pcmData: string): void {
-    const float32 = decodePCM16ToFloat32(pcmData);
-    this.playbackQueue.push(float32);
+    if (!pcmData || pcmData.length === 0) {
+      return;
+    }
 
-    // Auto-start playback if not already playing
-    if (!this.isPlayingAudio) {
-      this.startPlayback();
+    try {
+      const float32 = decodePCM16ToFloat32(pcmData);
+      if (float32.length > 0) {
+        this.playbackQueue.push(float32);
+
+        // Auto-start playback if not already playing
+        if (!this.isPlayingAudio) {
+          this.startPlayback();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to decode audio data:", error);
     }
   }
 
@@ -117,60 +143,117 @@ export class AudioStreamManager {
       this.audioContext = new globalThis.AudioContext();
     }
 
+    // Create gain node for smooth volume control
+    if (!this.playbackGainNode) {
+      this.playbackGainNode = this.audioContext.createGain();
+      this.playbackGainNode.gain.value = 1.0;
+      this.playbackGainNode.connect(this.audioContext.destination);
+    }
+
     this.isPlayingAudio = true;
     this.nextPlaybackTime = this.audioContext.currentTime;
+    this.scheduledBuffersCount = 0;
 
     this.playNextChunk(sampleRate);
   }
 
   /**
-   * Play next chunk from the queue
+   * Merge multiple small chunks into larger buffer to reduce discontinuities
+   */
+  private mergeChunks(maxChunks = 5): Float32Array | null {
+    if (this.playbackQueue.length === 0) {
+      return null;
+    }
+
+    // Collect chunks to merge (up to maxChunks or all available)
+    const chunksToMerge: Float32Array[] = [];
+    let totalLength = 0;
+
+    for (let i = 0; i < Math.min(maxChunks, this.playbackQueue.length); i++) {
+      const chunk = this.playbackQueue[i];
+      if (chunk && chunk.length > 0) {
+        chunksToMerge.push(chunk);
+        totalLength += chunk.length;
+      }
+    }
+
+    if (chunksToMerge.length === 0) {
+      return null;
+    }
+
+    // Remove the chunks we're merging from the queue
+    this.playbackQueue.splice(0, chunksToMerge.length);
+
+    // Merge into a single buffer
+    const merged = new Float32Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunksToMerge) {
+      merged.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return merged;
+  }
+
+  /**
+   * Play next chunk from the queue with smooth transitions
    */
   private playNextChunk(sampleRate: number): void {
-    if (!this.isPlayingAudio || !this.audioContext) {
+    if (!this.isPlayingAudio || !this.audioContext || !this.playbackGainNode) {
       return;
     }
 
-    if (this.playbackQueue.length === 0) {
-      // No more audio in queue, check again in 100ms
-      setTimeout(() => this.playNextChunk(sampleRate), 100);
-      return;
-    }
-
-    const chunk = this.playbackQueue.shift();
-    if (!chunk) {
-      return;
-    }
-
-    // Create audio buffer
-    const audioBuffer = this.audioContext.createBuffer(
-      1, // mono
-      chunk.length,
-      sampleRate,
-    );
-
-    // Copy data to buffer
-    audioBuffer.copyToChannel(chunk, 0);
-
-    // Create source node
-    const source = this.audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(this.audioContext.destination);
-
-    // Schedule playback
     const now = this.audioContext.currentTime;
-    const startTime = Math.max(now, this.nextPlaybackTime);
-    source.start(startTime);
 
-    // Update next playback time
-    this.nextPlaybackTime = startTime + audioBuffer.duration;
+    // Keep scheduling chunks while we have data and haven't scheduled too far ahead
+    while (this.playbackQueue.length > 0 && this.scheduledBuffersCount < 3) {
+      // Merge multiple small chunks into one larger buffer to reduce clicks
+      const mergedChunk = this.mergeChunks(5);
+      if (!mergedChunk || mergedChunk.length === 0) {
+        continue;
+      }
 
-    // Play next chunk when this one is scheduled to finish
-    source.onended = () => {
-      this.playNextChunk(sampleRate);
-    };
+      // Create audio buffer
+      const audioBuffer = this.audioContext.createBuffer(
+        1, // mono
+        mergedChunk.length,
+        sampleRate,
+      );
 
-    this.playbackSourceNode = source;
+      // Copy data to buffer
+      audioBuffer.copyToChannel(mergedChunk, 0);
+
+      // Create source node
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+
+      // Connect through gain node for smooth volume control
+      source.connect(this.playbackGainNode);
+
+      // Calculate start time - ensure continuous playback
+      const startTime = Math.max(now, this.nextPlaybackTime);
+
+      try {
+        source.start(startTime);
+        this.scheduledBuffersCount++;
+
+        // Update next playback time to prevent gaps
+        this.nextPlaybackTime = startTime + audioBuffer.duration;
+
+        // Decrement counter when buffer finishes
+        source.onended = () => {
+          this.scheduledBuffersCount--;
+        };
+      } catch (error) {
+        console.error("Failed to schedule audio buffer:", error);
+      }
+    }
+
+    // Continue checking for more chunks
+    if (this.playbackQueue.length > 0 || this.scheduledBuffersCount > 0) {
+      // Check again after a short delay
+      setTimeout(() => this.playNextChunk(sampleRate), 10);
+    }
   }
 
   /**
@@ -179,6 +262,12 @@ export class AudioStreamManager {
   stopPlayback(): void {
     this.isPlayingAudio = false;
     this.playbackQueue = [];
+    this.scheduledBuffersCount = 0;
+
+    if (this.playbackGainNode) {
+      this.playbackGainNode.disconnect();
+      this.playbackGainNode = null;
+    }
 
     if (this.playbackSourceNode) {
       try {

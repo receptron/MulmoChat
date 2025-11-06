@@ -62,13 +62,55 @@ export function decodePCM16ToFloat32(base64PCM: string): Float32Array {
 }
 
 /**
- * Resample audio from one sample rate to another using linear interpolation
+ * Resample audio from one sample rate to another using high-quality browser resampling
+ * @param audioData - Input audio data
+ * @param sourceSampleRate - Source sample rate in Hz
+ * @param targetSampleRate - Target sample rate in Hz
+ * @returns Resampled audio data (Promise for async processing)
+ */
+export async function resampleAudio(
+  audioData: Float32Array,
+  sourceSampleRate: number,
+  targetSampleRate: number,
+): Promise<Float32Array> {
+  if (sourceSampleRate === targetSampleRate) {
+    return audioData;
+  }
+
+  // Use OfflineAudioContext for high-quality browser-based resampling
+  const offlineContext = new globalThis.OfflineAudioContext(
+    1, // mono
+    Math.ceil((audioData.length * targetSampleRate) / sourceSampleRate),
+    targetSampleRate,
+  );
+
+  // Create a buffer with source data
+  const sourceBuffer = offlineContext.createBuffer(
+    1,
+    audioData.length,
+    sourceSampleRate,
+  );
+  sourceBuffer.copyToChannel(audioData, 0);
+
+  // Create source node and connect to destination
+  const source = offlineContext.createBufferSource();
+  source.buffer = sourceBuffer;
+  source.connect(offlineContext.destination);
+  source.start(0);
+
+  // Render the resampled audio
+  const renderedBuffer = await offlineContext.startRendering();
+  return renderedBuffer.getChannelData(0);
+}
+
+/**
+ * Synchronous fallback resampling using cubic interpolation (better quality than linear)
  * @param audioData - Input audio data
  * @param sourceSampleRate - Source sample rate in Hz
  * @param targetSampleRate - Target sample rate in Hz
  * @returns Resampled audio data
  */
-export function resampleAudio(
+export function resampleAudioSync(
   audioData: Float32Array,
   sourceSampleRate: number,
   targetSampleRate: number,
@@ -81,15 +123,33 @@ export function resampleAudio(
   const targetLength = Math.floor(audioData.length / ratio);
   const resampled = new Float32Array(targetLength);
 
+  // Helper function for cubic interpolation
+  const cubicInterpolate = (
+    p0: number,
+    p1: number,
+    p2: number,
+    p3: number,
+    t: number,
+  ) => {
+    const a0 = p3 - p2 - p0 + p1;
+    const a1 = p0 - p1 - a0;
+    const a2 = p2 - p0;
+    const a3 = p1;
+    return a0 * t * t * t + a1 * t * t + a2 * t + a3;
+  };
+
   for (let i = 0; i < targetLength; i++) {
     const sourceIndex = i * ratio;
-    const leftIndex = Math.floor(sourceIndex);
-    const rightIndex = Math.min(leftIndex + 1, audioData.length - 1);
-    const fraction = sourceIndex - leftIndex;
+    const index = Math.floor(sourceIndex);
+    const fraction = sourceIndex - index;
 
-    // Linear interpolation
-    resampled[i] =
-      audioData[leftIndex] * (1 - fraction) + audioData[rightIndex] * fraction;
+    // Get 4 neighboring samples for cubic interpolation
+    const p0 = audioData[Math.max(0, index - 1)];
+    const p1 = audioData[index];
+    const p2 = audioData[Math.min(audioData.length - 1, index + 1)];
+    const p3 = audioData[Math.min(audioData.length - 1, index + 2)];
+
+    resampled[i] = cubicInterpolate(p0, p1, p2, p3, fraction);
   }
 
   return resampled;
