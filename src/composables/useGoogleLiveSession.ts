@@ -173,30 +173,30 @@ export function useGoogleLiveSession(
             }
           }
         }
+      }
 
-        // Check if turn is complete
-        if (serverContent.turnComplete) {
-          handlers.onTextCompleted?.();
+      // Check if turn is complete (at serverContent level, not just modelTurn)
+      if (serverContent.turnComplete) {
+        handlers.onTextCompleted?.();
 
-          // Process all pending tool calls (from old serverContent.modelTurn.parts format)
-          for (const [callId, functionCall] of pendingToolCalls.entries()) {
-            if (!processedToolCalls.has(callId)) {
-              const toolCallMsg: ToolCallMessage = {
-                type: "response.function_call_arguments.done",
-                call_id: callId,
-                name: functionCall.name,
-              };
+        // Process all pending tool calls (from old serverContent.modelTurn.parts format)
+        for (const [callId, functionCall] of pendingToolCalls.entries()) {
+          if (!processedToolCalls.has(callId)) {
+            const toolCallMsg: ToolCallMessage = {
+              type: "response.function_call_arguments.done",
+              call_id: callId,
+              name: functionCall.name,
+            };
 
-              const argStr = JSON.stringify(functionCall.args || {});
-              processedToolCalls.add(callId);
-              handlers.onToolCall?.(toolCallMsg, callId, argStr);
-            }
+            const argStr = JSON.stringify(functionCall.args || {});
+            processedToolCalls.add(callId);
+            handlers.onToolCall?.(toolCallMsg, callId, argStr);
           }
-
-          pendingToolCalls.clear();
-          conversationActive.value = false;
-          handlers.onConversationFinished?.();
         }
+
+        pendingToolCalls.clear();
+        conversationActive.value = false;
+        handlers.onConversationFinished?.();
       }
     }
 
@@ -411,7 +411,7 @@ export function useGoogleLiveSession(
     if (
       !chatActive.value ||
       !googleLive.ws ||
-      !googleLive.ws.readyState !== WebSocket.OPEN
+      googleLive.ws.readyState !== WebSocket.OPEN
     ) {
       console.warn("Cannot send text message because WebSocket is not ready.");
       return false;
