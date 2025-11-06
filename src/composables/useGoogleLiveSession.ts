@@ -2,8 +2,7 @@
 
 import { ref, shallowRef } from "vue";
 import type { StartApiResponse } from "../../server/types";
-import type { BuildContext, ToolCallMessage } from "./types";
-import { isValidToolCallMessage } from "./types";
+import type { ToolCallMessage } from "./types";
 import {
   type RealtimeSessionEventHandlers,
   type RealtimeSessionOptions,
@@ -68,6 +67,38 @@ export function useGoogleLiveSession(
     return true;
   };
 
+  /**
+   * Fix Google's double-stringification issue where array elements
+   * are returned as JSON strings instead of objects
+   */
+  const fixGoogleArgs = (args: any): any => {
+    if (Array.isArray(args)) {
+      return args.map((item) => {
+        // If array item is a string that looks like JSON, parse it
+        if (typeof item === "string" && item.startsWith("{")) {
+          try {
+            return JSON.parse(item);
+          } catch {
+            return item;
+          }
+        }
+        return fixGoogleArgs(item);
+      });
+    }
+
+    if (args && typeof args === "object") {
+      const fixed: any = {};
+      for (const key in args) {
+        if (Object.prototype.hasOwnProperty.call(args, key)) {
+          fixed[key] = fixGoogleArgs(args[key]);
+        }
+      }
+      return fixed;
+    }
+
+    return args;
+  };
+
   const handleWebSocketMessage = async (event: MessageEvent) => {
     let data: any;
 
@@ -123,7 +154,10 @@ export function useGoogleLiveSession(
           name: fc.name,
         };
 
-        const argStr = JSON.stringify(fc.args || {});
+        // Fix Google's double-stringification of array elements
+        // Google sometimes returns array items as JSON strings instead of objects
+        const fixedArgs = fixGoogleArgs(fc.args || {});
+        const argStr = JSON.stringify(fixedArgs);
 
         // Call handler immediately - don't store in pendingToolCalls since we're handling it now
         handlers.onToolCall?.(toolCallMsg, callId, argStr);
@@ -423,7 +457,7 @@ export function useGoogleLiveSession(
         turns: [
           {
             role: "user",
-            parts: [{ text: text }],
+            parts: [{ text }],
           },
         ],
         turnComplete: true,

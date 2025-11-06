@@ -101,7 +101,9 @@ export class AudioStreamManager {
     }
 
     if (this.audioContext) {
-      void this.audioContext.close();
+      this.audioContext.close().catch(() => {
+        // Ignore close errors
+      });
       this.audioContext = null;
     }
   }
@@ -272,7 +274,7 @@ export class AudioStreamManager {
     if (this.playbackSourceNode) {
       try {
         this.playbackSourceNode.stop();
-      } catch (e) {
+      } catch {
         // Ignore errors if already stopped
       }
       this.playbackSourceNode = null;
