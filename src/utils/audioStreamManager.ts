@@ -60,8 +60,14 @@ export class AudioStreamManager {
     };
 
     // Connect the nodes
+    // We need to connect to destination for ScriptProcessorNode to work,
+    // but we use a gain node set to 0 to prevent feedback
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.value = 0; // Mute the passthrough audio
+
     this.sourceNode.connect(this.processorNode);
-    this.processorNode.connect(this.audioContext.destination);
+    this.processorNode.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
   }
 
   /**
@@ -91,9 +97,11 @@ export class AudioStreamManager {
   queueAudio(pcmData: string): void {
     const float32 = decodePCM16ToFloat32(pcmData);
     this.playbackQueue.push(float32);
+    console.log(`Queued audio: ${float32.length} samples, queue size: ${this.playbackQueue.length}, playing: ${this.isPlayingAudio}`);
 
     // Auto-start playback if not already playing
     if (!this.isPlayingAudio) {
+      console.log("Starting audio playback");
       this.startPlayback();
     }
   }

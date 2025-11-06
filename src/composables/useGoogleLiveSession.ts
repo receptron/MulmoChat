@@ -81,7 +81,11 @@ export function useGoogleLiveSession(
       }
 
       data = JSON.parse(jsonString);
-      console.log("GOOGLE LIVE MESSAGE:", JSON.stringify(data, null, 2));
+
+      // Only log non-audio messages to reduce spam
+      if (!data.serverContent?.modelTurn?.parts?.some((p: any) => p.inlineData)) {
+        console.log("GOOGLE LIVE MESSAGE:", JSON.stringify(data, null, 2));
+      }
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
       handlers.onError?.(error);
@@ -113,9 +117,10 @@ export function useGoogleLiveSession(
           }
 
           // Handle audio response
-          if (part.inlineData && part.inlineData.mimeType === "audio/pcm") {
+          if (part.inlineData) {
+            console.log(`Received audio chunk, mime: ${part.inlineData.mimeType}, size: ${part.inlineData.data?.length || 0}`);
             const audioData = part.inlineData.data;
-            if (googleLive.audioManager) {
+            if (googleLive.audioManager && audioData) {
               googleLive.audioManager.queueAudio(audioData);
             }
           }
