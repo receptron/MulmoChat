@@ -411,16 +411,21 @@ export function useGoogleLiveSession(
     if (
       !chatActive.value ||
       !googleLive.ws ||
-      googleLive.ws.readyState !== WebSocket.OPEN
+      !googleLive.ws.readyState !== WebSocket.OPEN
     ) {
       console.warn("Cannot send text message because WebSocket is not ready.");
       return false;
     }
 
-    // Google Live API accepts simple string for turns
+    // Google Live API expects turns as an array of Content objects
     const success = sendWebSocketMessage({
       clientContent: {
-        turns: text,
+        turns: [
+          {
+            role: "user",
+            parts: [{ text: text }],
+          },
+        ],
         turnComplete: true,
       },
     });
