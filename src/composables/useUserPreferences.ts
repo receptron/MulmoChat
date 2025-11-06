@@ -4,7 +4,12 @@ import { reactive, watch } from "vue";
 import { DEFAULT_LANGUAGE_CODE, getLanguageName } from "../config/languages";
 import { DEFAULT_MODE_ID, getMode } from "../config/modes";
 import { pluginTools, getPluginSystemPrompts } from "../tools";
-import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
+import {
+  DEFAULT_REALTIME_MODEL_ID,
+  DEFAULT_GOOGLE_LIVE_MODEL_ID,
+  GOOGLE_LIVE_MODELS,
+  REALTIME_MODELS,
+} from "../config/models";
 import { DEFAULT_TEXT_MODEL } from "../config/textModels";
 import type { BuildContext } from "./types";
 import type { SessionTransportKind } from "./useSessionTransport";
@@ -177,8 +182,30 @@ export function useUserPreferences(): UseUserPreferencesReturn {
 
   watch(
     () => state.modelKind,
-    (val) => {
+    (val, oldVal) => {
       setStoredValue(MODEL_KIND_KEY, val);
+
+      // Auto-select appropriate default model when switching modes
+      if (val !== oldVal) {
+        if (val === "voice-realtime") {
+          // Switching to OpenAI - check if current model is valid for OpenAI
+          const isValidRealtimeModel = REALTIME_MODELS.some(
+            (m) => m.id === state.modelId,
+          );
+          if (!isValidRealtimeModel) {
+            state.modelId = DEFAULT_REALTIME_MODEL_ID;
+          }
+        } else if (val === "voice-google-live") {
+          // Switching to Google - check if current model is valid for Google
+          const isValidGoogleModel = GOOGLE_LIVE_MODELS.some(
+            (m) => m.id === state.modelId,
+          );
+          if (!isValidGoogleModel) {
+            state.modelId = DEFAULT_GOOGLE_LIVE_MODEL_ID;
+          }
+        }
+        // For text-rest mode, we use textModelId, so no need to change modelId
+      }
     },
   );
 
