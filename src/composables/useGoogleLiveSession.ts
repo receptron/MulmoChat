@@ -101,6 +101,41 @@ export function useGoogleLiveSession(
       return;
     }
 
+    // Handle audio data (Google's actual format)
+    if (data.data) {
+      const audioData = data.data;
+      if (googleLive.audioManager && audioData) {
+        googleLive.audioManager.queueAudio(audioData);
+      }
+    }
+
+    // Handle tool calls (Google's actual format)
+    if (data.toolCall) {
+      console.log("Received toolCall from Google:", data.toolCall);
+      const functionCalls = data.toolCall.functionCalls || [];
+
+      for (const fc of functionCalls) {
+        const callId = fc.id || `call-${Date.now()}`;
+
+        // Store in pendingToolCalls so we can retrieve the name later
+        pendingToolCalls.set(callId, {
+          id: callId,
+          name: fc.name,
+          args: fc.args || {},
+        });
+
+        const toolCallMsg: ToolCallMessage = {
+          type: "response.function_call_arguments.done",
+          call_id: callId,
+          name: fc.name,
+        };
+
+        const argStr = JSON.stringify(fc.args || {});
+        console.log(`Tool call: ${fc.name}(${argStr})`);
+        handlers.onToolCall?.(toolCallMsg, callId, argStr);
+      }
+    }
+
     // Handle server content
     if (data.serverContent) {
       const serverContent = data.serverContent;
@@ -133,6 +168,55 @@ export function useGoogleLiveSession(
 
             // Store for potential multi-part calls
             pendingToolCalls.set(callId, functionCall);
+          }
+
+          // Handle executable code - parse it and convert to function call
+          if (part.executableCode && part.executableCode.language === "PYTHON") {
+            const code = part.executableCode.code;
+            console.log("Parsing Python code to extract function call:", code);
+
+            // Parse Python code like: default_api.functionName(arg1='value1', arg2='value2')
+            const match = code.match(/default_api\.(\w+)\((.*?)\)/);
+            if (match) {
+              const functionName = match[1];
+              const argsString = match[2];
+
+              // Parse arguments (simple parser for key='value' pairs)
+              const args: any = {};
+              const argMatches = argsString.matchAll(/(\w+)=([^,]+)/g);
+              for (const argMatch of argMatches) {
+                const key = argMatch[1];
+                let value = argMatch[2].trim();
+                // Remove quotes
+                if (
+                  (value.startsWith("'") && value.endsWith("'")) ||
+                  (value.startsWith('"') && value.endsWith('"'))
+                ) {
+                  value = value.slice(1, -1);
+                }
+                args[key] = value;
+              }
+
+              console.log(
+                `Converted code execution to function call: ${functionName}`,
+                args,
+              );
+
+              // Create a synthetic function call
+              const callId = `code-exec-${Date.now()}`;
+              const syntheticFunctionCall = {
+                id: callId,
+                name: functionName,
+                args: args,
+              };
+
+              pendingToolCalls.set(callId, syntheticFunctionCall);
+            } else {
+              console.warn(
+                "Could not parse executable code into function call:",
+                code,
+              );
+            }
           }
         }
 
@@ -230,8 +314,13 @@ export function useGoogleLiveSession(
 
     // Add system instruction if provided
     if (instructions && instructions.trim()) {
+      // Add explicit instruction to use function calling, not code execution
+      const enhancedInstructions =
+        instructions +
+        "\n\nIMPORTANT: When you need to use tools, you MUST call the functions directly using function calling. DO NOT use code execution or write Python code to call functions. Always use the native function calling mechanism.";
+
       setupMessage.setup.systemInstruction = {
-        parts: [{ text: instructions }],
+        parts: [{ text: enhancedInstructions }],
       };
     }
 
@@ -398,18 +487,10 @@ export function useGoogleLiveSession(
 
     console.log(`MSG:\n`, text);
 
+    // Google Live API accepts simple string for turns
     const success = sendWebSocketMessage({
       clientContent: {
-        turns: [
-          {
-            role: "user",
-            parts: [
-              {
-                text,
-              },
-            ],
-          },
-        ],
+        turns: text,
         turnComplete: true,
       },
     });
