@@ -111,18 +111,21 @@ export function useGoogleLiveSession(
 
     // Handle tool calls (Google's actual format)
     if (data.toolCall) {
-      console.log("Received toolCall from Google:", data.toolCall);
       const functionCalls = data.toolCall.functionCalls || [];
 
       for (const fc of functionCalls) {
         const callId = fc.id || `call-${Date.now()}`;
 
-        // Store in pendingToolCalls so we can retrieve the name later
-        pendingToolCalls.set(callId, {
-          id: callId,
-          name: fc.name,
-          args: fc.args || {},
-        });
+        // Check for duplicates
+        if (processedToolCalls.has(callId)) {
+          console.warn(`⚠️ Skipping duplicate tool call: ${callId} (${fc.name})`);
+          continue;
+        }
+
+        console.log(`✅ Processing new tool call: ${callId} (${fc.name})`);
+
+        // Mark as processed BEFORE calling handler to prevent double execution
+        processedToolCalls.add(callId);
 
         const toolCallMsg: ToolCallMessage = {
           type: "response.function_call_arguments.done",
@@ -132,7 +135,16 @@ export function useGoogleLiveSession(
 
         const argStr = JSON.stringify(fc.args || {});
         console.log(`Tool call: ${fc.name}(${argStr})`);
+
+        // Call handler immediately - don't store in pendingToolCalls since we're handling it now
         handlers.onToolCall?.(toolCallMsg, callId, argStr);
+
+        // Store ONLY for sendFunctionCallOutput to retrieve the name later
+        pendingToolCalls.set(callId, {
+          id: callId,
+          name: fc.name,
+          args: fc.args || {},
+        });
       }
     }
 
@@ -161,13 +173,15 @@ export function useGoogleLiveSession(
             }
           }
 
-          // Handle function call
+          // Handle function call (old format - shouldn't happen with new model)
           if (part.functionCall) {
             const functionCall = part.functionCall;
             const callId = functionCall.id || `call-${Date.now()}`;
 
-            // Store for potential multi-part calls
-            pendingToolCalls.set(callId, functionCall);
+            // Skip if already processed
+            if (!processedToolCalls.has(callId)) {
+              pendingToolCalls.set(callId, functionCall);
+            }
           }
 
           // Handle executable code - parse it and convert to function call
@@ -224,9 +238,10 @@ export function useGoogleLiveSession(
         if (serverContent.turnComplete) {
           handlers.onTextCompleted?.();
 
-          // Process all pending tool calls
+          // Process all pending tool calls (from old serverContent.modelTurn.parts format)
           for (const [callId, functionCall] of pendingToolCalls.entries()) {
             if (!processedToolCalls.has(callId)) {
+              console.log(`⚠️ Processing pending tool call from turnComplete: ${callId}`);
               const toolCallMsg: ToolCallMessage = {
                 type: "response.function_call_arguments.done",
                 call_id: callId,
@@ -237,6 +252,8 @@ export function useGoogleLiveSession(
               console.log(`MSG: toolcall\n${argStr}`);
               processedToolCalls.add(callId);
               handlers.onToolCall?.(toolCallMsg, callId, argStr);
+            } else {
+              console.log(`✓ Skipping already processed tool call: ${callId}`);
             }
           }
 
@@ -244,25 +261,6 @@ export function useGoogleLiveSession(
           conversationActive.value = false;
           handlers.onConversationFinished?.();
         }
-      }
-    }
-
-    // Handle tool call invoke (alternative format)
-    if (data.toolCall) {
-      const toolCall = data.toolCall;
-      const callId = toolCall.id || `call-${Date.now()}`;
-
-      if (!processedToolCalls.has(callId)) {
-        const toolCallMsg: ToolCallMessage = {
-          type: "response.function_call_arguments.done",
-          call_id: callId,
-          name: toolCall.functionCalls?.[0]?.name || "",
-        };
-
-        const argStr = JSON.stringify(toolCall.functionCalls?.[0]?.args || {});
-        console.log(`MSG: toolcall\n${argStr}`);
-        processedToolCalls.add(callId);
-        handlers.onToolCall?.(toolCallMsg, callId, argStr);
       }
     }
 
