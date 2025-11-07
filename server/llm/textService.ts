@@ -14,7 +14,7 @@ import {
 
 const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
   openai: "gpt-4o-mini",
-  anthropic: "claude-3-5-sonnet-latest",
+  anthropic: "claude-sonnet-4-5",
   google: "gemini-2.5-flash",
   ollama: "gpt-oss:20b",
 };
@@ -31,11 +31,10 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       "gpt-4.1-mini",
     ],
     anthropic: [
-      "claude-3-5-sonnet-latest",
-      "claude-3-5-haiku-latest",
       "claude-sonnet-4-5",
       "claude-haiku-4-5",
       "claude-opus-4-1-20250805",
+      "claude-3-5-haiku-latest",
     ],
     google: ["gemini-2.5-pro", "gemini-2.5-flash"],
     ollama: [
