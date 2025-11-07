@@ -30,6 +30,7 @@ export const MODES: Mode[] = [
       "generateImage",
       "editImage",
       "setImageStyle",
+      "takePhoto",
       "browse",
       "searchWeb",
       "openCanvas",
@@ -58,7 +59,12 @@ export const MODES: Mode[] = [
     icon: "badge",
     includePluginPrompts: true,
     pluginMode: "fixed",
-    availablePlugins: ["createForm", "presentDocument", "switchMode"],
+    availablePlugins: [
+      "createForm",
+      "presentDocument",
+      "takePhoto",
+      "switchMode",
+    ],
     prompt:
       "You are a friendly and professional clinic receptionist. Your primary role is to warmly greet patients and efficiently collect their " +
       "information using the createForm function. Follow these guidelines:\n\n" +
@@ -96,6 +102,7 @@ export const MODES: Mode[] = [
       "createForm",
       "presentDocument",
       "generateImage",
+      "takePhoto",
       "browse",
       "searchWeb",
       "map",
