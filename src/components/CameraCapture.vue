@@ -20,6 +20,30 @@
         </button>
       </div>
 
+      <!-- Camera Selector -->
+      <div v-if="cameraDevices.length > 1" class="px-4 pt-4 pb-2">
+        <label
+          for="camera-select"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Select Camera
+        </label>
+        <select
+          id="camera-select"
+          v-model="selectedDeviceId"
+          @change="switchCamera"
+          class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option
+            v-for="device in cameraDevices"
+            :key="device.deviceId"
+            :value="device.deviceId"
+          >
+            {{ device.label || `Camera ${cameraDevices.indexOf(device) + 1}` }}
+          </option>
+        </select>
+      </div>
+
       <!-- Camera Preview -->
       <div class="p-4">
         <div
@@ -78,13 +102,70 @@ const emit = defineEmits<{
 const videoRef = ref<HTMLVideoElement | null>(null);
 const stream = ref<MediaStream | null>(null);
 const error = ref<string>("");
+const cameraDevices = ref<MediaDeviceInfo[]>([]);
+const selectedDeviceId = ref<string>("");
 
 onMounted(async () => {
   try {
-    stream.value = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user" },
+    // First, enumerate available camera devices
+    await enumerateCameras();
+
+    // Start with the first available camera (or user-facing if available)
+    await startCamera();
+  } catch (err) {
+    console.error("Camera initialization failed:", err);
+    error.value =
+      err instanceof Error
+        ? err.message
+        : "Failed to access camera. Please grant camera permissions.";
+  }
+});
+
+onUnmounted(() => {
+  cleanup();
+});
+
+const enumerateCameras = async () => {
+  try {
+    // Request initial permission to get device labels
+    const tempStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
       audio: false,
     });
+    tempStream.getTracks().forEach((track) => track.stop());
+
+    // Now enumerate devices with labels
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    cameraDevices.value = devices.filter(
+      (device) => device.kind === "videoinput",
+    );
+
+    // Try to select user-facing camera by default
+    const userFacingCamera = cameraDevices.value.find((device) =>
+      device.label.toLowerCase().includes("front"),
+    );
+    selectedDeviceId.value =
+      userFacingCamera?.deviceId || cameraDevices.value[0]?.deviceId || "";
+  } catch (err) {
+    console.error("Failed to enumerate cameras:", err);
+    // Fallback: try to get at least one camera without enumeration
+    cameraDevices.value = [];
+  }
+};
+
+const startCamera = async (deviceId?: string) => {
+  cleanup();
+  error.value = "";
+
+  try {
+    const constraints: MediaStreamConstraints = {
+      video: deviceId
+        ? { deviceId: { exact: deviceId } }
+        : { facingMode: "user" },
+      audio: false,
+    };
+
+    stream.value = await navigator.mediaDevices.getUserMedia(constraints);
 
     if (videoRef.value) {
       videoRef.value.srcObject = stream.value;
@@ -96,11 +177,13 @@ onMounted(async () => {
         ? err.message
         : "Failed to access camera. Please grant camera permissions.";
   }
-});
+};
 
-onUnmounted(() => {
-  cleanup();
-});
+const switchCamera = async () => {
+  if (selectedDeviceId.value) {
+    await startCamera(selectedDeviceId.value);
+  }
+};
 
 const cleanup = () => {
   if (stream.value) {
