@@ -53,10 +53,9 @@ const takePhoto = async (
         app.unmount();
         document.body.removeChild(container);
 
-        // Return cancellation result without adding to UI
+        // Return cancellation result - LLM learns about cancellation from the function return value
         resolve({
           message: "photo capture cancelled by user",
-          instructions: "Acknowledge that the user cancelled the photo capture.",
           cancelled: true,
         });
       },
