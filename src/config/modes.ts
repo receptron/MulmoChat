@@ -135,6 +135,7 @@ export const MODES: Mode[] = [
       "createForm",
       "presentDocument",
       "generateImage",
+      "takePhoto",
       "browse",
       "searchWeb",
       "scrollToAnchor",
