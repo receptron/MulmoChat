@@ -1,5 +1,6 @@
 import * as GenerateImagePlugin from "./models/generateImage";
 import * as EditImagePlugin from "./models/editImage";
+import * as CameraPlugin from "./models/camera";
 import * as BrowsePlugin from "./models/browse";
 import * as MulmocastPlugin from "./models/mulmocast";
 import * as MapPlugin from "./models/map";
@@ -35,6 +36,7 @@ export type { ToolContext, ToolResult, ToolResultComplete, ToolPlugin };
 const pluginList = [
   GenerateImagePlugin,
   EditImagePlugin,
+  CameraPlugin,
   BrowsePlugin,
   MulmocastPlugin,
   MapPlugin,
