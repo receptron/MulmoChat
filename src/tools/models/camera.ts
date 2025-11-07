@@ -22,8 +22,8 @@ const toolDefinition = {
  * Captures a photo from the user's camera with preview UI
  */
 const takePhoto = async (
-  context: ToolContext,
-  args: Record<string, any>,
+  __context: ToolContext,
+  __args: Record<string, any>,
 ): Promise<ToolResult<ImageToolData>> => {
   return new Promise((resolve) => {
     // Create container for the camera component
