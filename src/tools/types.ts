@@ -16,6 +16,7 @@ export interface ToolResult<T = Record<string, any>, J = any> {
   instructions?: string; // follow-up instructions for the LLM
   instructionsRequired?: boolean; // if true, instructions will be sent even if suppressInstructions is enabled
   updating?: boolean; // if true, updates existing result instead of creating new one
+  cancelled?: boolean; // if true, operation was cancelled by user and should not be added to UI
 
   data?: T; // tool specific data
   viewState?: Record<string, any>; // tool specific view state

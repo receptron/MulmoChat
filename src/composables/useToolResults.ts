@@ -140,15 +140,18 @@ export function useToolResults(
       const result = await options.toolExecute(context, msg.name, args);
       console.log("TOOL RESULT", result);
 
-      const previousResult = context.currentResult;
-      if (
-        previousResult &&
-        result.updating &&
-        result.toolName === previousResult.toolName
-      ) {
-        updateExistingResult(result, previousResult);
-      } else {
-        addNewResult(result);
+      // Check if the operation was cancelled by the user
+      if (!result.cancelled) {
+        const previousResult = context.currentResult;
+        if (
+          previousResult &&
+          result.updating &&
+          result.toolName === previousResult.toolName
+        ) {
+          updateExistingResult(result, previousResult);
+        } else {
+          addNewResult(result);
+        }
       }
 
       const outputPayload = {

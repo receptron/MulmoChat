@@ -53,10 +53,11 @@ const takePhoto = async (
         app.unmount();
         document.body.removeChild(container);
 
-        // Return cancellation result
+        // Return cancellation result without adding to UI
         resolve({
           message: "photo capture cancelled by user",
           instructions: "Acknowledge that the user cancelled the photo capture.",
+          cancelled: true,
         });
       },
     });
