@@ -239,7 +239,7 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     { deep: true },
   );
 
-  const buildInstructions = ({ startResponse }: InstructionBuildContext) => {
+  const buildInstructions = ({ startResponse }: BuildContext) => {
     const mode = getMode(state.modeId);
     const pluginPrompts = mode.includePluginPrompts
       ? getPluginSystemPrompts(
@@ -254,7 +254,7 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     return `${mode.prompt}${pluginPrompts}${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
   };
 
-  const buildTools = ({ startResponse }: InstructionBuildContext) =>
+  const buildTools = ({ startResponse }: BuildContext) =>
     pluginTools(startResponse, state.enabledPlugins, state.modeId);
 
   return {

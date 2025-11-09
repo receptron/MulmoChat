@@ -39,6 +39,7 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
     google: ["gemini-2.5-pro", "gemini-2.5-flash"],
     ollama: [
       "gpt-oss:20b",
+      "gpt-oss:120b",
       "qwen3:30b",
       "phi4-mini:latest",
       // "deepseek-r1:32b", no tools
