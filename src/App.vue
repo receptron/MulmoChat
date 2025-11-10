@@ -3,9 +3,7 @@
     <div role="toolbar" class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">
         MulmoChat
-        <span class="text-sm text-gray-500 font-normal"
-          >AI-native Operating System</span
-        >
+        <span class="text-sm text-gray-500 font-normal">{{ statusLine }}</span>
       </h1>
     </div>
 
@@ -102,7 +100,10 @@ import { DEFAULT_TEXT_MODEL } from "./config/textModels";
 import {
   DEFAULT_GOOGLE_LIVE_MODEL_ID,
   GOOGLE_LIVE_MODELS,
+  REALTIME_MODELS,
 } from "./config/models";
+import { getMode } from "./config/modes";
+import { getLanguageName } from "./config/languages";
 import type { TextProvidersResponse } from "../server/types";
 import { generateUUID } from "./utils/uuid";
 
@@ -194,6 +195,49 @@ const supportsAudioInput = computed(
 const supportsAudioOutput = computed(
   () => capabilities.value.supportsAudioOutput,
 );
+
+// Status line showing Model / Mode / Language
+const statusLine = computed(() => {
+  // Get model name
+  let modelName = "Unknown";
+  if (userPreferences.modelKind === "voice-realtime") {
+    const model = REALTIME_MODELS.find((m) => m.id === userPreferences.modelId);
+    const label = model?.label || "GPT Realtime";
+    modelName = `Voice / ${label}`;
+  } else if (userPreferences.modelKind === "voice-google-live") {
+    const model = GOOGLE_LIVE_MODELS.find(
+      (m) => m.id === userPreferences.modelId,
+    );
+    const label = model?.label || "Gemini Live";
+    modelName = `Voice / ${label}`;
+  } else if (userPreferences.modelKind === "text-rest") {
+    // For text models, extract the model name from textModelId
+    const textModelId = userPreferences.textModelId;
+    if (textModelId) {
+      const parts = textModelId.split(":");
+      if (parts.length === 2) {
+        const provider = parts[0];
+        const model = parts[1];
+        const providerLabel = PROVIDER_LABELS[provider] || provider;
+        modelName = `Text / ${providerLabel} ${model}`;
+      } else {
+        // Handle case where textModelId doesn't have the expected format
+        modelName = `Text / ${textModelId}`;
+      }
+    } else {
+      modelName = "Text Mode";
+    }
+  }
+
+  // Get mode name
+  const mode = getMode(userPreferences.modeId);
+  const modeName = mode.name;
+
+  // Get language name
+  const languageName = getLanguageName(userPreferences.userLanguage);
+
+  return `${modelName} / ${modeName} / ${languageName}`;
+});
 
 async function loadTextProviders(): Promise<void> {
   try {
