@@ -14,7 +14,7 @@ export interface MarkdownToolData {
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
-  description: "Generate and display a document in markdown format.",
+  description: "Display a document in markdown format.",
   parameters: {
     type: "object" as const,
     properties: {
@@ -39,6 +39,11 @@ const pushMarkdown = async (
   let markdown = args.markdown as string;
   const title = args.title as string;
   let docUuid: string | undefined;
+
+  // Validate that markdown is provided
+  if (!markdown || markdown.trim() === "") {
+    throw new Error("Markdown content is required but was not provided");
+  }
 
   // Detect all image placeholders in the format: ![prompt](__too_be_replaced_image_path__)
   const imageRegex = /!\[([^\]]+)\]\(__too_be_replaced_image_path__\)/g;

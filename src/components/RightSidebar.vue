@@ -33,6 +33,14 @@
             formatJson(call.args)
           }}</pre>
         </div>
+        <div v-if="call.error" class="text-gray-600">
+          <div class="font-medium text-gray-700 mb-1">Error:</div>
+          <div class="bg-red-50 p-2 rounded space-y-1">
+            <div class="text-red-700 text-xs">
+              {{ call.error }}
+            </div>
+          </div>
+        </div>
         <div v-if="call.result" class="text-gray-600">
           <div class="font-medium text-gray-700 mb-1">Result:</div>
           <div class="bg-green-50 p-2 rounded space-y-1">
@@ -70,6 +78,7 @@ interface ToolCallHistoryItem {
   args: any;
   timestamp: number;
   result?: ToolResult;
+  error?: string;
 }
 
 const props = defineProps<{
