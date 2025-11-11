@@ -14,7 +14,7 @@ export interface MarkdownToolData {
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
-  description: "Generate and display a document in markdown format.",
+  description: "Display a document in markdown format.",
   parameters: {
     type: "object" as const,
     properties: {
