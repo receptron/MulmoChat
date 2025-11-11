@@ -189,6 +189,7 @@ interface ToolCallHistoryItem {
   args: any;
   timestamp: number;
   result?: ToolResult;
+  error?: string;
 }
 
 const toolCallHistory = ref<ToolCallHistoryItem[]>([]);
@@ -430,16 +431,40 @@ const {
   isDataChannelOpen,
   scrollToBottomOfSideBar: scrolling.scrollSidebarToBottom,
   scrollCurrentResultToTop: scrolling.scrollCanvasToTop,
+  onToolCallError: (toolName: string, error: string) => {
+    updateToolCallError({ name: toolName }, error);
+  },
 });
 
 // Wrapper to track results immediately
 async function handleToolCall(params: any): Promise<void> {
-  await originalHandleToolCall(params);
-  // After tool execution, update the history with the result
-  if (toolResults.value.length > 0) {
-    const latestResult = toolResults.value[toolResults.value.length - 1];
-    if (latestResult && latestResult.toolName) {
-      updateToolCallResult(latestResult.toolName, latestResult);
+  try {
+    await originalHandleToolCall(params);
+    // After tool execution, update the history with the result
+    if (toolResults.value.length > 0) {
+      const latestResult = toolResults.value[toolResults.value.length - 1];
+      if (latestResult && latestResult.toolName) {
+        updateToolCallResult(latestResult.toolName, latestResult);
+      }
+    }
+  } catch (error) {
+    // Mark the tool call as failed in history
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    updateToolCallError(params.msg, errorMessage);
+  }
+}
+
+function updateToolCallError(msg: any, errorMessage: string): void {
+  const toolName = typeof msg === "string" ? msg : msg.name || msg;
+  // Find the most recent call with this tool name that doesn't have a result or error
+  for (let i = toolCallHistory.value.length - 1; i >= 0; i--) {
+    if (
+      toolCallHistory.value[i].toolName === toolName &&
+      !toolCallHistory.value[i].result &&
+      !toolCallHistory.value[i].error
+    ) {
+      toolCallHistory.value[i].error = errorMessage;
+      break;
     }
   }
 }

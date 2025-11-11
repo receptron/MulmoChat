@@ -22,6 +22,7 @@ interface UseToolResultsOptions {
   isDataChannelOpen: () => boolean;
   scrollToBottomOfSideBar: () => void;
   scrollCurrentResultToTop: () => void;
+  onToolCallError?: (toolName: string, error: string) => void;
 }
 
 interface ToolCallMessage {
@@ -162,13 +163,18 @@ export function useToolResults(
       sendFunctionOutput(msg.call_id, outputPayload);
       await maybeSendInstructions(result.toolName, plugin, result);
     } catch (e) {
-      const errorMessage = `Failed to parse function call arguments: ${e}`;
+      const errorMessage = `Tool execution failed: ${e}`;
       console.error(`MSG: ${errorMessage}`);
       sendFunctionOutput(msg.call_id, errorMessage);
 
-      // Instruct the LLM to retry with corrected JSON
-      const retryInstruction = `The previous tool call for "${msg.name}" failed due to invalid JSON arguments. Please analyze the error and retry the tool call with properly formatted JSON arguments. Error details: ${e}`;
-      console.log(`INS:retry-after-parse-error\n${retryInstruction}`);
+      // Report error to debug panel if callback is provided
+      if (options.onToolCallError) {
+        options.onToolCallError(msg.name, errorMessage);
+      }
+
+      // Instruct the LLM about the error
+      const retryInstruction = `The previous tool call for "${msg.name}" failed with error: ${e}. Please analyze the error and try an appropriate solution.`;
+      console.log(`INS:tool-error\n${retryInstruction}`);
       options.sendInstructions(retryInstruction);
     } finally {
       isGeneratingImage.value = false;
