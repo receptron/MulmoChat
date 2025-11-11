@@ -5,15 +5,28 @@
         MulmoChat
         <span class="text-sm text-gray-500 font-normal">{{ statusLine }}</span>
       </h1>
-      <button
-        @click="toggleSidebar"
-        class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 flex items-center justify-center transition-colors"
-        :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
-      >
-        <span class="material-icons text-base">{{
-          sidebarVisible ? "menu_open" : "menu"
-        }}</span>
-      </button>
+      <div class="flex gap-2">
+        <button
+          @click="toggleSidebar"
+          class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 flex items-center justify-center transition-colors"
+          :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+        >
+          <span class="material-icons text-base">{{
+            sidebarVisible ? "menu_open" : "menu"
+          }}</span>
+        </button>
+        <button
+          @click="toggleRightSidebar"
+          :class="
+            rightSidebarVisible
+              ? 'px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded border border-blue-300 flex items-center justify-center transition-colors'
+              : 'px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 flex items-center justify-center transition-colors'
+          "
+          :title="rightSidebarVisible ? 'Hide debug panel' : 'Show debug panel'"
+        >
+          <span class="material-icons text-base">bug_report</span>
+        </button>
+      </div>
     </div>
 
     <!-- Main content area with sidebar -->
@@ -92,6 +105,13 @@
           </div>
         </div>
       </div>
+
+      <!-- Right sidebar for debugging -->
+      <RightSidebar
+        v-if="rightSidebarVisible"
+        ref="rightSidebarRef"
+        :tool-call-history="toolCallHistory"
+      />
     </div>
   </div>
 </template>
@@ -101,6 +121,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { toolExecute, getToolPlugin } from "./tools";
 import type { ToolResult } from "./tools";
 import Sidebar from "./components/Sidebar.vue";
+import RightSidebar from "./components/RightSidebar.vue";
 import { useSessionTransport } from "./composables/useSessionTransport";
 import { useUserPreferences } from "./composables/useUserPreferences";
 import { useToolResults } from "./composables/useToolResults";
@@ -118,6 +139,7 @@ import type { TextProvidersResponse } from "../server/types";
 import { generateUUID } from "./utils/uuid";
 
 const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
+const rightSidebarRef = ref<InstanceType<typeof RightSidebar> | null>(null);
 const preferences = useUserPreferences();
 const {
   state: userPreferences,
@@ -145,6 +167,55 @@ function toggleSidebar(): void {
     SIDEBAR_VISIBLE_KEY,
     sidebarVisible.value ? "true" : "false",
   );
+}
+
+// Right sidebar (debug panel) visibility state (persisted to localStorage)
+const RIGHT_SIDEBAR_VISIBLE_KEY = "right_sidebar_visible_v1";
+const rightSidebarVisible = ref<boolean>(
+  localStorage.getItem(RIGHT_SIDEBAR_VISIBLE_KEY) === "true",
+);
+
+function toggleRightSidebar(): void {
+  rightSidebarVisible.value = !rightSidebarVisible.value;
+  localStorage.setItem(
+    RIGHT_SIDEBAR_VISIBLE_KEY,
+    rightSidebarVisible.value ? "true" : "false",
+  );
+}
+
+// Tool call history for debugging
+interface ToolCallHistoryItem {
+  toolName: string;
+  args: any;
+  timestamp: number;
+  result?: ToolResult;
+}
+
+const toolCallHistory = ref<ToolCallHistoryItem[]>([]);
+
+function addToolCallToHistory(toolName: string, args: any): void {
+  toolCallHistory.value.push({
+    toolName,
+    args,
+    timestamp: Date.now(),
+  });
+  // Auto-scroll right sidebar to bottom when new item added
+  setTimeout(() => {
+    rightSidebarRef.value?.scrollToBottom();
+  }, 100);
+}
+
+function updateToolCallResult(toolName: string, result: ToolResult): void {
+  // Find the most recent call with this tool name that doesn't have a result
+  for (let i = toolCallHistory.value.length - 1; i >= 0; i--) {
+    if (
+      toolCallHistory.value[i].toolName === toolName &&
+      !toolCallHistory.value[i].result
+    ) {
+      toolCallHistory.value[i].result = result;
+      break;
+    }
+  }
 }
 
 interface TextModelOption {
@@ -342,7 +413,7 @@ const {
   selectedResult,
   isGeneratingImage,
   generatingMessage,
-  handleToolCall,
+  handleToolCall: originalHandleToolCall,
   handleSelectResult,
   handleUpdateResult,
   handleUploadFiles,
@@ -361,11 +432,31 @@ const {
   scrollCurrentResultToTop: scrolling.scrollCanvasToTop,
 });
 
+// Wrapper to track results immediately
+async function handleToolCall(params: any): Promise<void> {
+  await originalHandleToolCall(params);
+  // After tool execution, update the history with the result
+  if (toolResults.value.length > 0) {
+    const latestResult = toolResults.value[toolResults.value.length - 1];
+    if (latestResult && latestResult.toolName) {
+      updateToolCallResult(latestResult.toolName, latestResult);
+    }
+  }
+}
+
 const isListenerMode = computed(() => userPreferences.modeId === "listener");
 const lastSpeechStartedTime = ref<number | null>(null);
 
 registerEventHandlers({
   onToolCall: (msg, id, argStr) => {
+    // Track tool call in history for debugging
+    const toolName = typeof msg === "string" ? msg : msg.name || msg;
+    try {
+      const args = JSON.parse(argStr);
+      addToolCallToHistory(toolName, args);
+    } catch {
+      addToolCallToHistory(toolName, argStr);
+    }
     void handleToolCall({ msg, rawArgs: argStr });
   },
   onTextDelta: (delta) => {
@@ -513,6 +604,20 @@ watch(
   (newKind, previousKind) => {
     if (newKind !== previousKind && chatActive.value) {
       stopChat();
+    }
+  },
+);
+
+// Watch tool results and update history with results
+watch(
+  () => toolResults.value.length,
+  () => {
+    // When a new result is added, update the corresponding history entry
+    if (toolResults.value.length > 0) {
+      const latestResult = toolResults.value[toolResults.value.length - 1];
+      if (latestResult && latestResult.toolName) {
+        updateToolCallResult(latestResult.toolName, latestResult);
+      }
     }
   },
 );
