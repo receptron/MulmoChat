@@ -11,7 +11,7 @@
         :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
       >
         <span class="material-icons text-base">{{
-          sidebarVisible ? "close_fullscreen" : "open_in_full"
+          sidebarVisible ? "menu_open" : "menu"
         }}</span>
       </button>
     </div>
