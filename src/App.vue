@@ -5,11 +5,21 @@
         MulmoChat
         <span class="text-sm text-gray-500 font-normal">{{ statusLine }}</span>
       </h1>
+      <button
+        @click="toggleSidebar"
+        class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 flex items-center justify-center transition-colors"
+        :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+      >
+        <span class="material-icons text-base">{{
+          sidebarVisible ? "close_fullscreen" : "open_in_full"
+        }}</span>
+      </button>
     </div>
 
     <!-- Main content area with sidebar -->
     <div class="flex space-x-4" style="height: calc(100vh - 80px)">
       <Sidebar
+        v-if="sidebarVisible"
         ref="sidebarRef"
         :chat-active="chatActive"
         :connecting="connecting"
@@ -122,6 +132,20 @@ async function sleep(milliseconds: number): Promise<void> {
 const messages = ref<string[]>([]);
 const currentText = ref("");
 const userInput = ref("");
+
+// Sidebar visibility state (persisted to localStorage)
+const SIDEBAR_VISIBLE_KEY = "sidebar_visible_v1";
+const sidebarVisible = ref<boolean>(
+  localStorage.getItem(SIDEBAR_VISIBLE_KEY) !== "false",
+);
+
+function toggleSidebar(): void {
+  sidebarVisible.value = !sidebarVisible.value;
+  localStorage.setItem(
+    SIDEBAR_VISIBLE_KEY,
+    sidebarVisible.value ? "true" : "false",
+  );
+}
 
 interface TextModelOption {
   id: string;
