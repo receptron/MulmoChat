@@ -40,6 +40,11 @@ const pushMarkdown = async (
   const title = args.title as string;
   let docUuid: string | undefined;
 
+  // Validate that markdown is provided
+  if (!markdown || markdown.trim() === "") {
+    throw new Error("Markdown content is required but was not provided");
+  }
+
   // Detect all image placeholders in the format: ![prompt](__too_be_replaced_image_path__)
   const imageRegex = /!\[([^\]]+)\]\(__too_be_replaced_image_path__\)/g;
   const matches = [...markdown.matchAll(imageRegex)];
