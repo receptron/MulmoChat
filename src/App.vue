@@ -24,7 +24,7 @@
           "
           :title="rightSidebarVisible ? 'Hide debug panel' : 'Show debug panel'"
         >
-          <span class="material-icons text-base">bug_report</span>
+          <span class="material-icons text-base">build</span>
         </button>
       </div>
     </div>
