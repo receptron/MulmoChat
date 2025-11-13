@@ -37,6 +37,9 @@ GOOGLE_MAP_API_KEY=... (optional, required for map features)
 EXA_API_KEY=... (optional, required for AI-powered search)
 ANTHROPIC_API_KEY=... (optional, required for HTML generation)
 OLLAMA_BASE_URL=... (optional, defaults to http://127.0.0.1:11434)
+COMFYUI_BASE_URL=... (optional, defaults to http://127.0.0.1:8000)
+COMFYUI_DEFAULT_MODEL=... (optional, defaults to flux1-schnell-fp8.safetensors)
+COMFYUI_TIMEOUT_MS=... (optional, defaults to 300000ms / 5 minutes)
 ```
 
 Start a development server:
@@ -77,3 +80,56 @@ npx tsx server/tests/test-text-ollama.ts "Explain how Ollama integrates with Mul
 ```
 
 Each script prints the selected model and the normalized text returned from `POST /api/text/generate`, failing fast with logged diagnostics if the request or provider call does not succeed.
+
+## ComfyUI Integration
+
+MulmoChat integrates with the **ComfyUI Desktop application** for local image generation using advanced models like FLUX. This provides an alternative to cloud-based image generation with full control over models and workflows.
+
+### Setup
+
+1. **Install ComfyUI Desktop**: Download from [ComfyUI official site](https://www.comfy.org/)
+2. **Launch ComfyUI Desktop**: The app runs a local API server (default port: 8000)
+3. **Download Models**: Ensure you have compatible models installed (e.g., `flux1-schnell-fp8.safetensors`, `flux1-dev-fp8.safetensors`)
+4. **Configure Environment Variables** (optional):
+   ```
+   COMFYUI_BASE_URL=http://127.0.0.1:8000
+   COMFYUI_DEFAULT_MODEL=flux1-schnell-fp8.safetensors
+   COMFYUI_TIMEOUT_MS=300000
+   ```
+
+### API Endpoint
+
+- `POST /api/generate-image/comfy` - Generate images using ComfyUI workflows
+
+**Request Body:**
+```json
+{
+  "prompt": "a beautiful landscape",
+  "negativePrompt": "blurry, low quality",
+  "width": 1024,
+  "height": 1024,
+  "steps": 20,
+  "cfgScale": 8,
+  "sampler": "dpmpp_2m_sde",
+  "scheduler": "karras",
+  "denoise": 1,
+  "model": "flux1-schnell-fp8.safetensors"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "images": ["base64-encoded-image-data"],
+  "promptId": "uuid",
+  "model": "flux1-schnell-fp8.safetensors",
+  "metadata": { ... }
+}
+```
+
+### Notes
+
+- FLUX models are larger and slower than traditional models; first-time generation may take several minutes as the model loads into memory
+- The default timeout is set to 5 minutes to accommodate model loading and generation time
+- ComfyUI Desktop must be running for the API endpoint to work
