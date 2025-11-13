@@ -190,25 +190,50 @@ router.post(
 
     const negativePrompt =
       typeof body.negativePrompt === "string" ? body.negativePrompt : "";
-    const widthValue = toNumber(body.width, 512);
-    const heightValue = toNumber(body.height, 512);
-    const stepsValue = toNumber(body.steps, 20);
-    const cfgScaleValue = toNumber(body.cfgScale, 8); // was 1.5
+
+    // Detect model type from the model name
+    const isFluxModel = (modelName: string): boolean => {
+      return modelName.toLowerCase().includes("flux");
+    };
+
+    const isTurboModel = (modelName: string): boolean => {
+      return modelName.toLowerCase().includes("turbo");
+    };
+
+    // Get model name early to determine defaults
+    let modelValue =
+      typeof body.model === "string" && body.model.trim().length > 0
+        ? body.model
+        : DEFAULT_COMFY_MODEL;
+
+    // Set optimal defaults based on model type
+    const isFlux = isFluxModel(modelValue);
+    const isTurbo = isTurboModel(modelValue);
+
+    const defaultWidth = isFlux ? 1024 : 512;
+    const defaultHeight = isFlux ? 1024 : 512;
+    const defaultSteps = isFlux ? 4 : isTurbo ? 8 : 20;
+    const defaultCfg = isFlux ? 1.0 : isTurbo ? 1.5 : 8.0;
+    const defaultSampler = isFlux ? "euler" : "dpmpp_2m_sde";
+    const defaultScheduler = isFlux ? "simple" : "karras";
+
+    const widthValue = toNumber(body.width, defaultWidth);
+    const heightValue = toNumber(body.height, defaultHeight);
+
+    const stepsValue = toNumber(body.steps, defaultSteps);
+    const cfgScaleValue = toNumber(body.cfgScale, defaultCfg);
     const defaultSeed = Math.floor(Math.random() * 2 ** 32);
     const seedValue = toNumber(body.seed, defaultSeed);
     const samplerValue =
       typeof body.sampler === "string" && body.sampler.trim().length > 0
         ? body.sampler
-        : "dpmpp_2m_sde";
+        : defaultSampler;
     const schedulerValue =
       typeof body.scheduler === "string" && body.scheduler.trim().length > 0
         ? body.scheduler
-        : "karras";
+        : defaultScheduler;
     const denoiseValue = toNumber(body.denoise, 1);
-    let modelValue =
-      typeof body.model === "string" && body.model.trim().length > 0
-        ? body.model
-        : DEFAULT_COMFY_MODEL;
+
     if (!modelValue || modelValue.trim().length === 0) {
       res.status(400).json({
         error: "Model is required",
@@ -227,6 +252,10 @@ router.post(
       res.status(400).json({ error: "Prompt is required" });
       return;
     }
+
+    console.log(
+      `ComfyUI generation: ${modelValue} (${widthValue}x${heightValue}, steps=${stepsValue}, cfg=${cfgScaleValue}, sampler=${samplerValue}, scheduler=${schedulerValue})`,
+    );
 
     try {
       const workflow = buildSDXLTurboWorkflow({

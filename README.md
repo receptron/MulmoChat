@@ -106,16 +106,16 @@ MulmoChat integrates with the **ComfyUI Desktop application** for local image ge
 {
   "prompt": "a beautiful landscape",
   "negativePrompt": "blurry, low quality",
-  "width": 1024,
-  "height": 1024,
-  "steps": 20,
-  "cfgScale": 8,
-  "sampler": "dpmpp_2m_sde",
-  "scheduler": "karras",
-  "denoise": 1,
   "model": "flux1-schnell-fp8.safetensors"
 }
 ```
+
+All parameters are optional except `prompt`. The API automatically selects optimal defaults based on the model:
+- `width`, `height`: Image dimensions (auto: 1024×1024 for FLUX, 512×512 for SD)
+- `steps`: Sampling steps (auto: 4 for FLUX Schnell, 20 for SD)
+- `cfgScale`: Guidance scale (auto: 1.0 for FLUX, 8.0 for SD)
+- `sampler`: Sampling method (auto: "euler" for FLUX, "dpmpp_2m_sde" for SD)
+- `scheduler`: Noise schedule (auto: "simple" for FLUX, "karras" for SD)
 
 **Response:**
 ```json
@@ -128,8 +128,30 @@ MulmoChat integrates with the **ComfyUI Desktop application** for local image ge
 }
 ```
 
+### Model-Specific Optimizations
+
+The API automatically detects the model type and applies optimal parameters:
+
+**FLUX Models** (flux1-schnell-fp8, flux1-dev-fp8):
+- Resolution: 1024×1024 (default)
+- Steps: 4 (Schnell is optimized for speed)
+- CFG Scale: 1.0 (lower guidance works better)
+- Sampler: euler
+- Scheduler: simple
+- Generation time: ~10-30 seconds after model loading
+
+**Stable Diffusion Models** (v1-5-pruned-emaonly):
+- Resolution: 512×512 (default)
+- Steps: 20
+- CFG Scale: 8.0
+- Sampler: dpmpp_2m_sde
+- Scheduler: karras
+
+You can override these defaults by passing parameters in the request body.
+
 ### Notes
 
-- FLUX models are larger and slower than traditional models; first-time generation may take several minutes as the model loads into memory
-- The default timeout is set to 5 minutes to accommodate model loading and generation time
+- First-time generation may take longer as the model loads into memory
+- The default timeout is set to 5 minutes to accommodate model loading
 - ComfyUI Desktop must be running for the API endpoint to work
+- FLUX Schnell is optimized for speed with 4 steps, providing fast generation with good quality
