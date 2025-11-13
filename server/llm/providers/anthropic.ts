@@ -84,7 +84,7 @@ export async function generateWithAnthropic(
 
   const messageParams: MessageCreateParamsNonStreaming = {
     model: params.model,
-    max_tokens: params.maxTokens ?? 1024,
+    max_tokens: params.maxTokens ?? 8192,
     messages: toAnthropicMessages(params.conversationMessages),
   };
 
