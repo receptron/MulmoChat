@@ -351,6 +351,61 @@
             </p>
           </div>
 
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Image Generation Backend
+            </label>
+            <select
+              :value="imageGenerationBackend"
+              @change="
+                $emit(
+                  'update:imageGenerationBackend',
+                  ($event.target as HTMLSelectElement).value as
+                    | 'gemini'
+                    | 'comfyui',
+                )
+              "
+              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="gemini">Gemini (Cloud)</option>
+              <option value="comfyui">ComfyUI (Local)</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">
+              Choose between cloud-based Gemini or local ComfyUI for image
+              generation.
+            </p>
+          </div>
+
+          <div v-if="imageGenerationBackend === 'comfyui'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ComfyUI Model
+            </label>
+            <select
+              :value="comfyuiModel"
+              @change="
+                $emit(
+                  'update:comfyuiModel',
+                  ($event.target as HTMLSelectElement).value,
+                )
+              "
+              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="flux1-schnell-fp8.safetensors">
+                FLUX Schnell (Fast)
+              </option>
+              <option value="flux1-dev-fp8.safetensors">
+                FLUX Dev (Quality)
+              </option>
+              <option value="v1-5-pruned-emaonly.safetensors">
+                Stable Diffusion 1.5
+              </option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">
+              Select the ComfyUI model. FLUX models are slower but higher
+              quality.
+            </p>
+          </div>
+
           <div v-if="isCurrentModeCustomizable">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Enabled Plugins
@@ -486,6 +541,7 @@ const props = defineProps<{
   supportsAudioInput: boolean;
   supportsAudioOutput: boolean;
   imageGenerationBackend: "gemini" | "comfyui";
+  comfyuiModel: string;
   pluginConfigs: Record<string, any>;
 }>();
 
@@ -505,6 +561,7 @@ const emit = defineEmits<{
   "update:modelKind": [value: SessionTransportKind];
   "update:textModelId": [value: string];
   "update:imageGenerationBackend": [value: "gemini" | "comfyui"];
+  "update:comfyuiModel": [value: string];
   "update:pluginConfigs": [value: Record<string, any>];
   uploadFiles: [results: ToolResult[]];
 }>();

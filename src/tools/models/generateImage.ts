@@ -72,15 +72,29 @@ export async function generateImageWithBackend(
         ? "/api/generate-image/comfy"
         : "/api/generate-image";
 
+    // Get ComfyUI model if using ComfyUI backend
+    const comfyuiModel =
+      backend === "comfyui"
+        ? context?.userPreferences?.comfyuiModel ||
+          "flux1-schnell-fp8.safetensors"
+        : undefined;
+
+    const requestBody: any = {
+      prompt: finalPrompt,
+      images,
+    };
+
+    // Add model parameter for ComfyUI
+    if (backend === "comfyui" && comfyuiModel) {
+      requestBody.model = comfyuiModel;
+    }
+
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        prompt: finalPrompt,
-        images,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

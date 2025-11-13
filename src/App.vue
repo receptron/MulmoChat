@@ -55,6 +55,7 @@
         :supports-audio-input="supportsAudioInput"
         :supports-audio-output="supportsAudioOutput"
         :image-generation-backend="userPreferences.imageGenerationBackend"
+        :comfyui-model="userPreferences.comfyuiModel"
         :plugin-configs="userPreferences.pluginConfigs"
         @start-chat="startChat"
         @stop-chat="stopChat"
@@ -77,6 +78,7 @@
         @update:image-generation-backend="
           userPreferences.imageGenerationBackend = $event
         "
+        @update:comfyui-model="userPreferences.comfyuiModel = $event"
         @update:plugin-configs="userPreferences.pluginConfigs = $event"
         @upload-files="handleUploadFiles"
       />
