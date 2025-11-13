@@ -210,8 +210,8 @@ router.post(
     const isFlux = isFluxModel(modelValue);
     const isTurbo = isTurboModel(modelValue);
 
-    const defaultWidth = isFlux ? 1024 : 512;
-    const defaultHeight = isFlux ? 1024 : 512;
+    const defaultWidth = 512; // isFlux ? 1024 : 512;
+    const defaultHeight = 512; // isFlux ? 1024 : 512;
     const defaultSteps = isFlux ? 4 : isTurbo ? 8 : 20;
     const defaultCfg = isFlux ? 1.0 : isTurbo ? 1.5 : 8.0;
     const defaultSampler = isFlux ? "euler" : "dpmpp_2m_sde";
