@@ -4,11 +4,11 @@ import { randomUUID } from "crypto";
 const router: Router = express.Router();
 
 const DEFAULT_COMFY_MODEL =
-  process.env.COMFYUI_DEFAULT_MODEL ?? "sdxl_turbo.safetensors";
-const COMFY_BASE_URL = process.env.COMFYUI_BASE_URL ?? "http://127.0.0.1:8188";
+  process.env.COMFYUI_DEFAULT_MODEL ?? "flux1-schnell-fp8.safetensors";
+const COMFY_BASE_URL = process.env.COMFYUI_BASE_URL ?? "http://127.0.0.1:8000";
 
 const parsedComfyTimeout = Number.parseInt(
-  process.env.COMFYUI_TIMEOUT_MS ?? "60000",
+  process.env.COMFYUI_TIMEOUT_MS ?? "300000",
   10,
 );
 const COMFY_REQUEST_TIMEOUT_MS = Number.isFinite(parsedComfyTimeout)
