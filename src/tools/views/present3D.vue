@@ -41,6 +41,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { ToolResult } from "../types";
 import type { Present3DToolData } from "../models/present3D";
+import { parseShapeScript } from "../../utils/shapescript/parser";
+import { astToThreeJS } from "../../utils/shapescript/toThreeJS";
 
 const props = defineProps<{
   selectedResult: ToolResult<Present3DToolData>;
@@ -79,14 +81,9 @@ watch(
   },
 );
 
-// Watch for wireframe toggle
-watch(showWireframe, (value) => {
-  sceneObjects.forEach((obj) => {
-    if (obj instanceof THREE.Mesh && obj.material) {
-      const material = obj.material as THREE.MeshStandardMaterial;
-      material.wireframe = value;
-    }
-  });
+// Watch for wireframe toggle - reload scene with new setting
+watch(showWireframe, () => {
+  loadShapeScript();
 });
 
 // Watch for grid toggle
@@ -157,15 +154,16 @@ function loadShapeScript() {
     sceneObjects.forEach((obj) => scene.remove(obj));
     sceneObjects = [];
 
-    // Parse ShapeScript
+    // Parse ShapeScript into AST
     const script = props.selectedResult.data.script;
-    const objects = parseShapeScript(script);
+    const ast = parseShapeScript(script);
 
-    // Add objects to scene
-    objects.forEach((obj) => {
-      scene.add(obj);
-      sceneObjects.push(obj);
-    });
+    // Convert AST to Three.js objects
+    const group = astToThreeJS(ast, { wireframe: showWireframe.value });
+
+    // Add to scene
+    scene.add(group);
+    sceneObjects.push(group);
 
     parseError.value = null;
   } catch (error) {
@@ -173,143 +171,6 @@ function loadShapeScript() {
       error instanceof Error ? error.message : "Unknown error";
     console.error("ShapeScript parse error:", error);
   }
-}
-
-// Simple ShapeScript parser (MVP - Phase 1)
-function parseShapeScript(script: string): THREE.Object3D[] {
-  const objects: THREE.Object3D[] = [];
-
-  // Simple regex-based parser for MVP
-  // Matches: primitive { property value property value ... }
-  const primitiveRegex = /(cube|sphere|cylinder|cone)\s*\{([^}]*)\}/g;
-
-  let match;
-  while ((match = primitiveRegex.exec(script)) !== null) {
-    const primitiveType = match[1];
-    const propertiesStr = match[2];
-
-    const properties = parseProperties(propertiesStr);
-    const mesh = createPrimitive(primitiveType, properties);
-
-    if (mesh) {
-      objects.push(mesh);
-    }
-  }
-
-  return objects;
-}
-
-function parseProperties(propertiesStr: string): Record<string, any> {
-  const properties: Record<string, any> = {};
-
-  // Parse position X Y Z
-  const positionMatch = propertiesStr.match(/position\s+([-\d.]+)(?:\s+([-\d.]+))?(?:\s+([-\d.]+))?/);
-  if (positionMatch) {
-    properties.position = [
-      parseFloat(positionMatch[1]),
-      parseFloat(positionMatch[2] || "0"),
-      parseFloat(positionMatch[3] || "0")
-    ];
-  }
-
-  // Parse rotation X Y Z (in radians)
-  const rotationMatch = propertiesStr.match(/rotation\s+([-\d.]+)(?:\s+([-\d.]+))?(?:\s+([-\d.]+))?/);
-  if (rotationMatch) {
-    properties.rotation = [
-      parseFloat(rotationMatch[1]),
-      parseFloat(rotationMatch[2] || "0"),
-      parseFloat(rotationMatch[3] || "0")
-    ];
-  }
-
-  // Parse size X Y Z
-  const sizeMatch = propertiesStr.match(/size\s+([-\d.]+)(?:\s+([-\d.]+))?(?:\s+([-\d.]+))?/);
-  if (sizeMatch) {
-    const s1 = parseFloat(sizeMatch[1]);
-    const s2 = parseFloat(sizeMatch[2] || sizeMatch[1]);
-    const s3 = parseFloat(sizeMatch[3] || sizeMatch[1]);
-    properties.size = [s1, s2, s3];
-  }
-
-  // Parse color R G B (0-1 range)
-  const colorMatch = propertiesStr.match(/color\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
-  if (colorMatch) {
-    properties.color = [
-      parseFloat(colorMatch[1]),
-      parseFloat(colorMatch[2]),
-      parseFloat(colorMatch[3])
-    ];
-  }
-
-  // Parse opacity
-  const opacityMatch = propertiesStr.match(/opacity\s+([\d.]+)/);
-  if (opacityMatch) {
-    properties.opacity = parseFloat(opacityMatch[1]);
-  }
-
-  return properties;
-}
-
-function createPrimitive(
-  type: string,
-  properties: Record<string, any>
-): THREE.Mesh | null {
-  let geometry: THREE.BufferGeometry;
-
-  // Default size
-  const size = properties.size || [1, 1, 1];
-
-  // Create geometry based on type
-  switch (type) {
-    case "cube":
-      geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
-      break;
-    case "sphere":
-      geometry = new THREE.SphereGeometry(size[0], 32, 32);
-      break;
-    case "cylinder":
-      geometry = new THREE.CylinderGeometry(size[0], size[0], size[1], 32);
-      break;
-    case "cone":
-      geometry = new THREE.ConeGeometry(size[0], size[1], 32);
-      break;
-    default:
-      console.warn(`Unknown primitive type: ${type}`);
-      return null;
-  }
-
-  // Create material
-  const color = properties.color
-    ? new THREE.Color(properties.color[0], properties.color[1], properties.color[2])
-    : new THREE.Color(0.8, 0.8, 0.8);
-
-  const material = new THREE.MeshStandardMaterial({
-    color,
-    opacity: properties.opacity !== undefined ? properties.opacity : 1,
-    transparent: properties.opacity !== undefined && properties.opacity < 1,
-    wireframe: showWireframe.value,
-  });
-
-  const mesh = new THREE.Mesh(geometry, material);
-
-  // Apply transforms
-  if (properties.position) {
-    mesh.position.set(
-      properties.position[0],
-      properties.position[1],
-      properties.position[2]
-    );
-  }
-
-  if (properties.rotation) {
-    mesh.rotation.set(
-      properties.rotation[0],
-      properties.rotation[1],
-      properties.rotation[2]
-    );
-  }
-
-  return mesh;
 }
 
 function animate() {

@@ -24,6 +24,12 @@ const toolDefinition = {
         type: "string",
         description: `ShapeScript code defining the 3D scene.
 
+IMPORTANT SYNTAX RULES:
+- Only use LITERAL NUMBERS (e.g., 1, 2.5, -3.14)
+- NO expressions, functions, or variables (e.g., NO cos(), sin(), PI, i*2)
+- For loops automatically rotate objects around Y-axis
+- Colors use RGB in 0-1 range (e.g., color 1 0 0 for red)
+
 Examples:
 
 Simple sphere:
@@ -34,22 +40,21 @@ cube { position -2 0 0 color 1 0 0 }
 sphere { color 0 1 0 }
 cone { position 2 0 0 color 0 0 1 }
 
-Hollow sphere (CSG):
-difference {
-    sphere { color 1 0.5 0 }
-    sphere { size 0.8 }
+Ring pattern (objects automatically rotate around origin):
+for i to 12 {
+    cube { position 3 0 0 size 0.5 color 1 0.5 0 }
 }
 
-Ring pattern:
-for i to 8 {
-    cube { position 3 0 0 size 0.5 }
-    rotate 0 1/8 0
+Hollow sphere (CSG):
+difference {
+    sphere { color 1 0.5 0 size 2 }
+    sphere { size 1.8 }
 }
 
 Supported primitives: cube, sphere, cylinder, cone
 Supported CSG: union, difference, intersection, xor
-Transforms: position, rotation, size
-Materials: color, opacity`,
+Transforms: position X Y Z, rotation X Y Z (radians), size X Y Z
+Materials: color R G B (0-1), opacity (0-1)`,
       },
     },
     required: ["title", "script"],
@@ -95,12 +100,19 @@ export const plugin: ToolPlugin = {
 - Game boards or 3D game states
 - Any spatial or geometric concepts
 
-Use ShapeScript syntax which is concise and readable:
-- Primitives: cube, sphere, cylinder, cone
-- Properties: position, rotation, size, color, opacity
-- CSG operations: difference, union, intersection for complex shapes
-- Loops: for i to N { ... } for procedural patterns
-- Colors use RGB 0-1 range: color 1 0 0 for red
+CRITICAL ShapeScript Syntax Rules:
+- Use ONLY literal numbers (1, 2.5, -3.14) - NO expressions, variables, or functions
+- NO math operations (3*2), NO functions (cos, sin, rand, sqrt), NO constants (PI)
+- NO variable interpolation - the loop variable 'i' cannot be used in property values
+- For loops: ALL objects in the loop get IDENTICAL properties (same color, same size)
+- For loops automatically rotate objects around the Y-axis - just set position X Y Z
+- Example ring: "for i to 12 { cube { position 3 0 0 color 1 0 0 } }" creates 12 RED cubes in a circle
+- For DIFFERENT colors, create objects manually (not in a loop)
+- Colors use RGB 0-1 range: color 1 0 0 for red, color 0 1 0 for green
 
-Keep visualizations clear and well-organized. Use appropriate colors and positioning to make the visualization easy to understand.`,
+Primitives: cube, sphere, cylinder, cone
+Properties: position X Y Z, rotation X Y Z, size X Y Z, color R G B, opacity
+CSG operations: difference, union, intersection, xor
+
+Keep visualizations clear and well-organized.`,
 };
