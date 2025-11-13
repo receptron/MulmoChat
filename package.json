@@ -40,6 +40,7 @@
     "mulmocast": "^1.2.40",
     "opensheetmusicdisplay": "^1.9.2",
     "osmd-audio-player": "^0.7.0",
+    "three": "^0.181.1",
     "uuid": "^13.0.0",
     "vue": "^3.5.22",
     "vue-drawing-canvas": "^1.0.14"
@@ -49,6 +50,7 @@
     "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.3",
     "@types/node": "^24.5.2",
+    "@types/three": "^0.181.0",
     "@types/uuid": "^11.0.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "autoprefixer": "^10.4.16",

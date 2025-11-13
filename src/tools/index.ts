@@ -9,6 +9,7 @@ import * as OthelloPlugin from "./models/othello";
 import * as GoPlugin from "./models/go";
 import * as CanvasPlugin from "./models/canvas";
 import * as MarkdownPlugin from "./models/markdown";
+import * as Present3DPlugin from "./models/present3D";
 import * as QuizPlugin from "./models/quiz";
 import * as FormPlugin from "./models/form";
 import * as MusicPlugin from "./models/music";
@@ -45,6 +46,7 @@ const pluginList = [
   GoPlugin,
   CanvasPlugin,
   MarkdownPlugin,
+  Present3DPlugin,
   QuizPlugin,
   FormPlugin,
   MusicPlugin,
