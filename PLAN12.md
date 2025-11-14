@@ -232,6 +232,15 @@ const pluginList = [
 5. **Download**: Verify Excel file download works correctly
 6. **Edge Cases**: Empty cells, invalid formulas, large datasets
 
+### Good Test Prompts
+
+1. **Present Value Calculation (Complex Formulas)**:
+   ```
+   "Create a spreadsheet, which shows the present value of $1000 monthly income over a year. Use 5% as the discount rate."
+   ```
+   - Tests: Currency formatting, percentage strings, exponentiation (^), absolute references ($B$4), division, cell references
+   - Expected: Shows 12 months with discount factors and present values, total PV around $11,618
+
 ## Example LLM Usage
 
 ```

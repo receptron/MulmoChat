@@ -1,7 +1,9 @@
 <template>
   <div class="spreadsheet-container">
     <div
-      v-if="!selectedResult.data?.sheets || selectedResult.data.sheets.length === 0"
+      v-if="
+        !selectedResult.data?.sheets || selectedResult.data.sheets.length === 0
+      "
       class="min-h-full p-8 flex items-center justify-center"
     >
       <div class="text-gray-500">No spreadsheet data available</div>
@@ -47,11 +49,7 @@
           class="spreadsheet-editor"
           spellcheck="false"
         ></textarea>
-        <button
-          @click="applyChanges"
-          class="apply-btn"
-          :disabled="!hasChanges"
-        >
+        <button @click="applyChanges" class="apply-btn" :disabled="!hasChanges">
           Apply Changes
         </button>
       </details>
@@ -92,25 +90,114 @@ const hasChanges = computed(() => {
   }
 });
 
+// Helper to format a number according to Excel format code
+const formatNumber = (value: number, format: string): string => {
+  if (!format) return value.toString();
+
+  try {
+    // Handle currency formats
+    if (format.includes("$")) {
+      const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
+      const hasComma = format.includes(",");
+
+      let formatted = Math.abs(value).toFixed(decimals >= 0 ? decimals : 0);
+      if (hasComma) {
+        formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      }
+      formatted = "$" + formatted;
+      if (value < 0) formatted = "-" + formatted;
+      return formatted;
+    }
+
+    // Handle percentage
+    if (format.includes("%")) {
+      const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
+      return (value * 100).toFixed(decimals >= 0 ? decimals : 2) + "%";
+    }
+
+    // Handle comma separator
+    if (format.includes(",")) {
+      const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
+      let formatted = Math.abs(value).toFixed(decimals >= 0 ? decimals : 0);
+      formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      if (value < 0) formatted = "-" + formatted;
+      return formatted;
+    }
+
+    // Handle decimal places
+    const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
+    if (decimals >= 0) {
+      return value.toFixed(decimals);
+    }
+
+    return value.toString();
+  } catch (error) {
+    console.error("Format error:", error);
+    return value.toString();
+  }
+};
+
 // Calculate formulas in the data
 const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
   // Create a copy of the data with calculated values
-  const calculated = data.map(row => [...row]);
+  const calculated = data.map((row) => [...row]);
 
-  // Helper to get cell value by reference (e.g., "B2")
+  // Helper to extract raw value from cell
+  const getRawValue = (cell: any): number => {
+    if (typeof cell === "number") return cell;
+
+    // Handle string values
+    if (typeof cell === "string") {
+      // Handle percentage strings like "5%" or "0.4167%"
+      if (cell.includes("%")) {
+        const numericPart = cell.replace("%", "").trim();
+        const value = parseFloat(numericPart);
+        return isNaN(value) ? 0 : value / 100;
+      }
+      // Handle currency strings like "$1,000" or "$1,000.00"
+      if (cell.includes("$")) {
+        const numericPart = cell.replace(/[$,]/g, "").trim();
+        const value = parseFloat(numericPart);
+        return isNaN(value) ? 0 : value;
+      }
+      // Handle comma-separated numbers like "1,000"
+      if (cell.includes(",")) {
+        const numericPart = cell.replace(/,/g, "").trim();
+        const value = parseFloat(numericPart);
+        return isNaN(value) ? 0 : value;
+      }
+      // Handle regular numeric strings
+      return parseFloat(cell) || 0;
+    }
+
+    if (typeof cell === "object" && cell !== null) {
+      if ("v" in cell) return parseFloat(cell.v) || 0;
+      if ("f" in cell) return 0; // Will be calculated later
+    }
+    return parseFloat(cell) || 0;
+  };
+
+  // Helper to get cell value by reference (e.g., "B2" or "$B$2")
   const getCellValue = (ref: string): number => {
-    const match = ref.match(/^([A-Z]+)(\d+)$/);
+    // Remove $ symbols for absolute references
+    const cleanRef = ref.replace(/\$/g, "");
+    const match = cleanRef.match(/^([A-Z]+)(\d+)$/);
     if (!match) return 0;
 
     const col = match[1].charCodeAt(0) - 65; // A=0, B=1, etc.
     const row = parseInt(match[2]) - 1; // 1-indexed to 0-indexed
 
-    if (row < 0 || row >= calculated.length || col < 0 || col >= calculated[row].length) {
+    if (
+      row < 0 ||
+      row >= calculated.length ||
+      col < 0 ||
+      col >= calculated[row].length
+    ) {
       return 0;
     }
 
     const cell = calculated[row][col];
-    return typeof cell === 'number' ? cell : parseFloat(cell) || 0;
+    return getRawValue(cell);
   };
 
   // Helper to get range values (e.g., "B2:B11")
@@ -126,9 +213,14 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
     const values: number[] = [];
     for (let row = startRow; row <= endRow; row++) {
       for (let col = startCol; col <= endCol; col++) {
-        if (row >= 0 && row < calculated.length && col >= 0 && col < calculated[row].length) {
+        if (
+          row >= 0 &&
+          row < calculated.length &&
+          col >= 0 &&
+          col < calculated[row].length
+        ) {
           const cell = calculated[row][col];
-          const num = typeof cell === 'number' ? cell : parseFloat(cell);
+          const num = getRawValue(cell);
           if (!isNaN(num)) values.push(num);
         }
       }
@@ -153,7 +245,9 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
         const rangeMatch = formula.match(/AVERAGE\(([^)]+)\)/i);
         if (rangeMatch) {
           const values = getRangeValues(rangeMatch[1]);
-          return values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
+          return values.length > 0
+            ? values.reduce((sum, val) => sum + val, 0) / values.length
+            : 0;
         }
       }
 
@@ -187,16 +281,22 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
       // Handle simple arithmetic expressions with cell references
       // Replace cell references with their values
       let expr = formula;
-      const cellRefs = formula.match(/[A-Z]+\d+/g);
+      // Match cell references including absolute references like $B$4
+      const cellRefs = formula.match(/\$?[A-Z]+\$?\d+/g);
       if (cellRefs) {
         for (const ref of cellRefs) {
           const value = getCellValue(ref);
-          expr = expr.replace(new RegExp(ref, 'g'), value.toString());
+          // Escape $ symbols in regex
+          const escapedRef = ref.replace(/\$/g, "\\$");
+          expr = expr.replace(new RegExp(escapedRef, "g"), value.toString());
         }
       }
 
+      // Replace ^ with ** for exponentiation
+      expr = expr.replace(/\^/g, "**");
+
       // Safely evaluate the expression
-      // Only allow numbers, operators, parentheses, and whitespace
+      // Allow numbers, operators, parentheses, whitespace, and decimal points
       if (/^[\d+\-*/(). ]+$/.test(expr)) {
         return eval(expr);
       }
@@ -212,8 +312,27 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
   for (let rowIdx = 0; rowIdx < calculated.length; rowIdx++) {
     for (let colIdx = 0; colIdx < calculated[rowIdx].length; colIdx++) {
       const cell = calculated[rowIdx][colIdx];
-      if (cell && typeof cell === 'object' && 'f' in cell) {
-        calculated[rowIdx][colIdx] = evaluateFormula(cell.f);
+
+      if (cell && typeof cell === "object") {
+        // Handle formula cells
+        if ("f" in cell) {
+          const result = evaluateFormula(cell.f);
+          // Apply formatting if specified
+          if ("z" in cell && cell.z && typeof result === "number") {
+            calculated[rowIdx][colIdx] = formatNumber(result, cell.z);
+          } else {
+            calculated[rowIdx][colIdx] = result;
+          }
+        }
+        // Handle value cells with formatting
+        else if ("v" in cell) {
+          const value = cell.v;
+          if ("z" in cell && cell.z && typeof value === "number") {
+            calculated[rowIdx][colIdx] = formatNumber(value, cell.z);
+          } else {
+            calculated[rowIdx][colIdx] = value;
+          }
+        }
       }
     }
   }
