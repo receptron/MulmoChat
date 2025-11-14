@@ -61,6 +61,34 @@ const toolDefinition = {
                 type: "array",
                 description:
                   "Row of cells. Each cell can be a primitive value, formula object, or formatted cell object.",
+                items: {
+                  oneOf: [
+                    { type: "string" },
+                    { type: "number" },
+                    {
+                      type: "object",
+                      properties: {
+                        f: { type: "string", description: "Formula" },
+                        z: {
+                          type: "string",
+                          description: "Number format code",
+                        },
+                      },
+                      required: ["f"],
+                    },
+                    {
+                      type: "object",
+                      properties: {
+                        v: { description: "Value" },
+                        z: {
+                          type: "string",
+                          description: "Number format code",
+                        },
+                      },
+                      required: ["v"],
+                    },
+                  ],
+                },
               },
             },
           },
