@@ -191,10 +191,13 @@ export function useToolResults(
       (r) => r.uuid === updatedResult.uuid,
     );
     if (index !== -1) {
-      toolResults.value[index] = updatedResult;
+      // Update properties instead of replacing to maintain object reference
+      Object.assign(toolResults.value[index], updatedResult);
     }
     if (selectedResult.value?.uuid === updatedResult.uuid) {
-      updateSelectedResult(updatedResult);
+      // Update properties of selectedResult instead of replacing it
+      Object.assign(selectedResult.value, updatedResult);
+      options.scrollCurrentResultToTop();
     }
   };
 
