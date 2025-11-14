@@ -6,14 +6,7 @@ import {
   SUBTRACTION,
   INTERSECTION,
 } from "three-bvh-csg";
-import {
-  SceneNode,
-  ShapeNode,
-  CSGNode,
-  ForLoopNode,
-  Vector3,
-  Color,
-} from "./types";
+import { SceneNode, ShapeNode, CSGNode, ForLoopNode } from "./types";
 
 export interface ConversionOptions {
   wireframe?: boolean;
@@ -50,7 +43,6 @@ export class Converter {
       case "for":
         return this.convertForLoop(node);
       default:
-        console.warn(`Unknown node type:`, node);
         return null;
     }
   }
@@ -122,7 +114,6 @@ export class Converter {
       }
 
       default:
-        console.warn(`Unknown primitive: ${node.primitive}`);
         return new THREE.BoxGeometry(1, 1, 1);
     }
   }
@@ -149,7 +140,6 @@ export class Converter {
 
   private convertCSG(node: CSGNode): THREE.Object3D {
     if (node.children.length === 0) {
-      console.warn("CSG node has no children");
       return new THREE.Group();
     }
 
@@ -178,7 +168,6 @@ export class Converter {
       }
 
       if (meshes.length === 0) {
-        console.warn("CSG node has no valid meshes");
         return new THREE.Group();
       }
 
@@ -208,7 +197,7 @@ export class Converter {
           case "intersection":
             result = evaluator.evaluate(result, brush, INTERSECTION);
             break;
-          case "xor":
+          case "xor": {
             // XOR = (A - B) + (B - A)
             const aMinusB = evaluator.evaluate(
               result.clone(),
@@ -222,12 +211,11 @@ export class Converter {
             );
             result = evaluator.evaluate(aMinusB, bMinusA, ADDITION);
             break;
+          }
           case "stencil":
             // Stencil keeps shape of first but uses material of intersection
             result = evaluator.evaluate(result, brush, INTERSECTION);
             break;
-          default:
-            console.warn(`Unknown CSG operation: ${node.operation}`);
         }
       }
 
@@ -240,8 +228,7 @@ export class Converter {
       result.updateMatrixWorld(true);
 
       return result;
-    } catch (error) {
-      console.error("CSG operation failed:", error);
+    } catch {
       // Return original shapes as a group if CSG fails
       const fallbackGroup = new THREE.Group();
       for (const child of node.children) {
