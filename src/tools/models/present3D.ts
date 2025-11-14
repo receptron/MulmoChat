@@ -24,35 +24,43 @@ const toolDefinition = {
         type: "string",
         description: `ShapeScript code defining the 3D scene.
 
-IMPORTANT SYNTAX RULES:
-- Only use LITERAL NUMBERS (e.g., 1, 2.5, -3.14)
-- NO expressions, functions, or variables (e.g., NO cos(), sin(), PI, i*2)
-- For loops automatically rotate objects around Y-axis
-- Colors use RGB in 0-1 range (e.g., color 1 0 0 for red)
+CRITICAL SYNTAX RULES - READ CAREFULLY:
+1. ONLY use literal numbers: 1, 2.5, -3.14
+2. NO parentheses, NO math operators (+ - * /), NO variables (i), NO functions
+3. For loops: ALL objects get IDENTICAL property values
+4. For loops automatically rotate objects around Y-axis for circular patterns
+5. For objects in different positions, write them manually (NOT in a loop)
 
-Examples:
+WRONG - DO NOT USE:
+cylinder { position (i*1.5-2.25) 0 0 }  // ERROR: NO expressions!
+cube { size 2+3 1 1 }  // ERROR: NO operators!
+sphere { position i 0 0 }  // ERROR: NO variables!
 
-Simple sphere:
+CORRECT EXAMPLES:
+
+Simple objects:
 sphere { color 1 0 0 size 2 }
-
-Multiple objects:
 cube { position -2 0 0 color 1 0 0 }
-sphere { color 0 1 0 }
-cone { position 2 0 0 color 0 0 1 }
 
-Ring pattern (objects automatically rotate around origin):
+Ring pattern (for loops create circles):
 for i to 12 {
     cube { position 3 0 0 size 0.5 color 1 0.5 0 }
 }
 
-Hollow sphere (CSG):
+Objects in a row (write manually, NOT with loops):
+cylinder { position -2.25 0 0 size 0.4 1 color 0.8 0.8 0.8 }
+cylinder { position -0.75 0 0 size 0.4 1 color 0.8 0.8 0.8 }
+cylinder { position 0.75 0 0 size 0.4 1 color 0.8 0.8 0.8 }
+cylinder { position 2.25 0 0 size 0.4 1 color 0.8 0.8 0.8 }
+
+CSG operations:
 difference {
     sphere { color 1 0.5 0 size 2 }
     sphere { size 1.8 }
 }
 
-Supported primitives: cube, sphere, cylinder, cone
-Supported CSG: union, difference, intersection, xor
+Primitives: cube, sphere, cylinder, cone, torus
+CSG: union, difference, intersection, xor
 Transforms: position X Y Z, rotation X Y Z (radians), size X Y Z
 Materials: color R G B (0-1), opacity (0-1)`,
       },
@@ -100,19 +108,31 @@ export const plugin: ToolPlugin = {
 - Game boards or 3D game states
 - Any spatial or geometric concepts
 
-CRITICAL ShapeScript Syntax Rules:
-- Use ONLY literal numbers (1, 2.5, -3.14) - NO expressions, variables, or functions
-- NO math operations (3*2), NO functions (cos, sin, rand, sqrt), NO constants (PI)
-- NO variable interpolation - the loop variable 'i' cannot be used in property values
-- For loops: ALL objects in the loop get IDENTICAL properties (same color, same size)
-- For loops automatically rotate objects around the Y-axis - just set position X Y Z
-- Example ring: "for i to 12 { cube { position 3 0 0 color 1 0 0 } }" creates 12 RED cubes in a circle
-- For DIFFERENT colors, create objects manually (not in a loop)
-- Colors use RGB 0-1 range: color 1 0 0 for red, color 0 1 0 for green
+CRITICAL ShapeScript Syntax Rules - MUST FOLLOW:
+1. ONLY literal numbers allowed: 1, 2.5, -3.14
+2. NEVER use: parentheses (), math operators (+ - * /), variables (i), functions (cos, sin, rand)
+3. For loops: ALL objects get IDENTICAL properties - same position, same color, same size
+4. For loops automatically rotate objects to create circular patterns
+5. For objects at different positions: write each one separately (NOT in a loop)
 
-Primitives: cube, sphere, cylinder, cone
+WRONG - NEVER DO THIS:
+- cylinder { position (i*1.5-2.25) 0 0 }  // NO expressions!
+- cube { size 2+3 1 1 }  // NO operators!
+- sphere { position i 0 0 }  // NO variable i!
+- for i to 4 { cube { position i 0 0 } }  // NO variable usage!
+
+CORRECT - DO THIS:
+- Ring: "for i to 12 { cube { position 3 0 0 color 1 0 0 } }"  (12 identical red cubes in circle)
+- Row: Write each cylinder separately with different literal numbers:
+  cylinder { position -2.25 0 0 size 0.4 1 }
+  cylinder { position -0.75 0 0 size 0.4 1 }
+  cylinder { position 0.75 0 0 size 0.4 1 }
+  cylinder { position 2.25 0 0 size 0.4 1 }
+
+Primitives: cube, sphere, cylinder, cone, torus
 Properties: position X Y Z, rotation X Y Z, size X Y Z, color R G B, opacity
-CSG operations: difference, union, intersection, xor
+CSG: difference, union, intersection, xor
+Colors: RGB 0-1 range (color 1 0 0 = red, color 0 1 0 = green)
 
 Keep visualizations clear and well-organized.`,
 };
