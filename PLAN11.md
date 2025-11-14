@@ -986,6 +986,216 @@ Pattern: for i to 8 { cube { position 3 0 0 } rotate 0 1/8 0 }`,
 - [three-bvh-csg](https://github.com/gkjohnson/three-bvh-csg)
 - [TresJS](https://tresjs.org/)
 
+## Test Prompts
+
+Comprehensive list of test prompts organized by complexity and use case.
+
+### Level 1: Basic Primitives
+
+1. "Show me a red cube"
+2. "Display a blue sphere"
+3. "Create a green cylinder"
+4. "Show me a yellow cone"
+5. "Display a purple torus"
+6. "Show me a large orange sphere"
+7. "Create a small white cube"
+
+### Level 2: Multiple Objects
+
+8. "Show me three spheres in a row"
+9. "Display a cube, sphere, and cone next to each other"
+10. "Create a row of colored cubes: red, green, and blue"
+11. "Show me five spheres of different colors"
+12. "Display cubes arranged in a triangle formation"
+13. "Create a pyramid structure with spheres"
+
+### Level 3: Positioning and Transforms
+
+14. "Show me a cube floating above a sphere"
+15. "Create two spheres: one large at the center, one small above it"
+16. "Display three cylinders at different heights"
+17. "Show me cubes arranged in a 3x3 grid pattern"
+18. "Create a tilted cube"
+19. "Show me a rotated cylinder"
+20. "Display a sphere with a cube orbiting around it"
+
+### Level 4: CSG Operations - Difference
+
+21. "Show me a cube with a spherical hole"
+22. "Create a sphere with a cube-shaped hole"
+23. "Display a hollow sphere"
+24. "Show me a cylinder with a cylindrical hole through it"
+25. "Create a cube with a cross-shaped hole"
+26. "Display a donut shape using CSG"
+27. "Show me a cube with multiple spherical indentations"
+
+### Level 5: CSG Operations - Union and Intersection
+
+28. "Show me two overlapping spheres merged together"
+29. "Create a dumbbell shape using union"
+30. "Display the intersection of a cube and sphere"
+31. "Show me a rounded cube (intersection of sphere and cube)"
+32. "Create a shape from three merged cylinders"
+33. "Display overlapping cubes forming a cross"
+
+### Level 6: Procedural Patterns - Rings
+
+34. "Show me a ring of cubes"
+35. "Create a circle of spheres"
+36. "Display 8 cylinders arranged in a ring"
+37. "Show me a ring of 12 colored cubes"
+38. "Create a ring of cones pointing outward"
+39. "Display a double ring pattern"
+
+### Level 7: Procedural Patterns - Complex
+
+40. "Show me a spiral of spheres"
+41. "Create a helix pattern with cubes"
+42. "Display a flower pattern using cylinders"
+43. "Show me a radial burst pattern"
+44. "Create concentric rings of different colored spheres"
+45. "Display a starburst pattern with 16 rays"
+
+### Level 8: Molecular Structures
+
+46. "Show me a water molecule (H2O)"
+47. "Display a methane molecule (CH4)"
+48. "Create a carbon dioxide molecule (CO2)"
+49. "Show me a simple ammonia molecule (NH3)"
+50. "Display a benzene ring structure"
+51. "Create a DNA double helix segment"
+52. "Show me a simple protein alpha helix"
+
+### Level 9: Geometric Visualizations
+
+53. "Show me the Platonic solids"
+54. "Display a tesseract (4D cube) projection"
+55. "Create a Fibonacci spiral in 3D"
+56. "Show me a Klein bottle approximation"
+57. "Display a Möbius strip"
+58. "Create a torus knot"
+59. "Show me a fractal-like structure"
+
+### Level 10: Architectural Structures
+
+60. "Show me a simple house structure"
+61. "Create a bridge with support pillars"
+62. "Display a tower structure"
+63. "Show me a simple building with windows"
+64. "Create a pyramid with steps"
+65. "Display an arch structure"
+66. "Show me a simple temple with columns"
+
+### Level 11: Game Boards and Pieces
+
+67. "Show me a chess board"
+68. "Create a tic-tac-toe board in 3D"
+69. "Display a simple game die (cube with dots)"
+70. "Show me a checkers board"
+71. "Create a Rubik's cube structure"
+72. "Display a simple maze layout"
+
+### Level 12: Data Visualization
+
+73. "Show me a bar chart in 3D with values: 5, 8, 3, 9, 2"
+74. "Create a scatter plot with 10 random points"
+75. "Display a 3D pie chart with three segments"
+76. "Show me a stacked bar chart"
+77. "Create a 3D histogram"
+78. "Display a surface plot approximation"
+
+### Level 13: Mechanical Parts
+
+79. "Show me a simple gear wheel"
+80. "Create a bolt and nut"
+81. "Display a pulley system"
+82. "Show me a simple spring coil"
+83. "Create a bearing structure"
+84. "Display interlocking gears"
+
+### Level 14: Natural Forms
+
+85. "Show me a simple tree structure"
+86. "Create a snowflake pattern"
+87. "Display a flower with petals"
+88. "Show me a simple crystal structure"
+89. "Create a honeycomb pattern"
+90. "Display a shell spiral"
+
+### Level 15: Abstract Art
+
+91. "Create an abstract sculpture with geometric shapes"
+92. "Show me a balanced composition of spheres and cubes"
+93. "Display a minimalist geometric artwork"
+94. "Create a deconstructed cube sculpture"
+95. "Show me an impossible geometry structure"
+96. "Display a modern art installation concept"
+
+### Level 16: Educational Models
+
+97. "Show me a model of planetary orbits"
+98. "Create a simple atom model with electron shells"
+99. "Display the solar system inner planets"
+100. "Show me a model of crystal lattice structure"
+101. "Create a visualization of a sound wave"
+102. "Display a model of magnetic field lines"
+
+### Edge Cases and Stress Tests
+
+103. "Show me a single point (very small sphere)"
+104. "Create 100 tiny spheres in random positions"
+105. "Display nested CSG operations (cube with sphere hole with cube hole)"
+106. "Show me extremely large and extremely small objects together"
+107. "Create overlapping transparent spheres"
+108. "Display objects with very thin dimensions"
+109. "Show me a complex multi-level CSG operation"
+110. "Create a scene with all primitive types at once"
+
+### Opacity and Transparency
+
+111. "Show me a semi-transparent cube"
+112. "Create overlapping transparent spheres of different colors"
+113. "Display a glass-like sphere"
+114. "Show me transparent and opaque objects together"
+115. "Create a ghost-like translucent shape"
+
+### Color Gradients and Materials
+
+116. "Show me spheres in rainbow colors"
+117. "Create a gradient effect with multiple cubes"
+118. "Display warm-colored vs cool-colored shapes"
+119. "Show me grayscale objects"
+120. "Create a monochromatic composition"
+
+### Combined Complexity
+
+121. "Create a complex cityscape with buildings"
+122. "Show me a robot made from geometric shapes"
+123. "Display a spacecraft design"
+124. "Create a fantasy castle structure"
+125. "Show me a vehicle made from basic shapes"
+126. "Display a character face using geometric primitives"
+127. "Create a musical instrument (like a guitar) from shapes"
+128. "Show me a solar panel array"
+129. "Display a bridge spanning across a gap"
+130. "Create an artistic interpretation of a tornado"
+
+### Error Recovery Tests
+
+131. "Show me something 3D" (vague request - should generate something valid)
+132. "Create a visualization of happiness" (abstract concept)
+133. "Display the concept of infinity" (abstract)
+134. "Show me the fourth dimension" (conceptual challenge)
+135. "Create a visualization of time"
+
+### Performance Tests
+
+136. "Show me 50 spheres arranged in a grid"
+137. "Create 20 rings of cubes"
+138. "Display 100 small objects"
+139. "Show me a highly detailed structure with many parts"
+140. "Create a complex nested CSG with 5+ operations"
+
 ## Conclusion
 
 This plan provides a clear path to implementing 3D visualization capabilities in MulmoChat using ShapeScript syntax. The phased approach allows for incremental delivery of value while maintaining code quality and user experience. ShapeScript's design makes it ideal for LLM-generated content, balancing simplicity with power.

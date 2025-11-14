@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { ToolResult } from "../types";
@@ -73,12 +73,17 @@ let controls: OrbitControls;
 let animationId: number;
 let gridHelper: THREE.GridHelper;
 let sceneObjects: THREE.Object3D[] = [];
+let cameraChangeTimeout: number | null = null;
 
 // Lifecycle
 onMounted(() => {
   initScene();
   loadShapeScript();
   animate();
+  // Restore camera state after everything is initialized
+  nextTick(() => {
+    restoreCameraState();
+  });
 });
 
 onUnmounted(() => {
@@ -130,6 +135,9 @@ function initScene() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
+
+  // Save camera state when user moves the camera
+  controls.addEventListener("change", handleCameraChange);
 
   // Add lights
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -196,6 +204,68 @@ function resetCamera() {
   controls.reset();
 }
 
+function restoreCameraState() {
+  if (!camera || !controls) {
+    return;
+  }
+
+  if (!props.selectedResult?.viewState?.cameraState) {
+    return;
+  }
+
+  const state = props.selectedResult.viewState.cameraState;
+
+  if (state.position) {
+    camera.position.set(state.position.x, state.position.y, state.position.z);
+  }
+
+  if (state.target) {
+    controls.target.set(state.target.x, state.target.y, state.target.z);
+  }
+
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
+function saveCameraState() {
+  const cameraState = {
+    position: {
+      x: camera.position.x,
+      y: camera.position.y,
+      z: camera.position.z,
+    },
+    target: {
+      x: controls.target.x,
+      y: controls.target.y,
+      z: controls.target.z,
+    },
+  };
+
+  return cameraState;
+}
+
+function handleCameraChange() {
+  // Debounce camera state updates to avoid excessive emits
+  if (cameraChangeTimeout !== null) {
+    clearTimeout(cameraChangeTimeout);
+  }
+
+  cameraChangeTimeout = window.setTimeout(() => {
+    updateCameraState();
+  }, 500); // Wait 500ms after user stops moving camera
+}
+
+function updateCameraState() {
+  const updatedResult: ToolResult<Present3DToolData> = {
+    ...props.selectedResult,
+    viewState: {
+      cameraState: saveCameraState(),
+    },
+  };
+
+  emit("updateResult", updatedResult);
+}
+
 function toggleWireframe() {
   showWireframe.value = !showWireframe.value;
 }
@@ -205,6 +275,9 @@ function toggleGrid() {
 }
 
 function cleanup() {
+  if (cameraChangeTimeout !== null) {
+    clearTimeout(cameraChangeTimeout);
+  }
   if (animationId) {
     cancelAnimationFrame(animationId);
   }
@@ -212,6 +285,7 @@ function cleanup() {
     renderer.dispose();
   }
   if (controls) {
+    controls.removeEventListener("change", handleCameraChange);
     controls.dispose();
   }
   window.removeEventListener("resize", handleResize);
@@ -227,7 +301,7 @@ function applyScript() {
     // Try to parse the script first to validate it
     parseShapeScript(editableScript.value);
 
-    // If parsing succeeds, update the result
+    // If parsing succeeds, update the result (preserve existing viewState)
     const updatedResult: ToolResult<Present3DToolData> = {
       ...props.selectedResult,
       data: {
@@ -250,6 +324,16 @@ watch(
   () => props.selectedResult.data.script,
   (newScript) => {
     editableScript.value = newScript;
+  },
+);
+
+// Watch for selectedResult changes to restore camera state
+watch(
+  () => props.selectedResult,
+  () => {
+    nextTick(() => {
+      restoreCameraState();
+    });
   },
 );
 </script>
