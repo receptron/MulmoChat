@@ -1,90 +1,107 @@
 <template>
-  <div class="w-full h-full overflow-y-auto bg-white">
+  <div class="markdown-container">
     <div
       v-if="!selectedResult.data?.markdown"
       class="min-h-full p-8 flex items-center justify-center"
     >
       <div class="text-gray-500">No markdown content available</div>
     </div>
-    <div v-else class="min-h-full p-4">
-      <div
-        style="
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 1em;
-        "
-      >
-        <h1 style="font-size: 2em; margin: 0">
-          {{ selectedResult.title || "Document" }}
-        </h1>
-        <div style="display: flex; gap: 0.5em">
-          <button
-            @click="downloadMarkdown"
+    <template v-else>
+      <div class="markdown-content-wrapper">
+        <div class="p-4">
+          <div
             style="
-              padding: 0.5em 1em;
-              background-color: #4caf50;
-              color: white;
-              border: none;
-              border-radius: 4px;
-              cursor: pointer;
-              font-size: 0.9em;
               display: flex;
               align-items: center;
-              gap: 0.5em;
+              justify-content: space-between;
+              margin-bottom: 1em;
             "
           >
-            <span class="material-icons" style="font-size: 1.2em"
-              >download</span
-            >
-            MD
-          </button>
-          <button
-            @click="downloadPdf"
-            :disabled="!pdfPath"
-            :style="{
-              padding: '0.5em 1em',
-              backgroundColor: pdfPath ? '#2196f3' : '#ccc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: pdfPath ? 'pointer' : 'not-allowed',
-              fontSize: '0.9em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5em',
-            }"
+            <h1 style="font-size: 2em; margin: 0">
+              {{ selectedResult.title || "Document" }}
+            </h1>
+            <div style="display: flex; gap: 0.5em">
+              <button
+                @click="downloadMarkdown"
+                style="
+                  padding: 0.5em 1em;
+                  background-color: #4caf50;
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.9em;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5em;
+                "
+              >
+                <span class="material-icons" style="font-size: 1.2em"
+                  >download</span
+                >
+                MD
+              </button>
+              <button
+                @click="downloadPdf"
+                :disabled="!pdfPath"
+                :style="{
+                  padding: '0.5em 1em',
+                  backgroundColor: pdfPath ? '#2196f3' : '#ccc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: pdfPath ? 'pointer' : 'not-allowed',
+                  fontSize: '0.9em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5em',
+                }"
+              >
+                <span
+                  class="material-icons"
+                  :style="{
+                    fontSize: '1.2em',
+                    animation: isGeneratingPdf ? 'spin 1s linear infinite' : 'none',
+                  }"
+                >
+                  {{ isGeneratingPdf ? "hourglass_empty" : "download" }}
+                </span>
+                PDF
+              </button>
+            </div>
+          </div>
+          <div
+            v-if="pdfError"
+            style="
+              margin: 1em 0;
+              padding: 1em;
+              background: #ffebee;
+              border-radius: 4px;
+              color: #c62828;
+            "
           >
-            <span
-              class="material-icons"
-              :style="{
-                fontSize: '1.2em',
-                animation: isGeneratingPdf ? 'spin 1s linear infinite' : 'none',
-              }"
-            >
-              {{ isGeneratingPdf ? "hourglass_empty" : "download" }}
-            </span>
-            PDF
-          </button>
+            PDF generation failed: {{ pdfError }}
+          </div>
+          <div
+            class="markdown-content prose prose-slate max-w-none"
+            v-html="renderedHtml"
+          ></div>
         </div>
       </div>
-      <div
-        v-if="pdfError"
-        style="
-          margin: 1em 0;
-          padding: 1em;
-          background: #ffebee;
-          border-radius: 4px;
-          color: #c62828;
-        "
-      >
-        PDF generation failed: {{ pdfError }}
-      </div>
-      <div
-        class="markdown-content prose prose-slate max-w-none"
-        v-html="renderedHtml"
-      ></div>
-    </div>
+
+      <details class="markdown-source">
+        <summary>Edit Markdown Source</summary>
+        <textarea
+          v-model="editableMarkdown"
+          @input="handleMarkdownEdit"
+          class="markdown-editor"
+          spellcheck="false"
+        ></textarea>
+        <button @click="applyMarkdown" class="apply-btn" :disabled="!hasChanges">
+          Apply Changes
+        </button>
+      </details>
+    </template>
   </div>
 </template>
 
@@ -104,6 +121,12 @@ const emit = defineEmits<{
 
 const isGeneratingPdf = ref(false);
 const pdfError = ref<string | null>(null);
+const editableMarkdown = ref(props.selectedResult.data?.markdown || "");
+
+// Check if markdown has been modified
+const hasChanges = computed(() => {
+  return editableMarkdown.value !== props.selectedResult.data?.markdown;
+});
 
 const pdfPath = computed(() => props.selectedResult?.data?.pdfPath || null);
 
@@ -248,9 +271,54 @@ const downloadPdf = async () => {
     );
   }
 };
+
+function handleMarkdownEdit() {
+  // Just update the local state, don't apply yet
+  // User needs to click "Apply Changes" button
+}
+
+function applyMarkdown() {
+  // Update the result with new markdown content
+  const updatedResult: ToolResult<MarkdownToolData> = {
+    ...props.selectedResult,
+    data: {
+      ...props.selectedResult.data,
+      markdown: editableMarkdown.value,
+      // Reset pdfPath since markdown has changed
+      pdfPath: undefined,
+    },
+  };
+
+  emit("updateResult", updatedResult);
+
+  // The renderedHtml will be updated automatically via computed property
+  // and PDF will be regenerated via the existing watch
+}
+
+// Watch for external changes to selectedResult (when user clicks different result)
+watch(
+  () => props.selectedResult.data?.markdown,
+  (newMarkdown) => {
+    editableMarkdown.value = newMarkdown || "";
+  },
+);
 </script>
 
 <style scoped>
+.markdown-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.markdown-content-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
 .markdown-content :deep(h1) {
   font-size: 2rem;
   font-weight: bold;
@@ -300,5 +368,88 @@ const downloadPdf = async () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+.markdown-source {
+  padding: 0.5rem;
+  background: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+  font-family: monospace;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.markdown-source[open] {
+  padding: 1rem;
+}
+
+.markdown-source summary {
+  cursor: pointer;
+  user-select: none;
+  padding: 0.5rem;
+  background: #e8e8e8;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #333;
+}
+
+.markdown-source[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+.markdown-source summary:hover {
+  background: #d8d8d8;
+}
+
+.markdown-editor {
+  width: 100%;
+  height: 40vh;
+  padding: 1rem;
+  background: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  color: #333;
+  font-family: "Courier New", monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.markdown-editor:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.apply-btn {
+  padding: 0.5rem 1rem;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+
+.apply-btn:hover {
+  background: #45a049;
+}
+
+.apply-btn:active {
+  background: #3d8b40;
+}
+
+.apply-btn:disabled {
+  background: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.apply-btn:disabled:hover {
+  background: #cccccc;
 }
 </style>
