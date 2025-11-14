@@ -1,5 +1,12 @@
 import * as THREE from "three";
 import {
+  Brush,
+  Evaluator,
+  ADDITION,
+  SUBTRACTION,
+  INTERSECTION,
+} from "three-bvh-csg";
+import {
   SceneNode,
   ShapeNode,
   CSGNode,
@@ -75,15 +82,18 @@ export class Converter {
       mesh.rotation.set(...node.properties.rotation);
     }
 
-    if (node.properties.size) {
-      mesh.scale.set(...node.properties.size);
-    }
+    // Note: size is already baked into geometry, don't apply as scale
 
     return mesh;
   }
 
   private createGeometry(node: ShapeNode): THREE.BufferGeometry {
-    const size = node.properties.size || [1, 1, 1];
+    let size = node.properties.size || [1, 1, 1];
+
+    // If only one dimension specified (others are 0), make it uniform
+    if (size[1] === 0 && size[2] === 0 && size[0] !== 0) {
+      size = [size[0], size[0], size[0]];
+    }
 
     switch (node.primitive) {
       case "cube":
@@ -138,22 +148,132 @@ export class Converter {
   }
 
   private convertCSG(node: CSGNode): THREE.Object3D {
-    // For now, just return a group with all children
-    // Phase 3 will implement actual CSG operations
-    const group = new THREE.Group();
-
-    for (const child of node.children) {
-      const object = this.convertNode(child);
-      if (object) {
-        group.add(object);
-      }
+    if (node.children.length === 0) {
+      console.warn("CSG node has no children");
+      return new THREE.Group();
     }
 
-    // Add a userData marker to indicate this is a CSG operation
-    group.userData.csgOperation = node.operation;
-    group.userData.isPendingCSG = true;
+    try {
+      const evaluator = new Evaluator();
 
-    return group;
+      // Convert all children to meshes
+      const meshes: THREE.Mesh[] = [];
+      for (const child of node.children) {
+        const object = this.convertNode(child);
+        if (object instanceof THREE.Mesh) {
+          // Clone the mesh to avoid modifying the original
+          const clonedMesh = object.clone();
+          clonedMesh.updateMatrixWorld(true);
+          meshes.push(clonedMesh);
+        } else if (object instanceof THREE.Group) {
+          // Extract meshes from group
+          object.traverse((obj) => {
+            if (obj instanceof THREE.Mesh) {
+              const clonedMesh = obj.clone();
+              clonedMesh.updateMatrixWorld(true);
+              meshes.push(clonedMesh);
+            }
+          });
+        }
+      }
+
+      if (meshes.length === 0) {
+        console.warn("CSG node has no valid meshes");
+        return new THREE.Group();
+      }
+
+      // Debug logging for input meshes
+      console.log(
+        `CSG ${node.operation} with ${meshes.length} meshes:`,
+        meshes.map((m) => ({
+          geometry: m.geometry.type,
+          vertices: m.geometry.attributes.position.count,
+          position: m.position,
+          scale: m.scale,
+        })),
+      );
+
+      // Convert meshes to Brushes with materials
+      const brushes = meshes.map((mesh) => {
+        const brush = new Brush(mesh.geometry, mesh.material);
+        brush.position.copy(mesh.position);
+        brush.rotation.copy(mesh.rotation);
+        brush.scale.copy(mesh.scale);
+        brush.updateMatrixWorld(true);
+        return brush;
+      });
+
+      // Perform CSG operation
+      let result = brushes[0];
+
+      for (let i = 1; i < brushes.length; i++) {
+        const brush = brushes[i];
+
+        switch (node.operation) {
+          case "union":
+            result = evaluator.evaluate(result, brush, ADDITION);
+            break;
+          case "difference":
+            result = evaluator.evaluate(result, brush, SUBTRACTION);
+            break;
+          case "intersection":
+            result = evaluator.evaluate(result, brush, INTERSECTION);
+            break;
+          case "xor":
+            // XOR = (A - B) + (B - A)
+            const aMinusB = evaluator.evaluate(
+              result.clone(),
+              brush.clone(),
+              SUBTRACTION,
+            );
+            const bMinusA = evaluator.evaluate(
+              brush.clone(),
+              result.clone(),
+              SUBTRACTION,
+            );
+            result = evaluator.evaluate(aMinusB, bMinusA, ADDITION);
+            break;
+          case "stencil":
+            // Stencil keeps shape of first but uses material of intersection
+            result = evaluator.evaluate(result, brush, INTERSECTION);
+            break;
+          default:
+            console.warn(`Unknown CSG operation: ${node.operation}`);
+        }
+      }
+
+      // Ensure the result has a proper material
+      if (!result.material) {
+        result.material = brushes[0].material;
+      }
+
+      // Update matrix world one final time
+      result.updateMatrixWorld(true);
+
+      // Debug logging
+      console.log("CSG Result:", {
+        type: result.type,
+        geometry: result.geometry,
+        material: result.material,
+        vertexCount: result.geometry?.attributes?.position?.count,
+        visible: result.visible,
+        position: result.position,
+        scale: result.scale,
+      });
+
+      return result;
+    } catch (error) {
+      console.error("CSG operation failed:", error);
+      // Return original shapes as a group if CSG fails
+      const fallbackGroup = new THREE.Group();
+      for (const child of node.children) {
+        const object = this.convertNode(child);
+        if (object) {
+          fallbackGroup.add(object);
+        }
+      }
+      return fallbackGroup;
+    }
   }
 
   private convertForLoop(node: ForLoopNode): THREE.Group {

@@ -41,6 +41,8 @@
     "opensheetmusicdisplay": "^1.9.2",
     "osmd-audio-player": "^0.7.0",
     "three": "^0.181.1",
+    "three-bvh-csg": "^0.0.17",
+    "three-mesh-bvh": "^0.9.2",
     "uuid": "^13.0.0",
     "vue": "^3.5.22",
     "vue-drawing-canvas": "^1.0.14"

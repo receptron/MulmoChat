@@ -66,7 +66,7 @@ class Lexer {
 
     while (this.pos < this.input.length) {
       const char = this.peek();
-      if (char >= "0" && char <= "9" || char === ".") {
+      if ((char >= "0" && char <= "9") || char === ".") {
         numStr += this.advance();
       } else {
         break;
@@ -149,7 +149,10 @@ class Lexer {
       const column = this.column;
 
       // Numbers
-      if (char >= "0" && char <= "9" || (char === "-" && this.peek(1) >= "0" && this.peek(1) <= "9")) {
+      if (
+        (char >= "0" && char <= "9") ||
+        (char === "-" && this.peek(1) >= "0" && this.peek(1) <= "9")
+      ) {
         tokens.push(this.readNumber());
       }
       // Identifiers and keywords
@@ -173,11 +176,7 @@ class Lexer {
         this.advance();
         tokens.push({ type: TokenType.NEWLINE, value: "\n", line, column });
       } else {
-        throw new ParseError(
-          `Unexpected character: '${char}'`,
-          line,
-          column,
-        );
+        throw new ParseError(`Unexpected character: '${char}'`, line, column);
       }
     }
 
@@ -206,7 +205,9 @@ export class Parser {
   }
 
   private peek(offset = 1): Token {
-    return this.tokens[this.pos + offset] || this.tokens[this.tokens.length - 1];
+    return (
+      this.tokens[this.pos + offset] || this.tokens[this.tokens.length - 1]
+    );
   }
 
   private advance(): Token {
@@ -261,7 +262,10 @@ export class Parser {
   private parseProperties(): Record<string, any> {
     const properties: Record<string, any> = {};
 
-    while (this.current().type !== TokenType.RBRACE && this.current().type !== TokenType.EOF) {
+    while (
+      this.current().type !== TokenType.RBRACE &&
+      this.current().type !== TokenType.EOF
+    ) {
       this.skipNewlines();
 
       const token = this.current();
@@ -313,7 +317,10 @@ export class Parser {
 
     const nodes: SceneNode[] = [];
 
-    while (this.current().type !== TokenType.RBRACE && this.current().type !== TokenType.EOF) {
+    while (
+      this.current().type !== TokenType.RBRACE &&
+      this.current().type !== TokenType.EOF
+    ) {
       const node = this.parseNode();
       if (node) {
         nodes.push(node);
@@ -325,7 +332,9 @@ export class Parser {
     return nodes;
   }
 
-  private parseShape(primitive: "cube" | "sphere" | "cylinder" | "cone" | "torus"): ShapeNode {
+  private parseShape(
+    primitive: "cube" | "sphere" | "cylinder" | "cone" | "torus",
+  ): ShapeNode {
     this.advance(); // consume primitive token
 
     let properties: Record<string, any> = {};
@@ -343,7 +352,9 @@ export class Parser {
     };
   }
 
-  private parseCSG(operation: "union" | "difference" | "intersection" | "xor" | "stencil"): CSGNode {
+  private parseCSG(
+    operation: "union" | "difference" | "intersection" | "xor" | "stencil",
+  ): CSGNode {
     this.advance(); // consume operation token
 
     const children = this.parseBlock();
@@ -453,7 +464,7 @@ export function parseShapeScript(script: string): SceneNode[] {
     const tokens = lexer.tokenize();
 
     // Filter out newline tokens for simpler parsing
-    const filteredTokens = tokens.filter(t => t.type !== TokenType.NEWLINE);
+    const filteredTokens = tokens.filter((t) => t.type !== TokenType.NEWLINE);
 
     const parser = new Parser(filteredTokens);
     return parser.parse();

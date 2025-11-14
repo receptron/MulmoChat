@@ -156,19 +156,36 @@ function loadShapeScript() {
 
     // Parse ShapeScript into AST
     const script = props.selectedResult.data.script;
+    console.log("Parsing script:", script);
     const ast = parseShapeScript(script);
+    console.log("Parsed AST:", ast);
 
     // Convert AST to Three.js objects
     const group = astToThreeJS(ast, { wireframe: showWireframe.value });
+    console.log("Created group:", group, "children:", group.children.length);
+
+    // Debug each child
+    group.children.forEach((child, i) => {
+      console.log(`Child ${i}:`, {
+        type: child.type,
+        geometry: child.geometry,
+        material: child.material,
+        position: child.position,
+        scale: child.scale,
+        visible: child.visible,
+        vertexCount: child.geometry?.attributes?.position?.count,
+      });
+    });
 
     // Add to scene
     scene.add(group);
     sceneObjects.push(group);
 
+    console.log("Scene objects:", scene.children.length);
+
     parseError.value = null;
   } catch (error) {
-    parseError.value =
-      error instanceof Error ? error.message : "Unknown error";
+    parseError.value = error instanceof Error ? error.message : "Unknown error";
     console.error("ShapeScript parse error:", error);
   }
 }
