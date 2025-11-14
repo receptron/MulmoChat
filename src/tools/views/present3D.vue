@@ -28,7 +28,7 @@
 
     <div class="viewport" ref="viewport"></div>
 
-    <details class="script-source" open>
+    <details class="script-source">
       <summary>Edit ShapeScript Source</summary>
       <textarea
         v-model="editableScript"
@@ -74,6 +74,7 @@ let animationId: number;
 let gridHelper: THREE.GridHelper;
 let sceneObjects: THREE.Object3D[] = [];
 let cameraChangeTimeout: number | null = null;
+let resizeObserver: ResizeObserver | null = null;
 
 // Lifecycle
 onMounted(() => {
@@ -154,6 +155,12 @@ function initScene() {
 
   // Handle window resize
   window.addEventListener("resize", handleResize);
+
+  // Watch for viewport size changes (e.g., when details panel opens/closes)
+  resizeObserver = new ResizeObserver(() => {
+    handleResize();
+  });
+  resizeObserver.observe(viewport.value);
 }
 
 function handleResize() {
@@ -287,6 +294,9 @@ function cleanup() {
   if (controls) {
     controls.removeEventListener("change", handleCameraChange);
     controls.dispose();
+  }
+  if (resizeObserver) {
+    resizeObserver.disconnect();
   }
   window.removeEventListener("resize", handleResize);
 }
