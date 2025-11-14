@@ -422,7 +422,7 @@ watch(
 }
 
 .script-source {
-  padding: 1rem;
+  padding: 0.5rem;
   background: #00000040;
   border-top: 1px solid #444;
   font-family: monospace;
@@ -435,6 +435,9 @@ watch(
   padding: 0.5rem;
   background: #2a2a2a;
   border-radius: 4px;
+}
+
+.script-source[open] summary {
   margin-bottom: 0.5rem;
 }
 

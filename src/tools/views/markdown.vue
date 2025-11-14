@@ -61,7 +61,9 @@
                   class="material-icons"
                   :style="{
                     fontSize: '1.2em',
-                    animation: isGeneratingPdf ? 'spin 1s linear infinite' : 'none',
+                    animation: isGeneratingPdf
+                      ? 'spin 1s linear infinite'
+                      : 'none',
                   }"
                 >
                   {{ isGeneratingPdf ? "hourglass_empty" : "download" }}
@@ -97,7 +99,11 @@
           class="markdown-editor"
           spellcheck="false"
         ></textarea>
-        <button @click="applyMarkdown" class="apply-btn" :disabled="!hasChanges">
+        <button
+          @click="applyMarkdown"
+          class="apply-btn"
+          :disabled="!hasChanges"
+        >
           Apply Changes
         </button>
       </details>
@@ -377,10 +383,6 @@ watch(
   font-family: monospace;
   font-size: 0.85rem;
   flex-shrink: 0;
-}
-
-.markdown-source[open] {
-  padding: 1rem;
 }
 
 .markdown-source summary {
