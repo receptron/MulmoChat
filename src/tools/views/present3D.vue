@@ -36,13 +36,15 @@
         class="script-editor"
         spellcheck="false"
       ></textarea>
-      <button @click="applyScript" class="apply-btn">Apply Changes</button>
+      <button @click="applyScript" class="apply-btn" :disabled="!hasChanges">
+        Apply Changes
+      </button>
     </details>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { ToolResult } from "../types";
@@ -65,6 +67,11 @@ const viewport = ref<HTMLDivElement | null>(null);
 const parseError = ref<string | null>(null);
 const showWireframe = ref(false);
 const showGrid = ref(true);
+
+// Check if script has been modified
+const hasChanges = computed(() => {
+  return editableScript.value !== props.selectedResult.data.script;
+});
 
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
@@ -472,5 +479,16 @@ watch(
 
 .apply-btn:active {
   background: #3d8b40;
+}
+
+.apply-btn:disabled {
+  background: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.apply-btn:disabled:hover {
+  background: #cccccc;
 }
 </style>
