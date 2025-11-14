@@ -36,9 +36,7 @@
         class="script-editor"
         spellcheck="false"
       ></textarea>
-      <button @click="applyScript" class="apply-btn">
-        Apply Changes
-      </button>
+      <button @click="applyScript" class="apply-btn">Apply Changes</button>
     </details>
   </div>
 </template>
