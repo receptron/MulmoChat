@@ -182,17 +182,6 @@ export class Converter {
         return new THREE.Group();
       }
 
-      // Debug logging for input meshes
-      console.log(
-        `CSG ${node.operation} with ${meshes.length} meshes:`,
-        meshes.map((m) => ({
-          geometry: m.geometry.type,
-          vertices: m.geometry.attributes.position.count,
-          position: m.position,
-          scale: m.scale,
-        })),
-      );
-
       // Convert meshes to Brushes with materials
       const brushes = meshes.map((mesh) => {
         const brush = new Brush(mesh.geometry, mesh.material);
@@ -249,17 +238,6 @@ export class Converter {
 
       // Update matrix world one final time
       result.updateMatrixWorld(true);
-
-      // Debug logging
-      console.log("CSG Result:", {
-        type: result.type,
-        geometry: result.geometry,
-        material: result.material,
-        vertexCount: result.geometry?.attributes?.position?.count,
-        visible: result.visible,
-        position: result.position,
-        scale: result.scale,
-      });
 
       return result;
     } catch (error) {

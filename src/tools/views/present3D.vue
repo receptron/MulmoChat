@@ -28,9 +28,17 @@
 
     <div class="viewport" ref="viewport"></div>
 
-    <details class="script-source">
-      <summary>View ShapeScript Source</summary>
-      <pre>{{ selectedResult.data.script }}</pre>
+    <details class="script-source" open>
+      <summary>Edit ShapeScript Source</summary>
+      <textarea
+        v-model="editableScript"
+        @input="handleScriptEdit"
+        class="script-editor"
+        spellcheck="false"
+      ></textarea>
+      <button @click="applyScript" class="apply-btn">
+        Apply Changes
+      </button>
     </details>
   </div>
 </template>
@@ -47,6 +55,12 @@ import { astToThreeJS } from "../../utils/shapescript/toThreeJS";
 const props = defineProps<{
   selectedResult: ToolResult<Present3DToolData>;
 }>();
+
+const emit = defineEmits<{
+  updateResult: [result: ToolResult<Present3DToolData>];
+}>();
+
+const editableScript = ref(props.selectedResult.data.script);
 
 // State
 const viewport = ref<HTMLDivElement | null>(null);
@@ -156,32 +170,14 @@ function loadShapeScript() {
 
     // Parse ShapeScript into AST
     const script = props.selectedResult.data.script;
-    console.log("Parsing script:", script);
     const ast = parseShapeScript(script);
-    console.log("Parsed AST:", ast);
 
     // Convert AST to Three.js objects
     const group = astToThreeJS(ast, { wireframe: showWireframe.value });
-    console.log("Created group:", group, "children:", group.children.length);
-
-    // Debug each child
-    group.children.forEach((child, i) => {
-      console.log(`Child ${i}:`, {
-        type: child.type,
-        geometry: child.geometry,
-        material: child.material,
-        position: child.position,
-        scale: child.scale,
-        visible: child.visible,
-        vertexCount: child.geometry?.attributes?.position?.count,
-      });
-    });
 
     // Add to scene
     scene.add(group);
     sceneObjects.push(group);
-
-    console.log("Scene objects:", scene.children.length);
 
     parseError.value = null;
   } catch (error) {
@@ -222,6 +218,42 @@ function cleanup() {
   }
   window.removeEventListener("resize", handleResize);
 }
+
+function handleScriptEdit() {
+  // Just update the local state, don't apply yet
+  // User needs to click "Apply Changes" button
+}
+
+function applyScript() {
+  try {
+    // Try to parse the script first to validate it
+    parseShapeScript(editableScript.value);
+
+    // If parsing succeeds, update the result
+    const updatedResult: ToolResult<Present3DToolData> = {
+      ...props.selectedResult,
+      data: {
+        script: editableScript.value,
+      },
+    };
+
+    emit("updateResult", updatedResult);
+
+    // The loadShapeScript will be called automatically via the watch
+  } catch (error) {
+    parseError.value =
+      error instanceof Error ? error.message : "Invalid ShapeScript";
+    console.error("Script validation failed:", error);
+  }
+}
+
+// Watch for external changes to selectedResult (when user clicks different result)
+watch(
+  () => props.selectedResult.data.script,
+  (newScript) => {
+    editableScript.value = newScript;
+  },
+);
 </script>
 
 <style scoped>
@@ -304,18 +336,49 @@ function cleanup() {
   padding: 0.5rem;
   background: #2a2a2a;
   border-radius: 4px;
+  margin-bottom: 0.5rem;
 }
 
 .script-source summary:hover {
   background: #3a3a3a;
 }
 
-.script-source pre {
-  margin-top: 1rem;
+.script-editor {
+  width: 100%;
+  min-height: 150px;
   padding: 1rem;
   background: #1a1a1a;
+  border: 1px solid #444;
   border-radius: 4px;
-  overflow-x: auto;
   color: #aaa;
+  font-family: "Courier New", monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-bottom: 0.5rem;
+}
+
+.script-editor:focus {
+  outline: none;
+  border-color: #666;
+  background: #222;
+}
+
+.apply-btn {
+  padding: 0.5rem 1rem;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.apply-btn:hover {
+  background: #45a049;
+}
+
+.apply-btn:active {
+  background: #3d8b40;
 }
 </style>
