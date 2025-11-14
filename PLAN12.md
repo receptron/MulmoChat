@@ -241,6 +241,69 @@ const pluginList = [
    - Tests: Currency formatting, percentage strings, exponentiation (^), absolute references ($B$4), division, cell references
    - Expected: Shows 12 months with discount factors and present values, total PV around $11,618
 
+2. **Sales Performance Dashboard (Multiple Sheets)**:
+   ```
+   "Create a sales tracking spreadsheet with two sheets: one for Q1 sales by region (North, South, East, West) with monthly data, and another for summary statistics showing total sales, average, and growth percentages."
+   ```
+   - Tests: Multiple sheets, SUM across ranges, AVERAGE, percentage calculations, formatting
+   - Expected: Two sheets with cross-sheet references, formatted currency, percentages
+
+3. **Student Grade Calculator (Weighted Averages)**:
+   ```
+   "Create a gradebook spreadsheet for 5 students with assignments (30%), midterm (30%), and final exam (40%) scores. Calculate weighted averages and show letter grades."
+   ```
+   - Tests: Weighted calculations, arithmetic with cell references, conditional logic (if possible)
+   - Expected: Shows scores, weighted totals, final percentages
+
+4. **Investment Portfolio Tracker (Formatting Variety)**:
+   ```
+   "Create an investment portfolio showing 8 stocks with shares owned, purchase price, current price, total value, and gain/loss. Format values as currency and percentages appropriately."
+   ```
+   - Tests: Multiple columns with formulas, positive/negative numbers, currency and percentage formatting
+   - Expected: Shows portfolio with formatted values, calculated gains/losses
+
+5. **Monthly Budget Planner (Categories & Totals)**:
+   ```
+   "Create a household budget spreadsheet with income sources and expense categories (rent, utilities, food, transportation, entertainment, savings). Show totals and remaining balance."
+   ```
+   - Tests: SUM function, multiple categories, currency formatting, simple subtraction
+   - Expected: Clean budget layout with categorized expenses and remaining balance
+
+6. **Loan Amortization Schedule (Advanced Financial)**:
+   ```
+   "Create a loan amortization schedule for a $250,000 mortgage at 6% annual interest over 30 years with monthly payments. Show payment number, payment amount, interest, principal, and remaining balance for the first year."
+   ```
+   - Tests: Complex financial formulas, exponentiation, division, currency formatting, running calculations
+   - Expected: 12 rows showing payment breakdown with decreasing balance
+
+7. **Unit Conversion Table (Constants & Formulas)**:
+   ```
+   "Create a temperature conversion table showing Celsius values from 0 to 100 in increments of 10, with corresponding Fahrenheit and Kelvin values."
+   ```
+   - Tests: Formula replication, arithmetic operations, decimal formatting
+   - Expected: Conversion table with accurate calculations (F = C × 9/5 + 32, K = C + 273.15)
+
+8. **Compound Interest Calculator (Parameter Design)**:
+   ```
+   "Create a compound interest calculator showing the growth of $10,000 invested at different annual interest rates (3%, 5%, 7%, 10%) over 10 years. Show yearly balances. Make sure the interest rates can be easily modified."
+   ```
+   - Tests: Exponentiation (^), absolute references, parameter design, currency formatting, formula copying
+   - Expected: Table showing investment growth with rates in header cells that formulas reference (e.g., `B3*(1+B$1)` instead of `B3*1.03`), allowing easy modification of rates
+
+9. **Product Inventory with Reorder Alerts (Calculations)**:
+   ```
+   "Create an inventory spreadsheet for 10 products showing current stock, reorder point (20 units), unit cost, and total inventory value. Format costs as currency."
+   ```
+   - Tests: Simple multiplication, currency formatting, basic data organization
+   - Expected: Clean inventory table with calculated totals
+
+10. **Time Tracking & Billing (Time Calculations)**:
+   ```
+   "Create a timesheet for a freelancer showing 10 projects with hours worked and hourly rate ($150/hr). Calculate total earnings per project and overall total."
+   ```
+   - Tests: Multiplication, SUM function, currency formatting, decimal hours
+   - Expected: Timesheet with calculated billing amounts
+
 ## Example LLM Usage
 
 ```
