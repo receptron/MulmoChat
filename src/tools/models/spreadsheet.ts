@@ -7,8 +7,8 @@ const toolName = "presentSpreadsheet";
 export type SpreadsheetCell =
   | string
   | number
-  | { f: string; z?: string } // Formula with optional format
-  | { v: any; z?: string }; // Value with optional format
+  | { f: string; z: string } // Formulas must specify format
+  | { v: any; z: string }; // Formatted value
 
 export interface SpreadsheetSheet {
   name: string;
@@ -34,7 +34,7 @@ const toolDefinition = {
       sheets: {
         type: "array",
         description:
-          "Array of sheets to display. Each sheet contains a name and 2D array of cell data.",
+          "Sheets to render as spreadsheet tabs. Each sheet includes a name and 2D array of cells (rows x columns).",
         items: {
           type: "object",
           properties: {
@@ -45,16 +45,7 @@ const toolDefinition = {
             data: {
               type: "array",
               description:
-                "2D array of cell data. CRITICAL: All formulas MUST include both 'f' and 'z' properties.\n" +
-                "Cell format examples:\n" +
-                "- Label/header: \"Year\" or \"Total\"\n" +
-                "- Number input: 10000 or 0\n" +
-                "- Formula (REQUIRED): {\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}\n" +
-                "- Formatted value: {\"v\": 10000, \"z\": \"$#,##0.00\"}\n" +
-                "WRONG: \"B2*1.03\" (plain string) or {\"f\": \"B2*1.03\"} (missing z)\n" +
-                "RIGHT: {\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}\n" +
-                "Format codes (z): '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal)\n" +
-                "Example: [{\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}, {\"f\": \"C2*1.05\", \"z\": \"$#,##0.00\"}]",
+                "Rows of cells. Inputs should be plain numbers/strings; ALL calculations must be formulas with formats. Example row: ['Year', 'Revenue', 'Growth %'], [2024, 1500000, {\"f\": \"B2/B1-1\", \"z\": \"0.00%\"}]. Format codes (z): '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal).",
               items: {
                 type: "array",
                 description:
@@ -83,7 +74,7 @@ const toolDefinition = {
                         z: {
                           type: "string",
                           description:
-                            "REQUIRED number format: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal)",
+                            "Required number format code",
                         },
                       },
                       required: ["f", "z"],
@@ -97,7 +88,7 @@ const toolDefinition = {
                         },
                         z: {
                           type: "string",
-                          description: "REQUIRED number format code",
+                          description: "Required number format code",
                         },
                       },
                       required: ["v", "z"],
@@ -170,5 +161,5 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: SpreadsheetView,
   previewComponent: SpreadsheetPreview,
-  systemPrompt: `Call the ${toolName} API to display dynamic spreadsheets. CRITICAL: ALL formulas MUST include BOTH "f" (formula) and "z" (format) properties. Format: {"f": "B2*1.03", "z": "$#,##0.00"}. Rules: (1) Formulas MUST be objects {"f": "...", "z": "..."}, NOT strings. (2) Use formulas for calculations, NEVER hardcode. (3) Raw numbers for inputs: 10000 not "$10,000". Example: [0, 10000, 10000], [1, {"f": "B2*1.03", "z": "$#,##0.00"}, {"f": "C2*1.05", "z": "$#,##0.00"}]. Common formats: "$#,##0.00" (currency), "#,##0" (integer), "0.00%" (percent). Supported: cell refs (A1), functions (SUM, AVERAGE, IF), arithmetic (A1*1.05).`,
+  systemPrompt: `Use ${toolName} whenever the user needs a spreadsheet-style table, multi-step math, or dynamic what-if analysis—do not summarize in text. Build LIVE sheets: inputs stay raw numbers/labels, every calculation is a formula object {"f": "...", "z": "..."}. Never pre-calculate or format values yourself; let the spreadsheet compute using cell refs, functions (SUM, AVERAGE, IF, etc.), and arithmetic (A1*1.05). Standard formats: "$#,##0.00" currency, "#,##0" integer, "0.00%" percent, "0.00" decimal. If a number needs formatting but no formula, wrap it as {"v": value, "z": format}.`,
 };
