@@ -377,6 +377,321 @@ This represents a fundamental transition in computing paradigms:
 
 Users no longer need to know *how* software works—they only need to express *what* they want. The presentation language pattern, combined with LLM-based routing and capability plugins, makes this vision practical and scalable.
 
+## Scaling with Roles: Managing Plugin Complexity
+
+As the plugin ecosystem grows, a new challenge emerges: **how do we manage dozens or hundreds of available capabilities without overwhelming the system?** The solution lies in introducing **roles**—curated contexts that bundle relevant tools with specialized behavior.
+
+### The Scaling Challenge
+
+While plugin extensibility is powerful, unrestricted growth creates problems:
+
+**Token Inefficiency**:
+- Each tool definition consumes context tokens
+- 50+ plugins could consume thousands of tokens before user conversation even begins
+- Larger context = higher cost and latency
+
+**Cognitive Overload**:
+- LLM must evaluate all available tools for every request
+- Too many options can degrade routing quality
+- Unrelated tools create noise in decision-making
+
+**Lack of Specialization**:
+- Generic system prompt must serve all use cases
+- Behavior cannot be optimized for specific contexts
+- Tools lack coherent grouping
+
+### Introducing Roles
+
+A **role** is a curated operational context that packages:
+
+1. **Selected Tool Subset**: Only plugins relevant to that role
+2. **Specialized System Prompt**: Behavior guidance tailored to the role's purpose
+3. **Coherent Capabilities**: Tools that naturally work together
+
+**Role Definition Structure**:
+```typescript
+interface Role {
+  id: string;
+  name: string;
+  description: string;  // Helps LLM/user understand when this role applies
+  systemPrompt: string; // Behavioral guidance for this context
+  enabledPlugins: string[]; // Which presentation languages are available
+}
+```
+
+### Example Roles
+
+**Tutor Role**:
+```typescript
+{
+  id: "tutor",
+  name: "Tutor",
+  description: "Educational contexts: teaching concepts, testing understanding, " +
+               "providing practice exercises and interactive learning materials",
+  systemPrompt: `You are a patient, encouraging tutor. Your goal is to help the student
+    understand concepts deeply through clear explanations and interactive practice.
+
+    - Use the quiz tool to test understanding after explaining new concepts
+    - Create illustrated documents with presentDocument for lesson materials
+    - Use spreadsheets for mathematical practice problems with instant feedback
+    - Break complex topics into manageable steps`,
+  enabledPlugins: [
+    "quiz",              // Interactive quizzes
+    "presentDocument",   // Illustrated lesson materials
+    "presentSpreadsheet", // Practice problems with formulas
+    "canvas"             // Diagrams and visual explanations
+  ]
+}
+```
+
+**Business Analyst Role**:
+```typescript
+{
+  id: "analyst",
+  name: "Business Analyst",
+  description: "Data analysis, financial modeling, business intelligence, " +
+               "reporting and strategic insights from data",
+  systemPrompt: `You are a data-driven business analyst. Approach problems analytically
+    and support conclusions with quantitative evidence.
+
+    - Always use spreadsheets for multi-step calculations and financial models
+    - Build interactive models that allow what-if analysis
+    - Create presentations to communicate insights to stakeholders
+    - Use search tools to gather market research and competitive intelligence
+    - Focus on actionable insights, not just data description`,
+  enabledPlugins: [
+    "presentSpreadsheet", // Financial models, data analysis
+    "showPresentation",   // Stakeholder presentations
+    "exa",               // Market research
+    "browse",            // Competitive intelligence
+    "presentDocument"    // Written reports
+  ]
+}
+```
+
+**Content Creator Role**:
+```typescript
+{
+  id: "creator",
+  name: "Content Creator",
+  description: "Creating multimedia content: videos, presentations, articles, " +
+               "visual stories, and engaging educational or entertainment materials",
+  systemPrompt: `You are a creative storyteller who produces engaging multimedia content.
+
+    - Use showPresentation to create video presentations with narration and visuals
+    - Generate rich illustrated documents for articles and long-form content
+    - Create complementary music/audio when appropriate for mood and engagement
+    - Focus on narrative flow, emotional engagement, and visual appeal
+    - Optimize pacing and structure for audience attention`,
+  enabledPlugins: [
+    "showPresentation",  // Video presentations
+    "generateImage",     // Custom visuals
+    "editImage",         // Image refinement
+    "presentDocument",   // Articles with embedded images
+    "music"              // Background music and audio
+  ]
+}
+```
+
+**Researcher Role**:
+```typescript
+{
+  id: "researcher",
+  name: "Researcher",
+  description: "Academic research, literature review, information synthesis, " +
+               "fact-finding and deep investigation of topics",
+  systemPrompt: `You are a thorough researcher who finds, evaluates, and synthesizes
+    information from multiple sources.
+
+    - Use search tools to find authoritative sources
+    - Browse websites to extract detailed information
+    - Synthesize findings into well-structured documents with citations
+    - Evaluate source credibility and cross-reference claims
+    - Present comprehensive, balanced analysis of complex topics`,
+  enabledPlugins: [
+    "exa",               // AI-powered search
+    "browse",            // Web content extraction
+    "presentDocument",   // Research reports with citations
+    "presentSpreadsheet" // Data compilation and analysis
+  ]
+}
+```
+
+### Dynamic Role Switching
+
+The system can switch roles dynamically based on user intent:
+
+**Explicit Switching**:
+```
+User: "Switch to tutor mode"
+System: [Activates Tutor role]
+        [Loads quiz, document, spreadsheet, canvas tools]
+        [Applies educational system prompt]
+
+User: "Help me understand calculus derivatives"
+System: [Uses tutor behavior and tools to teach concept]
+```
+
+**Automatic Switching**:
+```
+User: "Teach me about photosynthesis"
+System: [Detects educational intent]
+        [Automatically switches to Tutor role]
+        [Creates illustrated lesson with quiz]
+
+User: "Now analyze our Q4 sales performance"
+System: [Detects analytical intent]
+        [Automatically switches to Business Analyst role]
+        [Creates interactive financial analysis spreadsheet]
+```
+
+**Implementation of Auto-Switching**:
+```typescript
+// LLM evaluates user intent and requests role switch via function call
+{
+  type: "function",
+  name: "switchRole",
+  description: "Switch to a different role when user intent changes context",
+  parameters: {
+    roleId: {
+      type: "string",
+      enum: ["tutor", "analyst", "creator", "researcher"],
+      description: "The role that best matches the user's current intent"
+    },
+    reason: {
+      type: "string",
+      description: "Brief explanation of why this role is appropriate"
+    }
+  }
+}
+
+// Example call:
+switchRole({
+  roleId: "tutor",
+  reason: "User is asking to learn a new concept and needs educational support"
+})
+```
+
+### Benefits of Role-Based Architecture
+
+**1. Token Efficiency**
+
+Instead of loading 50+ tool definitions:
+```
+Without roles: ~5000 tokens for all tool definitions
+With roles: ~500 tokens for 5-10 relevant tools
+Savings: 90% reduction in tool definition overhead
+```
+
+**2. Improved Routing Quality**
+
+The LLM chooses from a focused, coherent set:
+- Tutor mode: 4 educational tools vs. 50 mixed tools
+- Higher accuracy in tool selection
+- Faster decision-making with less noise
+
+**3. Specialized Behavior**
+
+Each role's system prompt optimizes behavior:
+- **Tutor**: Encourages explanations, quizzes, step-by-step breakdowns
+- **Analyst**: Emphasizes data, calculations, evidence-based insights
+- **Creator**: Focuses on narrative, engagement, visual appeal
+- **Researcher**: Prioritizes sources, citations, comprehensive coverage
+
+**4. Coherent Tool Ecosystems**
+
+Tools within a role complement each other:
+```
+Tutor role workflow:
+1. Explain concept (presentDocument with illustrations)
+2. Provide practice (presentSpreadsheet with interactive formulas)
+3. Test understanding (quiz)
+4. Visualize relationships (canvas)
+
+All tools work together toward educational goals.
+```
+
+**5. Scalability Without Complexity**
+
+The system can support hundreds of plugins:
+- 100 total plugins across all roles
+- Each role exposes only 5-10 relevant tools
+- Users get specialized experience without overwhelming options
+- New plugins added to appropriate roles without affecting others
+
+**6. Personalization and Customization**
+
+Users or organizations can:
+- Define custom roles for their specific workflows
+- Mix and match tools for niche use cases
+- Share role definitions as reusable configurations
+- Have role presets that adapt to their work patterns
+
+### Multi-Role and Cross-Role Capabilities
+
+Some capabilities may be available across multiple roles:
+
+**Core Tools** (available in all roles):
+- `presentDocument` - Universal document creation
+- Basic image generation
+
+**Role-Specific Tools** (only in certain contexts):
+- `quiz` - Only in Tutor role
+- Financial analysis plugins - Only in Analyst role
+- Music composition - Only in Creator role
+
+**Hybrid Approach**:
+```typescript
+interface Role {
+  // ... other properties
+  enabledPlugins: string[];
+  inheritsCore: boolean; // Include universal tools?
+}
+```
+
+### Role as Context, Not Constraint
+
+Roles should be:
+- **Fluid**: Easy to switch when context changes
+- **Suggestive**: Guide behavior but don't rigidly restrict
+- **Transparent**: User can see current role and available tools
+- **Overridable**: User can explicitly request tools outside current role if needed
+
+This maintains flexibility while providing the benefits of specialization.
+
+### The Future: Hierarchical and Composite Roles
+
+As the pattern matures, more sophisticated role structures emerge:
+
+**Hierarchical Roles**:
+```typescript
+{
+  id: "math-tutor",
+  name: "Mathematics Tutor",
+  inheritsFrom: "tutor",  // Gets base tutor tools and behavior
+  additionalPlugins: ["graphing", "geometry", "symbolic-math"],
+  systemPrompt: "Tutor system prompt + specialized math guidance"
+}
+```
+
+**Composite Roles** (multiple active simultaneously):
+```typescript
+{
+  activeRoles: ["researcher", "creator"],
+  // User gets research tools + content creation tools
+  // Behavior: "Research thoroughly, then present engagingly"
+}
+```
+
+**Context-Aware Role Suggestions**:
+```
+System: "I notice you're working on a business plan. Would you like to switch
+         to Business Analyst mode for financial projections, or Creator mode
+         for presentation materials?"
+```
+
+The role pattern transforms the capability plugin architecture from a flat namespace of tools into a structured, context-aware system that scales gracefully while maintaining coherent, specialized user experiences.
+
 ## Implementation Guidelines
 
 ### Designing Effective Tool Definitions
