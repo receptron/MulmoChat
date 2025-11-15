@@ -94,8 +94,10 @@ const switchRoleExecute = async (
         role,
         roleName: validRole.name,
       },
+      /*
       instructions: `Tell the user that you are switching to ${validRole.name} role and will reconnect shortly. The conversation will be interrupted momentarily during the reconnection.`,
       instructionsRequired: true, // Always send this instruction
+      */
     };
   } catch (error) {
     console.error("ERR: exception in switchRole", error);
