@@ -45,18 +45,17 @@ const toolDefinition = {
             data: {
               type: "array",
               description:
-                "2D array of cell data. Each cell can be:\n" +
-                "- Simple value: 'text' or 123\n" +
-                "- Formula: {f: 'SUM(A1:A10)'}\n" +
-                "- Formatted value: {v: 1000000, z: '$#,##0.00'}\n" +
-                "- Formatted formula: {f: 'SUM(A1:A10)', z: '$#,##0.00'}\n" +
-                "Common format codes (z):\n" +
-                "- Currency: '$#,##0.00' or '\"$\"#,##0'\n" +
-                "- Thousands separator: '#,##0'\n" +
-                "- Percentage: '0.00%'\n" +
-                "- Decimal places: '0.00' or '0.000'\n" +
-                "- Date: 'yyyy-mm-dd' or 'mm/dd/yyyy'\n" +
-                "Examples: {v: 1500000, z: '$#,##0'} displays as $1,500,000",
+                "2D array of cell data. CRITICAL: Formulas MUST be objects with 'f' property, NOT plain strings.\n" +
+                "Cell format examples:\n" +
+                "- Label/header: \"Year\" or \"Total\"\n" +
+                "- Number input: 10000 or 0\n" +
+                "- Formula (REQUIRED format): {\"f\": \"B2*1.03\"} or {\"f\": \"SUM(A1:A10)\"}\n" +
+                "- Formatted number: {\"v\": 10000, \"z\": \"$#,##0.00\"}\n" +
+                "- Formatted formula: {\"f\": \"B2*1.05\", \"z\": \"$#,##0.00\"}\n" +
+                "WRONG: \"B2*1.03\" or \"$10,000\" (plain strings won't calculate)\n" +
+                "RIGHT: {\"f\": \"B2*1.03\"} or {\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}\n" +
+                "Format codes (z): '$#,##0.00' (currency), '#,##0' (thousands), '0.00%' (percent)\n" +
+                "Compound interest example: [{\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}, {\"f\": \"C2*1.05\", \"z\": \"$#,##0.00\"}]",
               items: {
                 type: "array",
                 description:
@@ -159,5 +158,5 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: SpreadsheetView,
   previewComponent: SpreadsheetPreview,
-  systemPrompt: `Call the ${toolName} API to display spreadsheets with tabular data and formulas. Use Excel-style formulas like SUM, AVERAGE, cell references (A1, B2), and arithmetic operations. For better presentation, apply number formatting to cells: use {v: 1000000, z: '$#,##0'} for currency ($1,000,000), {v: 0.85, z: '0.00%'} for percentages (85.00%), or {f: 'SUM(A1:A10)', z: '#,##0'} for formatted formulas (1,234).`,
+  systemPrompt: `Call the ${toolName} API to display dynamic spreadsheets. CRITICAL FORMAT RULES: (1) Formulas MUST be JSON objects like {"f": "B2*1.03"}, NOT plain strings like "B2*1.03". (2) Use formulas for ALL calculations - NEVER hardcode results. (3) Use raw numbers for inputs: 10000 not "$10,000". Examples: Year 0 = [0, 10000, 10000, 10000], Year 1 = [1, {"f": "B2*1.03"}, {"f": "C2*1.05"}, {"f": "D2*1.07"}]. Add formatting: {"f": "B2*1.03", "z": "$#,##0.00"}. Supported formulas: cell refs (A1, B2), functions (SUM, AVERAGE, IF, MIN, MAX), arithmetic (A1*1.05, B2+C2), absolute refs ($A$1).`,
 };
