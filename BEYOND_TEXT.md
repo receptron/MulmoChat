@@ -229,6 +229,154 @@ Complex rendering happens outside the LLM:
 - Rendering can be cached, optimized, or parallelized
 - Re-rendering doesn't require re-invoking the LLM
 
+## Beyond Applications: The Capability Plugin Paradigm
+
+The presentation language pattern, combined with a plugin architecture, represents a fundamental reimagining of how users interact with software capabilities. Traditional applications are being replaced by seamlessly integrated capability plugins.
+
+### The Traditional Application Model
+
+For decades, software has been organized into discrete, monolithic applications:
+
+```
+User needs spreadsheet → Launches Excel → Learns formulas, ribbons, shortcuts
+User needs presentation → Launches PowerPoint → Learns slide layouts, transitions
+User needs image editing → Launches Photoshop → Learns layers, tools, filters
+```
+
+This model has inherent friction:
+
+- **Explicit Invocation**: Users must know which application to launch for each task
+- **Context Switching**: Moving between applications breaks workflow and mental context
+- **Steep Learning Curves**: Each application has unique UI patterns, shortcuts, and concepts to master
+- **Discovery Problem**: Users may not know which application can solve their problem
+- **Integration Overhead**: Sharing data between applications requires manual export/import
+
+### The Capability Plugin Model
+
+The presentation language architecture inverts this model. Instead of applications that users invoke, we have **capabilities that blend into a conversational interface**:
+
+```
+User: "Show me a 5-year revenue projection with sensitivity analysis"
+System: [Automatically routes to spreadsheet plugin]
+         [Generates live interactive financial model]
+
+User: "Create a presentation explaining quantum computing"
+System: [Automatically routes to MulmoScript plugin]
+         [Generates illustrated video presentation]
+
+User: "Make a document about the solar system with images"
+System: [Automatically routes to markdown plugin]
+         [Generates illustrated document with AI-generated images]
+```
+
+### Key Paradigm Shifts
+
+**1. From Explicit to Implicit**
+
+Traditional:
+- User decides: "I need a spreadsheet"
+- User launches Excel
+- User figures out how to build the model
+
+Plugin-based:
+- User expresses intent: "Show me the financial projection"
+- LLM routes to appropriate capability automatically
+- System generates the artifact
+
+**2. From Learning to Asking**
+
+Traditional:
+- User invests hours learning Excel formulas, PowerPoint layouts, Photoshop tools
+- Knowledge becomes outdated as UIs change
+- Productivity limited by expertise with specific applications
+
+Plugin-based:
+- User expresses what they want in natural language
+- No application-specific knowledge required
+- Same conversational interface for all capabilities
+
+**3. From Apps to Capabilities**
+
+Traditional:
+- Software organized as discrete "applications" with boundaries
+- User mentally maps tasks to applications
+- "For this task, I need to open that program"
+
+Plugin-based:
+- Software organized as composable capabilities
+- User thinks about goals, not tools
+- "I need this outcome" (system figures out how)
+
+**4. Seamless Integration and Composition**
+
+Because all capabilities share the conversational interface and common context:
+
+```markdown
+# Q4 Business Review
+
+Here's our financial performance:
+[Spreadsheet plugin generates interactive quarterly results]
+
+Key insights from the data:
+[LLM analyzes spreadsheet results, generates insights]
+
+Here's a presentation for stakeholders:
+[MulmoScript plugin generates video from insights]
+```
+
+Capabilities can reference and build upon each other without manual data transfer.
+
+### Third-Party Extensibility
+
+The plugin architecture is fully extensible. Adding new capabilities is straightforward:
+
+**To add a new presentation language:**
+1. Define the DSL schema (what structure the LLM should generate)
+2. Implement the rendering engine (how to execute the DSL)
+3. Register the tool definition with the LLM
+4. Users can immediately access it through natural language
+
+**No changes to core system required.** The new capability blends seamlessly into the existing conversational interface.
+
+This enables:
+- **Third-party ecosystems**: Developers can publish presentation language plugins
+- **Domain-specific tools**: Specialized capabilities for niche use cases (chemical formulas, music notation, circuit diagrams)
+- **Enterprise extensions**: Organizations can add proprietary capabilities without forking
+- **Rapid innovation**: New capabilities can be deployed without waiting for "application updates"
+
+### The Conversational Interface as Universal OS
+
+In this architecture, the conversational interface becomes the **universal operating system** for human-computer interaction:
+
+- **Single interface**: One conversational UI for all capabilities
+- **Intent-based routing**: LLM determines which capabilities to invoke
+- **Contextual awareness**: Shared context across all tools
+- **Progressive disclosure**: Capabilities appear as needed, not in overwhelming menus
+- **Natural language as API**: No need to learn application-specific interfaces
+
+The user's relationship with software shifts from:
+- "What applications do I know how to use?"
+
+To:
+- "What do I want to accomplish?"
+
+The system handles capability discovery, routing, composition, and execution automatically.
+
+### Replacing Applications with Conversations
+
+This represents a fundamental transition in computing paradigms:
+
+| Traditional Applications | Capability Plugins |
+|-------------------------|-------------------|
+| Monolithic software packages | Composable presentation languages |
+| Explicit launch and invocation | Automatic routing via LLM |
+| Application-specific UIs to learn | Natural language for everything |
+| Manual context switching | Shared conversational context |
+| Static feature sets | Extensible plugin ecosystem |
+| "Open Word to write a document" | "Create a document about X" |
+
+Users no longer need to know *how* software works—they only need to express *what* they want. The presentation language pattern, combined with LLM-based routing and capability plugins, makes this vision practical and scalable.
+
 ## Implementation Guidelines
 
 ### Designing Effective Tool Definitions
@@ -279,33 +427,6 @@ formula object. Never pre-calculate values yourself.
 ```
 
 This acts as a "compilation strategy" that ensures the LLM generates executable code rather than static text.
-
-### Post-Processing Pipelines
-
-Robust implementations include validation and error handling:
-
-```typescript
-async function execute(context: ToolContext, args: Record<string, any>) {
-  // 1. Validate DSL structure
-  if (!Array.isArray(args.sheets) || args.sheets.length === 0) {
-    throw new Error("At least one sheet is required");
-  }
-
-  // 2. Handle common LLM mistakes
-  if (typeof args.sheets === "string") {
-    args.sheets = JSON.parse(args.sheets);  // LLM sometimes stringifies
-  }
-
-  // 3. Execute/render
-  const result = await renderSpreadsheet(args.sheets);
-
-  // 4. Return with instructions
-  return {
-    data: result,
-    instructions: "Acknowledge that the spreadsheet is displayed and interactive"
-  };
-}
-```
 
 ## Comparison with Alternative Approaches
 
