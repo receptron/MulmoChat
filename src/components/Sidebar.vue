@@ -1,7 +1,15 @@
 <template>
   <div
-    class="w-60 flex-shrink-0 bg-gray-50 border rounded p-4 flex flex-col space-y-4"
+    ref="sidebarEl"
+    :style="{ width: sidebarWidth + 'px' }"
+    class="flex-shrink-0 bg-gray-50 border rounded p-4 flex flex-col space-y-4 relative"
   >
+    <!-- Resize handle -->
+    <div
+      @mousedown="startResize"
+      class="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors z-10"
+      title="Drag to resize"
+    ></div>
     <!-- Voice chat controls -->
     <div class="space-y-2 flex-shrink-0">
       <div class="flex gap-2">
@@ -496,7 +504,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, defineProps, defineEmits, computed } from "vue";
+import {
+  ref,
+  nextTick,
+  defineProps,
+  defineEmits,
+  computed,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import type { ToolResult } from "../tools";
 import {
   getToolPlugin,
@@ -570,6 +586,68 @@ const audioEl = ref<HTMLAudioElement | null>(null);
 const imageContainer = ref<HTMLDivElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const showConfigPopup = ref(false);
+const sidebarEl = ref<HTMLDivElement | null>(null);
+
+// Sidebar width management
+const SIDEBAR_WIDTH_KEY = "sidebar_width_v1";
+const DEFAULT_SIDEBAR_WIDTH = 240; // 60 * 4 (w-60 in tailwind)
+const MIN_SIDEBAR_WIDTH = 200;
+const MAX_SIDEBAR_WIDTH = 600;
+
+const sidebarWidth = ref<number>(
+  parseInt(
+    localStorage.getItem(SIDEBAR_WIDTH_KEY) || String(DEFAULT_SIDEBAR_WIDTH),
+  ),
+);
+
+// Resize state
+const isResizing = ref(false);
+const startX = ref(0);
+const startWidth = ref(0);
+
+function startResize(event: MouseEvent): void {
+  isResizing.value = true;
+  startX.value = event.clientX;
+  startWidth.value = sidebarWidth.value;
+
+  // Prevent text selection during resize
+  event.preventDefault();
+
+  // Add global event listeners
+  document.addEventListener("mousemove", handleResize);
+  document.addEventListener("mouseup", stopResize);
+}
+
+function handleResize(event: MouseEvent): void {
+  if (!isResizing.value) return;
+
+  const deltaX = event.clientX - startX.value;
+  const newWidth = startWidth.value + deltaX;
+
+  // Constrain width to min/max bounds
+  if (newWidth >= MIN_SIDEBAR_WIDTH && newWidth <= MAX_SIDEBAR_WIDTH) {
+    sidebarWidth.value = newWidth;
+  }
+}
+
+function stopResize(): void {
+  if (isResizing.value) {
+    isResizing.value = false;
+
+    // Save to localStorage
+    localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth.value));
+
+    // Remove global event listeners
+    document.removeEventListener("mousemove", handleResize);
+    document.removeEventListener("mouseup", stopResize);
+  }
+}
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener("mousemove", handleResize);
+  document.removeEventListener("mouseup", stopResize);
+});
 
 const acceptedFileTypes = computed(() => getAcceptedFileTypes().join(","));
 const fileUploadPlugins = computed(() => getFileUploadPlugins());
