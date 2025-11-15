@@ -44,7 +44,7 @@
         :is-muted="isMuted"
         :user-language="userPreferences.userLanguage"
         :suppress-instructions="userPreferences.suppressInstructions"
-        :mode-id="userPreferences.modeId"
+        :role-id="userPreferences.roleId"
         :is-conversation-active="conversationActive"
         :enabled-plugins="userPreferences.enabledPlugins"
         :custom-instructions="userPreferences.customInstructions"
@@ -65,7 +65,7 @@
         @update:suppress-instructions="
           userPreferences.suppressInstructions = $event
         "
-        @update:mode-id="userPreferences.modeId = $event"
+        @update:role-id="userPreferences.roleId = $event"
         @update:enabled-plugins="userPreferences.enabledPlugins = $event"
         @update:custom-instructions="
           userPreferences.customInstructions = $event
@@ -129,7 +129,7 @@ import {
   GOOGLE_LIVE_MODELS,
   REALTIME_MODELS,
 } from "./config/models";
-import { getMode } from "./config/modes";
+import { getRole } from "./config/roles";
 import { getLanguageName } from "./config/languages";
 import type { TextProvidersResponse } from "../server/types";
 import { generateUUID } from "./utils/uuid";
@@ -321,14 +321,14 @@ const statusLine = computed(() => {
     }
   }
 
-  // Get mode name
-  const mode = getMode(userPreferences.modeId);
-  const modeName = mode.name;
+  // Get role name
+  const role = getRole(userPreferences.roleId);
+  const roleName = role.name;
 
   // Get language name
   const languageName = getLanguageName(userPreferences.userLanguage);
 
-  return `${modelName} / ${modeName} / ${languageName}`;
+  return `${modelName} / ${roleName} / ${languageName}`;
 });
 
 async function loadTextProviders(): Promise<void> {
@@ -599,14 +599,14 @@ function setMute(muted: boolean): void {
   sessionSetMute(muted);
 }
 
-async function switchMode(newModeId: string): Promise<void> {
+async function switchRole(newRoleId: string): Promise<void> {
   // Step 1: Disconnect if connected
   if (chatActive.value) {
     stopChat();
   }
 
-  // Step 2: Switch to the specified mode
-  userPreferences.modeId = newModeId;
+  // Step 2: Switch to the specified role
+  userPreferences.roleId = newRoleId;
 
   // Wait a brief moment to ensure cleanup is complete
   await sleep(500);
@@ -617,7 +617,7 @@ async function switchMode(newModeId: string): Promise<void> {
 
 // Expose the API globally for external access
 if (typeof window !== "undefined") {
-  (window as any).switchMode = switchMode;
+  (window as any).switchRole = switchRole;
 }
 
 watch(

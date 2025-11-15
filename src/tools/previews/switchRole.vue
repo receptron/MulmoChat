@@ -14,7 +14,7 @@
         />
       </svg>
       <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-        Mode Switch
+        Role Switch
       </span>
     </div>
 
@@ -22,13 +22,13 @@
       <div v-if="success" class="space-y-1">
         <div class="flex items-center gap-1">
           <span class="text-green-500">✓</span>
-          <span class="font-medium">{{ modeName }}</span>
+          <span class="font-medium">{{ roleName }}</span>
         </div>
-        <div class="text-xs text-gray-500">Switched to {{ modeName }} mode</div>
+        <div class="text-xs text-gray-500">Switched to {{ roleName }} role</div>
       </div>
       <div v-else class="flex items-center gap-1 text-red-500">
         <span>✗</span>
-        <span>{{ errorMessage || "Failed to switch mode" }}</span>
+        <span>{{ errorMessage || "Failed to switch role" }}</span>
       </div>
     </div>
   </div>
@@ -43,6 +43,6 @@ const props = defineProps<{
 }>();
 
 const success = computed(() => props.result.jsonData?.success || false);
-const modeName = computed(() => props.result.jsonData?.modeName || "Unknown");
+const roleName = computed(() => props.result.jsonData?.roleName || "Unknown");
 const errorMessage = computed(() => props.result.jsonData?.error);
 </script>

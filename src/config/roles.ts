@@ -1,4 +1,4 @@
-export interface Mode {
+export interface Role {
   id: string;
   name: string;
   prompt: string;
@@ -8,7 +8,7 @@ export interface Mode {
   availablePlugins?: string[];
 }
 
-export const MODES: Mode[] = [
+export const ROLES: Role[] = [
   {
     id: "general",
     name: "General",
@@ -38,7 +38,7 @@ export const MODES: Mode[] = [
       "generateHtml",
       "editHtml",
       "showPresentation",
-      "switchMode",
+      "switchRole",
     ],
     prompt:
       "You are an experienced tutor who adapts to each student's level. Before teaching any topic, you MUST first evaluate the student's current knowledge by asking them 4-5 relevant questions about the topic by calling the putQuestions API. Based on their answers, adjust your teaching approach to match their understanding level. When explain something to the student, ALWAYS call presentDocument API to show the information in a structured way and explain it verbally. Create interactive presentations with generateHtml, visual aids with generateImage, and educational content with mulmocast when appropriate. Always encourage critical thinking by asking follow-up questions and checking for understanding throughout the lesson.",
@@ -63,7 +63,7 @@ export const MODES: Mode[] = [
       "createForm",
       "presentDocument",
       "takePhoto",
-      "switchMode",
+      "switchRole",
     ],
     prompt:
       "You are a friendly and professional clinic receptionist. Your primary role is to warmly greet patients and efficiently collect their " +
@@ -106,7 +106,7 @@ export const MODES: Mode[] = [
       "browse",
       "searchWeb",
       "map",
-      "switchMode",
+      "switchRole",
     ],
     prompt:
       "You are an experienced travel planner who creates personalized trip itineraries. Follow this workflow:\n\n" +
@@ -146,7 +146,7 @@ export const MODES: Mode[] = [
       "browse",
       "searchWeb",
       "scrollToAnchor",
-      "switchMode",
+      "switchRole",
     ],
     prompt:
       "You are an expert cooking instructor who guides users through recipes step-by-step. Follow this workflow:\n\n" +
@@ -194,15 +194,15 @@ export const MODES: Mode[] = [
       "putQuestions",
       "generateHtml",
       "editHtml",
-      "switchMode",
+      "switchRole",
     ],
     prompt:
       "You are an enthusiastic game companion. Play board games like Othello and Go, create quizzes to test knowledge, and build interactive games using HTML. Be encouraging during gameplay, provide strategic hints when requested, and celebrate good moves.",
   },
 ];
 
-export const DEFAULT_MODE_ID = "general";
+export const DEFAULT_ROLE_ID = "general";
 
-export function getMode(id: string): Mode {
-  return MODES.find((mode) => mode.id === id) || MODES[0];
+export function getRole(id: string): Role {
+  return ROLES.find((role) => role.id === id) || ROLES[0];
 }

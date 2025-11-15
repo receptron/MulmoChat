@@ -26,7 +26,7 @@
             <span
               class="material-icons text-2xl text-blue-600 transition-transform"
               :class="{ 'animate-spin': isConversationActive }"
-              >{{ getModeIcon() }}</span
+              >{{ getRoleIcon() }}</span
             >
           </div>
           <button
@@ -271,26 +271,26 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              Mode
+              Role
             </label>
             <div class="relative">
               <span
                 class="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-600 pointer-events-none"
               >
-                {{ getModeIcon() }}
+                {{ getRoleIcon() }}
               </span>
               <select
-                :value="modeId"
+                :value="roleId"
                 @change="
                   $emit(
-                    'update:modeId',
+                    'update:roleId',
                     ($event.target as HTMLSelectElement).value,
                   )
                 "
                 class="w-full border rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option v-for="mode in MODES" :key="mode.id" :value="mode.id">
-                  {{ mode.name }}
+                <option v-for="role in ROLES" :key="role.id" :value="role.id">
+                  {{ role.name }}
                 </option>
               </select>
             </div>
@@ -359,7 +359,7 @@
             </p>
           </div>
 
-          <div v-if="isCurrentModeCustomizable">
+          <div v-if="isCurrentRoleCustomizable">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Enabled Plugins
             </label>
@@ -395,14 +395,14 @@
               Available Plugins
             </label>
             <p class="text-xs text-gray-500 mb-2">
-              This mode uses a curated set of plugins optimized for its purpose.
-              Switch to General mode to customize plugins.
+              This role uses a curated set of plugins optimized for its purpose.
+              Switch to General role to customize plugins.
             </p>
             <div
               class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border rounded p-2 bg-gray-50"
             >
               <span
-                v-for="pluginName in availablePluginsForCurrentMode"
+                v-for="pluginName in availablePluginsForCurrentRole"
                 :key="pluginName"
                 class="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
               >
@@ -417,7 +417,7 @@
             </label>
             <div class="space-y-4">
               <component
-                v-for="pluginModule in getPluginsWithConfig(modeId)"
+                v-for="pluginModule in getPluginsWithConfig(roleId)"
                 :key="pluginModule.plugin.config!.key"
                 :is="pluginModule.plugin.config!.component"
                 :value="
@@ -466,11 +466,11 @@ import {
   getPluginList,
   getPluginsWithConfig,
   hasAnyPluginConfig,
-  isModeCustomizable,
-  getAvailablePluginsForMode,
+  isRoleCustomizable,
+  getAvailablePluginsForRole,
 } from "../tools";
 import { LANGUAGES } from "../config/languages";
-import { MODES } from "../config/modes";
+import { ROLES } from "../config/roles";
 import { REALTIME_MODELS, GOOGLE_LIVE_MODELS } from "../config/models";
 import type { SessionTransportKind } from "../composables/useSessionTransport";
 
@@ -491,7 +491,7 @@ const props = defineProps<{
   isMuted: boolean;
   userLanguage: string;
   suppressInstructions: boolean;
-  modeId: string;
+  roleId: string;
   isConversationActive: boolean;
   enabledPlugins: Record<string, boolean>;
   customInstructions: string;
@@ -513,7 +513,7 @@ const emit = defineEmits<{
   "update:userInput": [value: string];
   "update:userLanguage": [value: string];
   "update:suppressInstructions": [value: boolean];
-  "update:modeId": [value: string];
+  "update:roleId": [value: string];
   "update:enabledPlugins": [value: Record<string, boolean>];
   "update:customInstructions": [value: string];
   "update:modelId": [value: string];
@@ -602,13 +602,13 @@ const isGoogleLive = computed(() => props.modelKind === "voice-google-live");
 const connectButtonLabel = computed(() =>
   isVoiceMode.value ? "Connect" : "Start Session",
 );
-const isCurrentModeCustomizable = computed(() => {
-  return isModeCustomizable(props.modeId);
+const isCurrentRoleCustomizable = computed(() => {
+  return isRoleCustomizable(props.roleId);
 });
 
-const availablePluginsForCurrentMode = computed(() => {
-  const pluginNames = getAvailablePluginsForMode(props.modeId);
-  if (!pluginNames) return []; // Customizable mode, shouldn't happen here
+const availablePluginsForCurrentRole = computed(() => {
+  const pluginNames = getAvailablePluginsForRole(props.roleId);
+  if (!pluginNames) return []; // Customizable role, shouldn't happen here
 
   return pluginNames
     .map((name) => {
@@ -681,12 +681,12 @@ function handlePluginConfigUpdate(key: string, value: any): void {
   emit("update:pluginConfigs", updated);
 }
 
-function getModeIcon(): string {
+function getRoleIcon(): string {
   if (props.modelKind === "text-rest") {
     return "edit_note";
   }
-  const mode = MODES.find((m) => m.id === props.modeId);
-  return mode?.icon || "graphic_eq";
+  const role = ROLES.find((r) => r.id === props.roleId);
+  return role?.icon || "graphic_eq";
 }
 
 function handleEnterKey(event: KeyboardEvent): void {

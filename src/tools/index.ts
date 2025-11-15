@@ -19,13 +19,13 @@ import * as GenerateHtmlPlugin from "./models/generateHtml";
 import * as EditHtmlPlugin from "./models/editHtml";
 import * as PdfPlugin from "./models/pdf";
 import * as TodoPlugin from "./models/todo";
-import * as SwitchModePlugin from "./models/switchMode";
+import * as SwitchRolePlugin from "./models/switchRole";
 import * as TextResponsePlugin from "./models/textResponse";
 import * as SetImageStylePlugin from "./models/setImageStyle";
 import * as ScrollToAnchorPlugin from "./models/scrollToAnchor";
 import type { StartApiResponse } from "../../server/types";
 import { v4 as uuidv4 } from "uuid";
-import { getMode } from "../config/modes";
+import { getRole } from "../config/roles";
 import type {
   ToolContext,
   ToolResult,
@@ -57,7 +57,7 @@ const pluginList = [
   EditHtmlPlugin,
   PdfPlugin,
   TodoPlugin,
-  SwitchModePlugin,
+  SwitchRolePlugin,
   TextResponsePlugin,
   SetImageStylePlugin,
   ScrollToAnchorPlugin,
@@ -66,26 +66,26 @@ const pluginList = [
 export const getPluginList = () => pluginList;
 
 /**
- * Gets the list of available plugins for a given mode
- * @param modeId - The current mode ID
- * @returns Array of plugin names available in this mode, or null if all plugins available
+ * Gets the list of available plugins for a given role
+ * @param roleId - The current role ID
+ * @returns Array of plugin names available in this role, or null if all plugins available
  */
-export function getAvailablePluginsForMode(modeId: string): string[] | null {
-  const mode = getMode(modeId);
+export function getAvailablePluginsForRole(roleId: string): string[] | null {
+  const role = getRole(roleId);
 
-  // If mode not found, default to all available
-  if (!mode) {
+  // If role not found, default to all available
+  if (!role) {
     return null;
   }
 
-  // Customizable mode: all plugins available for user to choose
-  if (mode.pluginMode === "customizable") {
+  // Customizable role: all plugins available for user to choose
+  if (role.pluginMode === "customizable") {
     return null;
   }
 
-  // Fixed mode: return the exact list
-  if (mode.pluginMode === "fixed") {
-    return mode.availablePlugins || [];
+  // Fixed role: return the exact list
+  if (role.pluginMode === "fixed") {
+    return role.availablePlugins || [];
   }
 
   // Fallback: all available
@@ -93,18 +93,18 @@ export function getAvailablePluginsForMode(modeId: string): string[] | null {
 }
 
 /**
- * Checks if a plugin is available in the given mode
+ * Checks if a plugin is available in the given role
  * @param pluginName - The name of the plugin
- * @param modeId - The current mode ID
- * @returns true if plugin is available in the mode
+ * @param roleId - The current role ID
+ * @returns true if plugin is available in the role
  */
-export function isPluginAvailableInMode(
+export function isPluginAvailableInRole(
   pluginName: string,
-  modeId: string,
+  roleId: string,
 ): boolean {
-  const availablePlugins = getAvailablePluginsForMode(modeId);
+  const availablePlugins = getAvailablePluginsForRole(roleId);
 
-  // null means all plugins available (customizable mode)
+  // null means all plugins available (customizable role)
   if (availablePlugins === null) {
     return true;
   }
@@ -114,19 +114,19 @@ export function isPluginAvailableInMode(
 }
 
 /**
- * Checks if the current mode allows user customization of plugins
- * @param modeId - The current mode ID
- * @returns true if user can toggle plugins in this mode
+ * Checks if the current role allows user customization of plugins
+ * @param roleId - The current role ID
+ * @returns true if user can toggle plugins in this role
  */
-export function isModeCustomizable(modeId: string): boolean {
-  const mode = getMode(modeId);
-  return mode?.pluginMode === "customizable";
+export function isRoleCustomizable(roleId: string): boolean {
+  const role = getRole(roleId);
+  return role?.pluginMode === "customizable";
 }
 
 export const pluginTools = (
   startResponse?: StartApiResponse,
   enabledPlugins?: Record<string, boolean>,
-  modeId?: string,
+  roleId?: string,
 ) => {
   return pluginList
     .filter((plugin) => {
@@ -137,23 +137,23 @@ export const pluginTools = (
         return false;
       }
 
-      // If no mode specified, default to enabled
-      if (!modeId) {
+      // If no role specified, default to enabled
+      if (!roleId) {
         return enabledPlugins?.[toolName] ?? true;
       }
 
-      // Mode-level filtering
-      const availableInMode = isPluginAvailableInMode(toolName, modeId);
-      if (!availableInMode) {
+      // Role-level filtering
+      const availableInRole = isPluginAvailableInRole(toolName, roleId);
+      if (!availableInRole) {
         return false;
       }
 
-      // User-level: Only applies to customizable modes
-      if (isModeCustomizable(modeId)) {
+      // User-level: Only applies to customizable roles
+      if (isRoleCustomizable(roleId)) {
         return enabledPlugins?.[toolName] ?? true;
       }
 
-      // Fixed mode: plugin is in the list, so it's enabled
+      // Fixed role: plugin is in the list, so it's enabled
       return true;
     })
     .map((plugin) => plugin.plugin.toolDefinition);
@@ -162,7 +162,7 @@ export const pluginTools = (
 export const getPluginSystemPrompts = (
   startResponse?: StartApiResponse,
   enabledPlugins?: Record<string, boolean>,
-  modeId?: string,
+  roleId?: string,
 ): string => {
   const prompts = pluginList
     .filter((plugin) => {
@@ -173,16 +173,16 @@ export const getPluginSystemPrompts = (
         return false;
       }
 
-      if (!modeId) {
+      if (!roleId) {
         return enabledPlugins?.[toolName] ?? true;
       }
 
-      const availableInMode = isPluginAvailableInMode(toolName, modeId);
-      if (!availableInMode) {
+      const availableInRole = isPluginAvailableInRole(toolName, roleId);
+      if (!availableInRole) {
         return false;
       }
 
-      if (isModeCustomizable(modeId)) {
+      if (isRoleCustomizable(roleId)) {
         return enabledPlugins?.[toolName] ?? true;
       }
 
@@ -241,11 +241,11 @@ export const getAcceptedFileTypes = () => {
   return Array.from(new Set(allTypes));
 };
 
-export const getPluginsWithConfig = (modeId?: string) => {
+export const getPluginsWithConfig = (roleId?: string) => {
   return pluginList.filter((plugin) => {
     if (!plugin.plugin.config) return false;
-    if (!modeId) return true;
-    return isPluginAvailableInMode(plugin.plugin.toolDefinition.name, modeId);
+    if (!roleId) return true;
+    return isPluginAvailableInRole(plugin.plugin.toolDefinition.name, roleId);
   });
 };
 

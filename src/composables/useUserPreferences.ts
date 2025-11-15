@@ -2,7 +2,7 @@
 
 import { reactive, watch } from "vue";
 import { DEFAULT_LANGUAGE_CODE, getLanguageName } from "../config/languages";
-import { DEFAULT_MODE_ID, getMode } from "../config/modes";
+import { DEFAULT_ROLE_ID, getRole } from "../config/roles";
 import { pluginTools, getPluginSystemPrompts } from "../tools";
 import {
   DEFAULT_REALTIME_MODEL_ID,
@@ -16,7 +16,8 @@ import type { SessionTransportKind } from "./useSessionTransport";
 
 const USER_LANGUAGE_KEY = "user_language_v1";
 const SUPPRESS_INSTRUCTIONS_KEY = "suppress_instructions_v1";
-const MODE_ID_KEY = "mode_id_v2";
+const ROLE_ID_KEY = "role_id_v1";
+const LEGACY_MODE_ID_KEY = "mode_id_v2"; // For migration from mode to role
 const LEGACY_SYSTEM_PROMPT_ID_KEY = "system_prompt_id_v1"; // For migration
 const ENABLED_PLUGINS_KEY = "enabled_plugins_v1";
 const CUSTOM_INSTRUCTIONS_KEY = "custom_instructions_v1";
@@ -55,7 +56,7 @@ const setStoredObject = (key: string, value: Record<string, boolean>) => {
 export interface UserPreferencesState {
   userLanguage: string;
   suppressInstructions: boolean;
-  modeId: string;
+  roleId: string;
   customInstructions: string;
   enabledPlugins: Record<string, boolean>;
   modelId: string;
@@ -127,10 +128,11 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   const state = reactive<UserPreferencesState>({
     userLanguage: getStoredValue(USER_LANGUAGE_KEY) || DEFAULT_LANGUAGE_CODE,
     suppressInstructions: getStoredValue(SUPPRESS_INSTRUCTIONS_KEY) === "true",
-    modeId:
-      getStoredValue(MODE_ID_KEY) ||
+    roleId:
+      getStoredValue(ROLE_ID_KEY) ||
+      getStoredValue(LEGACY_MODE_ID_KEY) ||
       getStoredValue(LEGACY_SYSTEM_PROMPT_ID_KEY) ||
-      DEFAULT_MODE_ID,
+      DEFAULT_ROLE_ID,
     customInstructions: getStoredValue(CUSTOM_INSTRUCTIONS_KEY) || "",
     enabledPlugins: initEnabledPlugins(),
     modelId: getStoredValue(MODEL_ID_KEY) || DEFAULT_REALTIME_MODEL_ID,
@@ -159,11 +161,14 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   );
 
   watch(
-    () => state.modeId,
+    () => state.roleId,
     (val) => {
-      setStoredValue(MODE_ID_KEY, val);
-      // Clean up old key after migration
+      setStoredValue(ROLE_ID_KEY, val);
+      // Clean up old keys after migration
       const storage = getStorage();
+      if (storage?.getItem(LEGACY_MODE_ID_KEY)) {
+        storage.setItem(LEGACY_MODE_ID_KEY, "");
+      }
       if (storage?.getItem(LEGACY_SYSTEM_PROMPT_ID_KEY)) {
         storage.setItem(LEGACY_SYSTEM_PROMPT_ID_KEY, "");
       }
@@ -251,22 +256,22 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   );
 
   const buildInstructions = ({ startResponse }: BuildContext) => {
-    const mode = getMode(state.modeId);
-    const pluginPrompts = mode.includePluginPrompts
+    const role = getRole(state.roleId);
+    const pluginPrompts = role.includePluginPrompts
       ? getPluginSystemPrompts(
           startResponse,
           state.enabledPlugins,
-          state.modeId,
+          state.roleId,
         )
       : "";
     const customInstructionsText = state.customInstructions.trim()
       ? ` ${state.customInstructions}`
       : "";
-    return `${mode.prompt}${pluginPrompts}${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
+    return `${role.prompt}${pluginPrompts}${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
   };
 
   const buildTools = ({ startResponse }: BuildContext) =>
-    pluginTools(startResponse, state.enabledPlugins, state.modeId);
+    pluginTools(startResponse, state.enabledPlugins, state.roleId);
 
   return {
     state,
