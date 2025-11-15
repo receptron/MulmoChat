@@ -236,7 +236,7 @@ const pluginList = [
 
 1. **Present Value Calculation (Complex Formulas)**:
    ```
-   "Create a spreadsheet, which shows the present value of $1000 monthly income over a year. Use 5%/year as the discount rate."
+   "Shows me the present value of $1000 monthly income over a year, making it easy to change the discount rate."
    ```
    - Tests: Currency formatting, percentage strings, exponentiation (^), absolute references ($B$4), division, cell references
    - Expected: Shows 12 months with discount factors and present values, total PV around $11,618

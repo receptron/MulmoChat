@@ -57,7 +57,12 @@ const toolDefinition = {
             text: {
               type: "string",
               description:
-                "The text to be spoken by the presenter, which is also used to generate an image. Typically 50 to 70 words.",
+                "The text to be spoken by the presenter, which is also used to generate an image if there is no imagePrompt. Typically 50 to 70 words.",
+            },
+            imagePrompt: {
+              type: "string",
+              description:
+                "The optional prompt to be used to generate an image. Typically 50 to 70 words.",
             },
           },
           required: ["text"],
