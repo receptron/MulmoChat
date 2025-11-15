@@ -11,13 +11,13 @@
       class="flex-1 overflow-y-auto space-y-2 min-h-0"
     >
       <div
-        v-if="toolCallHistory.length === 0"
+        v-if="filteredToolCallHistory.length === 0"
         class="text-gray-500 text-sm text-center py-4"
       >
         No tool calls yet
       </div>
       <div
-        v-for="(call, index) in toolCallHistory"
+        v-for="(call, index) in filteredToolCallHistory"
         :key="index"
         class="border rounded p-3 bg-white text-xs space-y-1"
       >
@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, defineProps, defineEmits } from "vue";
+import { ref, nextTick, defineProps, defineEmits, computed } from "vue";
 import type { ToolResult } from "../tools";
 
 interface ToolCallHistoryItem {
@@ -86,6 +86,13 @@ const props = defineProps<{
 }>();
 
 const historyContainer = ref<HTMLDivElement | null>(null);
+
+// Filter out text-response pseudo tool calls from the display
+const filteredToolCallHistory = computed(() => {
+  return props.toolCallHistory.filter(
+    (call) => call.toolName !== "text-response",
+  );
+});
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
