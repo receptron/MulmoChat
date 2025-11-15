@@ -121,7 +121,7 @@ const presentSpreadsheet = async (
       );
     } catch (error) {
       throw new Error(
-        "Invalid sheets format: sheets must be an array, not a string. If you're seeing this error, the LLM may have accidentally stringified the data.",
+        `Invalid sheets format: sheets must be an array, not a string. Parse error: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
