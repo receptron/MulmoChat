@@ -177,6 +177,15 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
     return parseFloat(cell) || 0;
   };
 
+  // Helper to convert Excel column letters to 0-based index (A=0, Z=25, AA=26, etc.)
+  const colToIndex = (col: string): number => {
+    let result = 0;
+    for (let i = 0; i < col.length; i++) {
+      result = result * 26 + (col.charCodeAt(i) - 64); // A=1, B=2, etc.
+    }
+    return result - 1; // Convert to 0-based
+  };
+
   // Helper to get cell value by reference (e.g., "B2" or "$B$2")
   const getCellValue = (ref: string): number => {
     // Remove $ symbols for absolute references
@@ -184,7 +193,7 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
     const match = cleanRef.match(/^([A-Z]+)(\d+)$/);
     if (!match) return 0;
 
-    const col = match[1].charCodeAt(0) - 65; // A=0, B=1, etc.
+    const col = colToIndex(match[1]); // A=0, B=1, ..., Z=25, AA=26, etc.
     const row = parseInt(match[2]) - 1; // 1-indexed to 0-indexed
 
     if (
@@ -205,9 +214,9 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
     const match = range.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
     if (!match) return [];
 
-    const startCol = match[1].charCodeAt(0) - 65;
+    const startCol = colToIndex(match[1]);
     const startRow = parseInt(match[2]) - 1;
-    const endCol = match[3].charCodeAt(0) - 65;
+    const endCol = colToIndex(match[3]);
     const endRow = parseInt(match[4]) - 1;
 
     const values: number[] = [];

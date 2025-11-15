@@ -45,7 +45,7 @@ const toolDefinition = {
             data: {
               type: "array",
               description:
-                "Rows of cells. Inputs should be plain numbers/strings; ALL calculations must be formulas with formats. Example row: ['Year', 'Revenue', 'Growth %'], [2024, 1500000, {\"f\": \"B2/B1-1\", \"z\": \"0.00%\"}]. Format codes (z): '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal).",
+                "Rows of cells. Inputs should be plain numbers/strings; ALL calculations must be formulas with formats. Use Excel-style A1 notation in formulas: columns are letters (A, B, C...), rows are 1-based numbers (1, 2, 3...). Example row: ['Year', 'Revenue', 'Growth %'], [2024, 1500000, {\"f\": \"B2/B1-1\", \"z\": \"0.00%\"}]. Format codes (z): '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal).",
               items: {
                 type: "array",
                 description:
@@ -69,7 +69,7 @@ const toolDefinition = {
                         f: {
                           type: "string",
                           description:
-                            "Formula expression (e.g., 'B2*1.05', 'SUM(A1:A10)')",
+                            "Formula expression using Excel A1 notation (columns: A,B,C...; rows: 1,2,3...). Examples: 'B2*1.05', 'SUM(A1:A10)', 'C3/C2-1'",
                         },
                         z: {
                           type: "string",
