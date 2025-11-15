@@ -45,50 +45,62 @@ const toolDefinition = {
             data: {
               type: "array",
               description:
-                "2D array of cell data. CRITICAL: Formulas MUST be objects with 'f' property, NOT plain strings.\n" +
+                "2D array of cell data. CRITICAL: All formulas MUST include both 'f' and 'z' properties.\n" +
                 "Cell format examples:\n" +
                 "- Label/header: \"Year\" or \"Total\"\n" +
                 "- Number input: 10000 or 0\n" +
-                "- Formula (REQUIRED format): {\"f\": \"B2*1.03\"} or {\"f\": \"SUM(A1:A10)\"}\n" +
-                "- Formatted number: {\"v\": 10000, \"z\": \"$#,##0.00\"}\n" +
-                "- Formatted formula: {\"f\": \"B2*1.05\", \"z\": \"$#,##0.00\"}\n" +
-                "WRONG: \"B2*1.03\" or \"$10,000\" (plain strings won't calculate)\n" +
-                "RIGHT: {\"f\": \"B2*1.03\"} or {\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}\n" +
-                "Format codes (z): '$#,##0.00' (currency), '#,##0' (thousands), '0.00%' (percent)\n" +
-                "Compound interest example: [{\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}, {\"f\": \"C2*1.05\", \"z\": \"$#,##0.00\"}]",
+                "- Formula (REQUIRED): {\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}\n" +
+                "- Formatted value: {\"v\": 10000, \"z\": \"$#,##0.00\"}\n" +
+                "WRONG: \"B2*1.03\" (plain string) or {\"f\": \"B2*1.03\"} (missing z)\n" +
+                "RIGHT: {\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}\n" +
+                "Format codes (z): '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal)\n" +
+                "Example: [{\"f\": \"B2*1.03\", \"z\": \"$#,##0.00\"}, {\"f\": \"C2*1.05\", \"z\": \"$#,##0.00\"}]",
               items: {
                 type: "array",
                 description:
                   "Row of cells. Each cell can be a primitive value, formula object, or formatted cell object.",
                 items: {
                   oneOf: [
-                    { type: "string", description: "Plain Text" },
-                    { type: "number" },
+                    {
+                      type: "string",
+                      description:
+                        "Text labels only (headers, categories). NOT for formulas or formatted numbers.",
+                    },
+                    {
+                      type: "number",
+                      description: "Raw numeric values (inputs only)",
+                    },
                     {
                       type: "object",
+                      description:
+                        "Formula with required formatting - use for ALL calculations",
                       properties: {
                         f: {
                           type: "string",
                           description:
-                            "Formula, such as 'B2*1.05' or 'SUM(A1:A10)'",
+                            "Formula expression (e.g., 'B2*1.05', 'SUM(A1:A10)')",
                         },
                         z: {
                           type: "string",
-                          description: "Number format code",
+                          description:
+                            "REQUIRED number format: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal)",
                         },
                       },
-                      required: ["f"],
+                      required: ["f", "z"],
                     },
                     {
                       type: "object",
+                      description: "Formatted value with required format code",
                       properties: {
-                        v: { description: "Value" },
+                        v: {
+                          description: "Value (number, string, boolean)",
+                        },
                         z: {
                           type: "string",
-                          description: "Number format code",
+                          description: "REQUIRED number format code",
                         },
                       },
-                      required: ["v"],
+                      required: ["v", "z"],
                     },
                   ],
                 },
@@ -158,5 +170,5 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: SpreadsheetView,
   previewComponent: SpreadsheetPreview,
-  systemPrompt: `Call the ${toolName} API to display dynamic spreadsheets. CRITICAL FORMAT RULES: (1) Formulas MUST be JSON objects like {"f": "B2*1.03"}, NOT plain strings like "B2*1.03". (2) Use formulas for ALL calculations - NEVER hardcode results. (3) Use raw numbers for inputs: 10000 not "$10,000". Examples: Year 0 = [0, 10000, 10000, 10000], Year 1 = [1, {"f": "B2*1.03"}, {"f": "C2*1.05"}, {"f": "D2*1.07"}]. Add formatting: {"f": "B2*1.03", "z": "$#,##0.00"}. Supported formulas: cell refs (A1, B2), functions (SUM, AVERAGE, IF, MIN, MAX), arithmetic (A1*1.05, B2+C2), absolute refs ($A$1).`,
+  systemPrompt: `Call the ${toolName} API to display dynamic spreadsheets. CRITICAL: ALL formulas MUST include BOTH "f" (formula) and "z" (format) properties. Format: {"f": "B2*1.03", "z": "$#,##0.00"}. Rules: (1) Formulas MUST be objects {"f": "...", "z": "..."}, NOT strings. (2) Use formulas for calculations, NEVER hardcode. (3) Raw numbers for inputs: 10000 not "$10,000". Example: [0, 10000, 10000], [1, {"f": "B2*1.03", "z": "$#,##0.00"}, {"f": "C2*1.05", "z": "$#,##0.00"}]. Common formats: "$#,##0.00" (currency), "#,##0" (integer), "0.00%" (percent). Supported: cell refs (A1), functions (SUM, AVERAGE, IF), arithmetic (A1*1.05).`,
 };
