@@ -89,8 +89,29 @@ When an AI calls a spreadsheet, renders an image, runs code, or manipulates 3D g
 Language expresses intent; tools perform it; GUI reveals the result.
 
 In this loop — **Intent → Reasoning → Action → Visualization → Feedback** — the LLM acts as conductor, orchestrating a symphony of tools that each have their own visual interface.
-You don’t need to open the chart app, the editor, or the presentation program.
+You don't need to open the chart app, the editor, or the presentation program.
 The right view simply appears when needed — and disappears when done.
+
+**Example: Creating a Video Podcast**
+You speak: *"Create a video podcast about the history of jazz, from New Orleans to bebop."*
+
+The system:
+1. Generates a structured script with narrative beats
+2. Creates relevant images (vintage photos, album covers, street scenes)
+3. Synthesizes narration audio for each segment
+4. Assembles everything into a complete video file
+
+You never "opened" a video editor, script writer, or image generator. You expressed intent; the AI orchestrated MulmoCast, markdown, and image tools; a video player appeared with your finished podcast. One conversation, multiple tools, zero friction.
+
+**Example: Analyzing Budget Data**
+You say: *"I spent $4,500 last month. Help me understand where it went."*
+
+The system creates a spreadsheet, asks clarifying questions, fills in categories, then reveals a live table with totals and percentages. You see your spending patterns instantly — not because you opened Excel, but because the AI understood you needed structured data visualization.
+
+**Example: Structuring Thoughts**
+Mid-conversation about a project, you say: *"Let's organize these ideas."*
+
+A markdown document appears in the canvas, capturing your conversation as structured notes with headers, bullet points, and next steps. The tool emerged because the context demanded it — then remains available for you to edit and refine.
 
 Multi-modality makes AI perceptive.
 Tools make it capable.
@@ -99,33 +120,37 @@ The future interface unites all three.
 
 ---
 
-### **5. The Rise of Super-Apps and Mini-Apps**
+### **5. From Apps to Orchestration**
 
-Before paradigms collapse, they consolidate.
-Super-apps like WeChat, LINE, and Alipay were humanity’s first response to app fatigue.
-They gathered dozens of services — chat, payment, shopping, travel — under one roof, trying to simplify a fragmented world.
+The app paradigm has reached its limits.
+Whether it's a dozen separate apps on your phone or a super-app trying to consolidate them, the fundamental problem remains: you must *choose* which tool to open, *learn* its interface, and *switch* context when your goal crosses boundaries.
 
-It worked, to a point.
-But mini-apps, though lighter than full applications, still speak the language of the old paradigm.
-You must *choose* which one to open. You must *learn* its UI. You must *switch* context when your goal crosses boundaries.
-
-Super-apps solved distribution. They did not solve *intent.*
+Apps solved capability. They did not solve *intent.*
 
 The next step is not aggregation, but **orchestration.**
-Instead of listing hundreds of mini-apps, the system should understand what you want and assemble the right tools automatically.
+Instead of forcing users to navigate between separate applications, the system should understand what you want and assemble the right tools automatically.
 
-You say, “Plan a weekend in Kyoto,” and the system:
+**Compare two approaches:**
 
-* Checks your calendar,
-* Finds flights and weather,
-* Suggests itineraries,
-* Presents a map and budget sheet — all in one adaptive space.
+*With traditional apps:*
+You open TripAdvisor to research Kyoto, then switch to Google Maps to check locations, then open Notes to document your plan, then maybe Keynote or PowerPoint to create a presentation. Each requires launching a separate app, learning its interface, and manually copying data between them.
 
-No app store. No switching. No mental load.
+*With AI orchestration:*
+You say, *"Plan a weekend in Kyoto."*
+
+The system:
+* Searches for attractions and local insights
+* Presents an interactive map with suggested locations
+* Creates a markdown itinerary with day-by-day plans
+* Offers to generate a travel guide video using MulmoCast
+
+All tools appear in one flowing conversation. The map updates as you discuss neighborhoods. The itinerary evolves as you refine preferences. If you say *"Actually, make this a video I can share with my family,"* the tools transform seamlessly.
+
+No app launcher. No switching. No mental load.
 The interface dissolves into *pure collaboration.*
 
-> “Super-apps built walled gardens.
-> The next interface removes the walls entirely.”
+> "Apps built silos of capability.
+> The next interface orchestrates them into understanding."
 
 ---
 
@@ -158,10 +183,40 @@ We won’t “open” apps or “launch” programs. We’ll simply express inte
 
 The experience will feel *alive but effortless*:
 
-* You’ll speak naturally, and the AI will listen with memory and context.
+* You'll speak naturally, and the AI will listen with memory and context.
 * Visuals will emerge only when they clarify, not clutter.
 * A map will appear when you mention a place, a graph when you discuss data, a document when you begin to explain.
 * The interface will reshape itself around your thought.
+
+**A Concrete Interaction:**
+
+You're planning a team presentation and start speaking to your computer:
+
+*"I need to explain our Q4 results to the board."*
+
+A spreadsheet appears with placeholder columns for Revenue, Expenses, and Profit.
+
+*"Revenue was $2.1M, expenses $1.6M."*
+
+The table fills in. A chart materializes showing the breakdown.
+
+*"Compare that to Q3."*
+
+Previous quarter data appears. The chart updates to show trends.
+
+*"Now create a summary document."*
+
+A markdown editor opens with a structured outline: "Q4 Financial Summary" with auto-filled sections pulling data from the spreadsheet.
+
+*"Add context about why expenses increased."*
+
+Text flows into the document as you explain verbally. The AI structures it into readable prose.
+
+*"Actually, turn this into a video presentation."*
+
+The markdown transforms into a MulmoCast script. Images generate for each section. Narration synthesizes. Within moments, you're watching a polished 3-minute video.
+
+You never opened PowerPoint, Excel, Word, or Premiere. You thought out loud, and the interface assembled itself around your intent — tools appearing and transforming as your needs evolved.
 
 This is the **disappearing computer** — a presence rather than a product.
 It anticipates instead of interrupts.
