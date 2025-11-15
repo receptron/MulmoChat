@@ -1,6 +1,6 @@
 <template>
   <div class="text-sm leading-snug" :class="textColorClass">
-    <p class="line-clamp-3 whitespace-pre-wrap">{{ previewText }}</p>
+    <p class="line-clamp-5 whitespace-pre-wrap">{{ previewText }}</p>
   </div>
 </template>
 
