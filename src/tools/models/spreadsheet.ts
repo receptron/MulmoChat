@@ -63,12 +63,16 @@ const toolDefinition = {
                   "Row of cells. Each cell can be a primitive value, formula object, or formatted cell object.",
                 items: {
                   oneOf: [
-                    { type: "string" },
+                    { type: "string", description: "Plain Text" },
                     { type: "number" },
                     {
                       type: "object",
                       properties: {
-                        f: { type: "string", description: "Formula" },
+                        f: {
+                          type: "string",
+                          description:
+                            "Formula, such as 'B2*1.05' or 'SUM(A1:A10)'",
+                        },
                         z: {
                           type: "string",
                           description: "Number format code",
