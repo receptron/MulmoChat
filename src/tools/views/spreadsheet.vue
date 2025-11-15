@@ -36,7 +36,11 @@
           </div>
 
           <!-- Spreadsheet table -->
-          <div class="table-container" v-html="renderedHtml"></div>
+          <div
+            class="table-container"
+            v-html="renderedHtml"
+            @click="handleTableClick"
+          ></div>
         </div>
       </div>
 
@@ -44,6 +48,7 @@
       <details class="spreadsheet-source">
         <summary>Edit Spreadsheet Data</summary>
         <textarea
+          ref="editorTextarea"
           v-model="editableData"
           @input="handleDataEdit"
           class="spreadsheet-editor"
@@ -75,6 +80,7 @@ const activeSheetIndex = ref(0);
 const editableData = ref(
   JSON.stringify(props.selectedResult.data?.sheets || [], null, 2),
 );
+const editorTextarea = ref<HTMLTextAreaElement | null>(null);
 
 // Check if spreadsheet data has been modified
 const hasChanges = computed(() => {
@@ -137,6 +143,27 @@ const formatNumber = (value: number, format: string): string => {
   }
 };
 
+// Helper to convert Excel column letters to 0-based index (A=0, Z=25, AA=26, etc.)
+const colToIndex = (col: string): number => {
+  let result = 0;
+  for (let i = 0; i < col.length; i++) {
+    result = result * 26 + (col.charCodeAt(i) - 64); // A=1, B=2, etc.
+  }
+  return result - 1; // Convert to 0-based
+};
+
+// Helper to convert 0-based index to Excel column letters (0=A, 25=Z, 26=AA, etc.)
+const indexToCol = (index: number): string => {
+  let col = "";
+  let num = index + 1; // Convert to 1-based
+  while (num > 0) {
+    const remainder = (num - 1) % 26;
+    col = String.fromCharCode(65 + remainder) + col;
+    num = Math.floor((num - 1) / 26);
+  }
+  return col;
+};
+
 // Calculate formulas in the data
 const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
   // Create a copy of the data with calculated values
@@ -175,15 +202,6 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
       if ("f" in cell) return 0; // Will be calculated later
     }
     return parseFloat(cell) || 0;
-  };
-
-  // Helper to convert Excel column letters to 0-based index (A=0, Z=25, AA=26, etc.)
-  const colToIndex = (col: string): number => {
-    let result = 0;
-    for (let i = 0; i < col.length; i++) {
-      result = result * 26 + (col.charCodeAt(i) - 64); // A=1, B=2, etc.
-    }
-    return result - 1; // Convert to 0-based
   };
 
   // Helper to get cell value by reference (e.g., "B2" or "$B$2")
@@ -414,6 +432,136 @@ const downloadExcel = () => {
 function handleDataEdit() {
   // Just update the local state, don't apply yet
   // User needs to click "Apply Changes" button
+}
+
+function handleTableClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+
+  // Check if clicked element is a table cell
+  if (target.tagName !== "TD") return;
+
+  // Get the row and column indices
+  const cell = target as HTMLTableCellElement;
+  const row = cell.parentElement as HTMLTableRowElement;
+
+  const colIndex = cell.cellIndex;
+  const rowIndex = row.rowIndex;
+
+  // Try to find and select this cell in the editor
+  if (editorTextarea.value) {
+    try {
+      const sheets = JSON.parse(editableData.value);
+      const currentSheet = sheets[activeSheetIndex.value];
+
+      if (
+        currentSheet &&
+        currentSheet.data &&
+        currentSheet.data[rowIndex] &&
+        currentSheet.data[rowIndex][colIndex] !== undefined
+      ) {
+        const cellValue = currentSheet.data[rowIndex][colIndex];
+        const cellStr = JSON.stringify(cellValue);
+
+        // Find the sheet's data section in the editor
+        const sheetStartMarker = `"name": "${currentSheet.name}"`;
+        const dataStartMarker = `"data": [`;
+
+        let searchPos = editableData.value.indexOf(sheetStartMarker);
+        if (searchPos >= 0) {
+          searchPos = editableData.value.indexOf(dataStartMarker, searchPos);
+          if (searchPos >= 0) {
+            // Now navigate through the formatted JSON to find the target row and cell
+            let currentRow = -1;
+            let pos = searchPos + dataStartMarker.length;
+
+            // Find the target row by counting opening brackets
+            while (pos < editableData.value.length && currentRow < rowIndex) {
+              const char = editableData.value[pos];
+              if (char === "[") {
+                currentRow++;
+                if (currentRow === rowIndex) {
+                  // Found our target row - now find the colIndex-th cell
+                  let currentCol = 0;
+                  let cellStart = -1;
+                  let inString = false;
+                  let inObject = 0;
+                  let bracketDepth = 0;
+
+                  for (let i = pos; i < editableData.value.length; i++) {
+                    const c = editableData.value[i];
+                    const prevChar = i > 0 ? editableData.value[i - 1] : "";
+
+                    // Track string boundaries
+                    if (c === '"' && prevChar !== "\\") {
+                      inString = !inString;
+                    }
+
+                    if (!inString) {
+                      // Track bracket depth to know when we exit this row
+                      if (c === "[") bracketDepth++;
+                      if (c === "]") {
+                        bracketDepth--;
+                        if (bracketDepth === 0) break; // End of row
+                      }
+
+                      // Track object depth
+                      if (c === "{") inObject++;
+                      if (c === "}") inObject--;
+
+                      // Count cells by top-level commas
+                      if (c === "," && inObject === 0 && bracketDepth === 1) {
+                        currentCol++;
+                      }
+                    }
+
+                    // Find the start of our target cell
+                    if (currentCol === colIndex && cellStart === -1) {
+                      // Skip whitespace and opening bracket/comma
+                      if (
+                        c !== " " &&
+                        c !== "\n" &&
+                        c !== "\t" &&
+                        c !== "[" &&
+                        c !== ","
+                      ) {
+                        cellStart = i;
+                        break;
+                      }
+                    }
+                  }
+
+                  if (cellStart >= 0) {
+                    editorTextarea.value.focus();
+                    editorTextarea.value.setSelectionRange(
+                      cellStart,
+                      cellStart + cellStr.length,
+                    );
+
+                    // Scroll the textarea to make the selection visible
+                    const textBeforeSelection = editableData.value.substring(
+                      0,
+                      cellStart,
+                    );
+                    const lineNumber = textBeforeSelection.split("\n").length;
+                    const lineHeight = 22;
+                    const textarea = editorTextarea.value;
+                    textarea.scrollTop = Math.max(
+                      0,
+                      lineNumber * lineHeight - textarea.clientHeight / 2,
+                    );
+                  }
+                  break;
+                }
+              }
+              pos++;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to select cell in editor:", error);
+    }
+  }
 }
 
 function applyChanges() {

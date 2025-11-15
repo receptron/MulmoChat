@@ -73,8 +73,7 @@ const toolDefinition = {
                         },
                         z: {
                           type: "string",
-                          description:
-                            "Required number format code",
+                          description: "Required number format code",
                         },
                       },
                       required: ["f", "z"],
