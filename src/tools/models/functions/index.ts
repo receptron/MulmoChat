@@ -5,9 +5,9 @@
  * Import this file to load all available spreadsheet functions.
  */
 
-import './statistical';
-import './mathematical';
-import './logical';
-import './text';
+import "./statistical";
+import "./mathematical";
+import "./logical";
+import "./text";
 
-export { functionRegistry } from '../spreadsheet-functions';
+export { functionRegistry } from "../spreadsheet-functions";

@@ -17,7 +17,7 @@ export interface FunctionContext {
 
 export type FunctionHandler = (
   args: string[],
-  context: FunctionContext
+  context: FunctionContext,
 ) => CellValue;
 
 export interface FunctionDefinition {
@@ -53,7 +53,7 @@ class FunctionRegistry {
     const categories = new Map<string, FunctionDefinition[]>();
 
     for (const func of this.functions.values()) {
-      const category = func.category || 'Other';
+      const category = func.category || "Other";
       if (!categories.has(category)) {
         categories.set(category, []);
       }
@@ -70,25 +70,25 @@ export const functionRegistry = new FunctionRegistry();
  * Helper function to convert a value to a number
  */
 export function toNumber(value: CellValue): number {
-  if (typeof value === 'number') return value;
+  if (typeof value === "number") return value;
 
   // Handle percentage strings like "5%" or "0.4167%"
-  if (typeof value === 'string' && value.includes('%')) {
-    const numericPart = value.replace('%', '').trim();
+  if (typeof value === "string" && value.includes("%")) {
+    const numericPart = value.replace("%", "").trim();
     const num = parseFloat(numericPart);
     return isNaN(num) ? 0 : num / 100;
   }
 
   // Handle currency strings like "$1,000" or "$1,000.00"
-  if (typeof value === 'string' && value.includes('$')) {
-    const numericPart = value.replace(/[$,]/g, '').trim();
+  if (typeof value === "string" && value.includes("$")) {
+    const numericPart = value.replace(/[$,]/g, "").trim();
     const num = parseFloat(numericPart);
     return isNaN(num) ? 0 : num;
   }
 
   // Handle comma-separated numbers like "1,000"
-  if (typeof value === 'string' && value.includes(',')) {
-    const numericPart = value.replace(/,/g, '').trim();
+  if (typeof value === "string" && value.includes(",")) {
+    const numericPart = value.replace(/,/g, "").trim();
     const num = parseFloat(numericPart);
     return isNaN(num) ? 0 : num;
   }
@@ -110,7 +110,7 @@ export function toString(value: CellValue): string {
  * Returns a comparison function that tests if a value matches the criteria
  */
 export function parseCriteria(criteria: string): (value: CellValue) => boolean {
-  const trimmedCriteria = criteria.trim().replace(/^["']|["']$/g, '');
+  const trimmedCriteria = criteria.trim().replace(/^["']|["']$/g, "");
 
   // Check for comparison operators
   const opMatch = trimmedCriteria.match(/^([><=!]+)(.+)$/);
@@ -119,19 +119,19 @@ export function parseCriteria(criteria: string): (value: CellValue) => boolean {
     const numValue = parseFloat(value);
 
     switch (op) {
-      case '>':
+      case ">":
         return (v) => toNumber(v) > numValue;
-      case '>=':
+      case ">=":
         return (v) => toNumber(v) >= numValue;
-      case '<':
+      case "<":
         return (v) => toNumber(v) < numValue;
-      case '<=':
+      case "<=":
         return (v) => toNumber(v) <= numValue;
-      case '=':
-      case '==':
+      case "=":
+      case "==":
         return (v) => String(v) === value || toNumber(v) === numValue;
-      case '!=':
-      case '<>':
+      case "!=":
+      case "<>":
         return (v) => String(v) !== value && toNumber(v) !== numValue;
       default:
         return () => false;

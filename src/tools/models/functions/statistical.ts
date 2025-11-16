@@ -7,16 +7,16 @@ import {
   toNumber,
   parseCriteria,
   type FunctionHandler,
-} from '../spreadsheet-functions';
+} from "../spreadsheet-functions";
 
 const sumHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('SUM requires 1 argument');
+  if (args.length !== 1) throw new Error("SUM requires 1 argument");
   const values = context.getRangeValues(args[0]);
   return values.reduce((sum, val) => sum + toNumber(val), 0);
 };
 
 const averageHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('AVERAGE requires 1 argument');
+  if (args.length !== 1) throw new Error("AVERAGE requires 1 argument");
   const values = context.getRangeValues(args[0]);
   if (values.length === 0) return 0;
   const sum = values.reduce((acc, val) => acc + toNumber(val), 0);
@@ -24,25 +24,25 @@ const averageHandler: FunctionHandler = (args, context) => {
 };
 
 const maxHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('MAX requires 1 argument');
+  if (args.length !== 1) throw new Error("MAX requires 1 argument");
   const values = context.getRangeValues(args[0]).map(toNumber);
   return values.length > 0 ? Math.max(...values) : 0;
 };
 
 const minHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('MIN requires 1 argument');
+  if (args.length !== 1) throw new Error("MIN requires 1 argument");
   const values = context.getRangeValues(args[0]).map(toNumber);
   return values.length > 0 ? Math.min(...values) : 0;
 };
 
 const countHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('COUNT requires 1 argument');
+  if (args.length !== 1) throw new Error("COUNT requires 1 argument");
   const values = context.getRangeValues(args[0]);
   return values.length;
 };
 
 const medianHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('MEDIAN requires 1 argument');
+  if (args.length !== 1) throw new Error("MEDIAN requires 1 argument");
   const values = context
     .getRangeValues(args[0])
     .map(toNumber)
@@ -56,7 +56,7 @@ const medianHandler: FunctionHandler = (args, context) => {
 };
 
 const modeHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('MODE requires 1 argument');
+  if (args.length !== 1) throw new Error("MODE requires 1 argument");
   const values = context.getRangeValues(args[0]).map(toNumber);
 
   if (values.length === 0) return 0;
@@ -81,19 +81,20 @@ const modeHandler: FunctionHandler = (args, context) => {
 };
 
 const stdevHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('STDEV requires 1 argument');
+  if (args.length !== 1) throw new Error("STDEV requires 1 argument");
   const values = context.getRangeValues(args[0]).map(toNumber);
 
   if (values.length === 0) return 0;
 
   const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
   const squaredDiffs = values.map((val) => Math.pow(val - mean, 2));
-  const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
+  const variance =
+    squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
   return Math.sqrt(variance);
 };
 
 const varHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('VAR requires 1 argument');
+  if (args.length !== 1) throw new Error("VAR requires 1 argument");
   const values = context.getRangeValues(args[0]).map(toNumber);
 
   if (values.length === 0) return 0;
@@ -104,14 +105,14 @@ const varHandler: FunctionHandler = (args, context) => {
 };
 
 const countaHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('COUNTA requires 1 argument');
+  if (args.length !== 1) throw new Error("COUNTA requires 1 argument");
   const values = context.getRangeValues(args[0]);
   // Count non-empty cells
-  return values.filter((v) => v !== null && v !== undefined && v !== '').length;
+  return values.filter((v) => v !== null && v !== undefined && v !== "").length;
 };
 
 const countifHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 2) throw new Error('COUNTIF requires 2 arguments');
+  if (args.length !== 2) throw new Error("COUNTIF requires 2 arguments");
   const values = context.getRangeValues(args[0]);
   const criteria = args[1].trim();
   const compareFn = parseCriteria(criteria);
@@ -120,7 +121,7 @@ const countifHandler: FunctionHandler = (args, context) => {
 
 const sumifHandler: FunctionHandler = (args, context) => {
   if (args.length < 2 || args.length > 3) {
-    throw new Error('SUMIF requires 2 or 3 arguments');
+    throw new Error("SUMIF requires 2 or 3 arguments");
   }
 
   const criteriaRange = context.getRangeValues(args[0]);
@@ -142,7 +143,7 @@ const sumifHandler: FunctionHandler = (args, context) => {
 
 const averageifHandler: FunctionHandler = (args, context) => {
   if (args.length < 2 || args.length > 3) {
-    throw new Error('AVERAGEIF requires 2 or 3 arguments');
+    throw new Error("AVERAGEIF requires 2 or 3 arguments");
   }
 
   const criteriaRange = context.getRangeValues(args[0]);
@@ -166,131 +167,131 @@ const averageifHandler: FunctionHandler = (args, context) => {
 
 // Register all statistical functions
 functionRegistry.register({
-  name: 'SUM',
+  name: "SUM",
   handler: sumHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Returns the sum of all numbers in a range',
-  examples: ['SUM(A1:A10)', 'SUM(B2:B20)'],
-  category: 'Statistical',
+  description: "Returns the sum of all numbers in a range",
+  examples: ["SUM(A1:A10)", "SUM(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'AVERAGE',
+  name: "AVERAGE",
   handler: averageHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Returns the average (arithmetic mean) of numbers in a range',
-  examples: ['AVERAGE(A1:A10)', 'AVERAGE(B2:B20)'],
-  category: 'Statistical',
+  description: "Returns the average (arithmetic mean) of numbers in a range",
+  examples: ["AVERAGE(A1:A10)", "AVERAGE(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'MAX',
+  name: "MAX",
   handler: maxHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Returns the largest value in a range',
-  examples: ['MAX(A1:A10)', 'MAX(B2:B20)'],
-  category: 'Statistical',
+  description: "Returns the largest value in a range",
+  examples: ["MAX(A1:A10)", "MAX(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'MIN',
+  name: "MIN",
   handler: minHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Returns the smallest value in a range',
-  examples: ['MIN(A1:A10)', 'MIN(B2:B20)'],
-  category: 'Statistical',
+  description: "Returns the smallest value in a range",
+  examples: ["MIN(A1:A10)", "MIN(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'COUNT',
+  name: "COUNT",
   handler: countHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Counts the number of cells in a range',
-  examples: ['COUNT(A1:A10)', 'COUNT(B2:B20)'],
-  category: 'Statistical',
+  description: "Counts the number of cells in a range",
+  examples: ["COUNT(A1:A10)", "COUNT(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'MEDIAN',
+  name: "MEDIAN",
   handler: medianHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Returns the median (middle) value in a range',
-  examples: ['MEDIAN(A1:A10)', 'MEDIAN(B2:B20)'],
-  category: 'Statistical',
+  description: "Returns the median (middle) value in a range",
+  examples: ["MEDIAN(A1:A10)", "MEDIAN(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'MODE',
+  name: "MODE",
   handler: modeHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Returns the most frequently occurring value in a range',
-  examples: ['MODE(A1:A10)', 'MODE(B2:B20)'],
-  category: 'Statistical',
+  description: "Returns the most frequently occurring value in a range",
+  examples: ["MODE(A1:A10)", "MODE(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'STDEV',
+  name: "STDEV",
   handler: stdevHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Returns the standard deviation of numbers in a range',
-  examples: ['STDEV(A1:A10)', 'STDEV(B2:B20)'],
-  category: 'Statistical',
+  description: "Returns the standard deviation of numbers in a range",
+  examples: ["STDEV(A1:A10)", "STDEV(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'VAR',
+  name: "VAR",
   handler: varHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Returns the variance of numbers in a range',
-  examples: ['VAR(A1:A10)', 'VAR(B2:B20)'],
-  category: 'Statistical',
+  description: "Returns the variance of numbers in a range",
+  examples: ["VAR(A1:A10)", "VAR(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'COUNTA',
+  name: "COUNTA",
   handler: countaHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Counts the number of non-empty cells in a range',
-  examples: ['COUNTA(A1:A10)', 'COUNTA(B2:B20)'],
-  category: 'Statistical',
+  description: "Counts the number of non-empty cells in a range",
+  examples: ["COUNTA(A1:A10)", "COUNTA(B2:B20)"],
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'COUNTIF',
+  name: "COUNTIF",
   handler: countifHandler,
   minArgs: 2,
   maxArgs: 2,
-  description: 'Counts cells in a range that match a criteria',
+  description: "Counts cells in a range that match a criteria",
   examples: ['COUNTIF(A1:A10, ">5")', 'COUNTIF(B1:B10, "Yes")'],
-  category: 'Statistical',
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'SUMIF',
+  name: "SUMIF",
   handler: sumifHandler,
   minArgs: 2,
   maxArgs: 3,
-  description: 'Sums cells in a range that match a criteria',
+  description: "Sums cells in a range that match a criteria",
   examples: ['SUMIF(A1:A10, ">5")', 'SUMIF(A1:A10, ">5", B1:B10)'],
-  category: 'Statistical',
+  category: "Statistical",
 });
 
 functionRegistry.register({
-  name: 'AVERAGEIF',
+  name: "AVERAGEIF",
   handler: averageifHandler,
   minArgs: 2,
   maxArgs: 3,
-  description: 'Averages cells in a range that match a criteria',
+  description: "Averages cells in a range that match a criteria",
   examples: ['AVERAGEIF(A1:A10, ">5")', 'AVERAGEIF(A1:A10, ">5", B1:B10)'],
-  category: 'Statistical',
+  category: "Statistical",
 });

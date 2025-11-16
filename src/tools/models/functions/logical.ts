@@ -7,10 +7,10 @@ import {
   toNumber,
   type FunctionHandler,
   type CellValue,
-} from '../spreadsheet-functions';
+} from "../spreadsheet-functions";
 
 const ifHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 3) throw new Error('IF requires 3 arguments');
+  if (args.length !== 3) throw new Error("IF requires 3 arguments");
 
   const condition = args[0];
   const trueValue = args[1];
@@ -23,15 +23,15 @@ const ifHandler: FunctionHandler = (args, context) => {
   let condExpr = condition;
   // Match: 'Sheet'!A1, Sheet1!A1, $A$1, A1
   const cellRefs = condition.match(
-    /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g
+    /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
   );
   if (cellRefs) {
     for (const ref of cellRefs) {
       const value = context.getCellValue(ref);
-      const escapedRef = ref.replace(/\$/g, '\\$').replace(/'/g, "\\'");
+      const escapedRef = ref.replace(/\$/g, "\\$").replace(/'/g, "\\'");
       condExpr = condExpr.replace(
-        new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-        String(value)
+        new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+        String(value),
       );
     }
   }
@@ -60,15 +60,15 @@ const ifHandler: FunctionHandler = (args, context) => {
   // Otherwise evaluate as expression
   let expr = resultValue;
   const refs = resultValue.match(
-    /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g
+    /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
   );
   if (refs) {
     for (const ref of refs) {
       const value = context.getCellValue(ref);
-      const escapedRef = ref.replace(/\$/g, '\\$').replace(/'/g, "\\'");
+      const escapedRef = ref.replace(/\$/g, "\\$").replace(/'/g, "\\'");
       expr = expr.replace(
-        new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-        String(value)
+        new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+        String(value),
       );
     }
   }
@@ -78,12 +78,12 @@ const ifHandler: FunctionHandler = (args, context) => {
 };
 
 const andHandler: FunctionHandler = (args, context) => {
-  if (args.length === 0) throw new Error('AND requires at least 1 argument');
+  if (args.length === 0) throw new Error("AND requires at least 1 argument");
 
   for (const arg of args) {
     const value = context.evaluateFormula(arg.trim());
     // Check if value is falsy (0, false, empty string, etc.)
-    if (!value || value === 0 || value === '0' || value === false) {
+    if (!value || value === 0 || value === "0" || value === false) {
       return false;
     }
   }
@@ -91,12 +91,12 @@ const andHandler: FunctionHandler = (args, context) => {
 };
 
 const orHandler: FunctionHandler = (args, context) => {
-  if (args.length === 0) throw new Error('OR requires at least 1 argument');
+  if (args.length === 0) throw new Error("OR requires at least 1 argument");
 
   for (const arg of args) {
     const value = context.evaluateFormula(arg.trim());
     // Check if value is truthy
-    if (value && value !== 0 && value !== '0' && value !== false) {
+    if (value && value !== 0 && value !== "0" && value !== false) {
       return true;
     }
   }
@@ -104,14 +104,14 @@ const orHandler: FunctionHandler = (args, context) => {
 };
 
 const notHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error('NOT requires 1 argument');
+  if (args.length !== 1) throw new Error("NOT requires 1 argument");
 
   const value = context.evaluateFormula(args[0]);
-  return !value || value === 0 || value === '0' || value === false;
+  return !value || value === 0 || value === "0" || value === false;
 };
 
 const iferrorHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 2) throw new Error('IFERROR requires 2 arguments');
+  if (args.length !== 2) throw new Error("IFERROR requires 2 arguments");
 
   try {
     const result = context.evaluateFormula(args[0]);
@@ -119,7 +119,7 @@ const iferrorHandler: FunctionHandler = (args, context) => {
     if (
       result === null ||
       result === undefined ||
-      (typeof result === 'number' && (isNaN(result) || !isFinite(result)))
+      (typeof result === "number" && (isNaN(result) || !isFinite(result)))
     ) {
       return context.evaluateFormula(args[1]);
     }
@@ -131,11 +131,11 @@ const iferrorHandler: FunctionHandler = (args, context) => {
 };
 
 const ifnaHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 2) throw new Error('IFNA requires 2 arguments');
+  if (args.length !== 2) throw new Error("IFNA requires 2 arguments");
 
   const result = context.evaluateFormula(args[0]);
   // Check if result is N/A (could be represented as specific error value)
-  if (result === null || result === undefined || result === '#N/A') {
+  if (result === null || result === undefined || result === "#N/A") {
     return context.evaluateFormula(args[1]);
   }
   return result;
@@ -143,7 +143,9 @@ const ifnaHandler: FunctionHandler = (args, context) => {
 
 const ifsHandler: FunctionHandler = (args, context) => {
   if (args.length < 2 || args.length % 2 !== 0) {
-    throw new Error('IFS requires an even number of arguments (condition-value pairs)');
+    throw new Error(
+      "IFS requires an even number of arguments (condition-value pairs)",
+    );
   }
 
   // Iterate through condition-value pairs
@@ -154,15 +156,15 @@ const ifsHandler: FunctionHandler = (args, context) => {
     // Evaluate condition
     let condExpr = condition;
     const cellRefs = condition.match(
-      /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g
+      /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
     );
     if (cellRefs) {
       for (const ref of cellRefs) {
         const cellValue = context.getCellValue(ref);
-        const escapedRef = ref.replace(/\$/g, '\\$').replace(/'/g, "\\'");
+        const escapedRef = ref.replace(/\$/g, "\\$").replace(/'/g, "\\'");
         condExpr = condExpr.replace(
-          new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-          String(cellValue)
+          new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+          String(cellValue),
         );
       }
     }
@@ -186,106 +188,111 @@ const ifsHandler: FunctionHandler = (args, context) => {
   }
 
   // If no conditions match, return error
-  return '#N/A';
+  return "#N/A";
 };
 
 const trueHandler: FunctionHandler = (args) => {
-  if (args.length !== 0) throw new Error('TRUE requires 0 arguments');
+  if (args.length !== 0) throw new Error("TRUE requires 0 arguments");
   return true;
 };
 
 const falseHandler: FunctionHandler = (args) => {
-  if (args.length !== 0) throw new Error('FALSE requires 0 arguments');
+  if (args.length !== 0) throw new Error("FALSE requires 0 arguments");
   return false;
 };
 
 // Register all logical functions
 functionRegistry.register({
-  name: 'IF',
+  name: "IF",
   handler: ifHandler,
   minArgs: 3,
   maxArgs: 3,
-  description: 'Returns one value if a condition is true and another if false',
-  examples: ['IF(A1>10, "High", "Low")', 'IF(B2>=5, SUM(C1:C10), 0)'],
-  category: 'Logical',
+  description: "Returns one value if a condition is true and another if false",
+  examples: ['IF(A1>10, "High", "Low")', "IF(B2>=5, SUM(C1:C10), 0)"],
+  category: "Logical",
 });
 
 functionRegistry.register({
-  name: 'AND',
+  name: "AND",
   handler: andHandler,
   minArgs: 1,
-  description: 'Returns TRUE if all arguments are true',
-  examples: ['AND(A1>5, B1<10)', 'AND(A1>0, B1>0, C1>0)'],
-  category: 'Logical',
+  description: "Returns TRUE if all arguments are true",
+  examples: ["AND(A1>5, B1<10)", "AND(A1>0, B1>0, C1>0)"],
+  category: "Logical",
 });
 
 functionRegistry.register({
-  name: 'OR',
+  name: "OR",
   handler: orHandler,
   minArgs: 1,
-  description: 'Returns TRUE if any argument is true',
-  examples: ['OR(A1>5, B1<10)', 'OR(A1>0, B1>0)'],
-  category: 'Logical',
+  description: "Returns TRUE if any argument is true",
+  examples: ["OR(A1>5, B1<10)", "OR(A1>0, B1>0)"],
+  category: "Logical",
 });
 
 functionRegistry.register({
-  name: 'NOT',
+  name: "NOT",
   handler: notHandler,
   minArgs: 1,
   maxArgs: 1,
-  description: 'Reverses the logical value of its argument',
-  examples: ['NOT(A1>5)', 'NOT(B1)'],
-  category: 'Logical',
+  description: "Reverses the logical value of its argument",
+  examples: ["NOT(A1>5)", "NOT(B1)"],
+  category: "Logical",
 });
 
 functionRegistry.register({
-  name: 'IFERROR',
+  name: "IFERROR",
   handler: iferrorHandler,
   minArgs: 2,
   maxArgs: 2,
-  description: 'Returns a value if expression is an error, otherwise returns the expression',
-  examples: ['IFERROR(A1/B1, 0)', 'IFERROR(VLOOKUP(A1, B1:C10, 2), "Not found")'],
-  category: 'Logical',
+  description:
+    "Returns a value if expression is an error, otherwise returns the expression",
+  examples: [
+    "IFERROR(A1/B1, 0)",
+    'IFERROR(VLOOKUP(A1, B1:C10, 2), "Not found")',
+  ],
+  category: "Logical",
 });
 
 functionRegistry.register({
-  name: 'IFNA',
+  name: "IFNA",
   handler: ifnaHandler,
   minArgs: 2,
   maxArgs: 2,
-  description: 'Returns a value if expression is #N/A, otherwise returns the expression',
-  examples: ['IFNA(A1, "N/A")', 'IFNA(MATCH(A1, B1:B10), 0)'],
-  category: 'Logical',
+  description:
+    "Returns a value if expression is #N/A, otherwise returns the expression",
+  examples: ['IFNA(A1, "N/A")', "IFNA(MATCH(A1, B1:B10), 0)"],
+  category: "Logical",
 });
 
 functionRegistry.register({
-  name: 'IFS',
+  name: "IFS",
   handler: ifsHandler,
   minArgs: 2,
-  description: 'Checks multiple conditions and returns the first true result',
+  description: "Checks multiple conditions and returns the first true result",
   examples: [
     'IFS(A1>90, "A", A1>80, "B", A1>70, "C")',
     'IFS(B1="Yes", 1, B1="No", 0)',
   ],
-  category: 'Logical',
+  category: "Logical",
 });
 
 functionRegistry.register({
-  name: 'TRUE',
+  name: "TRUE",
   handler: trueHandler,
   minArgs: 0,
   maxArgs: 0,
-  description: 'Returns the logical value TRUE',
-  examples: ['TRUE()', 'IF(A1>0, TRUE(), FALSE())'],
-  category: 'Logical',
+  description: "Returns the logical value TRUE",
+  examples: ["TRUE()", "IF(A1>0, TRUE(), FALSE())"],
+  category: "Logical",
 });
 
 functionRegistry.register({
-  name: 'FALSE',
+  name: "FALSE",
   handler: falseHandler,
   minArgs: 0,
   maxArgs: 0,
-  description: 'Returns the logical value FALSE',
-  examples: ['FALSE()', 'IF(A1>0, TRUE(), FALSE())'],
-  category: 'Logical',
+  description: "Returns the logical value FALSE",
+  examples: ["FALSE()", "IF(A1>0, TRUE(), FALSE())"],
+  category: "Logical",
 });
