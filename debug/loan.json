@@ -1,0 +1,492 @@
+[
+  {
+    "name": "Loan Details",
+    "data": [
+      [
+        "Loan Parameter",
+        "Value"
+      ],
+      [
+        "Loan Amount",
+        {
+          "v": 250000,
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "Annual Interest Rate",
+        {
+          "v": 0.06,
+          "z": "0.00%"
+        }
+      ],
+      [
+        "Loan Term (Years)",
+        30
+      ],
+      [
+        "Loan Term (Months)",
+        {
+          "f": "B4*12",
+          "z": "#,##0"
+        }
+      ],
+      [
+        "Monthly Interest Rate",
+        {
+          "f": "B3/12",
+          "z": "0.0000%"
+        }
+      ],
+      [
+        ""
+      ],
+      [
+        "Monthly Payment",
+        {
+          "f": "B2*(B6*(1+B6)^B5)/((1+B6)^B5-1)",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        ""
+      ],
+      [
+        "Total Amount Paid",
+        {
+          "f": "B8*B5",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "Total Interest Paid",
+        {
+          "f": "B10-B2",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        ""
+      ],
+      [
+        "Summary Statistics"
+      ],
+      [
+        "First Payment Interest",
+        {
+          "f": "'Payment Schedule'!D2",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "First Payment Principal",
+        {
+          "f": "'Payment Schedule'!E2",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "Last Payment Interest",
+        {
+          "f": "B2*B6",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "Last Payment Principal",
+        {
+          "f": "B8-B16",
+          "z": "$#,##0.00"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "Payment Schedule",
+    "data": [
+      [
+        "Payment #",
+        "Payment Date",
+        "Payment Amount",
+        "Interest",
+        "Principal",
+        "Remaining Balance"
+      ],
+      [
+        1,
+        "Month 1",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "'Loan Details'!B2*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C2-D2",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "'Loan Details'!B2-E2",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        2,
+        "Month 2",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F2*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C3-D3",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F2-E3",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        3,
+        "Month 3",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F3*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C4-D4",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F3-E4",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        4,
+        "Month 4",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F4*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C5-D5",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F4-E5",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        5,
+        "Month 5",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F5*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C6-D6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F5-E6",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        6,
+        "Month 6",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F6*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C7-D7",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F6-E7",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        7,
+        "Month 7",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F7*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C8-D8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F7-E8",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        8,
+        "Month 8",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F8*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C9-D9",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F8-E9",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        9,
+        "Month 9",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F9*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C10-D10",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F9-E10",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        10,
+        "Month 10",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F10*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C11-D11",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F10-E11",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        11,
+        "Month 11",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F11*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C12-D12",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F11-E12",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        12,
+        "Month 12",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F12*'Loan Details'!B6",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "C13-D13",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F12-E13",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        ""
+      ],
+      [
+        "Year 1 Totals",
+        "",
+        {
+          "f": "SUM(C2:C13)",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "SUM(D2:D13)",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "SUM(E2:E13)",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "F13",
+          "z": "$#,##0.00"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "Year Summary",
+    "data": [
+      [
+        "Year",
+        "Total Payments",
+        "Total Interest",
+        "Total Principal",
+        "Ending Balance"
+      ],
+      [
+        1,
+        {
+          "f": "'Payment Schedule'!C15",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "'Payment Schedule'!D15",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "'Payment Schedule'!E15",
+          "z": "$#,##0.00"
+        },
+        {
+          "f": "'Payment Schedule'!F13",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        ""
+      ],
+      [
+        "Key Insights"
+      ],
+      [
+        "Monthly Payment",
+        {
+          "f": "'Loan Details'!B8",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "Year 1 Interest Paid",
+        {
+          "f": "C2",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "Year 1 Principal Paid",
+        {
+          "f": "D2",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "Balance After Year 1",
+        {
+          "f": "E2",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        ""
+      ],
+      [
+        "Interest vs Principal"
+      ],
+      [
+        "Year 1 Interest %",
+        {
+          "f": "C2/B2",
+          "z": "0.00%"
+        }
+      ],
+      [
+        "Year 1 Principal %",
+        {
+          "f": "D2/B2",
+          "z": "0.00%"
+        }
+      ],
+      [
+        ""
+      ],
+      [
+        "Remaining Loan Info"
+      ],
+      [
+        "Remaining Balance",
+        {
+          "f": "E2",
+          "z": "$#,##0.00"
+        }
+      ],
+      [
+        "Months Remaining",
+        {
+          "f": "'Loan Details'!B5-12",
+          "z": "#,##0"
+        }
+      ],
+      [
+        "Years Remaining",
+        {
+          "f": "B15/12",
+          "z": "0.0"
+        }
+      ]
+    ]
+  }
+]
