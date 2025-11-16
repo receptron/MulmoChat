@@ -124,6 +124,7 @@ import { computed, ref, watch } from "vue";
 import * as XLSX from "xlsx";
 import type { ToolResult } from "../types";
 import type { SpreadsheetToolData } from "../models/spreadsheet";
+import { functionRegistry } from "../models/functions";
 
 const props = defineProps<{
   selectedResult: ToolResult<SpreadsheetToolData>;
@@ -411,133 +412,33 @@ const calculateFormulas = (
   // Evaluate a formula
   const evaluateFormula = (formula: string): number | string => {
     try {
-      // Handle IF function
-      if (formula.match(/^IF\(/i)) {
-        const argsMatch = formula.match(/^IF\((.+)\)$/i);
-        if (argsMatch) {
-          const args = parseFunctionArgs(argsMatch[1]);
-          if (args.length === 3) {
-            const condition = args[0];
-            const trueValue = args[1];
-            const falseValue = args[2];
+      // Check if it's a function call
+      const funcMatch = formula.match(/^([A-Z]+)\((.+)\)$/i);
+      if (funcMatch) {
+        const [, funcName, argsStr] = funcMatch;
+        const func = functionRegistry.get(funcName);
 
-            // Evaluate condition
-            let conditionResult = false;
+        if (func) {
+          const args = parseFunctionArgs(argsStr);
 
-            // Replace cell references in condition (including cross-sheet refs)
-            let condExpr = condition;
-            // Match: 'Sheet'!A1, Sheet1!A1, $A$1, A1
-            const cellRefs = condition.match(
-              /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
+          // Validate argument count
+          if (func.minArgs !== undefined && args.length < func.minArgs) {
+            throw new Error(
+              `${funcName} requires at least ${func.minArgs} argument${func.minArgs !== 1 ? "s" : ""}`,
             );
-            if (cellRefs) {
-              for (const ref of cellRefs) {
-                const value = getCellValue(ref);
-                const escapedRef = ref
-                  .replace(/\$/g, "\\$")
-                  .replace(/'/g, "\\'");
-                condExpr = condExpr.replace(
-                  new RegExp(
-                    escapedRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-                    "g",
-                  ),
-                  value.toString(),
-                );
-              }
-            }
-
-            // Evaluate comparison operators
-            if (/>=|<=|>|<|==|!=/.test(condExpr)) {
-              conditionResult = eval(condExpr);
-            } else {
-              // Just evaluate as expression
-              conditionResult = !!eval(condExpr);
-            }
-
-            // Return the appropriate value based on condition
-            const resultValue = conditionResult ? trueValue : falseValue;
-
-            // If result is a quoted string, return the string without quotes
-            if (/^["'](.*)["']$/.test(resultValue)) {
-              return resultValue.slice(1, -1);
-            }
-
-            // If result is a nested formula, evaluate it recursively
-            if (/^(SUM|AVERAGE|MAX|MIN|COUNT|IF)\(/i.test(resultValue)) {
-              return evaluateFormula(resultValue);
-            }
-
-            // Otherwise evaluate as expression
-            let expr = resultValue;
-            const refs = resultValue.match(
-              /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
-            );
-            if (refs) {
-              for (const ref of refs) {
-                const value = getCellValue(ref);
-                const escapedRef = ref
-                  .replace(/\$/g, "\\$")
-                  .replace(/'/g, "\\'");
-                expr = expr.replace(
-                  new RegExp(
-                    escapedRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-                    "g",
-                  ),
-                  value.toString(),
-                );
-              }
-            }
-
-            const numResult = parseFloat(expr);
-            return isNaN(numResult) ? expr : numResult;
           }
-        }
-      }
+          if (func.maxArgs !== undefined && args.length > func.maxArgs) {
+            throw new Error(
+              `${funcName} accepts at most ${func.maxArgs} argument${func.maxArgs !== 1 ? "s" : ""}`,
+            );
+          }
 
-      // Handle SUM function
-      if (formula.match(/^SUM\(/i)) {
-        const rangeMatch = formula.match(/SUM\(([^)]+)\)/i);
-        if (rangeMatch) {
-          const values = getRangeValues(rangeMatch[1]);
-          return values.reduce((sum, val) => sum + val, 0);
-        }
-      }
-
-      // Handle AVERAGE function
-      if (formula.match(/^AVERAGE\(/i)) {
-        const rangeMatch = formula.match(/AVERAGE\(([^)]+)\)/i);
-        if (rangeMatch) {
-          const values = getRangeValues(rangeMatch[1]);
-          return values.length > 0
-            ? values.reduce((sum, val) => sum + val, 0) / values.length
-            : 0;
-        }
-      }
-
-      // Handle MAX function
-      if (formula.match(/^MAX\(/i)) {
-        const rangeMatch = formula.match(/MAX\(([^)]+)\)/i);
-        if (rangeMatch) {
-          const values = getRangeValues(rangeMatch[1]);
-          return values.length > 0 ? Math.max(...values) : 0;
-        }
-      }
-
-      // Handle MIN function
-      if (formula.match(/^MIN\(/i)) {
-        const rangeMatch = formula.match(/MIN\(([^)]+)\)/i);
-        if (rangeMatch) {
-          const values = getRangeValues(rangeMatch[1]);
-          return values.length > 0 ? Math.min(...values) : 0;
-        }
-      }
-
-      // Handle COUNT function
-      if (formula.match(/^COUNT\(/i)) {
-        const rangeMatch = formula.match(/COUNT\(([^)]+)\)/i);
-        if (rangeMatch) {
-          const values = getRangeValues(rangeMatch[1]);
-          return values.length;
+          // Execute function with context
+          return func.handler(args, {
+            getCellValue,
+            getRangeValues,
+            evaluateFormula,
+          });
         }
       }
 
