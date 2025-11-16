@@ -59,107 +59,105 @@
         </button>
       </details>
 
-      <!-- Mini Editor Modal -->
-      <div v-if="miniEditorOpen" class="mini-editor-overlay" @click="closeMiniEditor">
-        <div class="mini-editor-modal" @click.stop>
-          <div class="mini-editor-header">
-            <h3>
-              Edit Cell
-              <span v-if="miniEditorCell" class="cell-reference">
-                {{ indexToCol(miniEditorCell.col) }}{{ miniEditorCell.row + 1 }}
-              </span>
-            </h3>
-            <button @click="closeMiniEditor" class="close-btn" title="Close">
-              <span class="material-icons">close</span>
-            </button>
-          </div>
+      <!-- Mini Editor at Bottom -->
+      <div v-if="miniEditorOpen" class="mini-editor-panel">
+        <div class="mini-editor-header">
+          <h3>
+            Edit Cell
+            <span v-if="miniEditorCell" class="cell-reference">
+              {{ indexToCol(miniEditorCell.col) }}{{ miniEditorCell.row + 1 }}
+            </span>
+          </h3>
+          <button @click="closeMiniEditor" class="close-btn" title="Close">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
 
-          <div class="mini-editor-body">
-            <!-- Type Selector -->
-            <div class="type-selector">
-              <label>Type:</label>
-              <div class="radio-group">
-                <label class="radio-option">
-                  <input
-                    type="radio"
-                    value="string"
-                    v-model="miniEditorType"
-                  />
-                  String
-                </label>
-                <label class="radio-option">
-                  <input
-                    type="radio"
-                    value="number"
-                    v-model="miniEditorType"
-                  />
-                  Number
-                </label>
-                <label class="radio-option">
-                  <input
-                    type="radio"
-                    value="object"
-                    v-model="miniEditorType"
-                  />
-                  Object (Formula)
-                </label>
-              </div>
-            </div>
-
-            <!-- String/Number input -->
-            <div v-if="miniEditorType === 'string' || miniEditorType === 'number'" class="form-group">
-              <label>Value:</label>
-              <input
-                v-if="miniEditorType === 'string'"
-                type="text"
-                v-model="miniEditorValue"
-                class="form-input"
-                placeholder="Enter text value"
-              />
-              <input
-                v-else
-                type="number"
-                v-model.number="miniEditorValue"
-                class="form-input"
-                step="any"
-                placeholder="Enter number"
-              />
-            </div>
-
-            <!-- Object inputs -->
-            <div v-if="miniEditorType === 'object'" class="form-group">
-              <label>Value:</label>
-              <input
-                type="text"
-                v-model="miniEditorValue"
-                class="form-input"
-                placeholder="Cell value (optional if formula is set)"
-              />
-            </div>
-            <div v-if="miniEditorType === 'object'" class="form-group">
-              <label>Formula:</label>
-              <input
-                type="text"
-                v-model="miniEditorFormula"
-                class="form-input"
-                placeholder="e.g., SUM(B2:B11) or A1+B1"
-              />
-            </div>
-            <div v-if="miniEditorType === 'object'" class="form-group">
-              <label>Format:</label>
-              <input
-                type="text"
-                v-model="miniEditorFormat"
-                class="form-input"
-                placeholder="e.g., $#,##0.00 or 0.00%"
-              />
+        <div class="mini-editor-body">
+          <!-- Type Selector -->
+          <div class="type-selector">
+            <label>Type:</label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  value="string"
+                  v-model="miniEditorType"
+                />
+                String
+              </label>
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  value="number"
+                  v-model="miniEditorType"
+                />
+                Number
+              </label>
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  value="object"
+                  v-model="miniEditorType"
+                />
+                Object (Formula)
+              </label>
             </div>
           </div>
 
-          <div class="mini-editor-footer">
-            <button @click="closeMiniEditor" class="cancel-btn">Cancel</button>
-            <button @click="saveMiniEditor" class="save-btn">Save</button>
+          <!-- String/Number input -->
+          <div v-if="miniEditorType === 'string' || miniEditorType === 'number'" class="form-group">
+            <label>Value:</label>
+            <input
+              v-if="miniEditorType === 'string'"
+              type="text"
+              v-model="miniEditorValue"
+              class="form-input"
+              placeholder="Enter text value"
+            />
+            <input
+              v-else
+              type="number"
+              v-model.number="miniEditorValue"
+              class="form-input"
+              step="any"
+              placeholder="Enter number"
+            />
           </div>
+
+          <!-- Object inputs -->
+          <div v-if="miniEditorType === 'object'" class="form-group">
+            <label>Value:</label>
+            <input
+              type="text"
+              v-model="miniEditorValue"
+              class="form-input"
+              placeholder="Cell value (optional if formula is set)"
+            />
+          </div>
+          <div v-if="miniEditorType === 'object'" class="form-group">
+            <label>Formula:</label>
+            <input
+              type="text"
+              v-model="miniEditorFormula"
+              class="form-input"
+              placeholder="e.g., SUM(B2:B11) or A1+B1"
+            />
+          </div>
+          <div v-if="miniEditorType === 'object'" class="form-group">
+            <label>Format:</label>
+            <input
+              type="text"
+              v-model="miniEditorFormat"
+              class="form-input"
+              placeholder="e.g., $#,##0.00 or 0.00%"
+            />
+          </div>
+        </div>
+
+        <div class="mini-editor-footer">
+          <button @click="closeMiniEditor" class="cancel-btn">Cancel</button>
+          <button @click="saveMiniEditor" class="save-btn">Save</button>
         </div>
       </div>
     </template>
@@ -1065,29 +1063,12 @@ watch(
   background: #cccccc;
 }
 
-/* Mini Editor Modal */
-.mini-editor-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-
-.mini-editor-modal {
+/* Mini Editor Panel */
+.mini-editor-panel {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow: hidden;
+  border-top: 2px solid #217346;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
@@ -1140,21 +1121,24 @@ watch(
 }
 
 .mini-editor-body {
-  padding: 1.25rem;
-  overflow-y: auto;
-  flex: 1;
+  padding: 1rem 1.25rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: start;
+  flex-wrap: wrap;
 }
 
 .type-selector {
-  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .type-selector > label {
-  display: block;
   font-weight: 600;
-  margin-bottom: 0.5rem;
   color: #333;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .radio-group {
@@ -1179,20 +1163,23 @@ watch(
 }
 
 .form-group {
-  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
 }
 
 .form-group label {
-  display: block;
   font-weight: 600;
-  margin-bottom: 0.4rem;
   color: #333;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .form-input {
-  width: 100%;
-  padding: 0.6rem;
+  flex: 1;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -1215,7 +1202,7 @@ watch(
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1.25rem;
   border-top: 1px solid #e0e0e0;
   background: #f8f8f8;
 }
