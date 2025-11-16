@@ -45,7 +45,7 @@
       </div>
 
       <!-- Collapsible Editor -->
-      <details ref="editorDetails" class="spreadsheet-source">
+      <details v-if="!miniEditorOpen" ref="editorDetails" class="spreadsheet-source">
         <summary>Edit Spreadsheet Data</summary>
         <textarea
           ref="editorTextarea"
