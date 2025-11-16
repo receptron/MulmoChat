@@ -322,9 +322,119 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
     return values;
   };
 
+  // Helper to parse function arguments, handling nested functions and quoted strings
+  const parseFunctionArgs = (argsStr: string): string[] => {
+    const args: string[] = [];
+    let currentArg = "";
+    let depth = 0;
+    let inString = false;
+    let stringChar = "";
+
+    for (let i = 0; i < argsStr.length; i++) {
+      const char = argsStr[i];
+      const prevChar = i > 0 ? argsStr[i - 1] : "";
+
+      // Handle string boundaries
+      if ((char === '"' || char === "'") && prevChar !== "\\") {
+        if (!inString) {
+          inString = true;
+          stringChar = char;
+        } else if (char === stringChar) {
+          inString = false;
+          stringChar = "";
+        }
+        currentArg += char;
+        continue;
+      }
+
+      // Track parentheses depth (for nested functions)
+      if (!inString) {
+        if (char === "(") depth++;
+        if (char === ")") depth--;
+
+        // Split on comma only at depth 0 and not in string
+        if (char === "," && depth === 0) {
+          args.push(currentArg.trim());
+          currentArg = "";
+          continue;
+        }
+      }
+
+      currentArg += char;
+    }
+
+    if (currentArg.trim()) {
+      args.push(currentArg.trim());
+    }
+
+    return args;
+  };
+
   // Evaluate a formula
   const evaluateFormula = (formula: string): number | string => {
     try {
+      // Handle IF function
+      if (formula.match(/^IF\(/i)) {
+        const argsMatch = formula.match(/^IF\((.+)\)$/i);
+        if (argsMatch) {
+          const args = parseFunctionArgs(argsMatch[1]);
+          if (args.length === 3) {
+            const condition = args[0];
+            const trueValue = args[1];
+            const falseValue = args[2];
+
+            // Evaluate condition
+            let conditionResult = false;
+
+            // Replace cell references in condition
+            let condExpr = condition;
+            const cellRefs = condition.match(/\$?[A-Z]+\$?\d+/g);
+            if (cellRefs) {
+              for (const ref of cellRefs) {
+                const value = getCellValue(ref);
+                const escapedRef = ref.replace(/\$/g, "\\$");
+                condExpr = condExpr.replace(new RegExp(escapedRef, "g"), value.toString());
+              }
+            }
+
+            // Evaluate comparison operators
+            if (/>=|<=|>|<|==|!=/.test(condExpr)) {
+              conditionResult = eval(condExpr);
+            } else {
+              // Just evaluate as expression
+              conditionResult = !!eval(condExpr);
+            }
+
+            // Return the appropriate value based on condition
+            const resultValue = conditionResult ? trueValue : falseValue;
+
+            // If result is a quoted string, return the string without quotes
+            if (/^["'](.*)["']$/.test(resultValue)) {
+              return resultValue.slice(1, -1);
+            }
+
+            // If result is a nested formula, evaluate it recursively
+            if (/^(SUM|AVERAGE|MAX|MIN|COUNT|IF)\(/i.test(resultValue)) {
+              return evaluateFormula(resultValue);
+            }
+
+            // Otherwise evaluate as expression
+            let expr = resultValue;
+            const refs = resultValue.match(/\$?[A-Z]+\$?\d+/g);
+            if (refs) {
+              for (const ref of refs) {
+                const value = getCellValue(ref);
+                const escapedRef = ref.replace(/\$/g, "\\$");
+                expr = expr.replace(new RegExp(escapedRef, "g"), value.toString());
+              }
+            }
+
+            const numResult = parseFloat(expr);
+            return isNaN(numResult) ? expr : numResult;
+          }
+        }
+      }
+
       // Handle SUM function
       if (formula.match(/^SUM\(/i)) {
         const rangeMatch = formula.match(/SUM\(([^)]+)\)/i);
@@ -576,11 +686,11 @@ function saveMiniEditor() {
       const input = miniEditorFormula.value?.trim() || "";
 
       // Detect if it's a formula by checking for:
-      // 1. Function names (SUM, AVERAGE, MAX, MIN, COUNT)
+      // 1. Function names (SUM, AVERAGE, MAX, MIN, COUNT, IF)
       // 2. Cell references with operators (A1+B1, etc.)
       // 3. Arithmetic expressions with operators (6/100, 5*2, etc.)
       const isFormula =
-        /^(SUM|AVERAGE|MAX|MIN|COUNT)\s*\(/i.test(input) ||
+        /^(SUM|AVERAGE|MAX|MIN|COUNT|IF)\s*\(/i.test(input) ||
         /[A-Z]+\d+\s*[\+\-\*\/\^]/.test(input) ||
         /\d+\s*[\+\-\*\/\^]\s*\d+/.test(input);
 
