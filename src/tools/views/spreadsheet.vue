@@ -45,7 +45,7 @@
       </div>
 
       <!-- Collapsible Editor -->
-      <details class="spreadsheet-source">
+      <details ref="editorDetails" class="spreadsheet-source">
         <summary>Edit Spreadsheet Data</summary>
         <textarea
           ref="editorTextarea"
@@ -58,6 +58,110 @@
           Apply Changes
         </button>
       </details>
+
+      <!-- Mini Editor Modal -->
+      <div v-if="miniEditorOpen" class="mini-editor-overlay" @click="closeMiniEditor">
+        <div class="mini-editor-modal" @click.stop>
+          <div class="mini-editor-header">
+            <h3>
+              Edit Cell
+              <span v-if="miniEditorCell" class="cell-reference">
+                {{ indexToCol(miniEditorCell.col) }}{{ miniEditorCell.row + 1 }}
+              </span>
+            </h3>
+            <button @click="closeMiniEditor" class="close-btn" title="Close">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+
+          <div class="mini-editor-body">
+            <!-- Type Selector -->
+            <div class="type-selector">
+              <label>Type:</label>
+              <div class="radio-group">
+                <label class="radio-option">
+                  <input
+                    type="radio"
+                    value="string"
+                    v-model="miniEditorType"
+                  />
+                  String
+                </label>
+                <label class="radio-option">
+                  <input
+                    type="radio"
+                    value="number"
+                    v-model="miniEditorType"
+                  />
+                  Number
+                </label>
+                <label class="radio-option">
+                  <input
+                    type="radio"
+                    value="object"
+                    v-model="miniEditorType"
+                  />
+                  Object (Formula)
+                </label>
+              </div>
+            </div>
+
+            <!-- String/Number input -->
+            <div v-if="miniEditorType === 'string' || miniEditorType === 'number'" class="form-group">
+              <label>Value:</label>
+              <input
+                v-if="miniEditorType === 'string'"
+                type="text"
+                v-model="miniEditorValue"
+                class="form-input"
+                placeholder="Enter text value"
+              />
+              <input
+                v-else
+                type="number"
+                v-model.number="miniEditorValue"
+                class="form-input"
+                step="any"
+                placeholder="Enter number"
+              />
+            </div>
+
+            <!-- Object inputs -->
+            <div v-if="miniEditorType === 'object'" class="form-group">
+              <label>Value:</label>
+              <input
+                type="text"
+                v-model="miniEditorValue"
+                class="form-input"
+                placeholder="Cell value (optional if formula is set)"
+              />
+            </div>
+            <div v-if="miniEditorType === 'object'" class="form-group">
+              <label>Formula:</label>
+              <input
+                type="text"
+                v-model="miniEditorFormula"
+                class="form-input"
+                placeholder="e.g., SUM(B2:B11) or A1+B1"
+              />
+            </div>
+            <div v-if="miniEditorType === 'object'" class="form-group">
+              <label>Format:</label>
+              <input
+                type="text"
+                v-model="miniEditorFormat"
+                class="form-input"
+                placeholder="e.g., $#,##0.00 or 0.00%"
+              />
+            </div>
+          </div>
+
+          <div class="mini-editor-footer">
+            <button @click="closeMiniEditor" class="cancel-btn">Cancel</button>
+            <button @click="saveMiniEditor" class="save-btn">Save</button>
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -81,6 +185,15 @@ const editableData = ref(
   JSON.stringify(props.selectedResult.data?.sheets || [], null, 2),
 );
 const editorTextarea = ref<HTMLTextAreaElement | null>(null);
+const editorDetails = ref<HTMLDetailsElement | null>(null);
+
+// Mini editor state
+const miniEditorOpen = ref(false);
+const miniEditorCell = ref<{ row: number; col: number } | null>(null);
+const miniEditorValue = ref<any>(null);
+const miniEditorType = ref<"number" | "string" | "object">("string");
+const miniEditorFormula = ref("");
+const miniEditorFormat = ref("");
 
 // Check if spreadsheet data has been modified
 const hasChanges = computed(() => {
@@ -434,6 +547,116 @@ function handleDataEdit() {
   // User needs to click "Apply Changes" button
 }
 
+function openMiniEditor(rowIndex: number, colIndex: number) {
+  try {
+    const sheets = JSON.parse(editableData.value);
+    const currentSheet = sheets[activeSheetIndex.value];
+
+    if (
+      !currentSheet ||
+      !currentSheet.data ||
+      !currentSheet.data[rowIndex] ||
+      currentSheet.data[rowIndex][colIndex] === undefined
+    ) {
+      return;
+    }
+
+    const cellValue = currentSheet.data[rowIndex][colIndex];
+
+    // Determine cell type and extract values
+    if (typeof cellValue === "object" && cellValue !== null) {
+      miniEditorType.value = "object";
+      miniEditorValue.value = cellValue.v ?? "";
+      miniEditorFormula.value = cellValue.f ?? "";
+      miniEditorFormat.value = cellValue.z ?? "";
+    } else if (typeof cellValue === "number") {
+      miniEditorType.value = "number";
+      miniEditorValue.value = cellValue;
+      miniEditorFormula.value = "";
+      miniEditorFormat.value = "";
+    } else {
+      miniEditorType.value = "string";
+      miniEditorValue.value = cellValue ?? "";
+      miniEditorFormula.value = "";
+      miniEditorFormat.value = "";
+    }
+
+    miniEditorCell.value = { row: rowIndex, col: colIndex };
+    miniEditorOpen.value = true;
+  } catch (error) {
+    console.error("Failed to open mini editor:", error);
+  }
+}
+
+function closeMiniEditor() {
+  miniEditorOpen.value = false;
+  miniEditorCell.value = null;
+  miniEditorValue.value = null;
+  miniEditorFormula.value = "";
+  miniEditorFormat.value = "";
+}
+
+function saveMiniEditor() {
+  if (!miniEditorCell.value) return;
+
+  try {
+    const sheets = JSON.parse(editableData.value);
+    const currentSheet = sheets[activeSheetIndex.value];
+
+    if (!currentSheet || !currentSheet.data) return;
+
+    const { row, col } = miniEditorCell.value;
+
+    // Ensure the row exists
+    while (currentSheet.data.length <= row) {
+      currentSheet.data.push([]);
+    }
+
+    // Build the new cell value based on type
+    let newCellValue: any;
+    if (miniEditorType.value === "number") {
+      newCellValue = parseFloat(miniEditorValue.value) || 0;
+    } else if (miniEditorType.value === "string") {
+      newCellValue = String(miniEditorValue.value);
+    } else {
+      // object type
+      newCellValue = {};
+      if (miniEditorFormula.value) {
+        newCellValue.f = miniEditorFormula.value;
+      } else if (miniEditorValue.value !== null && miniEditorValue.value !== "") {
+        const numValue = parseFloat(miniEditorValue.value);
+        newCellValue.v = isNaN(numValue) ? miniEditorValue.value : numValue;
+      }
+      if (miniEditorFormat.value) {
+        newCellValue.z = miniEditorFormat.value;
+      }
+    }
+
+    // Update the cell
+    currentSheet.data[row][col] = newCellValue;
+
+    // Update editableData
+    editableData.value = JSON.stringify(sheets, null, 2);
+
+    // Apply changes immediately
+    const updatedResult: ToolResult<SpreadsheetToolData> = {
+      ...props.selectedResult,
+      data: {
+        ...props.selectedResult.data,
+        sheets: sheets,
+      },
+    };
+
+    emit("updateResult", updatedResult);
+
+    closeMiniEditor();
+  } catch (error) {
+    alert(
+      `Failed to save cell: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}
+
 function handleTableClick(event: MouseEvent) {
   const target = event.target as HTMLElement;
 
@@ -447,7 +670,16 @@ function handleTableClick(event: MouseEvent) {
   const colIndex = cell.cellIndex;
   const rowIndex = row.rowIndex;
 
-  // Try to find and select this cell in the editor
+  // Check if the main editor details is open
+  const isEditorOpen = editorDetails.value?.open ?? false;
+
+  // If editor is closed, open mini editor
+  if (!isEditorOpen) {
+    openMiniEditor(rowIndex, colIndex);
+    return;
+  }
+
+  // If editor is open, try to find and select this cell in the editor
   if (editorTextarea.value) {
     try {
       const sheets = JSON.parse(editableData.value);
@@ -831,5 +1063,197 @@ watch(
 
 .apply-btn:disabled:hover {
   background: #cccccc;
+}
+
+/* Mini Editor Modal */
+.mini-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.mini-editor-modal {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f8f8;
+}
+
+.mini-editor-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cell-reference {
+  font-size: 0.9rem;
+  color: #217346;
+  background: #e8f5e9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: #666;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.close-btn .material-icons {
+  font-size: 1.5rem;
+}
+
+.mini-editor-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.type-selector {
+  margin-bottom: 1.25rem;
+}
+
+.type-selector > label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.radio-option input[type="radio"] {
+  cursor: pointer;
+  width: 1rem;
+  height: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #217346;
+  box-shadow: 0 0 0 2px rgba(33, 115, 70, 0.1);
+}
+
+.form-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.mini-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #e0e0e0;
+  background: #f8f8f8;
+}
+
+.cancel-btn,
+.save-btn {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.cancel-btn {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.cancel-btn:hover {
+  background: #d0d0d0;
+}
+
+.cancel-btn:active {
+  background: #c0c0c0;
+}
+
+.save-btn {
+  background: #217346;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #1e6a3f;
+}
+
+.save-btn:active {
+  background: #1a5c36;
 }
 </style>
