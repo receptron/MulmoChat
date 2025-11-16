@@ -29,12 +29,12 @@
             class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center w-10"
             title="New conversation"
           >
-            <span class="material-icons text-lg">edit</span>
+            <span class="material-icons text-lg">edit_note</span>
           </button>
           <button
+            v-if="pluginResults.length === 0"
             @click="showConfigPopup = true"
-            :disabled="pluginResults.length > 0"
-            class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed w-10"
+            class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center w-10"
             title="Configuration"
           >
             <span class="material-icons text-lg">settings</span>
@@ -714,9 +714,6 @@ function handlePluginConfigUpdate(key: string, value: any): void {
 }
 
 function getRoleIcon(): string {
-  if (props.modelKind === "text-rest") {
-    return "edit_note";
-  }
   const role = ROLES.find((r) => r.id === props.roleId);
   return role?.icon || "graphic_eq";
 }
