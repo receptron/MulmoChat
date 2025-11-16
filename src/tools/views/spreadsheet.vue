@@ -271,10 +271,31 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
     return parseFloat(cell) || 0;
   };
 
-  // Helper to get cell value by reference (e.g., "B2" or "$B$2")
+  // Helper to get cell value by reference (e.g., "B2", "$B$2", or "'Sheet1'!B2")
   const getCellValue = (ref: string): number => {
+    let sheetData = calculated;
+    let cellRef = ref;
+
+    // Check for cross-sheet reference (e.g., 'Sheet Name'!B2 or Sheet1!B2)
+    const sheetMatch = ref.match(/^(?:'([^']+)'|([^!]+))!(.+)$/);
+    if (sheetMatch) {
+      const sheetName = sheetMatch[1] || sheetMatch[2]; // Quoted or unquoted sheet name
+      cellRef = sheetMatch[3]; // Cell reference part
+
+      // Find the sheet in the original data
+      const sheet = props.selectedResult.data?.sheets?.find(
+        (s) => s.name === sheetName
+      );
+      if (sheet && sheet.data) {
+        // Calculate formulas for the target sheet
+        sheetData = calculateFormulas(sheet.data);
+      } else {
+        return 0; // Sheet not found
+      }
+    }
+
     // Remove $ symbols for absolute references
-    const cleanRef = ref.replace(/\$/g, "");
+    const cleanRef = cellRef.replace(/\$/g, "");
     const match = cleanRef.match(/^([A-Z]+)(\d+)$/);
     if (!match) return 0;
 
@@ -283,14 +304,14 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
 
     if (
       row < 0 ||
-      row >= calculated.length ||
+      row >= sheetData.length ||
       col < 0 ||
-      col >= calculated[row].length
+      col >= sheetData[row].length
     ) {
       return 0;
     }
 
-    const cell = calculated[row][col];
+    const cell = sheetData[row][col];
     return getRawValue(cell);
   };
 
@@ -386,15 +407,16 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
             // Evaluate condition
             let conditionResult = false;
 
-            // Replace cell references in condition
+            // Replace cell references in condition (including cross-sheet refs)
             let condExpr = condition;
-            const cellRefs = condition.match(/\$?[A-Z]+\$?\d+/g);
+            // Match: 'Sheet'!A1, Sheet1!A1, $A$1, A1
+            const cellRefs = condition.match(/(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g);
             if (cellRefs) {
               for (const ref of cellRefs) {
                 const value = getCellValue(ref);
-                const escapedRef = ref.replace(/\$/g, "\\$");
+                const escapedRef = ref.replace(/\$/g, "\\$").replace(/'/g, "\\'");
                 condExpr = condExpr.replace(
-                  new RegExp(escapedRef, "g"),
+                  new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g"),
                   value.toString(),
                 );
               }
@@ -423,13 +445,13 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
 
             // Otherwise evaluate as expression
             let expr = resultValue;
-            const refs = resultValue.match(/\$?[A-Z]+\$?\d+/g);
+            const refs = resultValue.match(/(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g);
             if (refs) {
               for (const ref of refs) {
                 const value = getCellValue(ref);
-                const escapedRef = ref.replace(/\$/g, "\\$");
+                const escapedRef = ref.replace(/\$/g, "\\$").replace(/'/g, "\\'");
                 expr = expr.replace(
-                  new RegExp(escapedRef, "g"),
+                  new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g"),
                   value.toString(),
                 );
               }
@@ -491,13 +513,13 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
       // Handle simple arithmetic expressions with cell references
       // Replace cell references with their values
       let expr = formula;
-      // Match cell references including absolute references like $B$4
-      const cellRefs = formula.match(/\$?[A-Z]+\$?\d+/g);
+      // Match cell references including cross-sheet and absolute references
+      const cellRefs = formula.match(/(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g);
       if (cellRefs) {
         for (const ref of cellRefs) {
           const value = getCellValue(ref);
-          // Escape $ symbols in regex
-          const escapedRef = ref.replace(/\$/g, "\\$");
+          // Escape special regex characters
+          const escapedRef = ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           expr = expr.replace(new RegExp(escapedRef, "g"), value.toString());
         }
       }
