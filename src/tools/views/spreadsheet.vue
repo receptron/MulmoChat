@@ -232,9 +232,21 @@ const indexToCol = (index: number): string => {
 };
 
 // Calculate formulas in the data
-const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
+const calculateFormulas = (
+  data: Array<Array<any>>,
+  sheetName?: string,
+  sheetsCache?: Map<string, Array<Array<any>>>,
+): Array<Array<any>> => {
   // Create a copy of the data with calculated values
   const calculated = data.map((row) => [...row]);
+
+  // Create cache if not provided (top-level call)
+  const cache = sheetsCache || new Map<string, Array<Array<any>>>();
+
+  // Add current sheet to cache to prevent infinite loops
+  if (sheetName) {
+    cache.set(sheetName, calculated);
+  }
 
   // Helper to extract raw value from cell
   const getRawValue = (cell: any): number => {
@@ -282,15 +294,20 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
       const sheetName = sheetMatch[1] || sheetMatch[2]; // Quoted or unquoted sheet name
       cellRef = sheetMatch[3]; // Cell reference part
 
-      // Find the sheet in the original data
-      const sheet = props.selectedResult.data?.sheets?.find(
-        (s) => s.name === sheetName
-      );
-      if (sheet && sheet.data) {
-        // Calculate formulas for the target sheet
-        sheetData = calculateFormulas(sheet.data);
+      // Check cache first to prevent infinite loops
+      if (cache.has(sheetName)) {
+        sheetData = cache.get(sheetName)!;
       } else {
-        return 0; // Sheet not found
+        // Find the sheet in the original data
+        const sheet = props.selectedResult.data?.sheets?.find(
+          (s) => s.name === sheetName,
+        );
+        if (sheet && sheet.data) {
+          // Calculate formulas for the target sheet with cache
+          sheetData = calculateFormulas(sheet.data, sheetName, cache);
+        } else {
+          return 0; // Sheet not found
+        }
       }
     }
 
@@ -410,13 +427,20 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
             // Replace cell references in condition (including cross-sheet refs)
             let condExpr = condition;
             // Match: 'Sheet'!A1, Sheet1!A1, $A$1, A1
-            const cellRefs = condition.match(/(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g);
+            const cellRefs = condition.match(
+              /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
+            );
             if (cellRefs) {
               for (const ref of cellRefs) {
                 const value = getCellValue(ref);
-                const escapedRef = ref.replace(/\$/g, "\\$").replace(/'/g, "\\'");
+                const escapedRef = ref
+                  .replace(/\$/g, "\\$")
+                  .replace(/'/g, "\\'");
                 condExpr = condExpr.replace(
-                  new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g"),
+                  new RegExp(
+                    escapedRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                    "g",
+                  ),
                   value.toString(),
                 );
               }
@@ -445,13 +469,20 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
 
             // Otherwise evaluate as expression
             let expr = resultValue;
-            const refs = resultValue.match(/(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g);
+            const refs = resultValue.match(
+              /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
+            );
             if (refs) {
               for (const ref of refs) {
                 const value = getCellValue(ref);
-                const escapedRef = ref.replace(/\$/g, "\\$").replace(/'/g, "\\'");
+                const escapedRef = ref
+                  .replace(/\$/g, "\\$")
+                  .replace(/'/g, "\\'");
                 expr = expr.replace(
-                  new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g"),
+                  new RegExp(
+                    escapedRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                    "g",
+                  ),
                   value.toString(),
                 );
               }
@@ -514,12 +545,14 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
       // Replace cell references with their values
       let expr = formula;
       // Match cell references including cross-sheet and absolute references
-      const cellRefs = formula.match(/(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g);
+      const cellRefs = formula.match(
+        /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
+      );
       if (cellRefs) {
         for (const ref of cellRefs) {
           const value = getCellValue(ref);
           // Escape special regex characters
-          const escapedRef = ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const escapedRef = ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           expr = expr.replace(new RegExp(escapedRef, "g"), value.toString());
         }
       }
@@ -587,8 +620,8 @@ const renderedHtml = computed(() => {
   }
 
   try {
-    // Calculate formulas first
-    const calculatedData = calculateFormulas(sheet.data);
+    // Calculate formulas first with sheet name for cross-sheet references
+    const calculatedData = calculateFormulas(sheet.data, sheet.name);
 
     // Convert data array to worksheet
     const worksheet = XLSX.utils.aoa_to_sheet(calculatedData);
