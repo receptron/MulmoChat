@@ -2,7 +2,7 @@
   <div
     ref="sidebarEl"
     :style="{ width: sidebarWidth + 'px' }"
-    class="flex-shrink-0 bg-gray-50 border rounded p-4 flex flex-col space-y-4 relative"
+    class="flex-shrink-0 bg-gray-50 border rounded pb-4 px-4 flex flex-col space-y-4 relative"
   >
     <!-- Resize handle -->
     <div
