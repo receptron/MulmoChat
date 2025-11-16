@@ -37,6 +37,7 @@
 
           <!-- Spreadsheet table -->
           <div
+            ref="tableContainer"
             class="table-container"
             v-html="renderedHtml"
             @click="handleTableClick"
@@ -45,7 +46,11 @@
       </div>
 
       <!-- Collapsible Editor -->
-      <details v-if="!miniEditorOpen" ref="editorDetails" class="spreadsheet-source">
+      <details
+        v-if="!miniEditorOpen"
+        ref="editorDetails"
+        class="spreadsheet-source"
+      >
         <summary>Edit Spreadsheet Data</summary>
         <textarea
           ref="editorTextarea"
@@ -134,6 +139,7 @@ const editableData = ref(
 );
 const editorTextarea = ref<HTMLTextAreaElement | null>(null);
 const editorDetails = ref<HTMLDetailsElement | null>(null);
+const tableContainer = ref<HTMLDivElement | null>(null);
 
 // Mini editor state
 const miniEditorOpen = ref(false);
@@ -803,6 +809,34 @@ watch(
     }
   },
 );
+
+// Highlight selected cell when mini editor is open
+watch(
+  [miniEditorOpen, miniEditorCell, renderedHtml],
+  () => {
+    // Remove previous highlight
+    const prevHighlighted =
+      tableContainer.value?.querySelector(".cell-editing");
+    if (prevHighlighted) {
+      prevHighlighted.classList.remove("cell-editing");
+    }
+
+    // Add highlight to selected cell
+    if (miniEditorOpen.value && miniEditorCell.value && tableContainer.value) {
+      const table = tableContainer.value.querySelector("#spreadsheet-table");
+      if (table) {
+        const row = table.querySelectorAll("tr")[miniEditorCell.value.row];
+        if (row) {
+          const cell = row.querySelectorAll("td")[miniEditorCell.value.col];
+          if (cell) {
+            cell.classList.add("cell-editing");
+          }
+        }
+      }
+    }
+  },
+  { flush: "post" },
+);
 </script>
 
 <style scoped>
@@ -932,6 +966,12 @@ watch(
 
 .table-container :deep(tr:hover) {
   background-color: #f0f0f0;
+}
+
+.table-container :deep(.cell-editing) {
+  background-color: #e8f5e9 !important;
+  outline: 2px solid #217346 !important;
+  outline-offset: -2px;
 }
 
 /* Error message */
