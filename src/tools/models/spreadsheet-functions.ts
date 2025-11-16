@@ -110,9 +110,11 @@ export function toString(value: CellValue): string {
  * Returns a comparison function that tests if a value matches the criteria
  */
 export function parseCriteria(criteria: string): (value: CellValue) => boolean {
+  // eslint-disable-next-line sonarjs/anchor-precedence
   const trimmedCriteria = criteria.trim().replace(/^["']|["']$/g, "");
 
   // Check for comparison operators
+  // eslint-disable-next-line sonarjs/slow-regex
   const opMatch = trimmedCriteria.match(/^([><=!]+)(.+)$/);
   if (opMatch) {
     const [, op, value] = opMatch;

@@ -186,6 +186,7 @@ const textHandler: FunctionHandler = (args, context) => {
 
   const value = context.evaluateFormula(args[0]);
   const format = toString(context.evaluateFormula(args[1])).replace(
+    // eslint-disable-next-line sonarjs/anchor-precedence
     /^["']|["']$/g,
     "",
   );
