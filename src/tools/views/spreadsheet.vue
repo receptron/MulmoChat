@@ -73,29 +73,17 @@
               String
             </label>
             <label class="radio-option">
-              <input type="radio" value="number" v-model="miniEditorType" />
-              Number
-            </label>
-            <label class="radio-option">
               <input type="radio" value="object" v-model="miniEditorType" />
               Formula
             </label>
           </div>
 
-          <!-- String/Number input -->
+          <!-- String input -->
           <input
             v-if="miniEditorType === 'string'"
             type="text"
             v-model="miniEditorValue"
             class="form-input"
-            placeholder="Value"
-          />
-          <input
-            v-else-if="miniEditorType === 'number'"
-            type="number"
-            v-model.number="miniEditorValue"
-            class="form-input"
-            step="any"
             placeholder="Value"
           />
 
@@ -533,7 +521,7 @@ function openMiniEditor(rowIndex: number, colIndex: number) {
       miniEditorFormula.value = cellValue.f ?? "";
       miniEditorFormat.value = cellValue.z ?? "";
     } else if (typeof cellValue === "number") {
-      miniEditorType.value = "number";
+      miniEditorType.value = "object";
       miniEditorValue.value = cellValue;
       miniEditorFormula.value = "";
       miniEditorFormat.value = "";
@@ -577,12 +565,10 @@ function saveMiniEditor() {
 
     // Build the new cell value based on type
     let newCellValue: any;
-    if (miniEditorType.value === "number") {
-      newCellValue = parseFloat(miniEditorValue.value) || 0;
-    } else if (miniEditorType.value === "string") {
+    if (miniEditorType.value === "string") {
       newCellValue = String(miniEditorValue.value);
     } else {
-      // object type
+      // object type (Formula)
       newCellValue = {};
       if (miniEditorFormula.value) {
         newCellValue.f = miniEditorFormula.value;
@@ -1038,7 +1024,7 @@ watch(
 .mini-editor-content {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
 }
 
@@ -1047,7 +1033,7 @@ watch(
   font-weight: 600;
   color: #217346;
   font-size: 0.85rem;
-  min-width: 3rem;
+  min-width: 2rem;
 }
 
 .radio-group {
