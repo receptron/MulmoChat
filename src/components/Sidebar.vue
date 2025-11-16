@@ -15,6 +15,14 @@
       <div class="flex gap-2">
         <!-- Text mode controls -->
         <template v-if="modelKind === 'text-rest'">
+          <div class="flex items-center justify-center px-2">
+            <span
+              class="material-icons text-2xl text-blue-600 transition-transform"
+              :class="{ 'animate-spin': isConversationActive }"
+              >{{ getRoleIcon() }}</span
+            >
+          </div>
+          <div class="flex-1"></div>
           <button
             v-if="pluginResults.length > 0"
             @click="$emit('clearResults')"
@@ -23,7 +31,6 @@
           >
             <span class="material-icons text-lg">edit</span>
           </button>
-          <div class="flex-1"></div>
           <button
             @click="showConfigPopup = true"
             :disabled="pluginResults.length > 0"
