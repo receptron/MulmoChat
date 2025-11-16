@@ -85,27 +85,24 @@
             v-model="miniEditorValue"
             class="form-input"
             placeholder="Value"
+            @keyup.enter="saveMiniEditor"
           />
 
-          <!-- Object inputs -->
+          <!-- Formula inputs -->
           <template v-if="miniEditorType === 'object'">
-            <input
-              type="text"
-              v-model="miniEditorValue"
-              class="form-input"
-              placeholder="Value"
-            />
             <input
               type="text"
               v-model="miniEditorFormula"
               class="form-input"
-              placeholder="Formula (e.g., SUM(B2:B11))"
+              placeholder="Value or Formula (e.g., 100 or SUM(B2:B11))"
+              @keyup.enter="saveMiniEditor"
             />
             <input
               type="text"
               v-model="miniEditorFormat"
               class="form-input"
               placeholder="Format (e.g., $#,##0.00)"
+              @keyup.enter="saveMiniEditor"
             />
           </template>
 
@@ -517,13 +514,14 @@ function openMiniEditor(rowIndex: number, colIndex: number) {
     // Determine cell type and extract values
     if (typeof cellValue === "object" && cellValue !== null) {
       miniEditorType.value = "object";
-      miniEditorValue.value = cellValue.v ?? "";
-      miniEditorFormula.value = cellValue.f ?? "";
+      miniEditorValue.value = "";
+      // Prefer formula over value for the combined input
+      miniEditorFormula.value = cellValue.f ?? cellValue.v ?? "";
       miniEditorFormat.value = cellValue.z ?? "";
     } else if (typeof cellValue === "number") {
       miniEditorType.value = "object";
-      miniEditorValue.value = cellValue;
-      miniEditorFormula.value = "";
+      miniEditorValue.value = "";
+      miniEditorFormula.value = String(cellValue);
       miniEditorFormat.value = "";
     } else {
       miniEditorType.value = "string";
@@ -569,12 +567,23 @@ function saveMiniEditor() {
       newCellValue = String(miniEditorValue.value);
     } else {
       // object type (Formula)
+      const input = miniEditorFormula.value?.trim() || "";
+
+      // Detect if it's a formula by checking for:
+      // 1. Function names (SUM, AVERAGE, MAX, MIN, COUNT)
+      // 2. Cell references with operators (A1+B1, etc.)
+      // 3. Arithmetic expressions with operators (6/100, 5*2, etc.)
+      const isFormula =
+        /^(SUM|AVERAGE|MAX|MIN|COUNT)\s*\(/i.test(input) ||
+        /[A-Z]+\d+\s*[\+\-\*\/\^]/.test(input) ||
+        /\d+\s*[\+\-\*\/\^]\s*\d+/.test(input);
+
       newCellValue = {};
-      if (miniEditorFormula.value) {
-        newCellValue.f = miniEditorFormula.value;
-      } else if (miniEditorValue.value !== null && miniEditorValue.value !== "") {
-        const numValue = parseFloat(miniEditorValue.value);
-        newCellValue.v = isNaN(numValue) ? miniEditorValue.value : numValue;
+      if (isFormula) {
+        newCellValue.f = input;
+      } else if (input !== "") {
+        const numValue = parseFloat(input);
+        newCellValue.v = isNaN(numValue) ? input : numValue;
       }
       if (miniEditorFormat.value) {
         newCellValue.z = miniEditorFormat.value;
