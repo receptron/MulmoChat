@@ -61,103 +61,68 @@
 
       <!-- Mini Editor at Bottom -->
       <div v-if="miniEditorOpen" class="mini-editor-panel">
-        <div class="mini-editor-header">
-          <h3>
-            Edit Cell
-            <span v-if="miniEditorCell" class="cell-reference">
-              {{ indexToCol(miniEditorCell.col) }}{{ miniEditorCell.row + 1 }}
-            </span>
-          </h3>
-          <button @click="closeMiniEditor" class="close-btn" title="Close">
-            <span class="material-icons">close</span>
-          </button>
-        </div>
+        <div class="mini-editor-content">
+          <span v-if="miniEditorCell" class="cell-ref">
+            {{ indexToCol(miniEditorCell.col) }}{{ miniEditorCell.row + 1 }}
+          </span>
 
-        <div class="mini-editor-body">
           <!-- Type Selector -->
-          <div class="type-selector">
-            <label>Type:</label>
-            <div class="radio-group">
-              <label class="radio-option">
-                <input
-                  type="radio"
-                  value="string"
-                  v-model="miniEditorType"
-                />
-                String
-              </label>
-              <label class="radio-option">
-                <input
-                  type="radio"
-                  value="number"
-                  v-model="miniEditorType"
-                />
-                Number
-              </label>
-              <label class="radio-option">
-                <input
-                  type="radio"
-                  value="object"
-                  v-model="miniEditorType"
-                />
-                Object (Formula)
-              </label>
-            </div>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" value="string" v-model="miniEditorType" />
+              String
+            </label>
+            <label class="radio-option">
+              <input type="radio" value="number" v-model="miniEditorType" />
+              Number
+            </label>
+            <label class="radio-option">
+              <input type="radio" value="object" v-model="miniEditorType" />
+              Formula
+            </label>
           </div>
 
           <!-- String/Number input -->
-          <div v-if="miniEditorType === 'string' || miniEditorType === 'number'" class="form-group">
-            <label>Value:</label>
-            <input
-              v-if="miniEditorType === 'string'"
-              type="text"
-              v-model="miniEditorValue"
-              class="form-input"
-              placeholder="Enter text value"
-            />
-            <input
-              v-else
-              type="number"
-              v-model.number="miniEditorValue"
-              class="form-input"
-              step="any"
-              placeholder="Enter number"
-            />
-          </div>
+          <input
+            v-if="miniEditorType === 'string'"
+            type="text"
+            v-model="miniEditorValue"
+            class="form-input"
+            placeholder="Value"
+          />
+          <input
+            v-else-if="miniEditorType === 'number'"
+            type="number"
+            v-model.number="miniEditorValue"
+            class="form-input"
+            step="any"
+            placeholder="Value"
+          />
 
           <!-- Object inputs -->
-          <div v-if="miniEditorType === 'object'" class="form-group">
-            <label>Value:</label>
+          <template v-if="miniEditorType === 'object'">
             <input
               type="text"
               v-model="miniEditorValue"
               class="form-input"
-              placeholder="Cell value (optional if formula is set)"
+              placeholder="Value"
             />
-          </div>
-          <div v-if="miniEditorType === 'object'" class="form-group">
-            <label>Formula:</label>
             <input
               type="text"
               v-model="miniEditorFormula"
               class="form-input"
-              placeholder="e.g., SUM(B2:B11) or A1+B1"
+              placeholder="Formula (e.g., SUM(B2:B11))"
             />
-          </div>
-          <div v-if="miniEditorType === 'object'" class="form-group">
-            <label>Format:</label>
             <input
               type="text"
               v-model="miniEditorFormat"
               class="form-input"
-              placeholder="e.g., $#,##0.00 or 0.00%"
+              placeholder="Format (e.g., $#,##0.00)"
             />
-          </div>
-        </div>
+          </template>
 
-        <div class="mini-editor-footer">
-          <button @click="closeMiniEditor" class="cancel-btn">Cancel</button>
           <button @click="saveMiniEditor" class="save-btn">Save</button>
+          <button @click="closeMiniEditor" class="cancel-btn">✕</button>
         </div>
       </div>
     </template>
@@ -1065,126 +1030,57 @@ watch(
 
 /* Mini Editor Panel */
 .mini-editor-panel {
-  background: white;
-  border-top: 2px solid #217346;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.mini-editor-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e0e0e0;
   background: #f8f8f8;
+  border-top: 1px solid #d0d0d0;
+  flex-shrink: 0;
 }
 
-.mini-editor-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.cell-reference {
-  font-size: 0.9rem;
-  color: #217346;
-  background: #e8f5e9;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-family: monospace;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-  color: #666;
-  transition: color 0.2s;
-  display: flex;
-  align-items: center;
-}
-
-.close-btn:hover {
-  color: #333;
-}
-
-.close-btn .material-icons {
-  font-size: 1.5rem;
-}
-
-.mini-editor-body {
-  padding: 1rem 1.25rem;
-  display: flex;
-  gap: 1.5rem;
-  align-items: start;
-  flex-wrap: wrap;
-}
-
-.type-selector {
+.mini-editor-content {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  padding: 0.5rem 1rem;
 }
 
-.type-selector > label {
+.cell-ref {
+  font-family: monospace;
   font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
-  white-space: nowrap;
+  color: #217346;
+  font-size: 0.85rem;
+  min-width: 3rem;
 }
 
 .radio-group {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
+  border-right: 1px solid #d0d0d0;
+  padding-right: 0.75rem;
 }
 
 .radio-option {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #555;
 }
 
 .radio-option input[type="radio"] {
   cursor: pointer;
-  width: 1rem;
-  height: 1rem;
-}
-
-.form-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 200px;
-}
-
-.form-group label {
-  font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
-  white-space: nowrap;
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .form-input {
   flex: 1;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.6rem;
   border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
   font-family: inherit;
   transition: border-color 0.2s;
+  min-width: 120px;
 }
 
 .form-input:focus {
@@ -1195,40 +1091,18 @@ watch(
 
 .form-input::placeholder {
   color: #999;
-  font-style: italic;
+  font-size: 0.8rem;
 }
 
-.mini-editor-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  border-top: 1px solid #e0e0e0;
-  background: #f8f8f8;
-}
-
-.cancel-btn,
-.save-btn {
-  padding: 0.6rem 1.25rem;
+.save-btn,
+.cancel-btn {
+  padding: 0.4rem 0.8rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   transition: background 0.2s;
-}
-
-.cancel-btn {
-  background: #e0e0e0;
-  color: #333;
-}
-
-.cancel-btn:hover {
-  background: #d0d0d0;
-}
-
-.cancel-btn:active {
-  background: #c0c0c0;
 }
 
 .save-btn {
@@ -1240,7 +1114,16 @@ watch(
   background: #1e6a3f;
 }
 
-.save-btn:active {
-  background: #1a5c36;
+.cancel-btn {
+  background: transparent;
+  color: #666;
+  padding: 0.4rem;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.cancel-btn:hover {
+  color: #333;
+  background: #e0e0e0;
 }
 </style>
