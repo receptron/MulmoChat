@@ -60,6 +60,7 @@
         @set-mute="setMute"
         @select-result="handleSelectResult"
         @send-text-message="sendTextMessage"
+        @clear-results="clearResults"
         @update:user-input="userInput = $event"
         @update:user-language="userPreferences.userLanguage = $event"
         @update:suppress-instructions="
@@ -597,6 +598,12 @@ function setMute(muted: boolean): void {
     return;
   }
   sessionSetMute(muted);
+}
+
+function clearResults(): void {
+  toolResults.value = [];
+  toolCallHistory.value = [];
+  selectedResult.value = null;
 }
 
 async function switchRole(newRoleId: string): Promise<void> {

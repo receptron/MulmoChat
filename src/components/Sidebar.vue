@@ -13,52 +13,76 @@
     <!-- Voice chat controls -->
     <div class="space-y-2 flex-shrink-0">
       <div class="flex gap-2">
-        <button
-          v-if="!chatActive"
-          @click="$emit('startChat')"
-          :disabled="connecting"
-          class="flex-1 px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
-        >
-          {{ connecting ? "Connecting..." : connectButtonLabel }}
-        </button>
-        <div v-else class="flex gap-2 w-full">
-          <div class="flex items-center justify-center px-2">
-            <span
-              class="material-icons text-2xl text-blue-600 transition-transform"
-              :class="{ 'animate-spin': isConversationActive }"
-              >{{ getRoleIcon() }}</span
+        <!-- Text mode controls -->
+        <template v-if="modelKind === 'text-rest'">
+          <button
+            v-if="pluginResults.length > 0"
+            @click="$emit('clearResults')"
+            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center w-10"
+            title="New conversation"
+          >
+            <span class="material-icons text-lg">edit</span>
+          </button>
+          <div class="flex-1"></div>
+          <button
+            @click="showConfigPopup = true"
+            :disabled="pluginResults.length > 0"
+            class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed w-10"
+            title="Configuration"
+          >
+            <span class="material-icons text-lg">settings</span>
+          </button>
+        </template>
+
+        <!-- Voice mode controls -->
+        <template v-else>
+          <button
+            v-if="!chatActive"
+            @click="$emit('startChat')"
+            :disabled="connecting"
+            class="flex-1 px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
+          >
+            {{ connecting ? "Connecting..." : connectButtonLabel }}
+          </button>
+          <div v-else class="flex gap-2 w-full">
+            <div class="flex items-center justify-center px-2">
+              <span
+                class="material-icons text-2xl text-blue-600 transition-transform"
+                :class="{ 'animate-spin': isConversationActive }"
+                >{{ getRoleIcon() }}</span
+              >
+            </div>
+            <button
+              @click="$emit('stopChat')"
+              class="flex-1 px-4 py-2 bg-red-600 text-white rounded"
             >
+              Stop
+            </button>
+            <button
+              v-if="supportsAudioInput"
+              @click="$emit('setMute', !isMuted)"
+              class="px-3 py-2 rounded border flex items-center justify-center"
+              :class="
+                isMuted
+                  ? 'bg-red-100 text-red-600 border-red-300'
+                  : 'bg-gray-100 text-gray-600 border-gray-300'
+              "
+              :title="isMuted ? 'Unmute microphone' : 'Mute microphone'"
+            >
+              <span class="material-icons text-lg">{{
+                isMuted ? "mic_off" : "mic"
+              }}</span>
+            </button>
           </div>
           <button
-            @click="$emit('stopChat')"
-            class="flex-1 px-4 py-2 bg-red-600 text-white rounded"
+            v-if="!chatActive"
+            @click="showConfigPopup = true"
+            class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center"
+            title="Configuration"
           >
-            Stop
+            <span class="material-icons text-lg">settings</span>
           </button>
-          <button
-            v-if="supportsAudioInput"
-            @click="$emit('setMute', !isMuted)"
-            class="px-3 py-2 rounded border flex items-center justify-center"
-            :class="
-              isMuted
-                ? 'bg-red-100 text-red-600 border-red-300'
-                : 'bg-gray-100 text-gray-600 border-gray-300'
-            "
-            :title="isMuted ? 'Unmute microphone' : 'Mute microphone'"
-          >
-            <span class="material-icons text-lg">{{
-              isMuted ? "mic_off" : "mic"
-            }}</span>
-          </button>
-        </div>
-        <button
-          v-if="!chatActive"
-          @click="showConfigPopup = true"
-          class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center"
-          title="Configuration"
-        >
-          <span class="material-icons text-lg">settings</span>
-        </button>
+        </template>
       </div>
       <audio v-if="supportsAudioOutput" ref="audioEl" autoplay></audio>
     </div>
@@ -510,6 +534,7 @@ const emit = defineEmits<{
   setMute: [muted: boolean];
   selectResult: [result: ToolResult];
   sendTextMessage: [];
+  clearResults: [];
   "update:userInput": [value: string];
   "update:userLanguage": [value: string];
   "update:suppressInstructions": [value: boolean];
