@@ -393,7 +393,10 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
               for (const ref of cellRefs) {
                 const value = getCellValue(ref);
                 const escapedRef = ref.replace(/\$/g, "\\$");
-                condExpr = condExpr.replace(new RegExp(escapedRef, "g"), value.toString());
+                condExpr = condExpr.replace(
+                  new RegExp(escapedRef, "g"),
+                  value.toString(),
+                );
               }
             }
 
@@ -425,7 +428,10 @@ const calculateFormulas = (data: Array<Array<any>>): Array<Array<any>> => {
               for (const ref of refs) {
                 const value = getCellValue(ref);
                 const escapedRef = ref.replace(/\$/g, "\\$");
-                expr = expr.replace(new RegExp(escapedRef, "g"), value.toString());
+                expr = expr.replace(
+                  new RegExp(escapedRef, "g"),
+                  value.toString(),
+                );
               }
             }
 
