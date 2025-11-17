@@ -12,7 +12,7 @@ ChatGPTがOpenAIから発表されて3年が経とうとしています。その
 
 本稿では、「AI-Nativeなコンピュータ（OS）のUser Experienceとアプリケーション・アーキテクチャ」という視点から、業界全体が向かうべき方向性を示すために設計された**MulmoChat（Multi-modal Chat）**というオープンソースのプロトタイプを紹介します。
 
-## NLUIとGUIの融合
+### NLUIとGUIの融合
 
 Function CallとMCP（以後はTool、もしくはTool Callと呼びます）は、LLMに外部機能を提供する仕組みとして登場しました。これらは、JSON形式のパラメータを受け取り、JSON形式の結果を返すという、テキストベースのインターフェイスです。
 
@@ -28,8 +28,8 @@ Tool Callの結果として、アプリケーション独自のウィンドウ�
 1. 「SpreadSheet」アプリケーションは、LLMが呼び出せるtoolと、tool-specificなデータを表示するビューアーを登録する。
 2. ユーザーが「Shows me the present value of $1000 monthly income over a year, making it easy to change the discount rate.」と指示を与える。
 3. LLMはユーザーの意図（intent）を解釈し、"SpreadSheet" toolを呼び出すためのJSONデータを構築する。
-4. Toolは、LLMに対して「表計算データを生成・表示中である」と通知し、システムに対しては生成したスプレッドシートデータを返す。
-5. システムは返されたデータタイプを判定し、対応するビューアーを起動する。
+4. Toolは、LLMに対して「表計算データを生成・表示中である」と通知し、システムに対してはLLMが生成したスプレッドシートデータを返す。
+5. システムは返されたデータタイプを判定し、対応する専用ビューアーを起動する。
 6. ビューアーが生成されたスプレッドシートをユーザーに表示する。
 7. ユーザーはGUI上で直接操作を行い、その結果が再びチャットコンテキスト（NLUI）にフィードバックされる。
 
@@ -37,7 +37,7 @@ Tool Callの結果として、アプリケーション独自のウィンドウ�
 
 ![](https://mag2.thelifeisbeautiful.com/Nov2025/discount2.png)
 
-## Beyond the Sea of App Icons
+### Beyond the Sea of App Icons
 
 上のシナリオは、「ユーザー体験」という観点から、既存のシステムと大きく異なります。
 
@@ -68,13 +68,13 @@ AI-Nativeなシステムでは、どのToolを使うかの判断はLLMが行い�
 
 この設計により、たとえば旅行代理店が顧客向け資料を作るだけでなく、LLMが“旅行代理店そのもの”としてユーザーに提案を行うことが可能になります。
 
-さらに、この仕組みはLLMがユーザーから情報を得る場面にも使えます。下の例は、MulmoCast内で「病院のレセプション」として動作するロールです。LLMはユーザーから情報を得るためのフォームをダイナミックに生成し、自然な対話の流れで提示します。
+さらに、この仕組みはLLMがユーザーから情報を得る場面にも使えます。下の例は、MulmoCast内で「病院のレセプション」として動作するロールですが（MulmoCastは、同時にLLMに提示するToolsを制限したり特定のシステムプロンプトを与えることにより、特定の「役割」を行わせています）、LLMはユーザーから情報を得るためのフォームをダイナミックに生成し、自然な対話の流れで提示します。
 
 ![](https://mag2.thelifeisbeautiful.com/Nov2025/Receptionist.png)
 
-このように、MulmoChatでは情報の生成と収集が、同じ自然言語インターフェイス上でシームレスに行われる。これこそが、AI-Nativeコンピューティング環境における新しい「ユーザー体験の完成形」です。
+このように、MulmoChatでは情報の生成と収集が、同じ自然言語インターフェイス上でシームレスに行われる。これこそが、AI-Nativeコンピューティング環境における「NLUIとGUIが融合されたユーザー体験」です。
 
-## Domain-Specific Presentation Language — The Bridge Between Intent and Interface
+### Domain-Specific Presentation Language — The Bridge Between Intent and Interface
 
 このアーキテクチャにおいて極めて重要な役割を果たすのが、**LLMがユーザーに情報（入力フォームを含む）を提示する際に生成するDSL（Domain-Specific Language）**です。より正確には、表示に特化した言語であることから、**Domain-Specific Presentation Language（DSPL）**と呼ぶのが適切かもしれません。
 
@@ -95,5 +95,4 @@ DSLとしては、ドキュメント作成に使うMarkdownをはじめ、HTML�
 
 LLM開発の潮流は、Tool Callとコード生成能力の強化に向かっていますが、DSL活用はこの流れと極めて相性が良いのです。実際、MulmoChatの開発を通じて、GPT-5やSonnet 4.5といった最先端モデルだけでなく、gpt-oss:20bやqwen3:30bのような中小規模モデルでも十分な性能が発揮されることが確認されています。
 
-DSLは、LLMとGUIの間をつなぐ“共通言語”であり、MulmoChatのAI-Nativeアーキテクチャの哲学的中核です。
 
