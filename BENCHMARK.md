@@ -61,4 +61,34 @@ Write an article about the solar system with an image for each planet
 
 Create a field guide for identifying birds with photos of 5 common species
 
+### Presentation (Mulmocast)
+
+Create a presentation about the water cycle for elementary school students
+
+Make a 5-slide pitch deck for a sustainable coffee startup seeking seed funding
+
+Create a presentation explaining how neural networks work
+
+Tell the story of the Apollo 11 moon landing as a presentation
+
+Create a presentation about the history of the internet from 1960s to today
+
+Make a presentation teaching basic photography composition techniques
+
+Create a motivational presentation about overcoming challenges and building resilience
+
+Make a presentation explaining climate change causes and solutions
+
+Create a presentation about the life cycle of a butterfly for kids
+
+Create a presentation introducing Japanese culture and customs to tourists
+
+Make a presentation about the Roman Empire's rise and fall
+
+Create a cooking presentation showing how to make homemade pasta from scratch
+
+Make a presentation about the solar system with interesting facts about each planet
+
+Create a presentation about the importance of sleep and sleep hygiene
+
 

@@ -21,7 +21,7 @@ const toolDefinition = {
   type: "function" as const,
   name: toolName,
   description:
-    "Switch the system prompt role and reconnect to the LLM. This changes the AI's personality and behavior. Available roles: 'general' (teacher explaining things simply), 'tutor' (adaptive tutor that evaluates knowledge first), 'listener' (silent role that only generates images).",
+    "Switch the system prompt role and reconnect to the LLM. This changes the AI's personality and behavior. Available roles: 'general' (teacher explaining things simply), 'tutor' (adaptive tutor that evaluates knowledge first), 'listener' (silent role that only generates images), 'receptionist' (clinic receptionist), 'tourPlanner' (trip planner), 'recipeGuide' (cooking instructor), 'game' (game companion), 'office' (office assistant for documents, spreadsheets, presentations).",
   parameters: {
     type: "object" as const,
     properties: {
