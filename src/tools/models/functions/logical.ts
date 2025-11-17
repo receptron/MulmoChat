@@ -2,7 +2,7 @@
  * Logical Functions
  */
 
-/* eslint-disable sonarjs/slow-regex, sonarjs/regex-complexity, sonarjs/code-eval, sonarjs/anchor-precedence */
+/* eslint-disable sonarjs/slow-regex, sonarjs/regex-complexity, sonarjs/code-eval */
 
 import {
   functionRegistry,
@@ -22,7 +22,7 @@ const ifHandler: FunctionHandler = (args, context) => {
   // Replace cell references in condition (including cross-sheet refs)
   let condExpr = condition;
   // Match: 'Sheet'!A1, Sheet1!A1, $A$1, A1
-  // eslint-disable-next-line sonarjs/slow-regex, sonarjs/regex-complexity
+
   const cellRefs = condition.match(
     /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
   );
@@ -38,13 +38,12 @@ const ifHandler: FunctionHandler = (args, context) => {
   }
 
   // Evaluate comparison operators
-  // eslint-disable-next-line sonarjs/code-eval
+
   if (/>=|<=|>|<|==|!=/.test(condExpr)) {
-    // eslint-disable-next-line sonarjs/code-eval
     conditionResult = eval(condExpr);
   } else {
     // Just evaluate as expression
-    // eslint-disable-next-line sonarjs/code-eval
+
     conditionResult = !!eval(condExpr);
   }
 
@@ -63,7 +62,7 @@ const ifHandler: FunctionHandler = (args, context) => {
 
   // Otherwise evaluate as expression
   let expr = resultValue;
-  // eslint-disable-next-line sonarjs/slow-regex, sonarjs/regex-complexity
+
   const refs = resultValue.match(
     /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
   );
@@ -160,7 +159,7 @@ const ifsHandler: FunctionHandler = (args, context) => {
 
     // Evaluate condition
     let condExpr = condition;
-    // eslint-disable-next-line sonarjs/slow-regex, sonarjs/regex-complexity
+
     const cellRefs = condition.match(
       /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
     );
@@ -177,18 +176,16 @@ const ifsHandler: FunctionHandler = (args, context) => {
 
     // Evaluate the condition
     let conditionResult = false;
-    // eslint-disable-next-line sonarjs/code-eval
+
     if (/>=|<=|>|<|==|!=/.test(condExpr)) {
-      // eslint-disable-next-line sonarjs/code-eval
       conditionResult = eval(condExpr);
     } else {
-      // eslint-disable-next-line sonarjs/code-eval
       conditionResult = !!eval(condExpr);
     }
 
     if (conditionResult) {
       // If result is a quoted string, return without quotes
-      // eslint-disable-next-line sonarjs/anchor-precedence
+
       if (/^["'](.*)["']$/.test(value)) {
         return value.slice(1, -1);
       }
