@@ -37,7 +37,7 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       "claude-opus-4-1-20250805",
       "claude-3-5-haiku-latest",
     ],
-    google: ["gemini-2.5-pro", "gemini-2.5-flash"],
+    google: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-3-pro-preview"],
     ollama: [
       "gpt-oss:20b",
       "gpt-oss:120b",

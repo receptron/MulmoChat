@@ -91,4 +91,6 @@ Make a presentation about the solar system with interesting facts about each pla
 
 Create a presentation about the importance of sleep and sleep hygiene
 
+## HTML
 
+create an interactive web page that demonstrates how a 4-cycle (4-stroke) engine works with animations and explanations.
