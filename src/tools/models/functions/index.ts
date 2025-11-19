@@ -9,5 +9,6 @@ import "./statistical";
 import "./mathematical";
 import "./logical";
 import "./text";
+import "./financial";
 
 export { functionRegistry } from "../spreadsheet-functions";

@@ -10,6 +10,12 @@ Create a loan amortization schedule for a $250,000 mortgage at 6% annual interes
 
 Create a compound interest calculator showing the growth of $10,000 invested at different annual interest rates (3%, 5%, 7%, 10%) over 10 years. Show yearly balances. Make sure the interest rates can be easily modified.
 
+Create a retirement savings calculator showing how much you need to save monthly to reach $1,000,000 by age 65. Include columns for current age, target age, monthly contribution, annual return rate (adjustable), and projected final balance.
+
+Build a break-even analysis calculator for a small business. Show fixed costs ($50,000), variable cost per unit ($25), and selling price per unit ($60). Calculate the break-even point in units and revenue, with easy-to-modify input parameters.
+
+Create a budget tracker comparing monthly income vs expenses across 6 categories (Housing, Food, Transportation, Entertainment, Savings, Other). Show totals, surplus/deficit, and percentage of income for each category. Make it easy to adjust the amounts.
+
 ### ShapeScript
 
 Make 6 cylinders in a row with colors gradually changing from red to blue
