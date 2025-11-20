@@ -10,5 +10,7 @@ import "./mathematical";
 import "./logical";
 import "./text";
 import "./financial";
+import "./lookup";
+import "./date";
 
 export { functionRegistry } from "../spreadsheet-functions";
