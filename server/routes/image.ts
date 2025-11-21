@@ -27,7 +27,7 @@ router.post(
 
     try {
       const ai = new GoogleGenAI({ apiKey: geminiKey });
-      const model = "gemini-2.5-flash-image-preview";
+      const model = "gemini-2.5-flash-image";
       const contents: {
         text?: string;
         inlineData?: { mimeType: string; data: string };
