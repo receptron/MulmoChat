@@ -26,6 +26,7 @@ const MODEL_KIND_KEY = "model_kind_v2";
 const TEXT_MODEL_ID_KEY = "text_model_id_v1";
 const IMAGE_GENERATION_BACKEND_KEY = "image_generation_backend_v1";
 const COMFYUI_MODEL_KEY = "comfyui_model_v1";
+const HTML_GENERATION_BACKEND_KEY = "html_generation_backend_v1";
 const PLUGIN_CONFIGS_KEY = "plugin_configs_v1";
 
 interface StorageLike {
@@ -64,6 +65,7 @@ export interface UserPreferencesState {
   textModelId: string;
   imageGenerationBackend: "gemini" | "comfyui";
   comfyuiModel: string;
+  htmlGenerationBackend: "claude" | "gemini";
   pluginConfigs: Record<string, any>;
 }
 
@@ -143,6 +145,9 @@ export function useUserPreferences(): UseUserPreferencesReturn {
       "gemini",
     comfyuiModel:
       getStoredValue(COMFYUI_MODEL_KEY) || "flux1-schnell-fp8.safetensors",
+    htmlGenerationBackend:
+      (getStoredValue(HTML_GENERATION_BACKEND_KEY) as "claude" | "gemini") ||
+      "claude",
     pluginConfigs: migrateOldConfigs(),
   });
 
@@ -236,6 +241,13 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     () => state.comfyuiModel,
     (val) => {
       setStoredValue(COMFYUI_MODEL_KEY, val);
+    },
+  );
+
+  watch(
+    () => state.htmlGenerationBackend,
+    (val) => {
+      setStoredValue(HTML_GENERATION_BACKEND_KEY, val);
     },
   );
 

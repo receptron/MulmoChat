@@ -1,6 +1,7 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
+import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
 import type { HtmlToolData } from "./html";
 
 const toolName = "editHtml";
@@ -40,6 +41,13 @@ const editHtml = async (
     };
   }
 
+  // Get backend model preference (default to claude)
+  const backend =
+    context?.getPluginConfig?.("htmlGenerationBackend") ||
+    context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
+    context?.userPreferences?.htmlGenerationBackend ||
+    "claude";
+
   try {
     const response = await fetch("/api/generate-html", {
       method: "POST",
@@ -49,6 +57,7 @@ const editHtml = async (
       body: JSON.stringify({
         prompt,
         html: currentHtml,
+        backend,
       }),
     });
 
@@ -91,7 +100,13 @@ export const plugin: ToolPlugin<HtmlToolData> = {
   toolDefinition,
   execute: editHtml,
   generatingMessage: "Editing HTML...",
-  isEnabled: (startResponse) => !!startResponse?.hasAnthropicApiKey,
+  isEnabled: (startResponse) =>
+    !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGeminiApiKey,
   viewComponent: HtmlView,
   previewComponent: HtmlPreview,
+  config: {
+    key: "htmlGenerationBackend",
+    defaultValue: "claude" as "claude" | "gemini",
+    component: HtmlGenerationConfig,
+  },
 };

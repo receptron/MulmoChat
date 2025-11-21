@@ -1,6 +1,7 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
+import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
 import type { HtmlToolData } from "./html";
 
 const toolName = "generateHtml";
@@ -29,13 +30,20 @@ const generateHtml = async (
 ): Promise<ToolResult<HtmlToolData>> => {
   const prompt = args.prompt as string;
 
+  // Get backend model preference (default to claude)
+  const backend =
+    context?.getPluginConfig?.("htmlGenerationBackend") ||
+    context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
+    context?.userPreferences?.htmlGenerationBackend ||
+    "claude";
+
   try {
     const response = await fetch("/api/generate-html", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, backend }),
     });
 
     if (!response.ok) {
@@ -76,7 +84,13 @@ export const plugin: ToolPlugin<HtmlToolData> = {
   toolDefinition,
   execute: generateHtml,
   generatingMessage: "Generating HTML...",
-  isEnabled: (startResponse) => !!startResponse?.hasAnthropicApiKey,
+  isEnabled: (startResponse) =>
+    !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGeminiApiKey,
   viewComponent: HtmlView,
   previewComponent: HtmlPreview,
+  config: {
+    key: "htmlGenerationBackend",
+    defaultValue: "claude" as "claude" | "gemini",
+    component: HtmlGenerationConfig,
+  },
 };
