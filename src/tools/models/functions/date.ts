@@ -159,27 +159,29 @@ const datedifHandler: FunctionHandler = (args, context) => {
   const dayDiff = endDate.getUTCDate() - startDate.getUTCDate();
 
   switch (unit) {
-    case "Y":
+    case "Y": {
       // Complete years
       let years = yearDiff;
       if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
         years--;
       }
       return years;
+    }
 
-    case "M":
+    case "M": {
       // Complete months
       let months = yearDiff * 12 + monthDiff;
       if (dayDiff < 0) {
         months--;
       }
       return months;
+    }
 
     case "D":
       // Complete days
       return Math.floor(endSerial - startSerial);
 
-    case "MD":
+    case "MD": {
       // Difference in days, ignoring months and years
       // This is tricky. It's basically day of month difference, but handling wrap around
       // E.g. Jan 30 to Mar 1.
@@ -194,27 +196,30 @@ const datedifHandler: FunctionHandler = (args, context) => {
         Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), 0),
       );
       return prevMonthDate.getUTCDate() - startD + endD;
+    }
 
-    case "YM":
+    case "YM": {
       // Difference in months, ignoring years
       let ym = monthDiff;
       if (dayDiff < 0) ym--;
       if (ym < 0) ym += 12;
       return ym;
+    }
 
-    case "YD":
+    case "YD": {
       // Difference in days, ignoring years
       // Treat start date as being in the same year as end date
       // If start > end (after adjusting year), move start to previous year
       const startCopy = new Date(startDate);
       startCopy.setUTCFullYear(endDate.getUTCFullYear());
 
-      let diff = (startCopy.getTime() - endDate.getTime()) / MS_PER_DAY;
+      const diff = (startCopy.getTime() - endDate.getTime()) / MS_PER_DAY;
       if (diff > 0) {
         startCopy.setUTCFullYear(endDate.getUTCFullYear() - 1);
       }
 
       return Math.floor((endDate.getTime() - startCopy.getTime()) / MS_PER_DAY);
+    }
 
     default:
       return "#NUM!";

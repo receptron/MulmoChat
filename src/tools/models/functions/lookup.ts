@@ -5,10 +5,30 @@
 import {
   functionRegistry,
   toNumber,
-  toString,
   parseCriteria,
   type FunctionHandler,
 } from "../spreadsheet-functions";
+
+// Helper to convert Excel column letters to 0-based index (A=0, Z=25, AA=26, etc.)
+const colToIndex = (col: string): number => {
+  let result = 0;
+  for (let i = 0; i < col.length; i++) {
+    result = result * 26 + (col.charCodeAt(i) - 64);
+  }
+  return result - 1;
+};
+
+// Helper to convert 0-based index to Excel column letters (0=A, 25=Z, 26=AA, etc.)
+const indexToCol = (index: number): string => {
+  let col = "";
+  let num = index + 1;
+  while (num > 0) {
+    const remainder = (num - 1) % 26;
+    col = String.fromCharCode(65 + remainder) + col;
+    num = Math.floor((num - 1) / 26);
+  }
+  return col;
+};
 
 // Helper to find match index
 const findMatchIndex = (
@@ -141,27 +161,6 @@ const vlookupHandler: FunctionHandler = (args, context) => {
   const startRow = parseInt(rangeMatch[2]);
   const endRow = parseInt(rangeMatch[4]);
 
-  // Helper to convert col string to index (A->0, B->1)
-  const colToIndex = (col: string): number => {
-    let result = 0;
-    for (let i = 0; i < col.length; i++) {
-      result = result * 26 + (col.charCodeAt(i) - 64);
-    }
-    return result - 1;
-  };
-
-  // Helper to convert index to col string
-  const indexToCol = (index: number): string => {
-    let col = "";
-    let num = index + 1;
-    while (num > 0) {
-      const remainder = (num - 1) % 26;
-      col = String.fromCharCode(65 + remainder) + col;
-      num = Math.floor((num - 1) / 26);
-    }
-    return col;
-  };
-
   const startColIdx = colToIndex(startColStr);
   const resultColIdx = startColIdx + colIndexNum - 1;
   const resultColStr = indexToCol(resultColIdx);
@@ -214,26 +213,6 @@ const hlookupHandler: FunctionHandler = (args, context) => {
   const startColStr = rangeMatch[1];
   const endColStr = rangeMatch[3];
   const startRow = parseInt(rangeMatch[2]);
-
-  // Helper to convert col string to index
-  const colToIndex = (col: string): number => {
-    let result = 0;
-    for (let i = 0; i < col.length; i++) {
-      result = result * 26 + (col.charCodeAt(i) - 64);
-    }
-    return result - 1;
-  };
-
-  const indexToCol = (index: number): string => {
-    let col = "";
-    let num = index + 1;
-    while (num > 0) {
-      const remainder = (num - 1) % 26;
-      col = String.fromCharCode(65 + remainder) + col;
-      num = Math.floor((num - 1) / 26);
-    }
-    return col;
-  };
 
   const startColIdx = colToIndex(startColStr);
   const endColIdx = colToIndex(endColStr);
@@ -300,25 +279,6 @@ const indexHandler: FunctionHandler = (args, context) => {
 
   const startColStr = rangeMatch[1];
   const startRow = parseInt(rangeMatch[2]);
-
-  const colToIndex = (col: string): number => {
-    let result = 0;
-    for (let i = 0; i < col.length; i++) {
-      result = result * 26 + (col.charCodeAt(i) - 64);
-    }
-    return result - 1;
-  };
-
-  const indexToCol = (index: number): string => {
-    let col = "";
-    let num = index + 1;
-    while (num > 0) {
-      const remainder = (num - 1) % 26;
-      col = String.fromCharCode(65 + remainder) + col;
-      num = Math.floor((num - 1) / 26);
-    }
-    return col;
-  };
 
   const startColIdx = colToIndex(startColStr);
 
