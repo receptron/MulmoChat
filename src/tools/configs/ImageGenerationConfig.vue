@@ -27,7 +27,9 @@
         class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image</option>
-        <option value="gemini-3-pro-image-preview">Gemini 3 Pro Image (Preview)</option>
+        <option value="gemini-3-pro-image-preview">
+          Gemini 3 Pro Image (Preview)
+        </option>
       </select>
       <p class="text-xs text-gray-500 mt-1">
         Select which Gemini model to use for image generation.
