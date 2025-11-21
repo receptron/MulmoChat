@@ -7,6 +7,62 @@ dotenv.config();
 
 const router: Router = express.Router();
 
+/**
+ * Extracts clean HTML from AI-generated response that may include
+ * explanatory text and markdown code blocks.
+ */
+function extractHtmlFromResponse(text: string): string {
+  // Try to find HTML within markdown code blocks first
+  // Pattern 1: ```html ... ``` (use split to avoid backtracking)
+  const htmlBlockStart = text.search(/```html\s*\n/i);
+  if (htmlBlockStart !== -1) {
+    const afterStart = text.substring(htmlBlockStart + 7); // Skip ```html\n
+    const blockEnd = afterStart.indexOf("```");
+    if (blockEnd !== -1) {
+      return afterStart.substring(0, blockEnd).trim();
+    }
+  }
+
+  // Pattern 2: ``` ... ``` (without language specifier)
+  const genericBlockStart = text.indexOf("```");
+  if (genericBlockStart !== -1) {
+    const afterStart = text.substring(genericBlockStart + 3);
+    const blockEnd = afterStart.indexOf("```");
+    if (blockEnd !== -1) {
+      const content = afterStart.substring(0, blockEnd).trim();
+      // Check if it looks like HTML (starts with <!DOCTYPE or <html or <!)
+      if (
+        content.match(/^\s*<!DOCTYPE/i) ||
+        content.match(/^\s*<html/i) ||
+        content.match(/^\s*<!/)
+      ) {
+        return content;
+      }
+    }
+  }
+
+  // Pattern 3: Look for HTML document structure without code blocks
+  // Find the first occurrence of <!DOCTYPE, <html>, or <!
+  const doctypeIndex = text.search(/<!DOCTYPE/i);
+  const htmlTagIndex = text.search(/<html/i);
+  const commentIndex = text.search(/<!(?!DOCTYPE)/i);
+
+  const indices = [doctypeIndex, htmlTagIndex, commentIndex].filter(
+    (i) => i !== -1,
+  );
+  if (indices.length > 0) {
+    const htmlStart = Math.min(...indices);
+    return text.substring(htmlStart).trim();
+  }
+
+  // Fallback: Remove common markdown code block markers
+  const cleaned = text
+    .replace(/^```html\s*\n?/i, "")
+    .replace(/\n?```\s*$/i, "");
+
+  return cleaned.trim();
+}
+
 // Generate HTML with Claude or Gemini endpoint
 router.post(
   "/generate-html",
@@ -135,8 +191,8 @@ Return ONLY the HTML code, nothing else. Do not include markdown code blocks or 
         html = textPart.text;
       }
 
-      // Remove markdown code blocks if present
-      html = html.replace(/^```html\n?/i, "").replace(/\n?```$/i, "");
+      // Extract HTML from markdown code blocks and remove explanatory text
+      html = extractHtmlFromResponse(html);
 
       res.json({
         success: true,
