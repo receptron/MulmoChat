@@ -9,7 +9,7 @@ const router: Router = express.Router();
 router.post(
   "/generate-image",
   async (req: Request, res: Response): Promise<void> => {
-    const { prompt, images } = req.body;
+    const { prompt, images, model } = req.body;
 
     if (!prompt) {
       res.status(400).json({ error: "Prompt is required" });
@@ -27,7 +27,7 @@ router.post(
 
     try {
       const ai = new GoogleGenAI({ apiKey: geminiKey });
-      const model = "gemini-2.5-flash-image";
+      const modelName = model || "gemini-2.5-flash-image";
       const contents: {
         text?: string;
         inlineData?: { mimeType: string; data: string };
@@ -35,7 +35,10 @@ router.post(
       for (const image of images ?? []) {
         contents.push({ inlineData: { mimeType: "image/png", data: image } });
       }
-      const response = await ai.models.generateContent({ model, contents });
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents,
+      });
       const parts = response.candidates?.[0]?.content?.parts ?? [];
       const returnValue: {
         success: boolean;

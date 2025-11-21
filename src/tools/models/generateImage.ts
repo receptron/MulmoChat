@@ -53,6 +53,7 @@ export async function generateImageWithBackend(
     // Handle legacy string format vs new object format
     let backend: "gemini" | "comfyui";
     let styleModifier = "";
+    let geminiModel = "gemini-2.5-flash-image";
 
     if (typeof config === "string") {
       backend = config;
@@ -60,6 +61,9 @@ export async function generateImageWithBackend(
       backend = (config as ImageGenerationConfigValue).backend || "gemini";
       styleModifier =
         (config as ImageGenerationConfigValue).styleModifier || "";
+      geminiModel =
+        (config as ImageGenerationConfigValue).geminiModel ||
+        "gemini-2.5-flash-image";
     }
 
     // Append style modifier to prompt if provided
@@ -83,6 +87,11 @@ export async function generateImageWithBackend(
       prompt: finalPrompt,
       images,
     };
+
+    // Add model parameter for Gemini
+    if (backend === "gemini") {
+      requestBody.model = geminiModel;
+    }
 
     // Add model parameter for ComfyUI
     if (backend === "comfyui" && comfyuiModel) {
@@ -219,6 +228,7 @@ export const plugin: ToolPlugin<ImageToolData> = {
     defaultValue: {
       backend: "gemini",
       styleModifier: "",
+      geminiModel: "gemini-2.5-flash-image",
     } as ImageGenerationConfigValue,
     component: ImageGenerationConfig,
   },
