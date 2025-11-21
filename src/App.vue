@@ -59,7 +59,7 @@
         @stop-chat="stopChat"
         @set-mute="setMute"
         @select-result="handleSelectResult"
-        @send-text-message="sendTextMessage"
+        @send-text-message="sendTextMessage($event)"
         @clear-results="clearResults"
         @update:user-input="userInput = $event"
         @update:user-language="userPreferences.userLanguage = $event"
@@ -551,22 +551,19 @@ async function sendTextMessage(providedText?: string): Promise<void> {
   }
 
   // Add user message as a tool result for conversation history
-  // Only add if it's from the user input box (not providedText from other sources)
-  if (!providedText) {
-    const userMessageResult: ToolResult = {
-      uuid: generateUUID(),
-      toolName: "text-response",
-      message: text,
-      title: "You",
-      data: {
-        text: text,
-        role: "user",
-        transportKind: transportKind.value,
-      },
-    };
-    toolResults.value.push(userMessageResult);
-    scrolling.scrollSidebarToBottom();
-  }
+  const userMessageResult: ToolResult = {
+    uuid: generateUUID(),
+    toolName: "text-response",
+    message: text,
+    title: "You",
+    data: {
+      text: text,
+      role: "user",
+      transportKind: transportKind.value,
+    },
+  };
+  toolResults.value.push(userMessageResult);
+  scrolling.scrollSidebarToBottom();
 
   // Wait for conversation to be inactive
   for (
@@ -584,9 +581,6 @@ async function sendTextMessage(providedText?: string): Promise<void> {
   }
 
   messages.value.push(`You: ${text}`);
-  if (!providedText) {
-    userInput.value = "";
-  }
 }
 
 function stopChat(): void {

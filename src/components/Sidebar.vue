@@ -163,7 +163,7 @@
         @change="handleFileUpload"
       />
       <button
-        @click="$emit('sendTextMessage')"
+        @click="handleSendClick"
         :disabled="
           (modelKind === 'voice-realtime' && !chatActive) || !userInput.trim()
         "
@@ -540,7 +540,7 @@ const emit = defineEmits<{
   stopChat: [];
   setMute: [muted: boolean];
   selectResult: [result: ToolResult];
-  sendTextMessage: [];
+  sendTextMessage: [text: string];
   clearResults: [];
   "update:userInput": [value: string];
   "update:userLanguage": [value: string];
@@ -738,8 +738,17 @@ function handleEnterKey(event: KeyboardEvent): void {
 
   // Submit the message
   event.preventDefault();
-  emit("sendTextMessage");
-  // Note: Input is cleared by App.vue after successfully sending
+  const text = props.userInput;
+  emit("update:userInput", ""); // Clear immediately
+  emit("sendTextMessage", text);
+}
+
+function handleSendClick(): void {
+  if (!props.userInput.trim()) return;
+
+  const text = props.userInput;
+  emit("update:userInput", ""); // Clear immediately
+  emit("sendTextMessage", text);
 }
 
 defineExpose({
