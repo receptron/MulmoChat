@@ -413,7 +413,7 @@ const calculateFormulas = (
   const evaluateFormula = (formula: string): number | string => {
     try {
       // Check if it's a function call
-      const funcMatch = formula.match(/^([A-Z]+)\((.+)\)$/i);
+      const funcMatch = formula.match(/^([A-Z]+)\((.*)\)$/i);
       if (funcMatch) {
         const [, funcName, argsStr] = funcMatch;
         const func = functionRegistry.get(funcName);
@@ -443,10 +443,24 @@ const calculateFormulas = (
       }
 
       // Handle simple arithmetic expressions with cell references
-      // Replace cell references with their values
+      // First, replace any function calls within the expression
       let expr = formula;
+
+      // Find and evaluate function calls (e.g., TODAY(), SUM(A1:A10), etc.)
+      const funcCallRegex = /([A-Z]+)\(([^()]*(?:\([^()]*\))*[^()]*)\)/gi;
+      let embeddedFuncMatch;
+      while ((embeddedFuncMatch = funcCallRegex.exec(expr)) !== null) {
+        const fullMatch = embeddedFuncMatch[0];
+        const result = evaluateFormula(fullMatch);
+        // Replace the function call with its result
+        expr = expr.replace(fullMatch, String(result));
+        // Reset regex index since we modified the string
+        funcCallRegex.lastIndex = 0;
+      }
+
+      // Then replace cell references with their values
       // Match cell references including cross-sheet and absolute references
-      const cellRefs = formula.match(
+      const cellRefs = expr.match(
         /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
       );
       if (cellRefs) {
