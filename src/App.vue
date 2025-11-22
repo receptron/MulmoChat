@@ -234,6 +234,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   anthropic: "Anthropic",
   google: "Google Gemini",
   ollama: "Ollama",
+  grok: "xAI Grok",
 };
 
 const scrolling = useScrolling({

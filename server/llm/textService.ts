@@ -1,5 +1,6 @@
 import { generateWithAnthropic } from "./providers/anthropic";
 import { generateWithGoogle } from "./providers/google";
+import { generateWithGrok } from "./providers/grok";
 import { generateWithOllama } from "./providers/ollama";
 import { generateWithOpenAI } from "./providers/openai";
 import {
@@ -17,6 +18,7 @@ const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
   anthropic: "claude-sonnet-4-5",
   google: "gemini-2.5-flash",
   ollama: "gpt-oss:20b",
+  grok: "grok-2-1212",
 };
 
 const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
@@ -48,6 +50,12 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       // "deepseek-coder:33b", no tools
       // "llama3.3:70b", no tools
       // "nemotron:70b", no tools
+    ],
+    grok: [
+      "grok-2-1212",
+      "grok-2-vision-1212",
+      "grok-beta",
+      "grok-vision-beta",
     ],
   };
 
@@ -161,6 +169,8 @@ export async function generateText(
       return generateWithGoogle(params);
     case "ollama":
       return generateWithOllama(params);
+    case "grok":
+      return generateWithGrok(params);
     default: {
       const exhaustiveCheck: never = request.provider;
       throw new TextGenerationError(
@@ -177,6 +187,7 @@ export function getProviderAvailability(): ProviderAvailability[] {
     "anthropic",
     "google",
     "ollama",
+    "grok",
   ];
 
   return providers.map((provider) => {
@@ -189,7 +200,9 @@ export function getProviderAvailability(): ProviderAvailability[] {
             ? Boolean(process.env.ANTHROPIC_API_KEY)
             : provider === "google"
               ? Boolean(process.env.GEMINI_API_KEY)
-              : true,
+              : provider === "grok"
+                ? Boolean(process.env.XAI_API_KEY)
+                : true,
     };
 
     const defaultModel = DEFAULT_MODELS[provider];

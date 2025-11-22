@@ -23,7 +23,8 @@ function isProviderId(value: unknown): value is TextLLMProviderId {
     value === "openai" ||
     value === "anthropic" ||
     value === "google" ||
-    value === "ollama"
+    value === "ollama" ||
+    value === "grok"
   );
 }
 
