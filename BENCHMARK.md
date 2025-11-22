@@ -16,6 +16,69 @@ Build a break-even analysis calculator for a small business. Show fixed costs ($
 
 Create a budget tracker comparing monthly income vs expenses across 6 categories (Housing, Food, Transportation, Entertainment, Savings, Other). Show totals, surplus/deficit, and percentage of income for each category. Make it easy to adjust the amounts.
 
+I have an employee database in columns A-D. Column A has employee IDs (101, 102, 103),
+  column B has names (John, Sarah, Mike), column C has departments (Sales, IT, HR), and
+  column D has hire dates (1/15/2020, 3/22/2018, 7/10/2021).
+
+  Create formulas to:
+  - Find how many years each employee has been with the company
+  - Look up Sarah's department
+  - Calculate the total months of service for employee 102
+  - Find the hire date of the employee in the IT department
+
+I have a product catalog where column A contains product codes (SKU001, SKU002, SKU003),
+   column B has product names (Widget, Gadget, Doohickey), column C has prices (29.99,
+  49.99, 19.99), and column D has price expiry dates (12/31/2025, 6/30/2026, 3/15/2026).
+
+  Help me create formulas to:
+  - Look up the price for product code SKU002
+  - Calculate how many days until each price expires
+  - Find which product name corresponds to the price 19.99
+  - Check if any prices expire within the next 90 days
+
+I'm tracking project milestones with task IDs in column A (T001, T002, T003), task names
+   in column B (Design, Development, Testing), start dates in column C (1/1/2025,
+  2/15/2025, 4/1/2025), and end dates in column D (2/14/2025, 3/31/2025, 5/15/2025).
+
+  Create formulas to:
+  - Calculate the duration in days for each task
+  - Find the end date for the 'Development' task
+  - Determine which tasks are currently active (today falls between start and end dates)
+  - Calculate total project duration from earliest start to latest end
+
+I have invoices with invoice numbers in column A (INV-001, INV-002, INV-003), customer
+  names in column B (Acme Corp, Beta Inc, Gamma LLC), invoice dates in column C (10/1/2025,
+   10/15/2025, 11/1/2025), and amounts in column D (1500, 2300, 890).
+
+  Help me:
+  - Calculate how many days each invoice has been outstanding
+  - Look up the invoice date for customer 'Beta Inc'
+  - Find which invoices are over 30 days old
+  - Get the amount for invoice number INV-002
+
+I maintain a list with employee IDs in column A (E001, E002, E003), names in column B
+  (Alice, Bob, Carol), birthdates in column C (5/12/1990, 8/23/1985, 2/14/1992), and work
+  anniversary dates in column D (1/10/2018, 6/15/2019, 9/1/2020).
+
+  Create formulas to:
+  - Calculate each employee's current age
+  - Find how many years Bob has been with the company
+  - Look up Carol's birthday
+  - Identify if any employee has a birthday this month
+  - Calculate the exact difference between Alice's birthday and work anniversary in years,
+  months, and days
+
+I track software subscriptions with service names in row 1 across columns A-E (Slack,
+  GitHub, AWS, Figma, Jira), subscription start dates in row 2 (1/1/2024, 3/15/2024,
+  6/1/2024, 9/10/2024, 11/20/2024), and renewal dates in row 3 (1/1/2025, 3/15/2025,
+  6/1/2025, 9/10/2025, 11/20/2025).
+
+  Help me create formulas to:
+  - Look up the renewal date for GitHub using horizontal lookup
+  - Calculate days remaining until each service renews
+  - Find which service started on 6/1/2024
+  - Determine how many months each subscription has been active
+
 ### ShapeScript
 
 Make 6 cylinders in a row with colors gradually changing from red to blue

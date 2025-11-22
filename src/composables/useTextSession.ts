@@ -1,4 +1,4 @@
-import { ref, shallowRef } from "vue";
+import { ref } from "vue";
 import type { StartApiResponse } from "../../server/types";
 import {
   type RealtimeSessionEventHandlers,
@@ -8,8 +8,10 @@ import {
 import { resolveTextModelId, DEFAULT_TEXT_MODEL } from "../config/textModels";
 
 interface TextMessage {
-  role: "system" | "user" | "assistant";
+  role: "system" | "user" | "assistant" | "tool";
   content: string;
+  tool_call_id?: string;
+  tool_calls?: Array<{ id: string; name: string; arguments: string }>;
 }
 
 export type UseTextSessionOptions = RealtimeSessionOptions;
@@ -62,10 +64,9 @@ export function useTextSession(
   const connecting = ref(false);
   const isMuted = ref(false);
   const startResponse = ref<StartApiResponse | null>(null);
+
+  // Client-side conversation history (source of truth)
   const conversationMessages = ref<TextMessage[]>([]);
-  const sessionId = ref<string | null>(null);
-  const activeModelId = ref<string | null>(null);
-  const creatingSession = shallowRef<Promise<string | null> | null>(null);
 
   const ensureStartResponse = async () => {
     if (startResponse.value) return;
@@ -75,95 +76,21 @@ export function useTextSession(
     }
   };
 
-  const destroySession = async (id: string | null) => {
-    if (!id) return;
-    try {
-      await fetch(`/api/text/session/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-    } catch (error) {
-      console.warn("Failed to delete text session", error);
-    }
-  };
+  const initializeConversation = () => {
+    // Build initial system prompt
+    const instructions = options.buildInstructions({
+      startResponse: startResponse.value,
+    });
 
-  const ensureSession = async (): Promise<string | null> => {
-    if (creatingSession.value) {
-      return creatingSession.value;
-    }
-
-    const creation = (async () => {
-      await ensureStartResponse();
-
-      const resolvedModel = resolveTextModelId(
-        options.getModelId?.({ startResponse: startResponse.value }) ??
-          DEFAULT_TEXT_MODEL.rawId,
-      );
-
-      if (sessionId.value && activeModelId.value === resolvedModel.rawId) {
-        return sessionId.value;
-      }
-
-      if (sessionId.value && activeModelId.value !== resolvedModel.rawId) {
-        await destroySession(sessionId.value);
-        sessionId.value = null;
-      }
-
-      const instructions = options.buildInstructions({
-        startResponse: startResponse.value,
-      });
-      const tools = options.buildTools({
-        startResponse: startResponse.value,
-      });
-
-      try {
-        const response = await fetch("/api/text/session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            provider: resolvedModel.provider,
-            model: resolvedModel.model,
-            systemPrompt: instructions,
-            tools,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Session creation failed: ${response.statusText}`);
-        }
-
-        const payload = (await response.json()) as {
-          success?: boolean;
-          session?: { id: string; messages?: TextMessage[] };
-          error?: unknown;
-        };
-
-        if (!payload.success || !payload.session?.id) {
-          throw new Error(
-            typeof payload.error === "string"
-              ? payload.error
-              : "Invalid session response",
-          );
-        }
-
-        sessionId.value = payload.session.id;
-        activeModelId.value = resolvedModel.rawId;
-        conversationMessages.value = payload.session.messages ?? [];
-        return sessionId.value;
-      } catch (error) {
-        sessionId.value = null;
-        activeModelId.value = null;
-        handlers.onError?.(error);
-        return null;
-      }
-    })();
-
-    creatingSession.value = creation;
-    try {
-      return await creation;
-    } finally {
-      creatingSession.value = null;
+    if (instructions && instructions.trim()) {
+      conversationMessages.value = [
+        {
+          role: "system",
+          content: instructions.trim(),
+        },
+      ];
+    } else {
+      conversationMessages.value = [];
     }
   };
 
@@ -172,10 +99,8 @@ export function useTextSession(
 
     connecting.value = true;
     try {
-      const id = await ensureSession();
-      if (!id) {
-        throw new Error("Unable to establish text session");
-      }
+      await ensureStartResponse();
+      initializeConversation();
       chatActive.value = true;
     } catch (error) {
       handlers.onError?.(error);
@@ -185,13 +110,9 @@ export function useTextSession(
   };
 
   const stopChat = () => {
-    const id = sessionId.value;
     chatActive.value = false;
     conversationActive.value = false;
     conversationMessages.value = [];
-    sessionId.value = null;
-    activeModelId.value = null;
-    void destroySession(id);
   };
 
   const sendUserMessage = async (text: string) => {
@@ -207,33 +128,46 @@ export function useTextSession(
       }
     }
 
-    const id = await ensureSession();
-    if (!id) {
-      return false;
-    }
-    console.log("SENDING USER MESSAGE", `${id}: "${trimmed}"`);
+    await ensureStartResponse();
+
+    const resolvedModel = resolveTextModelId(
+      options.getModelId?.({ startResponse: startResponse.value }) ??
+        DEFAULT_TEXT_MODEL.rawId,
+    );
+
+    console.log("SENDING USER MESSAGE", `"${trimmed}"`);
+
+    // Append user message to conversation history
+    conversationMessages.value.push({
+      role: "user",
+      content: trimmed,
+    });
 
     conversationActive.value = true;
     handlers.onConversationStarted?.();
 
     try {
-      const response = await fetch(
-        `/api/text/session/${encodeURIComponent(id)}/message`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            role: "user",
-            content: trimmed,
-          }),
+      const tools = options.buildTools({
+        startResponse: startResponse.value,
+      });
+
+      // Call stateless generate API with full conversation history
+      const response = await fetch("/api/text/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          provider: resolvedModel.provider,
+          model: resolvedModel.model,
+          messages: conversationMessages.value,
+          tools: tools.length > 0 ? tools : undefined,
+        }),
+      });
 
       if (!response.ok) {
         const errorBody = await response.text();
-        console.error("Message API error:", response.status, errorBody);
+        console.error("Generate API error:", response.status, errorBody);
         throw new Error(`API error: ${response.statusText} - ${errorBody}`);
       }
 
@@ -243,9 +177,7 @@ export function useTextSession(
           text?: string;
           toolCalls?: Array<{ id: string; name: string; arguments: string }>;
         };
-        session?: { messages?: TextMessage[] };
         error?: unknown;
-        details?: unknown;
       };
 
       if (!payload.success) {
@@ -259,15 +191,13 @@ export function useTextSession(
       const assistantText = payload.result?.text ?? "";
       const toolCalls = payload.result?.toolCalls;
 
-      // Update conversation messages
-      if (payload.session?.messages) {
-        conversationMessages.value = payload.session.messages;
-      } else {
-        conversationMessages.value = [
-          ...conversationMessages.value,
-          { role: "user", content: trimmed },
-          { role: "assistant", content: assistantText },
-        ];
+      // Append assistant response to conversation history
+      if (assistantText || toolCalls) {
+        conversationMessages.value.push({
+          role: "assistant",
+          content: assistantText || "",
+          ...(toolCalls?.length ? { tool_calls: toolCalls } : {}),
+        });
       }
 
       // Always show text response if there's any text
@@ -319,28 +249,12 @@ export function useTextSession(
   };
 
   const sendFunctionCallOutput = (callId: string, output: string) => {
-    void (async () => {
-      const id = await ensureSession();
-      if (!id) return;
-      try {
-        await fetch(`/api/text/session/${encodeURIComponent(id)}/tool-output`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            toolOutputs: [
-              {
-                callId,
-                output,
-              },
-            ],
-          }),
-        });
-      } catch (error) {
-        handlers.onError?.(error);
-      }
-    })();
+    // Append tool output to conversation history
+    conversationMessages.value.push({
+      role: "tool",
+      tool_call_id: callId,
+      content: output,
+    });
     return true;
   };
 
@@ -351,25 +265,49 @@ export function useTextSession(
     }
 
     void (async () => {
-      const id = await ensureSession();
-      if (!id) return;
+      if (!chatActive.value) {
+        await startChat();
+        if (!chatActive.value) {
+          return;
+        }
+      }
+
+      await ensureStartResponse();
+
+      const resolvedModel = resolveTextModelId(
+        options.getModelId?.({ startResponse: startResponse.value }) ??
+          DEFAULT_TEXT_MODEL.rawId,
+      );
+
+      // Append instructions as system message
+      conversationMessages.value.push({
+        role: "system",
+        content: trimmed,
+      });
 
       conversationActive.value = true;
       handlers.onConversationStarted?.();
 
       try {
-        console.log("SENDING INSTRUCTIONS", `${id}: "${trimmed}"`);
+        console.log("SENDING INSTRUCTIONS", `"${trimmed}"`);
 
-        const response = await fetch(
-          `/api/text/session/${encodeURIComponent(id)}/instructions`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ instructions: trimmed }),
+        const tools = options.buildTools({
+          startResponse: startResponse.value,
+        });
+
+        // Call stateless generate API with full conversation history
+        const response = await fetch("/api/text/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            provider: resolvedModel.provider,
+            model: resolvedModel.model,
+            messages: conversationMessages.value,
+            tools: tools.length > 0 ? tools : undefined,
+          }),
+        });
 
         if (!response.ok) {
           const errorBody = await response.text();
@@ -383,7 +321,6 @@ export function useTextSession(
             text?: string;
             toolCalls?: Array<{ id: string; name: string; arguments: string }>;
           };
-          session?: { messages?: TextMessage[] };
           error?: unknown;
         };
 
@@ -398,9 +335,13 @@ export function useTextSession(
         const assistantText = payload.result?.text ?? "";
         const toolCalls = payload.result?.toolCalls;
 
-        // Update conversation messages
-        if (payload.session?.messages) {
-          conversationMessages.value = payload.session.messages;
+        // Append assistant response to conversation history
+        if (assistantText || toolCalls) {
+          conversationMessages.value.push({
+            role: "assistant",
+            content: assistantText || "",
+            ...(toolCalls?.length ? { tool_calls: toolCalls } : {}),
+          });
         }
 
         // Handle tool calls if present
