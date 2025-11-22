@@ -46,7 +46,8 @@ const pushMarkdown = async (
   }
 
   // Detect all image placeholders in the format: ![prompt](__too_be_replaced_image_path__)
-  const imageRegex = /!\[([^\]]+)\]\(__too_be_replaced_image_path__\)/g;
+  // Also handle variant with leading slash: ![prompt](/__too_be_replaced_image_path__)
+  const imageRegex = /!\[([^\]]+)\]\(\/?__too_be_replaced_image_path__\)/g;
   const matches = [...markdown.matchAll(imageRegex)];
 
   if (matches.length > 0) {
