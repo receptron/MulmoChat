@@ -18,7 +18,7 @@ const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
   anthropic: "claude-sonnet-4-5",
   google: "gemini-2.5-flash",
   ollama: "gpt-oss:20b",
-  grok: "grok-2-1212",
+  grok: "grok-4-1-fast-reasoning",
 };
 
 const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
@@ -52,6 +52,15 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       // "nemotron:70b", no tools
     ],
     grok: [
+      "grok-4-1-fast-reasoning",
+      "grok-4-1",
+      "grok-4-1-vision",
+      "grok-4",
+      "grok-3-1",
+      "grok-3-1-vision",
+      "grok-3",
+      "grok-2-latest",
+      "grok-2-vision-latest",
       "grok-2-1212",
       "grok-2-vision-1212",
       "grok-beta",
