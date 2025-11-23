@@ -14,34 +14,13 @@ import { functionRegistry } from "../tools/models/spreadsheet-functions";
 
 // Test data matching user's spreadsheet
 const testData = [
-  [
-    { v: "Loan Amount" },
-    { v: 250000, f: "$#,##0.00" },
-  ],
-  [
-    { v: "Annual Interest Rate" },
-    { v: 0.06, f: "0.00%" },
-  ],
-  [
-    { v: "Term (years)" },
-    { v: 30, f: "#,##0" },
-  ],
-  [
-    { v: "Payments per Year" },
-    { v: 12, f: "#,##0" },
-  ],
-  [
-    { v: "Total Periods" },
-    { v: "=B3*B4", f: "#,##0" },
-  ],
-  [
-    { v: "Monthly Rate" },
-    { v: "=B2/B4", f: "0.00%" },
-  ],
-  [
-    { v: "Monthly Payment" },
-    { v: "=-PMT(B6,B5,B1)", f: "$#,##0.00" },
-  ],
+  [{ v: "Loan Amount" }, { v: 250000, f: "$#,##0.00" }],
+  [{ v: "Annual Interest Rate" }, { v: 0.06, f: "0.00%" }],
+  [{ v: "Term (years)" }, { v: 30, f: "#,##0" }],
+  [{ v: "Payments per Year" }, { v: 12, f: "#,##0" }],
+  [{ v: "Total Periods" }, { v: "=B3*B4", f: "#,##0" }],
+  [{ v: "Monthly Rate" }, { v: "=B2/B4", f: "0.00%" }],
+  [{ v: "Monthly Payment" }, { v: "=-PMT(B6,B5,B1)", f: "$#,##0.00" }],
 ];
 
 // Helper to format a number according to Excel format code
