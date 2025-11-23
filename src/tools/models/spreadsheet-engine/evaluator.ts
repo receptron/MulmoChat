@@ -1,0 +1,182 @@
+/**
+ * Formula Evaluator
+ *
+ * Evaluates spreadsheet formulas including functions, cell references, and arithmetic
+ */
+
+import { functionRegistry } from "../spreadsheet-functions";
+import type { CellValue } from "./types";
+
+/**
+ * Evaluation context for formulas
+ */
+export interface EvaluatorContext {
+  getCellValue: (ref: string) => CellValue;
+  getRangeValues: (range: string) => CellValue[];
+  evaluateFormula: (formula: string) => CellValue;
+}
+
+/**
+ * Parse function arguments, handling nested functions and quoted strings
+ *
+ * @param argsStr - String containing function arguments
+ * @returns Array of argument strings
+ */
+export function parseFunctionArgs(argsStr: string): string[] {
+  const args: string[] = [];
+  let currentArg = "";
+  let depth = 0;
+  let inString = false;
+  let stringChar = "";
+
+  for (let i = 0; i < argsStr.length; i++) {
+    const char = argsStr[i];
+    const prevChar = i > 0 ? argsStr[i - 1] : "";
+
+    // Handle string boundaries
+    if ((char === '"' || char === "'") && prevChar !== "\\") {
+      if (!inString) {
+        inString = true;
+        stringChar = char;
+      } else if (char === stringChar) {
+        inString = false;
+        stringChar = "";
+      }
+      currentArg += char;
+      continue;
+    }
+
+    // Track parentheses depth (for nested functions)
+    if (!inString) {
+      if (char === "(") depth++;
+      if (char === ")") depth--;
+
+      // Split on comma only at depth 0 and not in string
+      if (char === "," && depth === 0) {
+        args.push(currentArg.trim());
+        currentArg = "";
+        continue;
+      }
+    }
+
+    currentArg += char;
+  }
+
+  if (currentArg.trim()) {
+    args.push(currentArg.trim());
+  }
+
+  return args;
+}
+
+/**
+ * Evaluate a formula string
+ *
+ * Supports:
+ * - Function calls: SUM(A1:A10), ROUND(B2, 2)
+ * - Cell references: A1, B2, Sheet1!A1
+ * - Arithmetic: 2+3, A1*B1, (A1+B1)/2
+ * - Nested expressions: ROUND(SUM(A1:A10)/COUNT(A1:A10), 2)
+ *
+ * @param formula - Formula string (without leading =)
+ * @param context - Evaluation context with cell/range accessors
+ * @returns Evaluated result (number or string)
+ */
+export function evaluateFormula(
+  formula: string,
+  context: EvaluatorContext
+): CellValue {
+  try {
+    // Check if it's a SIMPLE function call (not a complex expression)
+    // We need to ensure the formula is JUST a function, not "FUNC(...) + something"
+    const funcMatch = formula.match(/^([A-Z]+)\((.*)\)$/i);
+    if (funcMatch) {
+      const [, funcName, argsStr] = funcMatch;
+
+      // Check that the closing paren is actually the end of the function
+      // by counting parentheses in argsStr
+      let parenDepth = 0;
+      let isValidFunction = true;
+      for (const char of argsStr) {
+        if (char === '(') parenDepth++;
+        else if (char === ')') {
+          parenDepth--;
+          if (parenDepth < 0) {
+            // More closing parens than opening - this means we matched too much
+            isValidFunction = false;
+            break;
+          }
+        }
+      }
+
+      const func = functionRegistry.get(funcName);
+      if (func && isValidFunction) {
+        const args = parseFunctionArgs(argsStr);
+
+        // Validate argument count
+        if (func.minArgs !== undefined && args.length < func.minArgs) {
+          throw new Error(
+            `${funcName} requires at least ${func.minArgs} argument${func.minArgs !== 1 ? "s" : ""}`
+          );
+        }
+        if (func.maxArgs !== undefined && args.length > func.maxArgs) {
+          throw new Error(
+            `${funcName} accepts at most ${func.maxArgs} argument${func.maxArgs !== 1 ? "s" : ""}`
+          );
+        }
+
+        // Execute function with context
+        return func.handler(args, {
+          getCellValue: context.getCellValue,
+          getRangeValues: context.getRangeValues,
+          evaluateFormula: context.evaluateFormula,
+        });
+      }
+    }
+
+    // Handle simple arithmetic expressions with cell references
+    // First, replace any function calls within the expression
+    let expr = formula;
+
+    // Find and evaluate function calls (e.g., TODAY(), SUM(A1:A10), etc.)
+    const funcCallRegex = /([A-Z]+)\(([^()]*(?:\([^()]*\))*[^()]*)\)/gi;
+    let embeddedFuncMatch;
+    while ((embeddedFuncMatch = funcCallRegex.exec(expr)) !== null) {
+      const fullMatch = embeddedFuncMatch[0];
+      const result = context.evaluateFormula(fullMatch);
+      // Wrap result in parentheses to handle negative numbers (e.g., -PMT() → -(result))
+      expr = expr.replace(fullMatch, `(${result})`);
+      // Reset regex index since we modified the string
+      funcCallRegex.lastIndex = 0;
+    }
+
+    // Then replace cell references with their values
+    // Match cell references including cross-sheet and absolute references
+    const cellRefs = expr.match(
+      /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g
+    );
+    if (cellRefs) {
+      for (const ref of cellRefs) {
+        const value = context.getCellValue(ref);
+        // Escape special regex characters
+        const escapedRef = ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        expr = expr.replace(new RegExp(escapedRef, "g"), value.toString());
+      }
+    }
+
+    // Replace ^ with ** for exponentiation
+    expr = expr.replace(/\^/g, "**");
+
+    // Safely evaluate the expression
+    // Allow numbers, operators, parentheses, whitespace, and decimal points
+    if (/^[\d+\-*/(). ]+$/.test(expr)) {
+      // eslint-disable-next-line no-eval
+      return eval(expr);
+    }
+
+    return formula; // Return original if can't evaluate
+  } catch (error) {
+    console.error(`Failed to evaluate formula: ${formula}`, error);
+    return formula;
+  }
+}
