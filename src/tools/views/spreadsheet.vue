@@ -124,15 +124,7 @@ import { computed, ref, watch } from "vue";
 import * as XLSX from "xlsx";
 import type { ToolResult } from "../types";
 import type { SpreadsheetToolData } from "../models/spreadsheet";
-// Import to trigger function registration side effects
-import "../models/functions/statistical";
-import "../models/functions/mathematical";
-import "../models/functions/logical";
-import "../models/functions/text";
-import "../models/functions/financial";
-import "../models/functions/lookup";
-import "../models/functions/date";
-import { functionRegistry } from "../models/spreadsheet-functions";
+import { functionRegistry } from "../models/functions";
 
 const props = defineProps<{
   selectedResult: ToolResult<SpreadsheetToolData>;
