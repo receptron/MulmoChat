@@ -659,25 +659,55 @@ function extractCellReferences(
   // Remove the "=" prefix if present
   const cleanFormula = formula.startsWith("=") ? formula.substring(1) : formula;
 
-  // Match individual cell references (e.g., A1, $B$2, B2)
-  // This regex matches cell references but not cross-sheet references for now
+  // First, extract range references (e.g., A1:B10, $A$1:$B$10)
+  const rangeRegex = /\$?[A-Z]+\$?\d+:\$?[A-Z]+\$?\d+/g;
+  const rangeMatches = cleanFormula.match(rangeRegex);
+
+  if (rangeMatches) {
+    for (const range of rangeMatches) {
+      // Remove $ symbols for absolute references
+      const cleanRange = range.replace(/\$/g, "");
+      const rangeMatch = cleanRange.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+
+      if (rangeMatch) {
+        const startCol = colToIndex(rangeMatch[1]);
+        const startRow = parseInt(rangeMatch[2]) - 1;
+        const endCol = colToIndex(rangeMatch[3]);
+        const endRow = parseInt(rangeMatch[4]) - 1;
+
+        // Add all cells in the range
+        for (let row = startRow; row <= endRow; row++) {
+          for (let col = startCol; col <= endCol; col++) {
+            if (!references.some((ref) => ref.row === row && ref.col === col)) {
+              references.push({ row, col });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Remove ranges from formula before extracting individual cell references
+  const formulaWithoutRanges = cleanFormula.replace(rangeRegex, "");
+
+  // Then, extract individual cell references (e.g., A1, $B$2, B2)
   const cellRefRegex = /\$?[A-Z]+\$?\d+/g;
-  const matches = cleanFormula.match(cellRefRegex);
+  const cellMatches = formulaWithoutRanges.match(cellRefRegex);
 
-  if (!matches) return references;
+  if (cellMatches) {
+    for (const match of cellMatches) {
+      // Remove $ symbols for absolute references
+      const cleanRef = match.replace(/\$/g, "");
+      const cellMatch = cleanRef.match(/^([A-Z]+)(\d+)$/);
 
-  for (const match of matches) {
-    // Remove $ symbols for absolute references
-    const cleanRef = match.replace(/\$/g, "");
-    const cellMatch = cleanRef.match(/^([A-Z]+)(\d+)$/);
+      if (cellMatch) {
+        const col = colToIndex(cellMatch[1]);
+        const row = parseInt(cellMatch[2]) - 1; // Convert to 0-based
 
-    if (cellMatch) {
-      const col = colToIndex(cellMatch[1]);
-      const row = parseInt(cellMatch[2]) - 1; // Convert to 0-based
-
-      // Add to references if not already present
-      if (!references.some((ref) => ref.row === row && ref.col === col)) {
-        references.push({ row, col });
+        // Add to references if not already present
+        if (!references.some((ref) => ref.row === row && ref.col === col)) {
+          references.push({ row, col });
+        }
       }
     }
   }
