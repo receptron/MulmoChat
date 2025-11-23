@@ -253,7 +253,7 @@ const calculateFormulas = (
   const getRawValue = (cell: any): number => {
     if (typeof cell === "number") return cell;
 
-    // Handle string values
+    // Handle string values (for legacy or calculated cells)
     if (typeof cell === "string") {
       // Handle percentage strings like "5%" or "0.4167%"
       if (cell.includes("%")) {
@@ -277,10 +277,16 @@ const calculateFormulas = (
       return parseFloat(cell) || 0;
     }
 
-    if (typeof cell === "object" && cell !== null) {
-      if ("v" in cell) return parseFloat(cell.v) || 0;
-      if ("f" in cell) return 0; // Will be calculated later
+    // Handle new cell format {v, f}
+    if (typeof cell === "object" && cell !== null && "v" in cell) {
+      const value = cell.v;
+      // If value is a string starting with "=", it's a formula (will be calculated later)
+      if (typeof value === "string" && value.startsWith("=")) {
+        return 0; // Will be calculated later
+      }
+      return parseFloat(value) || 0;
     }
+
     return parseFloat(cell) || 0;
   };
 
@@ -493,22 +499,26 @@ const calculateFormulas = (
     for (let colIdx = 0; colIdx < calculated[rowIdx].length; colIdx++) {
       const cell = calculated[rowIdx][colIdx];
 
-      if (cell && typeof cell === "object") {
-        // Handle formula cells
-        if ("f" in cell) {
-          const result = evaluateFormula(cell.f);
+      if (cell && typeof cell === "object" && "v" in cell) {
+        const value = cell.v;
+        const format = cell.f;
+
+        // Check if value is a formula (string starting with "=")
+        if (typeof value === "string" && value.startsWith("=")) {
+          // Remove the "=" prefix and evaluate the formula
+          const formula = value.substring(1);
+          const result = evaluateFormula(formula);
+
           // Apply formatting if specified
-          if ("z" in cell && cell.z && typeof result === "number") {
-            calculated[rowIdx][colIdx] = formatNumber(result, cell.z);
+          if (format && typeof result === "number") {
+            calculated[rowIdx][colIdx] = formatNumber(result, format);
           } else {
             calculated[rowIdx][colIdx] = result;
           }
-        }
-        // Handle value cells with formatting
-        else if ("v" in cell) {
-          const value = cell.v;
-          if ("z" in cell && cell.z && typeof value === "number") {
-            calculated[rowIdx][colIdx] = formatNumber(value, cell.z);
+        } else {
+          // Regular value cell (not a formula)
+          if (format && typeof value === "number") {
+            calculated[rowIdx][colIdx] = formatNumber(value, format);
           } else {
             calculated[rowIdx][colIdx] = value;
           }
@@ -603,21 +613,32 @@ function openMiniEditor(rowIndex: number, colIndex: number) {
 
     const cellValue = currentSheet.data[rowIndex][colIndex];
 
-    // Determine cell type and extract values
-    if (typeof cellValue === "object" && cellValue !== null) {
-      miniEditorType.value = "object";
-      miniEditorValue.value = "";
-      // Prefer formula over value for the combined input
-      miniEditorFormula.value = cellValue.f ?? cellValue.v ?? "";
-      miniEditorFormat.value = cellValue.z ?? "";
-    } else if (typeof cellValue === "number") {
-      miniEditorType.value = "object";
-      miniEditorValue.value = "";
-      miniEditorFormula.value = String(cellValue);
-      miniEditorFormat.value = "";
+    // Determine cell type and extract values (new format: {v, f})
+    if (typeof cellValue === "object" && cellValue !== null && "v" in cellValue) {
+      const value = cellValue.v;
+      const format = cellValue.f ?? "";
+
+      // Check if it's a formula (value starts with "=")
+      if (typeof value === "string" && value.startsWith("=")) {
+        miniEditorType.value = "object";
+        miniEditorValue.value = "";
+        miniEditorFormula.value = value.substring(1); // Remove "=" prefix
+        miniEditorFormat.value = format;
+      } else if (typeof value === "number") {
+        miniEditorType.value = "object";
+        miniEditorValue.value = "";
+        miniEditorFormula.value = String(value);
+        miniEditorFormat.value = format;
+      } else {
+        miniEditorType.value = "string";
+        miniEditorValue.value = String(value);
+        miniEditorFormula.value = "";
+        miniEditorFormat.value = "";
+      }
     } else {
+      // Legacy format or plain value
       miniEditorType.value = "string";
-      miniEditorValue.value = cellValue ?? "";
+      miniEditorValue.value = String(cellValue ?? "");
       miniEditorFormula.value = "";
       miniEditorFormat.value = "";
     }
@@ -653,12 +674,15 @@ function saveMiniEditor() {
       currentSheet.data.push([]);
     }
 
-    // Build the new cell value based on type
+    // Build the new cell value based on type (new format: {v, f})
     let newCellValue: any;
     if (miniEditorType.value === "string") {
-      newCellValue = String(miniEditorValue.value);
+      // String type - create simple cell with string value
+      newCellValue = {
+        v: String(miniEditorValue.value),
+      };
     } else {
-      // object type (Formula)
+      // object type (Formula or Number)
       const input = miniEditorFormula.value?.trim() || "";
 
       // Detect if it's a formula by checking for:
@@ -670,15 +694,17 @@ function saveMiniEditor() {
         /[A-Z]+\d+\s*[\+\-\*\/\^]/.test(input) ||
         /\d+\s*[\+\-\*\/\^]\s*\d+/.test(input);
 
-      newCellValue = {};
+      newCellValue = { v: "" };
       if (isFormula) {
-        newCellValue.f = input;
+        // Store formula with "=" prefix
+        newCellValue.v = "=" + input;
       } else if (input !== "") {
         const numValue = parseFloat(input);
         newCellValue.v = isNaN(numValue) ? input : numValue;
       }
+      // Add format if provided
       if (miniEditorFormat.value) {
-        newCellValue.z = miniEditorFormat.value;
+        newCellValue.f = miniEditorFormat.value;
       }
     }
 

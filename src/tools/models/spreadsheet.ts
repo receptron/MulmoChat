@@ -4,11 +4,10 @@ import SpreadsheetPreview from "../previews/spreadsheet.vue";
 
 const toolName = "presentSpreadsheet";
 
-export type SpreadsheetCell =
-  | string
-  | number
-  | { f: string; z: string } // Formulas must specify format
-  | { v: any; z: string }; // Formatted value
+export interface SpreadsheetCell {
+  v: string | number; // Value - if string starts with "=", it's a formula
+  f?: string; // Format code (e.g., "$#,##0.00", "0.00%", "#,##0")
+}
 
 export interface SpreadsheetSheet {
   name: string;
@@ -45,54 +44,30 @@ const toolDefinition = {
             data: {
               type: "array",
               description:
-                "Rows of cells. Inputs should be plain numbers/strings; ALL calculations must be formulas with formats. Use Excel-style A1 notation in formulas: columns are letters (A, B, C...), rows are 1-based numbers (1, 2, 3...). Example row: ['Year', 'Revenue', 'Growth %'], [2024, 1500000, {\"f\": \"B2/B1-1\", \"z\": \"0.00%\"}]. Format codes (z): '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal).",
+                "Rows of cells. Each cell is an object with 'v' (value) and 'f' (format). Use Excel-style A1 notation in formulas: columns are letters (A, B, C...), rows are 1-based numbers (1, 2, 3...). Example: [{\"v\": \"Year\", \"f\": \"\"}, {\"v\": 2024, \"f\": \"#,##0\"}, {\"v\": \"=B2*1.05\", \"f\": \"$#,##0.00\"}]. Format codes: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal).",
               items: {
                 type: "array",
                 description:
-                  "Row of cells. Each cell can be a primitive value, formula object, or formatted cell object.",
+                  "Row of cells. Each cell is an object with value and format.",
                 items: {
-                  oneOf: [
-                    {
+                  type: "object",
+                  description:
+                    "Cell object with value and optional format. If value is a string starting with '=', it's treated as a formula.",
+                  properties: {
+                    v: {
+                      oneOf: [
+                        { type: "string" },
+                        { type: "number" }
+                      ],
+                      description:
+                        "Cell value. Can be text, number, or formula (string starting with '='). Examples: 'Revenue', 1500000, '=SUM(A1:A10)', '=B2/B1-1'",
+                    },
+                    f: {
                       type: "string",
-                      description:
-                        "Text labels only (headers, categories). NOT for formulas or formatted numbers.",
+                      description: "Optional format code for displaying the value. Common formats: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal)",
                     },
-                    {
-                      type: "number",
-                      description: "Raw numeric values (inputs only)",
-                    },
-                    {
-                      type: "object",
-                      description:
-                        "Formula with required formatting - use for ALL calculations",
-                      properties: {
-                        f: {
-                          type: "string",
-                          description:
-                            "Formula expression using Excel A1 notation (columns: A,B,C...; rows: 1,2,3...). Examples: 'B2*1.05', 'SUM(A1:A10)', 'C3/C2-1'",
-                        },
-                        z: {
-                          type: "string",
-                          description: "Required number format code",
-                        },
-                      },
-                      required: ["f", "z"],
-                    },
-                    {
-                      type: "object",
-                      description: "Formatted value with required format code",
-                      properties: {
-                        v: {
-                          description: "Value (number, string, boolean)",
-                        },
-                        z: {
-                          type: "string",
-                          description: "Required number format code",
-                        },
-                      },
-                      required: ["v", "z"],
-                    },
-                  ],
+                  },
+                  required: ["v"],
                 },
               },
             },
@@ -160,5 +135,5 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: SpreadsheetView,
   previewComponent: SpreadsheetPreview,
-  systemPrompt: `Use ${toolName} whenever the user needs a spreadsheet-style table, multi-step math, or dynamic what-if analysis—do not summarize in text. Build LIVE sheets: inputs stay raw numbers/labels, every calculation is a formula object {"f": "...", "z": "..."}. Never pre-calculate or format values yourself; let the spreadsheet compute using cell refs, functions (SUM, AVERAGE, IF, etc.), and arithmetic (A1*1.05). Standard formats: "$#,##0.00" currency, "#,##0" integer, "0.00%" percent, "0.00" decimal. If a number needs formatting but no formula, wrap it as {"v": value, "z": format}.`,
+  systemPrompt: `Use ${toolName} whenever the user needs a spreadsheet-style table, multi-step math, or dynamic what-if analysis—do not summarize in text. Build LIVE sheets where every cell is an object {"v": value, "f": format}. For formulas, set "v" to a string starting with "=" (e.g., {"v": "=B2*1.05", "f": "$#,##0.00"}). Never pre-calculate; let the spreadsheet compute using cell refs, functions (SUM, AVERAGE, IF, etc.), and arithmetic. Standard formats: "$#,##0.00" currency, "#,##0" integer, "0.00%" percent, "0.00" decimal. Format is optional for plain text/numbers.`,
 };
