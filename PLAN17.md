@@ -37,11 +37,15 @@ src/tools/models/spreadsheet-engine/
 ├── parser.ts                   # Cell/range reference parsing
 ├── formatter.ts                # Number formatting utilities
 ├── evaluator.ts                # Formula evaluation
-└── __tests__/                  # Unit tests
-    ├── calculator.test.ts
-    ├── parser.test.ts
-    ├── formatter.test.ts
-    └── evaluator.test.ts
+└── __tests__/                  # Unit tests with array comparison
+    ├── test-utils.ts           # Test helper utilities (toStringArray, expectSheetOutput)
+    ├── calculator.test.ts      # Array-based output tests
+    ├── parser.test.ts          # Reference parsing tests
+    ├── formatter.test.ts       # Number format tests
+    ├── evaluator.test.ts       # Formula evaluation tests
+    ├── integration.test.ts     # Full workbook tests
+    ├── regression.test.ts      # Bug fix validation
+    └── performance.test.ts     # Performance benchmarks
 ```
 
 ### Core API Design
@@ -254,13 +258,84 @@ export { functionRegistry } from '../spreadsheet-functions';
 5. Verify all functionality still works
 
 ### Phase 6: Documentation & Testing
-1. Write comprehensive test suite
-2. Add JSDoc comments to public API
-3. Create usage examples
-4. Update CLAUDE.md with new architecture
-5. Consider adding to npm package if broadly useful
+1. Create test utilities (`test-utils.ts`) with:
+   - `toStringArray()` - Convert calculated data to string arrays
+   - `createSheet()` - Helper to build test sheets
+   - `expectSheetOutput()` - Compare expected vs actual arrays
+2. Write comprehensive test suite using array comparison:
+   - Unit tests for each module
+   - Integration tests with full sheet comparisons
+   - Regression tests for known issues
+   - Performance tests with output validation
+3. Add JSDoc comments to public API
+4. Create usage examples
+5. Update CLAUDE.md with new architecture
+6. Consider adding to npm package if broadly useful
 
 ## Testing Strategy
+
+### Core Principle: Array-Based Output Comparison
+
+**All tests should compare expected output (string arrays) with actual output (string arrays).** This approach:
+- Mirrors how spreadsheets are visually represented
+- Makes test expectations clear and readable
+- Easy to update when functionality changes
+- Catches formatting regressions
+- Supports snapshot testing for complex sheets
+
+### Test Utilities
+
+```typescript
+// __tests__/test-utils.ts
+
+/**
+ * Convert calculated sheet data to string array for comparison
+ */
+export function toStringArray(data: CellValue[][]): string[][] {
+  return data.map(row =>
+    row.map(cell => String(cell ?? ''))
+  );
+}
+
+/**
+ * Helper to create test sheet from simple data
+ */
+export function createSheet(
+  name: string,
+  data: Array<Array<SpreadsheetCell | string | number>>
+): SheetData {
+  return {
+    name,
+    data: data.map(row =>
+      row.map(cell => {
+        if (typeof cell === 'object' && 'v' in cell) {
+          return cell as SpreadsheetCell;
+        }
+        return { v: cell };
+      })
+    )
+  };
+}
+
+/**
+ * Compare expected and actual output with helpful diff
+ */
+export function expectSheetOutput(
+  actual: CalculatedSheet,
+  expected: string[][]
+): void {
+  const actualStrings = toStringArray(actual.data);
+
+  // Deep equality check
+  expect(actualStrings).toEqual(expected);
+
+  // Additional check: dimensions match
+  expect(actualStrings.length).toBe(expected.length);
+  actualStrings.forEach((row, i) => {
+    expect(row.length).toBe(expected[i].length);
+  });
+}
+```
 
 ### Unit Tests
 
@@ -336,72 +411,289 @@ describe('Evaluator', () => {
   });
 });
 
-// __tests__/calculator.test.ts
-describe('Calculator', () => {
-  test('calculates simple formulas', () => {
-    const sheet = {
-      name: 'Sheet1',
-      data: [
-        [{v: 10}, {v: 20}, {v: '=A1+B1'}]
-      ]
-    };
-    const result = calculator.calculate(sheet);
-    expect(result.data[0][2]).toBe(30);
+// __tests__/calculator.test.ts - ARRAY COMPARISON EXAMPLES
+describe('Calculator - Array Output Comparison', () => {
+  const engine = new SpreadsheetEngine();
+
+  test('calculates simple formulas - compare full output array', () => {
+    const sheet = createSheet('Sheet1', [
+      [10, 20, '=A1+B1']
+    ]);
+
+    const result = engine.calculate(sheet);
+
+    const expected = [
+      ['10', '20', '30']
+    ];
+
+    expectSheetOutput(result, expected);
   });
 
-  test('handles cross-sheet references', () => {
-    const sheets = [
-      {name: 'Sheet1', data: [[{v: 100}]]},
-      {name: 'Sheet2', data: [[{v: '=Sheet1!A1*2'}]]}
+  test('sales calculation with formatting', () => {
+    const sheet = {
+      name: 'Sales',
+      data: [
+        [{v: 'Product'}, {v: 'Price'}, {v: 'Qty'}, {v: 'Total'}],
+        [{v: 'Widget'}, {v: 10, f: '$#,##0.00'}, {v: 100}, {v: '=B2*C2', f: '$#,##0.00'}],
+        [{v: 'Gadget'}, {v: 25, f: '$#,##0.00'}, {v: 50}, {v: '=B3*C3', f: '$#,##0.00'}],
+        [{v: 'Total'}, {v: ''}, {v: '=C2+C3'}, {v: '=SUM(D2:D3)', f: '$#,##0.00'}],
+      ]
+    };
+
+    const result = engine.calculate(sheet);
+
+    const expected = [
+      ['Product',  'Price',      'Qty',  'Total'      ],
+      ['Widget',   '$10.00',     '100',  '$1,000.00'  ],
+      ['Gadget',   '$25.00',     '50',   '$1,250.00'  ],
+      ['Total',    '',           '150',  '$2,250.00'  ],
     ];
-    const results = calculator.calculateWorkbook(sheets);
-    expect(results[1].data[0][0]).toBe(200);
+
+    expectSheetOutput(result, expected);
+  });
+
+  test('percentage calculations', () => {
+    const sheet = createSheet('Growth', [
+      ['Year', 'Revenue', 'Growth'],
+      [2022, 100000, ''],
+      [2023, 120000, {v: '=B3/B2-1', f: '0.00%'}],
+      [2024, 150000, {v: '=B4/B3-1', f: '0.00%'}],
+    ]);
+
+    const result = engine.calculate(sheet);
+
+    const expected = [
+      ['Year',   'Revenue',  'Growth'  ],
+      ['2022',   '100000',   ''        ],
+      ['2023',   '120000',   '20.00%'  ],
+      ['2024',   '150000',   '25.00%'  ],
+    ];
+
+    expectSheetOutput(result, expected);
+  });
+
+  test('financial model with multiple formula types', () => {
+    const sheet = createSheet('Budget', [
+      ['Category',      'Q1',    'Q2',    'Q3',    'Q4',    'Total',           'Avg'              ],
+      ['Marketing',     5000,    6000,    5500,    7000,    '=SUM(B2:E2)',     '=AVERAGE(B2:E2)'  ],
+      ['Engineering',   15000,   16000,   15500,   17000,   '=SUM(B3:E3)',     '=AVERAGE(B3:E3)'  ],
+      ['Sales',         8000,    9000,    8500,    10000,   '=SUM(B4:E4)',     '=AVERAGE(B4:E4)'  ],
+      ['Total',         '=SUM(B2:B4)', '=SUM(C2:C4)', '=SUM(D2:D4)', '=SUM(E2:E4)', '=SUM(F2:F4)', '=AVERAGE(F2:F4)' ],
+    ]);
+
+    const result = engine.calculate(sheet);
+
+    const expected = [
+      ['Category',      'Q1',    'Q2',    'Q3',    'Q4',    'Total',   'Avg'     ],
+      ['Marketing',     '5000',  '6000',  '5500',  '7000',  '23500',   '5875'    ],
+      ['Engineering',   '15000', '16000', '15500', '17000', '63500',   '15875'   ],
+      ['Sales',         '8000',  '9000',  '8500',  '10000', '35500',   '8875'    ],
+      ['Total',         '28000', '31000', '29500', '34000', '122500',  '30625'   ],
+    ];
+
+    expectSheetOutput(result, expected);
+  });
+
+  test('handles cross-sheet references with array comparison', () => {
+    const sheets = [
+      createSheet('Sheet1', [[100]]),
+      createSheet('Sheet2', [['=Sheet1!A1*2']])
+    ];
+
+    const results = engine.calculateWorkbook(sheets);
+
+    expectSheetOutput(results[0], [['100']]);
+    expectSheetOutput(results[1], [['200']]);
   });
 
   test('detects circular references', () => {
-    const sheet = {
-      name: 'Sheet1',
-      data: [
-        [{v: '=B1'}, {v: '=A1'}]
-      ]
-    };
-    const result = calculator.calculate(sheet);
+    const sheet = createSheet('Sheet1', [
+      ['=B1', '=A1']
+    ]);
+
+    const result = engine.calculate(sheet);
+
     expect(result.errors).toHaveLength(2);
     expect(result.errors[0].type).toBe('circular');
   });
 
-  test('applies number formatting', () => {
+  test('complex formula with formatting - array comparison', () => {
     const sheet = {
-      name: 'Sheet1',
+      name: 'Commission',
       data: [
-        [{v: 1234.567, f: '$#,##0.00'}]
+        [{v: 'Sales Rep'}, {v: 'Sales'}, {v: 'Rate'}, {v: 'Commission'}],
+        [{v: 'Alice'}, {v: 50000, f: '$#,##0'}, {v: 0.05, f: '0.00%'}, {v: '=B2*C2', f: '$#,##0.00'}],
+        [{v: 'Bob'}, {v: 75000, f: '$#,##0'}, {v: 0.07, f: '0.00%'}, {v: '=B3*C3', f: '$#,##0.00'}],
+        [{v: 'Total'}, {v: '=SUM(B2:B3)', f: '$#,##0'}, {v: ''}, {v: '=SUM(D2:D3)', f: '$#,##0.00'}],
       ]
     };
-    const result = calculator.calculate(sheet);
-    expect(result.data[0][0]).toBe('$1,234.57');
+
+    const result = engine.calculate(sheet);
+
+    const expected = [
+      ['Sales Rep',  'Sales',    'Rate',    'Commission' ],
+      ['Alice',      '$50,000',  '5.00%',   '$2,500.00'  ],
+      ['Bob',        '$75,000',  '7.00%',   '$5,250.00'  ],
+      ['Total',      '$125,000', '',        '$7,750.00'  ],
+    ];
+
+    expectSheetOutput(result, expected);
   });
 });
 ```
 
-### Integration Tests
+### Integration Tests with Full Sheet Comparison
 
 ```typescript
 // __tests__/integration.test.ts
-describe('SpreadsheetEngine Integration', () => {
+describe('SpreadsheetEngine Integration - Full Sheet Comparison', () => {
+  const engine = new SpreadsheetEngine();
+
   test('complete workbook calculation', () => {
-    const engine = new SpreadsheetEngine();
-    const sheets = loadTestWorkbook();
+    const sheets = [
+      createSheet('Revenue', [
+        ['Month',    'Amount'],
+        ['January',  {v: 10000, f: '$#,##0'}],
+        ['February', {v: 12000, f: '$#,##0'}],
+        ['March',    {v: 11000, f: '$#,##0'}],
+      ]),
+      createSheet('Summary', [
+        ['Total Revenue',   {v: '=SUM(Revenue!B2:B4)', f: '$#,##0'}],
+        ['Average Revenue', {v: '=AVERAGE(Revenue!B2:B4)', f: '$#,##0'}],
+        ['Max Revenue',     {v: '=MAX(Revenue!B2:B4)', f: '$#,##0'}],
+      ])
+    ];
+
     const results = engine.calculateWorkbook(sheets);
 
-    // Verify all formulas evaluated correctly
-    // Verify cross-sheet references work
-    // Verify formatting applied
-    // Verify no errors
+    // Verify Revenue sheet
+    const expectedRevenue = [
+      ['Month',     'Amount'  ],
+      ['January',   '$10,000' ],
+      ['February',  '$12,000' ],
+      ['March',     '$11,000' ],
+    ];
+    expectSheetOutput(results[0], expectedRevenue);
+
+    // Verify Summary sheet
+    const expectedSummary = [
+      ['Total Revenue',   '$33,000'],
+      ['Average Revenue', '$11,000'],
+      ['Max Revenue',     '$12,000'],
+    ];
+    expectSheetOutput(results[1], expectedSummary);
   });
 
-  test('real-world financial model', () => {
-    // Test with complex financial formulas
-    // PMT, NPV, IRR, etc.
+  test('real-world financial model - complete output comparison', () => {
+    const sheet = createSheet('Financial Model', [
+      ['Metric',              'Year 1',  'Year 2',  'Year 3'  ],
+      ['Revenue',             100000,    120000,    150000    ],
+      ['COGS',                40000,     48000,     60000     ],
+      ['Gross Profit',        '=B2-B3',  '=C2-C3',  '=D2-D3'  ],
+      ['Gross Margin',        {v: '=B4/B2', f: '0.0%'}, {v: '=C4/C2', f: '0.0%'}, {v: '=D4/D2', f: '0.0%'}],
+      ['Operating Expenses',  30000,     35000,     40000     ],
+      ['Operating Income',    '=B4-B6',  '=C4-C6',  '=D4-D6'  ],
+      ['Operating Margin',    {v: '=B7/B2', f: '0.0%'}, {v: '=C7/C2', f: '0.0%'}, {v: '=D7/D2', f: '0.0%'}],
+    ]);
+
+    const result = engine.calculate(sheet);
+
+    const expected = [
+      ['Metric',              'Year 1',  'Year 2',  'Year 3'  ],
+      ['Revenue',             '100000',  '120000',  '150000'  ],
+      ['COGS',                '40000',   '48000',   '60000'   ],
+      ['Gross Profit',        '60000',   '72000',   '90000'   ],
+      ['Gross Margin',        '60.0%',   '60.0%',   '60.0%'   ],
+      ['Operating Expenses',  '30000',   '35000',   '40000'   ],
+      ['Operating Income',    '30000',   '37000',   '50000'   ],
+      ['Operating Margin',    '30.0%',   '30.8%',   '33.3%'   ],
+    ];
+
+    expectSheetOutput(result, expected);
+
+    // Verify no errors
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test('snapshot testing for complex sheets', () => {
+    const sheet = loadComplexTestSheet();
+    const result = engine.calculate(sheet);
+
+    // Use Jest snapshots for very large/complex sheets
+    expect(toStringArray(result.data)).toMatchSnapshot();
+  });
+});
+```
+
+### Regression Testing
+
+```typescript
+// __tests__/regression.test.ts
+describe('Regression Tests - Array Comparison', () => {
+  const engine = new SpreadsheetEngine();
+
+  test('Issue #123: Percentage formatting regression', () => {
+    const sheet = createSheet('Test', [
+      [0.5,    {v: 0.5, f: '0.00%'}],
+      [0.0417, {v: 0.0417, f: '0.00%'}],
+      [1.5,    {v: 1.5, f: '0.00%'}],
+    ]);
+
+    const result = engine.calculate(sheet);
+
+    const expected = [
+      ['0.5',    '50.00%'  ],
+      ['0.0417', '4.17%'   ],
+      ['1.5',    '150.00%' ],
+    ];
+
+    expectSheetOutput(result, expected);
+  });
+
+  test('Issue #456: Cross-sheet formula calculation order', () => {
+    // Verify that sheets are calculated in correct order
+    // to resolve dependencies
+  });
+});
+```
+
+### Performance Testing with Output Validation
+
+```typescript
+// __tests__/performance.test.ts
+describe('Performance Tests', () => {
+  const engine = new SpreadsheetEngine();
+
+  test('large sheet calculation (1000x100 cells)', () => {
+    const rows = 1000;
+    const cols = 100;
+
+    // Build large sheet with formulas
+    const data = [];
+    for (let r = 0; r < rows; r++) {
+      const row = [];
+      for (let c = 0; c < cols; c++) {
+        row.push({ v: r * cols + c });
+      }
+      data.push(row);
+    }
+
+    const sheet = createSheet('Large', data);
+
+    const startTime = performance.now();
+    const result = engine.calculate(sheet);
+    const endTime = performance.now();
+
+    // Verify calculation completed
+    expect(result.data.length).toBe(rows);
+    expect(result.data[0].length).toBe(cols);
+
+    // Verify specific cells (spot check)
+    expect(result.data[0][0]).toBe('0');
+    expect(result.data[999][99]).toBe('99999');
+
+    // Performance threshold
+    expect(endTime - startTime).toBeLessThan(5000); // 5 seconds
   });
 });
 ```
@@ -561,16 +853,109 @@ With separate packages for:
 - React hooks
 - Web Worker wrapper
 
+## Test Data & Examples
+
+### Test Case Categories
+
+To ensure comprehensive coverage, create test cases for each category:
+
+1. **Basic Arithmetic**
+   - Simple formulas: `=A1+B1`, `=10*5`, `=A1/B1`
+   - Order of operations: `=2+3*4`, `=(2+3)*4`
+   - Negative numbers: `=-A1`, `=A1-B1`
+
+2. **Statistical Functions**
+   - `SUM`, `AVERAGE`, `MAX`, `MIN`, `COUNT`
+   - `MEDIAN`, `MODE`, `STDEV`, `VAR`
+   - Conditional: `COUNTIF`, `SUMIF`, `AVERAGEIF`
+
+3. **Number Formatting**
+   - Currency: `$#,##0.00`, `$#,##0`
+   - Percentage: `0.00%`, `0.0%`
+   - Integers: `#,##0`, `0`
+   - Decimals: `0.00`, `0.000`
+
+4. **Cell References**
+   - Relative: `A1`, `B2`
+   - Absolute: `$A$1`, `$B$2`
+   - Mixed: `$A1`, `A$1`
+   - Cross-sheet: `Sheet1!A1`, `'My Sheet'!B2`
+
+5. **Range Operations**
+   - Simple ranges: `A1:A10`
+   - Multi-column: `A1:C10`
+   - Full row/column: `A:A`, `1:1`
+   - Cross-sheet ranges: `Sheet1!A1:B10`
+
+6. **Complex Formulas**
+   - Nested functions: `ROUND(SUM(A1:A10)/COUNT(A1:A10), 2)`
+   - Multiple references: `=A1+B1+C1+D1`
+   - Conditional logic: `IF(A1>100, "High", "Low")`
+
+7. **Edge Cases**
+   - Empty cells
+   - Division by zero
+   - Circular references
+   - Invalid references
+   - Very large numbers
+   - Very small decimals
+
+### Example Test Data Files
+
+Create reusable test data:
+
+```typescript
+// __tests__/fixtures/financial-model.ts
+export const financialModelSheet = createSheet('P&L', [
+  ['Metric',              'Q1',    'Q2',    'Q3',    'Q4',    'Total',        'Avg'             ],
+  ['Revenue',             100000,  120000,  110000,  130000,  '=SUM(B2:E2)',  '=AVERAGE(B2:E2)' ],
+  ['COGS',                40000,   48000,   44000,   52000,   '=SUM(B3:E3)',  '=AVERAGE(B3:E3)' ],
+  ['Gross Profit',        '=B2-B3','=C2-C3','=D2-D3','=E2-E3','=SUM(B4:E4)',  '=AVERAGE(B4:E4)' ],
+  ['Gross Margin %',      {v:'=B4/B2',f:'0.0%'}, {v:'=C4/C2',f:'0.0%'}, {v:'=D4/D2',f:'0.0%'}, {v:'=E4/E2',f:'0.0%'}, {v:'=F4/F2',f:'0.0%'}, '' ],
+]);
+
+export const financialModelExpected = [
+  ['Metric',          'Q1',     'Q2',     'Q3',     'Q4',     'Total',   'Avg'      ],
+  ['Revenue',         '100000', '120000', '110000', '130000', '460000',  '115000'   ],
+  ['COGS',            '40000',  '48000',  '44000',  '52000',  '184000',  '46000'    ],
+  ['Gross Profit',    '60000',  '72000',  '66000',  '78000',  '276000',  '69000'    ],
+  ['Gross Margin %',  '60.0%',  '60.0%',  '60.0%',  '60.0%',  '60.0%',   ''         ],
+];
+
+// __tests__/fixtures/sales-report.ts
+export const salesReportSheet = createSheet('Sales', [
+  ['Rep',     'Product',  'Units',  'Price',              'Total'                      ],
+  ['Alice',   'Widget',   50,       {v:100,f:'$#,##0'},   {v:'=C2*D2',f:'$#,##0.00'}   ],
+  ['Alice',   'Gadget',   30,       {v:200,f:'$#,##0'},   {v:'=C3*D3',f:'$#,##0.00'}   ],
+  ['Bob',     'Widget',   75,       {v:100,f:'$#,##0'},   {v:'=C4*D4',f:'$#,##0.00'}   ],
+  ['Bob',     'Gadget',   40,       {v:200,f:'$#,##0'},   {v:'=C5*D5',f:'$#,##0.00'}   ],
+  ['Total',   '',         '=SUM(C2:C5)', '',              {v:'=SUM(E2:E5)',f:'$#,##0.00'} ],
+]);
+
+export const salesReportExpected = [
+  ['Rep',     'Product',  'Units',  'Price',   'Total'       ],
+  ['Alice',   'Widget',   '50',     '$100',    '$5,000.00'   ],
+  ['Alice',   'Gadget',   '30',     '$200',    '$6,000.00'   ],
+  ['Bob',     'Widget',   '75',     '$100',    '$7,500.00'   ],
+  ['Bob',     'Gadget',   '40',     '$200',    '$8,000.00'   ],
+  ['Total',   '',         '195',    '',        '$26,500.00'  ],
+];
+```
+
 ## Success Criteria
 
 - [ ] All calculation logic extracted from Vue component
 - [ ] Comprehensive unit test suite (>90% coverage)
-- [ ] Integration tests with real-world examples
+- [ ] Integration tests with real-world examples using array comparison
+- [ ] All test cases verify expected string arrays vs actual string arrays
+- [ ] Test utilities (`toStringArray`, `expectSheetOutput`) implemented
+- [ ] Test fixtures created for common scenarios (financial, sales, etc.)
 - [ ] Vue component successfully refactored to use engine
 - [ ] All existing functionality preserved
 - [ ] Performance equal or better than before
 - [ ] Documentation complete with examples
 - [ ] Zero regressions in spreadsheet tool
+- [ ] Snapshot tests for complex sheets
 
 ## Timeline Estimate
 
