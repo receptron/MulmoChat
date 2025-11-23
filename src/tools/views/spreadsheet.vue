@@ -111,7 +111,7 @@
             />
           </template>
 
-          <button @click="saveMiniEditor" class="save-btn">Save</button>
+          <button @click="saveMiniEditor" class="save-btn">Update</button>
           <button @click="closeMiniEditor" class="cancel-btn">✕</button>
         </div>
       </div>
@@ -149,6 +149,9 @@ const miniEditorValue = ref<any>(null);
 const miniEditorType = ref<"number" | "string" | "object">("string");
 const miniEditorFormula = ref("");
 const miniEditorFormat = ref("");
+
+// Referenced cells state (for formula highlighting)
+const referencedCells = ref<Array<{ row: number; col: number }>>([]);
 
 // Check if spreadsheet data has been modified
 const hasChanges = computed(() => {
@@ -597,6 +600,39 @@ function handleDataEdit() {
   // User needs to click "Apply Changes" button
 }
 
+// Extract cell references from a formula string
+function extractCellReferences(formula: string): Array<{ row: number; col: number }> {
+  const references: Array<{ row: number; col: number }> = [];
+
+  // Remove the "=" prefix if present
+  const cleanFormula = formula.startsWith("=") ? formula.substring(1) : formula;
+
+  // Match individual cell references (e.g., A1, $B$2, B2)
+  // This regex matches cell references but not cross-sheet references for now
+  const cellRefRegex = /\$?[A-Z]+\$?\d+/g;
+  const matches = cleanFormula.match(cellRefRegex);
+
+  if (!matches) return references;
+
+  for (const match of matches) {
+    // Remove $ symbols for absolute references
+    const cleanRef = match.replace(/\$/g, "");
+    const cellMatch = cleanRef.match(/^([A-Z]+)(\d+)$/);
+
+    if (cellMatch) {
+      const col = colToIndex(cellMatch[1]);
+      const row = parseInt(cellMatch[2]) - 1; // Convert to 0-based
+
+      // Add to references if not already present
+      if (!references.some(ref => ref.row === row && ref.col === col)) {
+        references.push({ row, col });
+      }
+    }
+  }
+
+  return references;
+}
+
 function openMiniEditor(rowIndex: number, colIndex: number) {
   try {
     const sheets = JSON.parse(editableData.value);
@@ -628,16 +664,20 @@ function openMiniEditor(rowIndex: number, colIndex: number) {
         miniEditorValue.value = "";
         miniEditorFormula.value = value.substring(1); // Remove "=" prefix
         miniEditorFormat.value = format;
+        // Extract and store referenced cells for highlighting
+        referencedCells.value = extractCellReferences(value);
       } else if (typeof value === "number") {
         miniEditorType.value = "object";
         miniEditorValue.value = "";
         miniEditorFormula.value = String(value);
         miniEditorFormat.value = format;
+        referencedCells.value = [];
       } else {
         miniEditorType.value = "string";
         miniEditorValue.value = String(value);
         miniEditorFormula.value = "";
         miniEditorFormat.value = "";
+        referencedCells.value = [];
       }
     } else {
       // Legacy format or plain value
@@ -645,6 +685,7 @@ function openMiniEditor(rowIndex: number, colIndex: number) {
       miniEditorValue.value = String(cellValue ?? "");
       miniEditorFormula.value = "";
       miniEditorFormat.value = "";
+      referencedCells.value = [];
     }
 
     miniEditorCell.value = { row: rowIndex, col: colIndex };
@@ -660,6 +701,7 @@ function closeMiniEditor() {
   miniEditorValue.value = null;
   miniEditorFormula.value = "";
   miniEditorFormat.value = "";
+  referencedCells.value = [];
 }
 
 function saveMiniEditor() {
@@ -729,7 +771,15 @@ function saveMiniEditor() {
 
     emit("updateResult", updatedResult);
 
-    closeMiniEditor();
+    // Update referenced cells if the saved cell contains a formula
+    if (typeof newCellValue.v === "string" && newCellValue.v.startsWith("=")) {
+      referencedCells.value = extractCellReferences(newCellValue.v);
+    } else {
+      referencedCells.value = [];
+    }
+
+    // Don't close the mini editor - keep it open so user can see the updated references
+    // closeMiniEditor();
   } catch (error) {
     alert(
       `Failed to save cell: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -926,26 +976,47 @@ watch(
   },
 );
 
-// Highlight selected cell when mini editor is open
+// Highlight selected cell and referenced cells when mini editor is open
 watch(
-  [miniEditorOpen, miniEditorCell, renderedHtml],
+  [miniEditorOpen, miniEditorCell, referencedCells, renderedHtml],
   () => {
-    // Remove previous highlight
-    const prevHighlighted =
+    // Remove previous highlights
+    const prevEditingCell =
       tableContainer.value?.querySelector(".cell-editing");
-    if (prevHighlighted) {
-      prevHighlighted.classList.remove("cell-editing");
+    if (prevEditingCell) {
+      prevEditingCell.classList.remove("cell-editing");
     }
 
-    // Add highlight to selected cell
-    if (miniEditorOpen.value && miniEditorCell.value && tableContainer.value) {
+    const prevReferencedCells =
+      tableContainer.value?.querySelectorAll(".cell-referenced");
+    if (prevReferencedCells) {
+      prevReferencedCells.forEach((cell) =>
+        cell.classList.remove("cell-referenced"),
+      );
+    }
+
+    if (miniEditorOpen.value && tableContainer.value) {
       const table = tableContainer.value.querySelector("#spreadsheet-table");
       if (table) {
-        const row = table.querySelectorAll("tr")[miniEditorCell.value.row];
-        if (row) {
-          const cell = row.querySelectorAll("td")[miniEditorCell.value.col];
-          if (cell) {
-            cell.classList.add("cell-editing");
+        // Highlight the selected cell
+        if (miniEditorCell.value) {
+          const row = table.querySelectorAll("tr")[miniEditorCell.value.row];
+          if (row) {
+            const cell = row.querySelectorAll("td")[miniEditorCell.value.col];
+            if (cell) {
+              cell.classList.add("cell-editing");
+            }
+          }
+        }
+
+        // Highlight referenced cells
+        for (const ref of referencedCells.value) {
+          const row = table.querySelectorAll("tr")[ref.row];
+          if (row) {
+            const cell = row.querySelectorAll("td")[ref.col];
+            if (cell) {
+              cell.classList.add("cell-referenced");
+            }
           }
         }
       }
@@ -1162,6 +1233,12 @@ onUnmounted(() => {
 .table-container :deep(.cell-editing) {
   background-color: #e8f5e9 !important;
   outline: 2px solid #217346 !important;
+  outline-offset: -2px;
+}
+
+.table-container :deep(.cell-referenced) {
+  background-color: #fff3e0 !important;
+  outline: 2px solid #ff9800 !important;
   outline-offset: -2px;
 }
 
