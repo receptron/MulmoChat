@@ -64,6 +64,7 @@ export default [
       "sonarjs/redundant-type-aliases": "off",
       "sonarjs/x-powered-by": "warn",
       "sonarjs/cors": "warn",
+      "sonarjs/no-empty-test-file": "off",
     },
     plugins: {
       prettier: prettierPlugin,
