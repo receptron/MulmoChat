@@ -124,7 +124,15 @@ import { computed, ref, watch } from "vue";
 import * as XLSX from "xlsx";
 import type { ToolResult } from "../types";
 import type { SpreadsheetToolData } from "../models/spreadsheet";
-import { functionRegistry } from "../models/functions";
+// Import to trigger function registration side effects
+import "../models/functions/statistical";
+import "../models/functions/mathematical";
+import "../models/functions/logical";
+import "../models/functions/text";
+import "../models/functions/financial";
+import "../models/functions/lookup";
+import "../models/functions/date";
+import { functionRegistry } from "../models/spreadsheet-functions";
 
 const props = defineProps<{
   selectedResult: ToolResult<SpreadsheetToolData>;
@@ -458,8 +466,8 @@ const calculateFormulas = (
       while ((embeddedFuncMatch = funcCallRegex.exec(expr)) !== null) {
         const fullMatch = embeddedFuncMatch[0];
         const result = evaluateFormula(fullMatch);
-        // Replace the function call with its result
-        expr = expr.replace(fullMatch, String(result));
+        // Wrap result in parentheses to handle negative numbers (e.g., -PMT() → -(result))
+        expr = expr.replace(fullMatch, `(${result})`);
         // Reset regex index since we modified the string
         funcCallRegex.lastIndex = 0;
       }
@@ -690,11 +698,11 @@ function saveMiniEditor() {
       const input = miniEditorFormula.value?.trim() || "";
 
       // Detect if it's a formula by checking for:
-      // 1. Function names (SUM, AVERAGE, MAX, MIN, COUNT, IF)
+      // 1. Function names or expressions starting with operators (-, +, etc.)
       // 2. Cell references with operators (A1+B1, etc.)
       // 3. Arithmetic expressions with operators (6/100, 5*2, etc.)
       const isFormula =
-        /^(SUM|AVERAGE|MAX|MIN|COUNT|IF)\s*\(/i.test(input) ||
+        /^[-+]?\s*[A-Z]+\s*\(/i.test(input) || // Any function call, optionally preceded by +/- operator
         /[A-Z]+\d+\s*[\+\-\*\/\^]/.test(input) ||
         /\d+\s*[\+\-\*\/\^]\s*\d+/.test(input);
 
