@@ -3,6 +3,12 @@
  * Run with: npx tsx src/tests/spreadsheet-formula-test.ts
  */
 
+/* eslint-disable sonarjs/slow-regex */
+/* eslint-disable sonarjs/regex-complexity */
+/* eslint-disable sonarjs/code-eval */
+/* eslint-disable no-console */
+/* eslint-disable sonarjs/cognitive-complexity */
+
 import "../tools/models/functions/statistical";
 import "../tools/models/functions/mathematical";
 import "../tools/models/functions/logical";
