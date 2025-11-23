@@ -28,7 +28,8 @@
     "test:tools:google": "tsx server/tests/test-tools-google.ts",
     "test:tools:ollama": "tsx server/tests/test-tools-ollama.ts",
     "test:image:comfy": "tsx server/tests/test-comfyui.ts",
-    "test:functions": "tsx src/tools/models/functions/test-functions.ts"
+    "test:functions": "tsx src/tools/models/functions/test-functions.ts",
+    "test:spreadsheet:forward-ref": "tsx src/tests/spreadsheet-forward-ref.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",

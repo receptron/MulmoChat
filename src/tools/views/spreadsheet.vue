@@ -252,8 +252,11 @@ const calculateFormulas = (
     cache.set(sheetName, calculated);
   }
 
-  // Helper to extract raw value from cell
-  const getRawValue = (cell: any): number => {
+  // Track cells being calculated to detect circular references
+  const calculating = new Set<string>();
+
+  // Helper to extract raw value from cell with recursive formula evaluation
+  const getRawValue = (cell: any, row?: number, col?: number): number => {
     if (typeof cell === "number") return cell;
 
     // Handle string values (for legacy or calculated cells)
@@ -283,9 +286,48 @@ const calculateFormulas = (
     // Handle new cell format {v, f}
     if (typeof cell === "object" && cell !== null && "v" in cell) {
       const value = cell.v;
-      // If value is a string starting with "=", it's a formula (will be calculated later)
+      // If value is a string starting with "=", it's a formula
       if (typeof value === "string" && value.startsWith("=")) {
-        return 0; // Will be calculated later
+        // Check if we have row/col info to evaluate recursively
+        if (row !== undefined && col !== undefined) {
+          const cellKey = `${row},${col}`;
+
+          // Check for circular reference
+          if (calculating.has(cellKey)) {
+            console.warn(
+              `Circular reference detected at row ${row}, col ${col}`,
+            );
+            return 0;
+          }
+
+          // Check if already calculated (result is cached as a number)
+          const calculatedCell = calculated[row][col];
+          if (typeof calculatedCell === "number") {
+            return calculatedCell;
+          }
+
+          // Recursively evaluate the formula
+          calculating.add(cellKey);
+          try {
+            const formula = value.substring(1); // Remove "=" prefix
+            const result = evaluateFormula(formula);
+            calculating.delete(cellKey);
+
+            // Cache the calculated result
+            const numResult = typeof result === "number" ? result : 0;
+            calculated[row][col] = numResult;
+
+            return numResult;
+          } catch (error) {
+            calculating.delete(cellKey);
+            console.error(
+              `Error evaluating formula at row ${row}, col ${col}:`,
+              error,
+            );
+            return 0;
+          }
+        }
+        return 0; // No position info, can't evaluate
       }
       return parseFloat(value) || 0;
     }
@@ -297,12 +339,14 @@ const calculateFormulas = (
   const getCellValue = (ref: string): number => {
     let sheetData = calculated;
     let cellRef = ref;
+    let isCurrentSheet = true;
 
     // Check for cross-sheet reference (e.g., 'Sheet Name'!B2 or Sheet1!B2)
     const sheetMatch = ref.match(/^(?:'([^']+)'|([^!]+))!(.+)$/);
     if (sheetMatch) {
       const sheetName = sheetMatch[1] || sheetMatch[2]; // Quoted or unquoted sheet name
       cellRef = sheetMatch[3]; // Cell reference part
+      isCurrentSheet = false;
 
       // Check cache first to prevent infinite loops
       if (cache.has(sheetName)) {
@@ -339,7 +383,12 @@ const calculateFormulas = (
     }
 
     const cell = sheetData[row][col];
-    return getRawValue(cell);
+    // Pass row/col only if this is the current sheet (for recursive evaluation)
+    return getRawValue(
+      cell,
+      isCurrentSheet ? row : undefined,
+      isCurrentSheet ? col : undefined,
+    );
   };
 
   // Helper to get range values (e.g., "B2:B11")
@@ -362,7 +411,8 @@ const calculateFormulas = (
           col < calculated[row].length
         ) {
           const cell = calculated[row][col];
-          const num = getRawValue(cell);
+          // Pass row/col for recursive evaluation
+          const num = getRawValue(cell, row, col);
           if (!isNaN(num)) values.push(num);
         }
       }
@@ -601,7 +651,9 @@ function handleDataEdit() {
 }
 
 // Extract cell references from a formula string
-function extractCellReferences(formula: string): Array<{ row: number; col: number }> {
+function extractCellReferences(
+  formula: string,
+): Array<{ row: number; col: number }> {
   const references: Array<{ row: number; col: number }> = [];
 
   // Remove the "=" prefix if present
@@ -624,7 +676,7 @@ function extractCellReferences(formula: string): Array<{ row: number; col: numbe
       const row = parseInt(cellMatch[2]) - 1; // Convert to 0-based
 
       // Add to references if not already present
-      if (!references.some(ref => ref.row === row && ref.col === col)) {
+      if (!references.some((ref) => ref.row === row && ref.col === col)) {
         references.push({ row, col });
       }
     }
