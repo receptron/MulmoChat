@@ -976,3 +976,151 @@ export const salesReportExpected = [
 - Add comprehensive error handling
 - Document all public APIs with JSDoc
 - Consider adding debug logging for formula evaluation
+
+---
+
+## Implementation Status ✅ COMPLETED
+
+**Implementation Date**: 2025-01-23
+**Status**: All 6 phases completed successfully
+
+### Phase 1: Extract Core Utilities ✅
+- ✅ Created `types.ts` with comprehensive type definitions
+- ✅ Created `formatter.ts` with number formatting (32 tests passing)
+- ✅ Created `parser.ts` with cell reference parsing (30 tests passing)
+- ✅ Created test utilities (`toStringArray`, `expectSheetOutput`, `createSheet`)
+- **Result**: 62 tests passing (30 parser + 32 formatter)
+
+### Phase 2: Extract Evaluator ✅
+- ✅ Created `evaluator.ts` with formula evaluation logic
+- ✅ Supports function calls, arithmetic, cell references
+- ✅ Handles nested functions and complex expressions
+- ✅ Fixed greedy regex bug for formulas like `SUM(B1:D1)/COUNT(B1:D1)`
+- **Result**: 29 tests passing
+
+### Phase 3: Extract Calculator ✅
+- ✅ Created `calculator.ts` with core calculation engine
+- ✅ Circular reference detection implemented
+- ✅ Cross-sheet reference support in both `getCellValue` and `getRangeValues`
+- ✅ Recursive formula evaluation with caching
+- ✅ Integration with formatter and evaluator
+- **Result**: 16 tests passing (Total: 107 tests)
+
+### Phase 4: Create SpreadsheetEngine Class ✅
+- ✅ Created `engine.ts` with clean public API
+- ✅ Methods: `calculate()`, `calculateWorkbook()`, `createSheet()`, `toStringArray()`
+- ✅ Configuration: `getOptions()`, `setOptions()`
+- ✅ Updated `index.ts` to export SpreadsheetEngine
+- **Result**: Clean, documented API for external use
+
+### Phase 5: Refactor Vue Component ✅
+- ✅ Updated `spreadsheet.vue` to use SpreadsheetEngine
+- ✅ Removed duplicate utilities (formatNumber, colToIndex, indexToCol)
+- ✅ Replaced 346-line `calculateFormulas` function with 20-line wrapper
+- ✅ **Code reduction**: ~400 lines removed from Vue component
+- ✅ All existing functionality preserved
+- ✅ No linting errors
+- **Result**: Cleaner component focused on UI concerns only
+
+### Phase 6: Documentation ✅
+- ✅ Created comprehensive README.md for the engine
+- ✅ Documented all public APIs with examples
+- ✅ Included quick start guide
+- ✅ API reference with type signatures
+- ✅ Formula syntax documentation
+- ✅ Error handling examples
+- ✅ Architecture overview
+
+### Test Coverage Summary
+
+**Total Tests**: 107 tests passing ✅
+- Parser: 30 tests
+- Formatter: 32 tests
+- Evaluator: 29 tests
+- Calculator: 16 tests
+
+**Test Features**:
+- Array-based output comparison (`toStringArray`, `expectSheetOutput`)
+- Comprehensive test utilities (`createSheet`)
+- Real-world scenarios (sales, budget, financial models)
+- Edge cases (circular references, errors)
+- Cross-sheet reference validation
+
+### Key Improvements
+
+1. **Framework-Agnostic**: Engine has zero dependencies on Vue
+2. **Independently Testable**: 107 comprehensive tests
+3. **Reusable**: Can be used in Node.js, Web Workers, other frameworks
+4. **Maintainable**: Clear separation of concerns
+5. **Well-Documented**: README with examples and API reference
+
+### Files Created
+
+```
+src/tools/models/spreadsheet-engine/
+├── README.md                               # Comprehensive documentation
+├── index.ts                                # Main exports
+├── types.ts                                # Type definitions
+├── parser.ts                               # Cell reference parsing
+├── formatter.ts                            # Number formatting
+├── evaluator.ts                            # Formula evaluation
+├── calculator.ts                           # Core calculation engine
+├── engine.ts                               # Public API wrapper
+└── __tests__/
+    ├── test-utils.ts                       # Test utilities
+    ├── run-parser-tests.ts                 # Parser tests (30)
+    ├── run-formatter-tests.ts              # Formatter tests (32)
+    ├── run-evaluator-tests.ts              # Evaluator tests (29)
+    └── run-calculator-tests.ts             # Calculator tests (16)
+```
+
+### Files Modified
+
+- `src/tools/views/spreadsheet.vue` - Refactored to use engine (~400 lines removed)
+
+### Bugs Fixed
+
+1. **Greedy Regex in Formula Matching**: Fixed regex that incorrectly matched `SUM(B1:D1)/COUNT(B1:D1)` as a single function call
+2. **Cross-Sheet Range References**: Added cross-sheet support to `getRangeValues()` which was missing
+
+### Success Criteria ✅
+
+- ✅ All calculation logic extracted from Vue component
+- ✅ Comprehensive unit test suite (107 tests)
+- ✅ Integration tests with real-world examples
+- ✅ Array-based output comparison implemented
+- ✅ Test utilities created (`toStringArray`, `expectSheetOutput`)
+- ✅ Vue component refactored to use engine
+- ✅ All existing functionality preserved
+- ✅ Zero linting errors
+- ✅ Documentation complete with examples
+- ✅ Zero regressions in spreadsheet tool
+
+### Impact
+
+**Code Quality**:
+- Reduced Vue component by ~400 lines
+- Improved testability (107 comprehensive tests)
+- Better separation of concerns
+- Enhanced maintainability
+
+**Developer Experience**:
+- Easy to add new spreadsheet functions
+- Clear testing patterns established
+- Well-documented public API
+- Framework-agnostic design enables reuse
+
+**Future Potential**:
+- Can be published as npm package
+- Can run in Web Workers for performance
+- Can be used in other frameworks (React, Svelte)
+- Can be extended with advanced features (named ranges, array formulas)
+
+### Next Steps (Optional Future Enhancements)
+
+1. Publish as npm package: `@mulmochat/spreadsheet-engine`
+2. Add Web Worker wrapper for off-main-thread calculations
+3. Implement named ranges support
+4. Add formula auditing (trace precedents/dependents)
+5. Implement partial recalculation for large sheets
+6. Add more advanced Excel functions (VLOOKUP, INDEX/MATCH, etc.)

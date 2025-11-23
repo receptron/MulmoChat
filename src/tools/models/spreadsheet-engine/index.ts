@@ -13,5 +13,5 @@ export * from "./formatter";
 export * from "./evaluator";
 export * from "./calculator";
 
-// TODO: Export main SpreadsheetEngine class (Phase 4)
-// export { SpreadsheetEngine } from './engine';
+// Export main SpreadsheetEngine class
+export { SpreadsheetEngine } from './engine';

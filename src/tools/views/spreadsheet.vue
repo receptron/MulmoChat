@@ -124,7 +124,11 @@ import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import * as XLSX from "xlsx";
 import type { ToolResult } from "../types";
 import type { SpreadsheetToolData } from "../models/spreadsheet";
-import { functionRegistry } from "../models/functions";
+import {
+  SpreadsheetEngine,
+  columnToIndex,
+  indexToColumn,
+} from "../models/spreadsheet-engine";
 
 const props = defineProps<{
   selectedResult: ToolResult<SpreadsheetToolData>;
@@ -133,6 +137,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   updateResult: [result: ToolResult];
 }>();
+
+// Create spreadsheet engine instance
+const engine = new SpreadsheetEngine();
 
 const activeSheetIndex = ref(0);
 const editableData = ref(
@@ -167,420 +174,29 @@ const hasChanges = computed(() => {
   }
 });
 
-// Helper to format a number according to Excel format code
-const formatNumber = (value: number, format: string): string => {
-  if (!format) return value.toString();
+// Helper functions using the spreadsheet engine utilities
+const colToIndex = columnToIndex;
+const indexToCol = indexToColumn;
 
-  try {
-    // Handle currency formats
-    if (format.includes("$")) {
-      const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
-      const hasComma = format.includes(",");
-
-      let formatted = Math.abs(value).toFixed(decimals >= 0 ? decimals : 0);
-      if (hasComma) {
-        formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      }
-      formatted = "$" + formatted;
-      if (value < 0) formatted = "-" + formatted;
-      return formatted;
-    }
-
-    // Handle percentage
-    if (format.includes("%")) {
-      const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
-      return (value * 100).toFixed(decimals >= 0 ? decimals : 2) + "%";
-    }
-
-    // Handle comma separator
-    if (format.includes(",")) {
-      const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
-      let formatted = Math.abs(value).toFixed(decimals >= 0 ? decimals : 0);
-      formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      if (value < 0) formatted = "-" + formatted;
-      return formatted;
-    }
-
-    // Handle decimal places
-    const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
-    if (decimals >= 0) {
-      return value.toFixed(decimals);
-    }
-
-    return value.toString();
-  } catch (error) {
-    console.error("Format error:", error);
-    return value.toString();
-  }
-};
-
-// Helper to convert Excel column letters to 0-based index (A=0, Z=25, AA=26, etc.)
-const colToIndex = (col: string): number => {
-  let result = 0;
-  for (let i = 0; i < col.length; i++) {
-    result = result * 26 + (col.charCodeAt(i) - 64); // A=1, B=2, etc.
-  }
-  return result - 1; // Convert to 0-based
-};
-
-// Helper to convert 0-based index to Excel column letters (0=A, 25=Z, 26=AA, etc.)
-const indexToCol = (index: number): string => {
-  let col = "";
-  let num = index + 1; // Convert to 1-based
-  while (num > 0) {
-    const remainder = (num - 1) % 26;
-    col = String.fromCharCode(65 + remainder) + col;
-    num = Math.floor((num - 1) / 26);
-  }
-  return col;
-};
-
-// Calculate formulas in the data
+// Calculate formulas in the data using the spreadsheet engine
 const calculateFormulas = (
   data: Array<Array<any>>,
   sheetName?: string,
-  sheetsCache?: Map<string, Array<Array<any>>>,
 ): Array<Array<any>> => {
-  // Create a copy of the data with calculated values
-  const calculated = data.map((row) => [...row]);
+  // If we have a sheet name, we need to find all sheets for cross-sheet references
+  const allSheets = props.selectedResult.data?.sheets;
 
-  // Create cache if not provided (top-level call)
-  const cache = sheetsCache || new Map<string, Array<Array<any>>>();
-
-  // Add current sheet to cache to prevent infinite loops
-  if (sheetName) {
-    cache.set(sheetName, calculated);
-  }
-
-  // Track cells being calculated to detect circular references
-  const calculating = new Set<string>();
-
-  // Helper to extract raw value from cell with recursive formula evaluation
-  const getRawValue = (cell: any, row?: number, col?: number): number => {
-    if (typeof cell === "number") return cell;
-
-    // Handle string values (for legacy or calculated cells)
-    if (typeof cell === "string") {
-      // Handle percentage strings like "5%" or "0.4167%"
-      if (cell.includes("%")) {
-        const numericPart = cell.replace("%", "").trim();
-        const value = parseFloat(numericPart);
-        return isNaN(value) ? 0 : value / 100;
-      }
-      // Handle currency strings like "$1,000" or "$1,000.00"
-      if (cell.includes("$")) {
-        const numericPart = cell.replace(/[$,]/g, "").trim();
-        const value = parseFloat(numericPart);
-        return isNaN(value) ? 0 : value;
-      }
-      // Handle comma-separated numbers like "1,000"
-      if (cell.includes(",")) {
-        const numericPart = cell.replace(/,/g, "").trim();
-        const value = parseFloat(numericPart);
-        return isNaN(value) ? 0 : value;
-      }
-      // Handle regular numeric strings
-      return parseFloat(cell) || 0;
-    }
-
-    // Handle new cell format {v, f}
-    if (typeof cell === "object" && cell !== null && "v" in cell) {
-      const value = cell.v;
-      // If value is a string starting with "=", it's a formula
-      if (typeof value === "string" && value.startsWith("=")) {
-        // Check if we have row/col info to evaluate recursively
-        if (row !== undefined && col !== undefined) {
-          const cellKey = `${row},${col}`;
-
-          // Check for circular reference
-          if (calculating.has(cellKey)) {
-            console.warn(
-              `Circular reference detected at row ${row}, col ${col}`,
-            );
-            return 0;
-          }
-
-          // Check if already calculated (result is cached as a number)
-          const calculatedCell = calculated[row][col];
-          if (typeof calculatedCell === "number") {
-            return calculatedCell;
-          }
-
-          // Recursively evaluate the formula
-          calculating.add(cellKey);
-          try {
-            const formula = value.substring(1); // Remove "=" prefix
-            const result = evaluateFormula(formula);
-            calculating.delete(cellKey);
-
-            // Cache the calculated result
-            const numResult = typeof result === "number" ? result : 0;
-            calculated[row][col] = numResult;
-
-            return numResult;
-          } catch (error) {
-            calculating.delete(cellKey);
-            console.error(
-              `Error evaluating formula at row ${row}, col ${col}:`,
-              error,
-            );
-            return 0;
-          }
-        }
-        return 0; // No position info, can't evaluate
-      }
-      return parseFloat(value) || 0;
-    }
-
-    return parseFloat(cell) || 0;
+  // Create a SheetData object for the engine
+  const sheet = {
+    name: sheetName || "Sheet1",
+    data: data,
   };
 
-  // Helper to get cell value by reference (e.g., "B2", "$B$2", or "'Sheet1'!B2")
-  const getCellValue = (ref: string): number => {
-    let sheetData = calculated;
-    let cellRef = ref;
-    let isCurrentSheet = true;
+  // Calculate using the engine
+  const result = engine.calculate(sheet, allSheets);
 
-    // Check for cross-sheet reference (e.g., 'Sheet Name'!B2 or Sheet1!B2)
-    const sheetMatch = ref.match(/^(?:'([^']+)'|([^!]+))!(.+)$/);
-    if (sheetMatch) {
-      const sheetName = sheetMatch[1] || sheetMatch[2]; // Quoted or unquoted sheet name
-      cellRef = sheetMatch[3]; // Cell reference part
-      isCurrentSheet = false;
-
-      // Check cache first to prevent infinite loops
-      if (cache.has(sheetName)) {
-        sheetData = cache.get(sheetName)!;
-      } else {
-        // Find the sheet in the original data
-        const sheet = props.selectedResult.data?.sheets?.find(
-          (s) => s.name === sheetName,
-        );
-        if (sheet && sheet.data) {
-          // Calculate formulas for the target sheet with cache
-          sheetData = calculateFormulas(sheet.data, sheetName, cache);
-        } else {
-          return 0; // Sheet not found
-        }
-      }
-    }
-
-    // Remove $ symbols for absolute references
-    const cleanRef = cellRef.replace(/\$/g, "");
-    const match = cleanRef.match(/^([A-Z]+)(\d+)$/);
-    if (!match) return 0;
-
-    const col = colToIndex(match[1]); // A=0, B=1, ..., Z=25, AA=26, etc.
-    const row = parseInt(match[2]) - 1; // 1-indexed to 0-indexed
-
-    if (
-      row < 0 ||
-      row >= sheetData.length ||
-      col < 0 ||
-      col >= sheetData[row].length
-    ) {
-      return 0;
-    }
-
-    const cell = sheetData[row][col];
-    // Pass row/col only if this is the current sheet (for recursive evaluation)
-    return getRawValue(
-      cell,
-      isCurrentSheet ? row : undefined,
-      isCurrentSheet ? col : undefined,
-    );
-  };
-
-  // Helper to get range values (e.g., "B2:B11")
-  const getRangeValues = (range: string): number[] => {
-    const match = range.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
-    if (!match) return [];
-
-    const startCol = colToIndex(match[1]);
-    const startRow = parseInt(match[2]) - 1;
-    const endCol = colToIndex(match[3]);
-    const endRow = parseInt(match[4]) - 1;
-
-    const values: number[] = [];
-    for (let row = startRow; row <= endRow; row++) {
-      for (let col = startCol; col <= endCol; col++) {
-        if (
-          row >= 0 &&
-          row < calculated.length &&
-          col >= 0 &&
-          col < calculated[row].length
-        ) {
-          const cell = calculated[row][col];
-          // Pass row/col for recursive evaluation
-          const num = getRawValue(cell, row, col);
-          if (!isNaN(num)) values.push(num);
-        }
-      }
-    }
-    return values;
-  };
-
-  // Helper to parse function arguments, handling nested functions and quoted strings
-  const parseFunctionArgs = (argsStr: string): string[] => {
-    const args: string[] = [];
-    let currentArg = "";
-    let depth = 0;
-    let inString = false;
-    let stringChar = "";
-
-    for (let i = 0; i < argsStr.length; i++) {
-      const char = argsStr[i];
-      const prevChar = i > 0 ? argsStr[i - 1] : "";
-
-      // Handle string boundaries
-      if ((char === '"' || char === "'") && prevChar !== "\\") {
-        if (!inString) {
-          inString = true;
-          stringChar = char;
-        } else if (char === stringChar) {
-          inString = false;
-          stringChar = "";
-        }
-        currentArg += char;
-        continue;
-      }
-
-      // Track parentheses depth (for nested functions)
-      if (!inString) {
-        if (char === "(") depth++;
-        if (char === ")") depth--;
-
-        // Split on comma only at depth 0 and not in string
-        if (char === "," && depth === 0) {
-          args.push(currentArg.trim());
-          currentArg = "";
-          continue;
-        }
-      }
-
-      currentArg += char;
-    }
-
-    if (currentArg.trim()) {
-      args.push(currentArg.trim());
-    }
-
-    return args;
-  };
-
-  // Evaluate a formula
-  const evaluateFormula = (formula: string): number | string => {
-    try {
-      // Check if it's a function call
-      const funcMatch = formula.match(/^([A-Z]+)\((.*)\)$/i);
-      if (funcMatch) {
-        const [, funcName, argsStr] = funcMatch;
-        const func = functionRegistry.get(funcName);
-
-        if (func) {
-          const args = parseFunctionArgs(argsStr);
-
-          // Validate argument count
-          if (func.minArgs !== undefined && args.length < func.minArgs) {
-            throw new Error(
-              `${funcName} requires at least ${func.minArgs} argument${func.minArgs !== 1 ? "s" : ""}`,
-            );
-          }
-          if (func.maxArgs !== undefined && args.length > func.maxArgs) {
-            throw new Error(
-              `${funcName} accepts at most ${func.maxArgs} argument${func.maxArgs !== 1 ? "s" : ""}`,
-            );
-          }
-
-          // Execute function with context
-          return func.handler(args, {
-            getCellValue,
-            getRangeValues,
-            evaluateFormula,
-          });
-        }
-      }
-
-      // Handle simple arithmetic expressions with cell references
-      // First, replace any function calls within the expression
-      let expr = formula;
-
-      // Find and evaluate function calls (e.g., TODAY(), SUM(A1:A10), etc.)
-      const funcCallRegex = /([A-Z]+)\(([^()]*(?:\([^()]*\))*[^()]*)\)/gi;
-      let embeddedFuncMatch;
-      while ((embeddedFuncMatch = funcCallRegex.exec(expr)) !== null) {
-        const fullMatch = embeddedFuncMatch[0];
-        const result = evaluateFormula(fullMatch);
-        // Wrap result in parentheses to handle negative numbers (e.g., -PMT() → -(result))
-        expr = expr.replace(fullMatch, `(${result})`);
-        // Reset regex index since we modified the string
-        funcCallRegex.lastIndex = 0;
-      }
-
-      // Then replace cell references with their values
-      // Match cell references including cross-sheet and absolute references
-      const cellRefs = expr.match(
-        /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
-      );
-      if (cellRefs) {
-        for (const ref of cellRefs) {
-          const value = getCellValue(ref);
-          // Escape special regex characters
-          const escapedRef = ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          expr = expr.replace(new RegExp(escapedRef, "g"), value.toString());
-        }
-      }
-
-      // Replace ^ with ** for exponentiation
-      expr = expr.replace(/\^/g, "**");
-
-      // Safely evaluate the expression
-      // Allow numbers, operators, parentheses, whitespace, and decimal points
-      if (/^[\d+\-*/(). ]+$/.test(expr)) {
-        return eval(expr);
-      }
-
-      return formula; // Return original if can't evaluate
-    } catch (error) {
-      console.error(`Failed to evaluate formula: ${formula}`, error);
-      return formula;
-    }
-  };
-
-  // Process all cells and calculate formulas
-  for (let rowIdx = 0; rowIdx < calculated.length; rowIdx++) {
-    for (let colIdx = 0; colIdx < calculated[rowIdx].length; colIdx++) {
-      const cell = calculated[rowIdx][colIdx];
-
-      if (cell && typeof cell === "object" && "v" in cell) {
-        const value = cell.v;
-        const format = cell.f;
-
-        // Check if value is a formula (string starting with "=")
-        if (typeof value === "string" && value.startsWith("=")) {
-          // Remove the "=" prefix and evaluate the formula
-          const formula = value.substring(1);
-          const result = evaluateFormula(formula);
-
-          // Apply formatting if specified
-          if (format && typeof result === "number") {
-            calculated[rowIdx][colIdx] = formatNumber(result, format);
-          } else {
-            calculated[rowIdx][colIdx] = result;
-          }
-        } else {
-          // Regular value cell (not a formula)
-          if (format && typeof value === "number") {
-            calculated[rowIdx][colIdx] = formatNumber(value, format);
-          } else {
-            calculated[rowIdx][colIdx] = value;
-          }
-        }
-      }
-    }
-  }
-
-  return calculated;
+  // Return the calculated data
+  return result.data as Array<Array<any>>;
 };
 
 // Render the active sheet as HTML table
