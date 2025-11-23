@@ -44,7 +44,7 @@ const toolDefinition = {
             data: {
               type: "array",
               description:
-                "Rows of cells. Each cell is an object with 'v' (value) and 'f' (format). Use Excel-style A1 notation in formulas: columns are letters (A, B, C...), rows are 1-based numbers (1, 2, 3...). Example: [{\"v\": \"Year\", \"f\": \"\"}, {\"v\": 2024, \"f\": \"#,##0\"}, {\"v\": \"=B2*1.05\", \"f\": \"$#,##0.00\"}]. Format codes: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal).",
+                'Rows of cells. Each cell is an object with \'v\' (value) and \'f\' (format). Use Excel-style A1 notation in formulas: columns are letters (A, B, C...), rows are 1-based numbers (1, 2, 3...). Example: [{"v": "Year", "f": ""}, {"v": 2024, "f": "#,##0"}, {"v": "=B2*1.05", "f": "$#,##0.00"}]. Format codes: \'$#,##0.00\' (currency), \'#,##0\' (integer), \'0.00%\' (percent), \'0.00\' (decimal).',
               items: {
                 type: "array",
                 description:
@@ -55,16 +55,14 @@ const toolDefinition = {
                     "Cell object with value and optional format. If value is a string starting with '=', it's treated as a formula.",
                   properties: {
                     v: {
-                      oneOf: [
-                        { type: "string" },
-                        { type: "number" }
-                      ],
+                      oneOf: [{ type: "string" }, { type: "number" }],
                       description:
                         "Cell value. Can be text, number, or formula (string starting with '='). Examples: 'Revenue', 1500000, '=SUM(A1:A10)', '=B2/B1-1'",
                     },
                     f: {
                       type: "string",
-                      description: "Optional format code for displaying the value. Common formats: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal)",
+                      description:
+                        "Optional format code for displaying the value. Common formats: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal)",
                     },
                   },
                   required: ["v"],

@@ -614,7 +614,11 @@ function openMiniEditor(rowIndex: number, colIndex: number) {
     const cellValue = currentSheet.data[rowIndex][colIndex];
 
     // Determine cell type and extract values (new format: {v, f})
-    if (typeof cellValue === "object" && cellValue !== null && "v" in cellValue) {
+    if (
+      typeof cellValue === "object" &&
+      cellValue !== null &&
+      "v" in cellValue
+    ) {
       const value = cellValue.v;
       const format = cellValue.f ?? "";
 
