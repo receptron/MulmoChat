@@ -18,6 +18,11 @@ import {
   DetailNode,
   PathNode,
   PathCommand,
+  CustomShapeNode,
+  ColorNode,
+  RotateNode,
+  TranslateNode,
+  ScaleNode,
   Expression,
   Vector3,
   Color,
@@ -34,10 +39,20 @@ export class Converter {
   private symbols: SymbolTable;
   private detailLevel: number = 32; // Default detail level for curved shapes
 
+  // Transform state stack for relative transforms
+  private transformStack: {
+    position: THREE.Vector3;
+    rotation: THREE.Euler;
+    scale: THREE.Vector3;
+    color?: THREE.Color;
+  }[] = [];
+
   constructor(options: ConversionOptions = {}) {
     this.options = options;
     this.symbols = new SymbolTable();
     this.evaluator = new Evaluator(this.symbols);
+    // Initialize with identity transform
+    this.pushTransform();
   }
 
   convert(nodes: SceneNode[]): THREE.Group {
@@ -72,10 +87,34 @@ export class Converter {
         return null; // Define doesn't create geometry
       case "extrude":
         return this.convertExtrude(node);
+      case "loft":
+      case "lathe":
+      case "fill":
+      case "hull":
+        // TODO: Implement these builders
+        console.warn(`Builder '${node.type}' not yet implemented`);
+        return this.convertBlock(node);
+      case "group":
+        return this.convertBlock(node);
       case "detail":
         this.handleDetail(node);
         return null; // Detail doesn't create geometry
+      case "color":
+        this.handleColorCommand(node);
+        return null;
+      case "rotate":
+        this.handleRotateCommand(node);
+        return null;
+      case "translate":
+        this.handleTranslateCommand(node);
+        return null;
+      case "scale":
+        this.handleScaleCommand(node);
+        return null;
+      case "customShape":
+        return this.convertCustomShape(node);
       default:
+        console.warn(`Unknown node type: ${(node as any).type}`);
         return null;
     }
   }
@@ -85,6 +124,7 @@ export class Converter {
 
     // Create new scope for block
     this.symbols.pushScope();
+    this.pushTransform();
 
     for (const child of node.children) {
       const object = this.convertNode(child);
@@ -94,6 +134,7 @@ export class Converter {
     }
 
     // Pop scope
+    this.popTransform();
     this.symbols.popScope();
 
     return group;
@@ -104,7 +145,10 @@ export class Converter {
     const material = this.createMaterial(node);
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Apply transforms (evaluate expressions)
+    // Apply current transform state first
+    this.applyCurrentTransform(mesh);
+
+    // Then apply any property-specific transforms (these override the current state)
     if (node.properties.position) {
       const pos = this.evaluateVector3(node.properties.position);
       mesh.position.set(...pos);
@@ -184,7 +228,25 @@ export class Converter {
         );
       }
 
+      case "circle": {
+        const radius = size[0] || 1;
+        return new THREE.CircleGeometry(radius, this.detailLevel);
+      }
+
+      case "square": {
+        const sideLength = size[0] || 1;
+        return new THREE.PlaneGeometry(sideLength, sideLength);
+      }
+
+      case "polygon": {
+        // TODO: Support variable sides via properties
+        const radius = size[0] || 1;
+        const sides = 6; // Default hexagon
+        return new THREE.CircleGeometry(radius, sides);
+      }
+
       default:
+        console.warn(`Unknown primitive: ${node.primitive}`);
         return new THREE.BoxGeometry(1, 1, 1);
     }
   }
@@ -317,6 +379,7 @@ export class Converter {
 
     // Create new scope for loop
     this.symbols.pushScope();
+    this.pushTransform();
 
     // Check if it's a values iteration or range iteration
     if (node.iterableValues) {
@@ -381,6 +444,7 @@ export class Converter {
     }
 
     // Pop scope
+    this.popTransform();
     this.symbols.popScope();
 
     return group;
@@ -394,6 +458,7 @@ export class Converter {
 
     // Create new scope
     this.symbols.pushScope();
+    this.pushTransform();
 
     if (condition) {
       // Execute then body
@@ -414,6 +479,7 @@ export class Converter {
     }
 
     // Pop scope
+    this.popTransform();
     this.symbols.popScope();
 
     return group;
@@ -427,6 +493,7 @@ export class Converter {
 
     // Create new scope
     this.symbols.pushScope();
+    this.pushTransform();
 
     let matched = false;
 
@@ -463,18 +530,152 @@ export class Converter {
     }
 
     // Pop scope
+    this.popTransform();
     this.symbols.popScope();
 
     return group;
   }
 
   private handleDefine(node: DefineNode): void {
-    const value = this.evaluator.evaluate(node.value);
-    this.symbols.set(node.name, value);
+    // Check if this is a variable definition or a custom shape definition
+    if (node.value !== undefined) {
+      // Variable definition: define x 5
+      const value = this.evaluator.evaluate(node.value);
+      this.symbols.set(node.name, value);
+    } else if (node.body !== undefined || node.options !== undefined) {
+      // Custom shape definition: define shape { ... }
+      // Store the entire node for later instantiation
+      this.symbols.set(node.name, node);
+    }
+  }
+
+  private convertCustomShape(node: CustomShapeNode): THREE.Object3D | null {
+    // Look up the custom shape definition
+    const definition = this.symbols.get(node.name);
+
+    if (!definition || typeof definition !== "object" || !("type" in definition)) {
+      console.warn(`Custom shape '${node.name}' not found`);
+      return null;
+    }
+
+    const defineNode = definition as DefineNode;
+
+    if (!defineNode.body) {
+      console.warn(`Custom shape '${node.name}' has no body`);
+      return null;
+    }
+
+    // Create new scope for custom shape instantiation
+    this.symbols.pushScope();
+    this.pushTransform();
+
+    // Set default values from options
+    if (defineNode.options) {
+      for (const option of defineNode.options) {
+        const defaultValue = this.evaluator.evaluate(option.defaultValue);
+        this.symbols.set(option.name, defaultValue);
+      }
+    }
+
+    // Override with provided properties
+    for (const [key, value] of Object.entries(node.properties)) {
+      const evaluatedValue = this.evaluator.evaluate(value as any);
+      this.symbols.set(key, evaluatedValue);
+    }
+
+    // Convert the body
+    const group = new THREE.Group();
+    for (const child of defineNode.body) {
+      const object = this.convertNode(child);
+      if (object) {
+        group.add(object);
+      }
+    }
+
+    // Pop scope
+    this.popTransform();
+    this.symbols.popScope();
+
+    return group;
+  }
+
+  private pushTransform(): void {
+    const current = this.currentTransform();
+    this.transformStack.push({
+      position: current.position.clone(),
+      rotation: current.rotation.clone(),
+      scale: current.scale.clone(),
+      color: current.color?.clone(),
+    });
+  }
+
+  private popTransform(): void {
+    if (this.transformStack.length > 1) {
+      this.transformStack.pop();
+    }
+  }
+
+  private currentTransform() {
+    if (this.transformStack.length === 0) {
+      // Initialize default transform
+      return {
+        position: new THREE.Vector3(0, 0, 0),
+        rotation: new THREE.Euler(0, 0, 0),
+        scale: new THREE.Vector3(1, 1, 1),
+        color: undefined,
+      };
+    }
+    return this.transformStack[this.transformStack.length - 1];
+  }
+
+  private applyCurrentTransform(object: THREE.Object3D): void {
+    const transform = this.currentTransform();
+    object.position.copy(transform.position);
+    object.rotation.copy(transform.rotation);
+    object.scale.copy(transform.scale);
   }
 
   private handleDetail(node: DetailNode): void {
     this.detailLevel = this.evaluateNumber(node.value);
+    // Also add 'detail' as a variable so it can be referenced in expressions
+    this.symbols.set("detail", this.detailLevel);
+  }
+
+  private handleColorCommand(node: ColorNode): void {
+    const colorValue = this.evaluateVector3OrColor(node.value);
+    this.currentTransform().color = new THREE.Color(
+      colorValue[0],
+      colorValue[1],
+      colorValue[2],
+    );
+  }
+
+  private handleRotateCommand(node: RotateNode): void {
+    const rotation = this.evaluateVector3(node.value);
+    const transform = this.currentTransform();
+    // In ShapeScript, rotations are in half-turns (0.5 = 180 degrees)
+    // Apply rotation relative to current rotation
+    transform.rotation.x += rotation[0] * Math.PI * 2;
+    transform.rotation.y += rotation[1] * Math.PI * 2;
+    transform.rotation.z += rotation[2] * Math.PI * 2;
+  }
+
+  private handleTranslateCommand(node: TranslateNode): void {
+    const translation = this.evaluateVector3(node.value);
+    const transform = this.currentTransform();
+    // Apply translation relative to current position
+    transform.position.x += translation[0];
+    transform.position.y += translation[1];
+    transform.position.z += translation[2];
+  }
+
+  private handleScaleCommand(node: ScaleNode): void {
+    const scale = this.evaluateVector3(node.value);
+    const transform = this.currentTransform();
+    // Apply scale relative to current scale
+    transform.scale.x *= scale[0];
+    transform.scale.y *= scale[1];
+    transform.scale.z *= scale[2];
   }
 
   private convertExtrude(node: ExtrudeNode): THREE.Mesh {
@@ -653,6 +854,27 @@ export class Converter {
       return value as Color;
     }
     return this.evaluator.evaluateToColor(value as Expression);
+  }
+
+  private evaluateVector3OrColor(value: Expression): Vector3 {
+    // This helper is used for color commands which can accept a single number or a tuple
+    const result = this.evaluator.evaluate(value);
+
+    if (typeof result === "number") {
+      // Single value - use as grayscale
+      return [result, result, result];
+    } else if (Array.isArray(result)) {
+      // Tuple - ensure it's a 3-element vector
+      if (result.length === 1) {
+        return [result[0], result[0], result[0]];
+      } else if (result.length === 2) {
+        return [result[0], result[1], 0];
+      } else if (result.length >= 3) {
+        return [result[0], result[1], result[2]];
+      }
+    }
+
+    return [0.8, 0.8, 0.8]; // Default gray
   }
 
   private valuesEqual(a: any, b: any): boolean {
