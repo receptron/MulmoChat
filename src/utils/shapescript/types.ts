@@ -72,7 +72,12 @@ export type SceneNode =
   | DetailNode
   | PathNode
   | BackgroundNode
-  | TextureNode;
+  | TextureNode
+  | ColorNode
+  | RotateNode
+  | TranslateNode
+  | ScaleNode
+  | CustomShapeNode;
 
 export interface ShapeNode {
   type: "shape";
@@ -169,6 +174,32 @@ export interface TextureNode {
   value: Expression; // Usually a string (filename)
 }
 
+export interface ColorNode {
+  type: "color";
+  value: Expression; // RGB tuple or single value
+}
+
+export interface RotateNode {
+  type: "rotate";
+  value: Expression; // Rotation value (half-turns) or tuple
+}
+
+export interface TranslateNode {
+  type: "translate";
+  value: Expression; // Translation vector
+}
+
+export interface ScaleNode {
+  type: "scale";
+  value: Expression; // Scale factor or vector
+}
+
+export interface CustomShapeNode {
+  type: "customShape";
+  name: string; // Name of the custom shape defined elsewhere
+  properties: Record<string, any>; // Option overrides (e.g., { teeth: 8 })
+}
+
 export interface ExtrudeNode {
   type: "extrude";
   path?: PathNode;
@@ -186,6 +217,7 @@ export type PathCommand =
   | CurveCommand
   | RotateCommand
   | TranslateCommand
+  | DetailPathCommand
   | ForLoopPathCommand;
 
 export interface PointCommand {
@@ -211,6 +243,11 @@ export interface TranslateCommand {
   type: "translate";
   x: number | Expression;
   y: number | Expression;
+}
+
+export interface DetailPathCommand {
+  type: "detail";
+  value: number | Expression;
 }
 
 export interface ForLoopPathCommand {

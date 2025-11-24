@@ -1243,11 +1243,59 @@ export class Parser {
 
   private parsePathValue(): Expression {
     // Parse a single value for path commands
-    // This is like parseExpression but stops at whitespace/newlines
-    // except for parenthesized expressions
+    // Operators bind regardless of whitespace (e.g., "1 / 5" is one value)
+    // Space-separated non-operators are separate values (e.g., "0 radius 2" is three values)
+    let left = this.parsePathPrimary();
+
+    // Continue parsing operators to build up the expression
+    while (true) {
+      const token = this.current();
+
+      // Check for binary operators
+      if (
+        token.type === TokenType.STAR ||
+        token.type === TokenType.DIVIDE ||
+        token.type === TokenType.PERCENT ||
+        token.type === TokenType.PLUS ||
+        (token.type === TokenType.MINUS && !this.isStartOfNewValue())
+      ) {
+        const operator = this.tokenTypeToOperator(token.type);
+        if (!operator) break;
+        this.advance();
+        const right = this.parsePathPrimary();
+        left = {
+          type: "binary",
+          operator,
+          left,
+          right,
+        };
+      } else {
+        break;
+      }
+    }
+
+    return left;
+  }
+
+  private isStartOfNewValue(): boolean {
+    // Check if current MINUS token starts a new negative number value
+    // vs being a subtraction operator
+    const token = this.current();
+    if (token.type !== TokenType.MINUS) return false;
+
+    // If there's preceding whitespace and next is a number, it's likely a new value
+    return (
+      token.precedingWhitespace &&
+      (this.peek().type === TokenType.NUMBER ||
+        this.peek().type === TokenType.IDENTIFIER ||
+        this.peek().type === TokenType.LPAREN)
+    );
+  }
+
+  private parsePathPrimary(): Expression {
     const token = this.current();
 
-    // Handle parenthesized expressions - these can contain full expressions
+    // Handle parenthesized expressions - these can contain full expressions with spaces
     if (token.type === TokenType.LPAREN) {
       this.advance();
       const expr = this.parseExpression();
@@ -1255,14 +1303,13 @@ export class Parser {
       return expr;
     }
 
-    // Handle unary minus
+    // Handle unary minus (negative numbers)
     if (token.type === TokenType.MINUS) {
       this.advance();
-      const operand = this.parsePathValue();
       return {
         type: "unary",
         operator: "-",
-        operand,
+        operand: this.parsePathPrimary(),
       };
     }
 
@@ -1281,12 +1328,12 @@ export class Parser {
       const name = token.value as string;
       this.advance();
 
-      // Check for function call
+      // Function call: only if '(' immediately follows with NO space
       if (
         this.current().type === TokenType.LPAREN &&
         !this.current().precedingWhitespace
       ) {
-        this.advance(); // consume (
+        this.advance();
         const args: Expression[] = [];
 
         if (this.current().type !== TokenType.RPAREN) {
@@ -1342,6 +1389,13 @@ export class Parser {
           break;
         }
 
+        case TokenType.DETAIL: {
+          this.advance();
+          const value = this.parseExpression();
+          commands.push({ type: "detail", value });
+          break;
+        }
+
         case TokenType.POINT: {
           this.advance();
           const x = this.parsePathValue();
@@ -1354,14 +1408,31 @@ export class Parser {
           this.advance();
           const x = this.parsePathValue();
           const y = this.parsePathValue();
-          // Optional control points
-          const controlX =
+          // Optional control points - must come as a pair
+          let controlX: Expression | undefined;
+          let controlY: Expression | undefined;
+
+          // Check if there's a potential third value (control point x)
+          if (
             this.current().type === TokenType.NUMBER ||
-            this.current().type === TokenType.MINUS
-              ? this.parsePathValue()
-              : undefined;
-          const controlY =
-            controlX !== undefined ? this.parsePathValue() : undefined;
+            this.current().type === TokenType.MINUS ||
+            this.current().type === TokenType.IDENTIFIER ||
+            this.current().type === TokenType.LPAREN
+          ) {
+            // Peek ahead to see if there's also a fourth value (control point y)
+            // Only parse control points if we have both
+            const hasMoreValues =
+              this.peek().type === TokenType.NUMBER ||
+              this.peek().type === TokenType.MINUS ||
+              this.peek().type === TokenType.IDENTIFIER ||
+              this.peek().type === TokenType.LPAREN;
+
+            if (hasMoreValues) {
+              controlX = this.parsePathValue();
+              controlY = this.parsePathValue();
+            }
+          }
+
           commands.push({ type: "curve", x, y, controlX, controlY });
           break;
         }
@@ -1421,6 +1492,38 @@ export class Parser {
                 const x = this.parsePathValue();
                 const y = this.parsePathValue();
                 bodyCommands.push({ type: "point", x, y });
+                break;
+              }
+              case TokenType.CURVE: {
+                this.advance();
+                const x = this.parsePathValue();
+                const y = this.parsePathValue();
+                // Optional control points - must come as a pair
+                let controlX: Expression | undefined;
+                let controlY: Expression | undefined;
+
+                // Check if there's a potential third value (control point x)
+                if (
+                  this.current().type === TokenType.NUMBER ||
+                  this.current().type === TokenType.MINUS ||
+                  this.current().type === TokenType.IDENTIFIER ||
+                  this.current().type === TokenType.LPAREN
+                ) {
+                  // Peek ahead to see if there's also a fourth value (control point y)
+                  // Only parse control points if we have both
+                  const hasMoreValues =
+                    this.peek().type === TokenType.NUMBER ||
+                    this.peek().type === TokenType.MINUS ||
+                    this.peek().type === TokenType.IDENTIFIER ||
+                    this.peek().type === TokenType.LPAREN;
+
+                  if (hasMoreValues) {
+                    controlX = this.parsePathValue();
+                    controlY = this.parsePathValue();
+                  }
+                }
+
+                bodyCommands.push({ type: "curve", x, y, controlX, controlY });
                 break;
               }
               case TokenType.ROTATE: {
@@ -1534,9 +1637,86 @@ export class Parser {
       case TokenType.PATH:
         return this.parsePath();
 
+      case TokenType.COLOR:
+        this.advance();
+        return {
+          type: "color",
+          value: this.parseVectorOrExpression(),
+        };
+
+      case TokenType.ROTATE:
+        this.advance();
+        return {
+          type: "rotate",
+          value: this.parseVectorOrExpression(),
+        };
+
+      case TokenType.TRANSLATE:
+        this.advance();
+        return {
+          type: "translate",
+          value: this.parseVectorOrExpression(),
+        };
+
+      case TokenType.SCALE:
+        this.advance();
+        return {
+          type: "scale",
+          value: this.parseVectorOrExpression(),
+        };
+
       case TokenType.RBRACE:
       case TokenType.EOF:
         return null;
+
+      case TokenType.IDENTIFIER: {
+        // Custom shape invocation (e.g., "cog { teeth 8 }")
+        const name = token.value as string;
+        this.advance();
+
+        let properties: Record<string, any> = {};
+
+        if (this.current().type === TokenType.LBRACE) {
+          this.expect(TokenType.LBRACE);
+          this.skipNewlines();
+
+          // Parse option overrides (e.g., "teeth 8")
+          while (
+            this.current().type !== TokenType.RBRACE &&
+            this.current().type !== TokenType.EOF
+          ) {
+            // Check for standard properties first
+            if (
+              this.current().type === TokenType.POSITION ||
+              this.current().type === TokenType.ROTATION ||
+              this.current().type === TokenType.SIZE ||
+              this.current().type === TokenType.COLOR ||
+              this.current().type === TokenType.OPACITY
+            ) {
+              const props = this.parseProperties();
+              Object.assign(properties, props);
+            } else if (this.current().type === TokenType.IDENTIFIER) {
+              // Parse custom option (e.g., "teeth 8")
+              const optionName = this.current().value as string;
+              this.advance();
+              const optionValue = this.parseVectorOrExpression();
+              properties[optionName] = optionValue;
+            } else {
+              break;
+            }
+
+            this.skipNewlines();
+          }
+
+          this.expect(TokenType.RBRACE);
+        }
+
+        return {
+          type: "customShape",
+          name,
+          properties,
+        };
+      }
 
       default:
         throw new ParseError(
