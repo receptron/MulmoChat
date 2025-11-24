@@ -557,7 +557,10 @@ export class Converter {
           currentX += rotatedX;
           currentY += rotatedY;
 
-          if (command.controlX !== undefined && command.controlY !== undefined) {
+          if (
+            command.controlX !== undefined &&
+            command.controlY !== undefined
+          ) {
             const cx = this.evaluateNumber(command.controlX);
             const cy = this.evaluateNumber(command.controlY);
             const rotatedCX = cx * cos - cy * sin;

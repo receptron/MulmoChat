@@ -1197,7 +1197,8 @@ export class Parser {
             this.current().type === TokenType.MINUS
               ? this.parsePathValue()
               : undefined;
-          const controlY = controlX !== undefined ? this.parsePathValue() : undefined;
+          const controlY =
+            controlX !== undefined ? this.parsePathValue() : undefined;
           commands.push({ type: "curve", x, y, controlX, controlY });
           break;
         }
