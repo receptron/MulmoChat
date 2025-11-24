@@ -263,14 +263,25 @@ export function calculateSheet(
   };
 
   // Process all cells and calculate formulas
-  for (let rowIdx = 0; rowIdx < calculated.length; rowIdx++) {
-    for (let colIdx = 0; colIdx < calculated[rowIdx].length; colIdx++) {
-      const cell = calculated[rowIdx][colIdx];
+  for (let rowIdx = 0; rowIdx < data.length; rowIdx++) {
+    for (let colIdx = 0; colIdx < data[rowIdx].length; colIdx++) {
+      const originalCell = data[rowIdx][colIdx];
+      const calculatedCell = calculated[rowIdx][colIdx];
+
+      // Check if cell was already calculated recursively (it's now a number)
+      if (typeof calculatedCell === "number" && originalCell && typeof originalCell === "object" && "f" in originalCell) {
+        // Cell was recursively evaluated - apply formatting now
+        const format = originalCell.f;
+        if (format) {
+          calculated[rowIdx][colIdx] = formatNumber(calculatedCell, format);
+        }
+        continue;
+      }
 
       // Handle cell format {v, f}
-      if (cell && typeof cell === "object" && "v" in cell) {
-        const value = cell.v;
-        const format = cell.f;
+      if (originalCell && typeof originalCell === "object" && "v" in originalCell) {
+        const value = originalCell.v;
+        const format = originalCell.f;
 
         // Check if value is a formula (string starting with "=")
         if (typeof value === "string" && value.startsWith("=")) {
