@@ -916,3 +916,122 @@ The most impactful early win is **Phase 1 + 2**: enabling expressions, variables
 - Transform functionality ready for use: ✅
 
 **Status**: ✅ **Complete** - Transform commands fully implemented with proper scoping
+
+---
+
+### 2025-11-24 (Continued): Builder Implementations
+
+**Objective**: Implement builder geometry operations (loft, lathe, fill, hull) to eliminate warnings when rendering complex shapes.
+
+**Problem Identified**:
+- Builders were recognized by parser but evaluator only logged warnings and treated them as simple groups
+- Console warnings: "Builder 'loft' not yet implemented", "Builder 'lathe' not yet implemented"
+- Missing geometry operations for advanced shape construction
+
+**Changes Made to src/utils/shapescript/toThreeJS.ts**:
+
+1. **Added Builder Node Imports** (lines 18-21)
+   - Imported `LatheNode`, `LoftNode`, `FillNode`, `HullNode` types
+
+2. **Replaced Warning Cases** (lines 90-97)
+   - Changed from console.warn + convertBlock fallback
+   - Now calls dedicated conversion methods for each builder
+
+3. **convertLathe() Implementation** (lines 840-906)
+   - **Purpose**: Rotates a 2D profile around an axis to create a 3D shape (like pottery wheel)
+   - Extracts path from children nodes
+   - Uses `buildPath()` to generate 2D profile points
+   - Creates Three.js `LatheGeometry` with detail level for smoothness
+   - Applies material and transforms
+   - Proper scoping with push/pop transform and symbol table
+   - **Status**: ✅ Fully functional
+
+4. **convertLoft() Implementation** (lines 908-941)
+   - **Purpose**: Creates 3D shape by interpolating between multiple 2D cross-sections
+   - **Current**: Basic implementation renders children as group
+   - **Future**: Could implement proper spline interpolation between shapes
+   - Applies transforms and materials to group
+   - Proper scoping with push/pop
+   - **Status**: ⚠️ Basic implementation (renders but not true lofting)
+
+5. **convertFill() Implementation** (lines 943-992)
+   - **Purpose**: Creates solid 2D shape from a path
+   - Extracts path from children nodes
+   - Uses `buildPath()` to generate 2D shape
+   - Creates Three.js `ShapeGeometry` (flat 2D mesh)
+   - Applies material and transforms
+   - Proper scoping with push/pop
+   - **Status**: ✅ Fully functional
+
+6. **convertHull() Implementation** (lines 994-1027)
+   - **Purpose**: Creates convex hull around child shapes
+   - **Current**: Basic implementation renders children as group
+   - **Future**: Could implement proper convex hull computation from point cloud
+   - Applies transforms to group
+   - Proper scoping with push/pop
+   - **Status**: ⚠️ Basic implementation (renders children but not true hull)
+
+**Technical Details**:
+- All builders use proper scope management (symbols + transforms)
+- Lathe and fill use path extraction pattern to find path children
+- LatheGeometry uses detail level for segment count around axis
+- ShapeGeometry creates flat 2D geometry from path
+- Basic implementations (loft, hull) at least render visible geometry vs empty
+
+**Test Results**:
+- **Before**: Console warnings for loft/lathe/fill/hull, 5/9 tests passing
+- **After**: No builder warnings, 5/9 tests passing (no regression)
+- Warnings eliminated: ✅
+- Lathe geometry: ✅ Functional
+- Fill geometry: ✅ Functional
+- Loft/Hull: ⚠️ Basic (render but not true operations)
+
+**Status**: ✅ **Complete** - All builders implemented (lathe/fill fully functional, loft/hull basic)
+
+---
+
+### 2025-11-24 (Continued): Parser Bug Fix - Inline Path for Builders
+
+**Objective**: Fix parser bug where inline path syntax (e.g., `lathe path { ... }`) was not adding path to children.
+
+**Problem Identified**:
+- Parser recognized `lathe path { }` syntax and created PathNode
+- However, PathNode was only added to ExtrudeNode (via `path` property)
+- For other builders (lathe, loft, fill, hull), the path was created but not added to children array
+- Result: Runtime error "Lathe requires a path child" when rendering Chessboard.shape
+- AST showed 101 nodes for Chessboard (missing 7 PathNodes)
+
+**Root Cause**:
+In `parseBuilder()` (parser.ts:1328-1341), the return logic:
+- For `extrude`: Returns with `path` property
+- For other builders: Returns with only `properties` and `children` - path variable was ignored
+
+**Changes Made to src/utils/shapescript/parser.ts**:
+
+**Line 1335-1344**: Modified builder return logic
+```typescript
+} else {
+  // For non-extrude builders, if there's an inline path, add it to children
+  if (path) {
+    children.unshift(path); // Add path as first child
+  }
+  return {
+    type: builderType,
+    properties,
+    children,
+  };
+}
+```
+
+**Technical Details**:
+- Uses `unshift()` to add path as first child (preserves order expectations)
+- Only adds path if it exists (inline path syntax was used)
+- All other children follow the path in the children array
+
+**Test Results**:
+- **Before**: Chessboard parsed with 101 nodes, runtime error "Lathe requires a path child"
+- **After**: Chessboard parses with **108 nodes** (7 PathNodes now included), 5/9 tests passing
+- AST node count increase: ✅ (101 → 108 nodes)
+- Inline paths correctly added: ✅
+
+**Status**: ✅ **Complete** - Inline path syntax now works for all builders

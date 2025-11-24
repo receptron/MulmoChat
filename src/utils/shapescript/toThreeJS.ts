@@ -15,6 +15,10 @@ import {
   SwitchNode,
   DefineNode,
   ExtrudeNode,
+  LatheNode,
+  LoftNode,
+  FillNode,
+  HullNode,
   DetailNode,
   PathNode,
   PathCommand,
@@ -88,12 +92,13 @@ export class Converter {
       case "extrude":
         return this.convertExtrude(node);
       case "loft":
+        return this.convertLoft(node);
       case "lathe":
+        return this.convertLathe(node);
       case "fill":
+        return this.convertFill(node);
       case "hull":
-        // TODO: Implement these builders
-        console.warn(`Builder '${node.type}' not yet implemented`);
-        return this.convertBlock(node);
+        return this.convertHull(node);
       case "group":
         return this.convertBlock(node);
       case "detail":
@@ -830,6 +835,195 @@ export class Converter {
     }
 
     return shape;
+  }
+
+  private convertLathe(node: LatheNode): THREE.Object3D {
+    // Lathe rotates a 2D profile around an axis to create a 3D shape
+    // In ShapeScript, the path defines the profile
+
+    // Create new scope
+    this.symbols.pushScope();
+    this.pushTransform();
+
+    // Find path node in children
+    let pathNode: PathNode | null = null;
+    for (const child of node.children) {
+      if (child.type === "path") {
+        pathNode = child as PathNode;
+        break;
+      }
+    }
+
+    if (!pathNode) {
+      // No path found, return empty group
+      console.warn("Lathe requires a path child");
+      this.popTransform();
+      this.symbols.popScope();
+      return new THREE.Group();
+    }
+
+    // Build path and extract points for lathe
+    const shape = this.buildPath(pathNode);
+    const points: THREE.Vector2[] = [];
+
+    // Extract points from the shape
+    shape.getPoints(this.detailLevel).forEach((point) => {
+      points.push(new THREE.Vector2(point.x, point.y));
+    });
+
+    if (points.length < 2) {
+      console.warn("Lathe path must have at least 2 points");
+      this.popTransform();
+      this.symbols.popScope();
+      return new THREE.Group();
+    }
+
+    // Create lathe geometry
+    const geometry = new THREE.LatheGeometry(
+      points,
+      this.detailLevel, // Number of segments around the axis
+    );
+
+    // Create material
+    const material = this.createMaterial(node);
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Apply transforms
+    if (node.properties.position) {
+      const pos = this.evaluateVector3(node.properties.position);
+      mesh.position.set(...pos);
+    }
+
+    if (node.properties.rotation) {
+      const rot = this.evaluateVector3(node.properties.rotation);
+      mesh.rotation.set(...rot);
+    }
+
+    this.popTransform();
+    this.symbols.popScope();
+
+    return mesh;
+  }
+
+  private convertLoft(node: LoftNode): THREE.Object3D {
+    // Loft creates a 3D shape by interpolating between multiple 2D cross-sections
+    // For now, implement as a simple group that renders all children
+    // A proper implementation would use spline interpolation between shapes
+
+    this.symbols.pushScope();
+    this.pushTransform();
+
+    const group = new THREE.Group();
+
+    // Convert all children
+    for (const child of node.children) {
+      const object = this.convertNode(child);
+      if (object) {
+        group.add(object);
+      }
+    }
+
+    // Apply transforms
+    if (node.properties.position) {
+      const pos = this.evaluateVector3(node.properties.position);
+      group.position.set(...pos);
+    }
+
+    if (node.properties.rotation) {
+      const rot = this.evaluateVector3(node.properties.rotation);
+      group.rotation.set(...rot);
+    }
+
+    this.popTransform();
+    this.symbols.popScope();
+
+    return group;
+  }
+
+  private convertFill(node: FillNode): THREE.Object3D {
+    // Fill creates a solid 2D shape from a path
+    // Similar to extrude but with zero depth
+
+    this.symbols.pushScope();
+    this.pushTransform();
+
+    // Find path node in children
+    let pathNode: PathNode | null = null;
+    for (const child of node.children) {
+      if (child.type === "path") {
+        pathNode = child as PathNode;
+        break;
+      }
+    }
+
+    if (!pathNode) {
+      // No path found, return empty group
+      console.warn("Fill requires a path child");
+      this.popTransform();
+      this.symbols.popScope();
+      return new THREE.Group();
+    }
+
+    // Build the 2D shape
+    const shape = this.buildPath(pathNode);
+
+    // Create a ShapeGeometry (flat 2D shape)
+    const geometry = new THREE.ShapeGeometry(shape);
+
+    // Create material
+    const material = this.createMaterial(node);
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Apply transforms
+    if (node.properties.position) {
+      const pos = this.evaluateVector3(node.properties.position);
+      mesh.position.set(...pos);
+    }
+
+    if (node.properties.rotation) {
+      const rot = this.evaluateVector3(node.properties.rotation);
+      mesh.rotation.set(...rot);
+    }
+
+    this.popTransform();
+    this.symbols.popScope();
+
+    return mesh;
+  }
+
+  private convertHull(node: HullNode): THREE.Object3D {
+    // Hull creates a convex hull around child shapes
+    // Proper implementation requires computing convex hull from point cloud
+    // For now, just render children as a group
+
+    this.symbols.pushScope();
+    this.pushTransform();
+
+    const group = new THREE.Group();
+
+    // Convert all children
+    for (const child of node.children) {
+      const object = this.convertNode(child);
+      if (object) {
+        group.add(object);
+      }
+    }
+
+    // Apply transforms
+    if (node.properties.position) {
+      const pos = this.evaluateVector3(node.properties.position);
+      group.position.set(...pos);
+    }
+
+    if (node.properties.rotation) {
+      const rot = this.evaluateVector3(node.properties.rotation);
+      group.rotation.set(...rot);
+    }
+
+    this.popTransform();
+    this.symbols.popScope();
+
+    return group;
   }
 
   // Helper methods

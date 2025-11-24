@@ -1333,6 +1333,10 @@ export class Parser {
         children: children.length > 0 ? children : undefined,
       };
     } else {
+      // For non-extrude builders, if there's an inline path, add it to children
+      if (path) {
+        children.unshift(path); // Add path as first child
+      }
       return {
         type: builderType,
         properties,
