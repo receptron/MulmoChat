@@ -8,8 +8,11 @@ import {
   IfNode,
   SwitchNode,
   DefineNode,
+  OptionNode,
   ExtrudeNode,
   DetailNode,
+  BackgroundNode,
+  TextureNode,
   PathNode,
   PathCommand,
   Expression,
@@ -135,6 +138,8 @@ class Lexer {
       point: TokenType.POINT,
       curve: TokenType.CURVE,
       detail: TokenType.DETAIL,
+      background: TokenType.BACKGROUND,
+      texture: TokenType.TEXTURE,
       union: TokenType.UNION,
       difference: TokenType.DIFFERENCE,
       intersection: TokenType.INTERSECTION,
@@ -168,6 +173,48 @@ class Lexer {
     return {
       type,
       value: id,
+      line,
+      column,
+    };
+  }
+
+  private readString(): Token {
+    const line = this.line;
+    const column = this.column;
+    let str = "";
+
+    this.advance(); // consume opening quote
+
+    while (this.pos < this.input.length) {
+      const char = this.peek();
+
+      if (char === '"') {
+        this.advance(); // consume closing quote
+        break;
+      } else if (char === "\\") {
+        // Handle escape sequences
+        this.advance();
+        const nextChar = this.peek();
+        if (nextChar === '"' || nextChar === "\\") {
+          str += this.advance();
+        } else if (nextChar === "n") {
+          str += "\n";
+          this.advance();
+        } else if (nextChar === "t") {
+          str += "\t";
+          this.advance();
+        } else {
+          str += nextChar;
+          this.advance();
+        }
+      } else {
+        str += this.advance();
+      }
+    }
+
+    return {
+      type: TokenType.STRING,
+      value: str,
       line,
       column,
     };
@@ -208,6 +255,12 @@ class Lexer {
       // Identifiers and keywords
       else if ((char >= "a" && char <= "z") || (char >= "A" && char <= "Z")) {
         const token = this.readIdentifier();
+        token.precedingWhitespace = hadWhitespace;
+        tokens.push(token);
+      }
+      // String literals
+      else if (char === '"') {
+        const token = this.readString();
         token.precedingWhitespace = hadWhitespace;
         tokens.push(token);
       }
@@ -467,6 +520,23 @@ export class Parser {
     return this.advance();
   }
 
+  // Expect an identifier, but allow keywords to be used as identifiers
+  private expectIdentifier(): Token {
+    const token = this.current();
+    if (token.type === TokenType.IDENTIFIER) {
+      return this.advance();
+    }
+    // Allow certain keywords to be used as identifiers
+    if (typeof token.value === 'string') {
+      return this.advance();
+    }
+    throw new ParseError(
+      `Expected identifier but got ${token.type}`,
+      token.line,
+      token.column,
+    );
+  }
+
   private skipNewlines(): void {
     while (this.current().type === TokenType.NEWLINE) {
       this.advance();
@@ -545,6 +615,15 @@ export class Parser {
       };
     }
 
+    // String literal
+    if (token.type === TokenType.STRING) {
+      this.advance();
+      return {
+        type: "identifier", // Treat strings as special identifiers for now
+        name: token.value as string,
+      };
+    }
+
     // Identifier or function call
     if (token.type === TokenType.IDENTIFIER) {
       const name = token.value as string;
@@ -579,6 +658,17 @@ export class Parser {
       }
 
       // Simple identifier
+      return {
+        type: "identifier",
+        name,
+      };
+    }
+
+    // Allow keywords to be used as identifiers in expressions
+    // (e.g., "define step 5" then "rotate step")
+    if (typeof token.value === 'string') {
+      const name = token.value;
+      this.advance();
       return {
         type: "identifier",
         name,
@@ -666,11 +756,11 @@ export class Parser {
       nextToken.type === TokenType.LPAREN;
 
     if (canBeVectorComponent && nextToken.type !== TokenType.COMMA) {
-      // Parse space-separated values: x y z
+      // Parse space-separated values: x y z (or any number of values)
       const elements: Expression[] = [first];
 
-      // Parse up to 2 more values
-      for (let i = 0; i < 2; i++) {
+      // Keep parsing as long as we see valid tuple component tokens
+      while (true) {
         const token = this.current();
         if (
           token.type === TokenType.NUMBER ||
@@ -1006,10 +1096,54 @@ export class Parser {
   private parseDefine(): DefineNode {
     this.advance(); // consume 'define'
 
-    const nameToken = this.expect(TokenType.IDENTIFIER);
+    const nameToken = this.expectIdentifier();
     const name = nameToken.value as string;
 
-    const value = this.parseExpression();
+    // Check if this is a custom shape definition with a block
+    if (this.current().type === TokenType.LBRACE) {
+      // This is a custom shape definition
+      this.advance(); // consume '{'
+
+      const options: OptionNode[] = [];
+      const body: SceneNode[] = [];
+
+      while (
+        this.current().type !== TokenType.RBRACE &&
+        this.current().type !== TokenType.EOF
+      ) {
+        // Check for option declarations
+        if (this.current().type === TokenType.OPTION) {
+          this.advance(); // consume 'option'
+
+          const optionName = this.expectIdentifier().value as string;
+          const defaultValue = this.parseVectorOrExpression();
+
+          options.push({
+            type: "option",
+            name: optionName,
+            defaultValue,
+          });
+        } else {
+          // Parse regular scene nodes
+          const node = this.parseNode();
+          if (node) {
+            body.push(node);
+          }
+        }
+      }
+
+      this.expect(TokenType.RBRACE);
+
+      return {
+        type: "define",
+        name,
+        options,
+        body,
+      };
+    }
+
+    // Parse the value - could be a single expression or space-separated tuple
+    const value = this.parseVectorOrExpression();
 
     return {
       type: "define",
@@ -1025,6 +1159,28 @@ export class Parser {
 
     return {
       type: "detail",
+      value,
+    };
+  }
+
+  private parseBackground(): BackgroundNode {
+    this.advance(); // consume 'background'
+
+    const value = this.parseExpression();
+
+    return {
+      type: "background",
+      value,
+    };
+  }
+
+  private parseTexture(): TextureNode {
+    this.advance(); // consume 'texture'
+
+    const value = this.parseExpression();
+
+    return {
+      type: "texture",
       value,
     };
   }
@@ -1179,6 +1335,13 @@ export class Parser {
       const token = this.current();
 
       switch (token.type) {
+        case TokenType.DEFINE: {
+          // Handle define statements inside path blocks
+          // These don't produce path commands, just variable definitions
+          this.parseDefine();
+          break;
+        }
+
         case TokenType.POINT: {
           this.advance();
           const x = this.parsePathValue();
@@ -1361,6 +1524,15 @@ export class Parser {
 
       case TokenType.DETAIL:
         return this.parseDetail();
+
+      case TokenType.BACKGROUND:
+        return this.parseBackground();
+
+      case TokenType.TEXTURE:
+        return this.parseTexture();
+
+      case TokenType.PATH:
+        return this.parsePath();
 
       case TokenType.RBRACE:
       case TokenType.EOF:

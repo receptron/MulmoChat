@@ -69,7 +69,10 @@ export type SceneNode =
   | SwitchNode
   | DefineNode
   | ExtrudeNode
-  | DetailNode;
+  | DetailNode
+  | PathNode
+  | BackgroundNode
+  | TextureNode;
 
 export interface ShapeNode {
   type: "shape";
@@ -140,12 +143,30 @@ export interface TransformNode {
 export interface DefineNode {
   type: "define";
   name: string;
-  value: Expression;
+  value?: Expression; // For variable definitions
+  options?: OptionNode[]; // For custom shape definitions
+  body?: SceneNode[]; // For custom shape definitions
+}
+
+export interface OptionNode {
+  type: "option";
+  name: string;
+  defaultValue: Expression;
 }
 
 export interface DetailNode {
   type: "detail";
   value: number | Expression;
+}
+
+export interface BackgroundNode {
+  type: "background";
+  value: Expression; // Usually a string (filename)
+}
+
+export interface TextureNode {
+  type: "texture";
+  value: Expression; // Usually a string (filename)
 }
 
 export interface ExtrudeNode {
@@ -216,6 +237,8 @@ export enum TokenType {
   POINT = "POINT",
   CURVE = "CURVE",
   DETAIL = "DETAIL",
+  BACKGROUND = "BACKGROUND",
+  TEXTURE = "TEXTURE",
 
   // CSG Operations
   UNION = "UNION",
