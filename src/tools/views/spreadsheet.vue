@@ -130,6 +130,9 @@ import {
   indexToColumn,
 } from "../models/spreadsheet-engine";
 
+// Import all spreadsheet functions to populate the function registry
+import "../models/functions/index";
+
 const props = defineProps<{
   selectedResult: ToolResult<SpreadsheetToolData>;
 }>();

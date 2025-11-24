@@ -109,19 +109,22 @@ export function evaluateFormula(
         }
       }
 
-      const func = functionRegistry.get(funcName);
+      // Normalize function name to uppercase for registry lookup
+      const normalizedFuncName = funcName.toUpperCase();
+      const func = functionRegistry.get(normalizedFuncName);
+
       if (func && isValidFunction) {
         const args = parseFunctionArgs(argsStr);
 
         // Validate argument count
         if (func.minArgs !== undefined && args.length < func.minArgs) {
           throw new Error(
-            `${funcName} requires at least ${func.minArgs} argument${func.minArgs !== 1 ? "s" : ""}`
+            `${normalizedFuncName} requires at least ${func.minArgs} argument${func.minArgs !== 1 ? "s" : ""}`
           );
         }
         if (func.maxArgs !== undefined && args.length > func.maxArgs) {
           throw new Error(
-            `${funcName} accepts at most ${func.maxArgs} argument${func.maxArgs !== 1 ? "s" : ""}`
+            `${normalizedFuncName} accepts at most ${func.maxArgs} argument${func.maxArgs !== 1 ? "s" : ""}`
           );
         }
 
