@@ -736,12 +736,12 @@ export class Parser {
           break;
 
         case TokenType.RBRACE:
-          break;
+          // End of properties block
+          return properties;
 
         default:
-          // Skip unknown properties
-          this.advance();
-          break;
+          // Not a property token - stop parsing properties and return
+          return properties;
       }
 
       this.skipNewlines();
@@ -1085,6 +1085,85 @@ export class Parser {
     };
   }
 
+  private parsePathValue(): Expression {
+    // Parse a single value for path commands
+    // This is like parseExpression but stops at whitespace/newlines
+    // except for parenthesized expressions
+    const token = this.current();
+
+    // Handle parenthesized expressions - these can contain full expressions
+    if (token.type === TokenType.LPAREN) {
+      this.advance();
+      const expr = this.parseExpression();
+      this.expect(TokenType.RPAREN);
+      return expr;
+    }
+
+    // Handle unary minus
+    if (token.type === TokenType.MINUS) {
+      this.advance();
+      const operand = this.parsePathValue();
+      return {
+        type: "unary",
+        operator: "-",
+        operand,
+      };
+    }
+
+    // Handle numbers
+    if (token.type === TokenType.NUMBER) {
+      const value = token.value as number;
+      this.advance();
+      return {
+        type: "number",
+        value,
+      };
+    }
+
+    // Handle identifiers (variables) and function calls
+    if (token.type === TokenType.IDENTIFIER) {
+      const name = token.value as string;
+      this.advance();
+
+      // Check for function call
+      if (
+        this.current().type === TokenType.LPAREN &&
+        !this.current().precedingWhitespace
+      ) {
+        this.advance(); // consume (
+        const args: Expression[] = [];
+
+        if (this.current().type !== TokenType.RPAREN) {
+          args.push(this.parseExpression());
+          while (this.current().type === TokenType.COMMA) {
+            this.advance();
+            args.push(this.parseExpression());
+          }
+        }
+
+        this.expect(TokenType.RPAREN);
+
+        return {
+          type: "call",
+          name,
+          args,
+        };
+      }
+
+      // Simple identifier
+      return {
+        type: "identifier",
+        name,
+      };
+    }
+
+    throw new ParseError(
+      `Expected path value, got ${token.type}`,
+      token.line,
+      token.column,
+    );
+  }
+
   private parsePath(): PathNode {
     this.advance(); // consume 'path'
 
@@ -1102,19 +1181,23 @@ export class Parser {
       switch (token.type) {
         case TokenType.POINT: {
           this.advance();
-          const x = this.parseExpression();
-          const y = this.parseExpression();
+          const x = this.parsePathValue();
+          const y = this.parsePathValue();
           commands.push({ type: "point", x, y });
           break;
         }
 
         case TokenType.CURVE: {
           this.advance();
-          const x = this.parseExpression();
-          const y = this.parseExpression();
+          const x = this.parsePathValue();
+          const y = this.parsePathValue();
           // Optional control points
-          const controlX = this.current().type === TokenType.NUMBER ? this.parseExpression() : undefined;
-          const controlY = controlX !== undefined ? this.parseExpression() : undefined;
+          const controlX =
+            this.current().type === TokenType.NUMBER ||
+            this.current().type === TokenType.MINUS
+              ? this.parsePathValue()
+              : undefined;
+          const controlY = controlX !== undefined ? this.parsePathValue() : undefined;
           commands.push({ type: "curve", x, y, controlX, controlY });
           break;
         }
@@ -1128,8 +1211,8 @@ export class Parser {
 
         case TokenType.TRANSLATE: {
           this.advance();
-          const x = this.parseExpression();
-          const y = this.parseExpression();
+          const x = this.parsePathValue();
+          const y = this.parsePathValue();
           commands.push({ type: "translate", x, y });
           break;
         }
@@ -1138,8 +1221,16 @@ export class Parser {
           // Handle for loops inside path - expand them inline
           this.advance(); // consume 'for'
 
-          const variable = this.expect(TokenType.IDENTIFIER).value as string;
-          this.expect(TokenType.IN);
+          // Check if there's a variable name (for i in 1 to 5) or direct range (for 1 to 5)
+          let variable = "_i"; // Default variable name
+          if (
+            this.current().type === TokenType.IDENTIFIER &&
+            this.peek(1).type === TokenType.IN
+          ) {
+            variable = this.current().value as string;
+            this.advance(); // consume variable
+            this.expect(TokenType.IN); // consume 'in'
+          }
 
           const from = this.parseExpression();
           this.expect(TokenType.TO);
@@ -1163,8 +1254,8 @@ export class Parser {
             switch (cmd.type) {
               case TokenType.POINT: {
                 this.advance();
-                const x = this.parseExpression();
-                const y = this.parseExpression();
+                const x = this.parsePathValue();
+                const y = this.parsePathValue();
                 bodyCommands.push({ type: "point", x, y });
                 break;
               }
@@ -1176,8 +1267,8 @@ export class Parser {
               }
               case TokenType.TRANSLATE: {
                 this.advance();
-                const x = this.parseExpression();
-                const y = this.parseExpression();
+                const x = this.parsePathValue();
+                const y = this.parsePathValue();
                 bodyCommands.push({ type: "translate", x, y });
                 break;
               }
