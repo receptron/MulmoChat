@@ -187,7 +187,7 @@ for (const inputFile of inputFiles) {
         formulaCount: result.formulas.length,
         errorCount: result.errors.length,
       });
-    } catch (__error) {
+    } catch {
       console.log("❌ Output does not match expected values\n");
 
       // Find and display first few differences

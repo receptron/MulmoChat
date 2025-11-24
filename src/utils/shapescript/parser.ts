@@ -9,14 +9,7 @@ import {
   SwitchNode,
   DefineNode,
   Expression,
-  NumberLiteral,
-  IdentifierExpr,
-  BinaryExpr,
-  UnaryExpr,
-  FunctionCall,
-  TupleExpr,
   Vector3,
-  Color,
   ParseError,
 } from "./types";
 

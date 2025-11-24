@@ -142,23 +142,90 @@ export function evaluateFormula(
     let expr = formula;
 
     // Find and evaluate function calls (e.g., TODAY(), SUM(A1:A10), etc.)
-    const funcCallRegex = /([A-Z]+)\(([^()]*(?:\([^()]*\))*[^()]*)\)/gi;
-    let embeddedFuncMatch;
-    while ((embeddedFuncMatch = funcCallRegex.exec(expr)) !== null) {
-      const fullMatch = embeddedFuncMatch[0];
-      const result = context.evaluateFormula(fullMatch);
-      // Wrap result in parentheses to handle negative numbers (e.g., -PMT() → -(result))
-      expr = expr.replace(fullMatch, `(${result})`);
-      // Reset regex index since we modified the string
-      funcCallRegex.lastIndex = 0;
+    // Use a simpler approach: find function names followed by parentheses
+    // and manually parse the matching closing parenthesis
+    let searchIndex = 0;
+    while (searchIndex < expr.length) {
+      const funcNameMatch = expr.substring(searchIndex).match(/^([A-Z]+)\(/i);
+      if (!funcNameMatch) {
+        break;
+      }
+
+      const funcStartIndex = searchIndex;
+      const funcName = funcNameMatch[1];
+      const argsStartIndex = searchIndex + funcName.length + 1;
+
+      // Find matching closing parenthesis
+      let depth = 1;
+      let argsEndIndex = argsStartIndex;
+      while (argsEndIndex < expr.length && depth > 0) {
+        if (expr[argsEndIndex] === "(") depth++;
+        else if (expr[argsEndIndex] === ")") depth--;
+        argsEndIndex++;
+      }
+
+      if (depth === 0) {
+        const fullMatch = expr.substring(funcStartIndex, argsEndIndex);
+        const result = context.evaluateFormula(fullMatch);
+        // Wrap result in parentheses to handle negative numbers (e.g., -PMT() → -(result))
+        expr =
+          expr.substring(0, funcStartIndex) +
+          `(${result})` +
+          expr.substring(argsEndIndex);
+        searchIndex = funcStartIndex + `(${result})`.length;
+      } else {
+        searchIndex++;
+      }
     }
 
     // Then replace cell references with their values
-    // Match cell references including cross-sheet and absolute references
-    const cellRefs = expr.match(
-      /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
-    );
-    if (cellRefs) {
+    // Match cell references manually to avoid complex regex
+    const cellRefs: string[] = [];
+    let i = 0;
+    while (i < expr.length) {
+      // Check for cross-sheet reference (quoted or unquoted)
+      let ref = "";
+      if (expr[i] === "'") {
+        // Quoted sheet name
+        const endQuote = expr.indexOf("'", i + 1);
+        if (endQuote !== -1 && expr[endQuote + 1] === "!") {
+          const cellPart = expr
+            .substring(endQuote + 2)
+            .match(/^(\$?[A-Z]+\$?\d+)/);
+          if (cellPart) {
+            ref = expr.substring(i, endQuote + 2 + cellPart[0].length);
+            cellRefs.push(ref);
+            i += ref.length;
+            continue;
+          }
+        }
+      } else {
+        // Unquoted sheet name or simple cell ref
+        const sheetMatch = expr.substring(i).match(/^([A-Z][A-Z0-9]*)!/i);
+        if (sheetMatch) {
+          const cellPart = expr
+            .substring(i + sheetMatch[0].length)
+            .match(/^(\$?[A-Z]+\$?\d+)/);
+          if (cellPart) {
+            ref = sheetMatch[0] + cellPart[0];
+            cellRefs.push(ref);
+            i += ref.length;
+            continue;
+          }
+        }
+        // Simple cell reference
+        const cellMatch = expr.substring(i).match(/^(\$?[A-Z]+\$?\d+)/);
+        if (cellMatch) {
+          ref = cellMatch[0];
+          cellRefs.push(ref);
+          i += ref.length;
+          continue;
+        }
+      }
+      i++;
+    }
+
+    if (cellRefs.length > 0) {
       for (const ref of cellRefs) {
         const value = context.getCellValue(ref);
         // Escape special regex characters
@@ -170,10 +237,21 @@ export function evaluateFormula(
     // Replace ^ with ** for exponentiation
     expr = expr.replace(/\^/g, "**");
 
-    // Safely evaluate the expression
+    // Safely evaluate the expression using Function constructor instead of eval
     // Allow numbers, operators, parentheses, whitespace, and decimal points
     if (/^[\d+\-*/(). ]+$/.test(expr)) {
-      return eval(expr);
+      try {
+        // Use Function constructor which is safer than eval because:
+        // 1. The expression is strictly validated (only numbers and math operators)
+        // 2. No access to local scope variables
+        // 3. No this binding issues
+        // This is safe because we validate the expression first
+        // eslint-disable-next-line no-new-func, sonarjs/code-eval
+        const result = new Function(`return (${expr})`)();
+        return result;
+      } catch {
+        return formula;
+      }
     }
 
     return formula; // Return original if can't evaluate

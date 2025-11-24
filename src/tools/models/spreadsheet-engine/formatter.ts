@@ -28,7 +28,18 @@ export function formatNumber(value: number, format: string): string {
 
       let formatted = Math.abs(value).toFixed(decimals >= 0 ? decimals : 0);
       if (hasComma) {
-        formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        // Add thousand separators without regex to avoid performance issues
+        const parts = formatted.split(".");
+        const integerPart = parts[0];
+        let result = "";
+        for (let i = integerPart.length - 1, count = 0; i >= 0; i--, count++) {
+          if (count > 0 && count % 3 === 0) {
+            result = "," + result;
+          }
+          result = integerPart[i] + result;
+        }
+        parts[0] = result;
+        formatted = parts.join(".");
       }
       formatted = "$" + formatted;
       if (value < 0) formatted = "-" + formatted;
@@ -45,7 +56,18 @@ export function formatNumber(value: number, format: string): string {
     if (format.includes(",")) {
       const decimals = (format.match(/\.0+/) || [""])[0].length - 1;
       let formatted = Math.abs(value).toFixed(decimals >= 0 ? decimals : 0);
-      formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      // Add thousand separators without regex to avoid performance issues
+      const parts = formatted.split(".");
+      const integerPart = parts[0];
+      let result = "";
+      for (let i = integerPart.length - 1, count = 0; i >= 0; i--, count++) {
+        if (count > 0 && count % 3 === 0) {
+          result = "," + result;
+        }
+        result = integerPart[i] + result;
+      }
+      parts[0] = result;
+      formatted = parts.join(".");
       if (value < 0) formatted = "-" + formatted;
       return formatted;
     }

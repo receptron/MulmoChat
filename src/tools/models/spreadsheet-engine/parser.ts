@@ -96,13 +96,14 @@ export function parseCellRef(ref: string): CellRef {
  * @returns Parsed range reference object
  */
 export function parseRangeRef(range: string): RangeRef {
-  const match = range.match(/^(.+):(.+)$/);
-  if (!match) {
+  // Use non-greedy match to improve performance
+  const colonIndex = range.lastIndexOf(":");
+  if (colonIndex === -1) {
     throw new Error(`Invalid range reference: ${range}`);
   }
 
-  const start = parseCellRef(match[1]);
-  const end = parseCellRef(match[2]);
+  const start = parseCellRef(range.substring(0, colonIndex));
+  const end = parseCellRef(range.substring(colonIndex + 1));
 
   return { start, end };
 }
