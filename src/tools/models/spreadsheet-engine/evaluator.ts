@@ -173,7 +173,6 @@ export function evaluateFormula(
     // Safely evaluate the expression
     // Allow numbers, operators, parentheses, whitespace, and decimal points
     if (/^[\d+\-*/(). ]+$/.test(expr)) {
-      // eslint-disable-next-line no-eval
       return eval(expr);
     }
 

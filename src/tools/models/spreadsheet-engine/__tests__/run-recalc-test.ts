@@ -105,7 +105,7 @@ function calculateFormulas(
 ): Array<Array<any>> {
   const sheet: SheetData = {
     name: sheetName || "Sheet1",
-    data: data,
+    data,
   };
 
   const result = engine.calculate(sheet, allSheets);

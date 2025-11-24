@@ -30,6 +30,7 @@ CRITICAL SYNTAX RULES - READ CAREFULLY:
 3. For loops: ALL objects get IDENTICAL property values
 4. For loops automatically rotate objects around Y-axis for circular patterns
 5. For objects in different positions, write them manually (NOT in a loop)
+6. Comments start with // (e.g., // This is a comment)
 
 WRONG - DO NOT USE:
 cylinder { position (i*1.5-2.25) 0 0 }  // ERROR: NO expressions!
@@ -114,6 +115,7 @@ CRITICAL ShapeScript Syntax Rules - MUST FOLLOW:
 3. For loops: ALL objects get IDENTICAL properties - same position, same color, same size
 4. For loops automatically rotate objects to create circular patterns
 5. For objects at different positions: write each one separately (NOT in a loop)
+6. Comments start with // (e.g., // Red sphere)
 
 WRONG - NEVER DO THIS:
 - cylinder { position (i*1.5-2.25) 0 0 }  // NO expressions!

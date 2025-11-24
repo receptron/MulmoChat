@@ -146,14 +146,16 @@ try {
   console.log("Expected Output:");
   console.log("================");
   expected.forEach((row, i) => {
-    console.log(`Row ${i + 1}: [${row.map((c) => `"${c}"`).join(", ")}]`);
+    const cells = row.map((c) => `"${c}"`).join(", ");
+    console.log(`Row ${i + 1}: [${cells}]`);
   });
 
   console.log("\n\nActual Output:");
   console.log("==============");
   const actual = toStringArray(result.data);
   actual.forEach((row, i) => {
-    console.log(`Row ${i + 1}: [${row.map((c) => `"${c}"`).join(", ")}]`);
+    const cells = row.map((c) => `"${c}"`).join(", ");
+    console.log(`Row ${i + 1}: [${cells}]`);
   });
 
   console.log("\n\nComparison:");

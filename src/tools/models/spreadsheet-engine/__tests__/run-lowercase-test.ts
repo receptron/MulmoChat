@@ -4,7 +4,7 @@
  */
 
 import { calculateSheet } from "../calculator";
-import { createSheet, toStringArray, expectSheetOutput } from "./test-utils";
+import { createSheet, expectSheetOutput } from "./test-utils";
 import "../../functions/index"; // Load all functions
 
 let passedTests = 0;

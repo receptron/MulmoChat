@@ -9,7 +9,6 @@ import { columnToIndex } from "./parser";
 import { evaluateFormula as evaluateFormulaFn } from "./evaluator";
 import type {
   SheetData,
-  SpreadsheetCell,
   CellValue,
   CalculatedSheet,
   CalculationError,
@@ -157,7 +156,6 @@ export function calculateSheet(
           // Calculate formulas for the target sheet with cache
           const targetCalculated = targetSheet.data.map((row) => [...row]);
           sheetsCache.set(targetSheetName, targetCalculated);
-          sheetData = targetCalculated;
 
           // Recursively calculate the target sheet
           const targetResult = calculateSheet(targetSheet, allSheets);
@@ -217,7 +215,6 @@ export function calculateSheet(
         if (targetSheet && targetSheet.data) {
           const targetCalculated = targetSheet.data.map((row) => [...row]);
           sheetsCache.set(targetSheetName, targetCalculated);
-          sheetData = targetCalculated;
 
           // Recursively calculate the target sheet
           const targetResult = calculateSheet(targetSheet, allSheets);
