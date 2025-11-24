@@ -84,7 +84,7 @@ export function parseFunctionArgs(argsStr: string): string[] {
  */
 export function evaluateFormula(
   formula: string,
-  context: EvaluatorContext
+  context: EvaluatorContext,
 ): CellValue {
   try {
     // Check if it's a SIMPLE function call (not a complex expression)
@@ -98,8 +98,8 @@ export function evaluateFormula(
       let parenDepth = 0;
       let isValidFunction = true;
       for (const char of argsStr) {
-        if (char === '(') parenDepth++;
-        else if (char === ')') {
+        if (char === "(") parenDepth++;
+        else if (char === ")") {
           parenDepth--;
           if (parenDepth < 0) {
             // More closing parens than opening - this means we matched too much
@@ -119,12 +119,12 @@ export function evaluateFormula(
         // Validate argument count
         if (func.minArgs !== undefined && args.length < func.minArgs) {
           throw new Error(
-            `${normalizedFuncName} requires at least ${func.minArgs} argument${func.minArgs !== 1 ? "s" : ""}`
+            `${normalizedFuncName} requires at least ${func.minArgs} argument${func.minArgs !== 1 ? "s" : ""}`,
           );
         }
         if (func.maxArgs !== undefined && args.length > func.maxArgs) {
           throw new Error(
-            `${normalizedFuncName} accepts at most ${func.maxArgs} argument${func.maxArgs !== 1 ? "s" : ""}`
+            `${normalizedFuncName} accepts at most ${func.maxArgs} argument${func.maxArgs !== 1 ? "s" : ""}`,
           );
         }
 
@@ -156,7 +156,7 @@ export function evaluateFormula(
     // Then replace cell references with their values
     // Match cell references including cross-sheet and absolute references
     const cellRefs = expr.match(
-      /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g
+      /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
     );
     if (cellRefs) {
       for (const ref of cellRefs) {

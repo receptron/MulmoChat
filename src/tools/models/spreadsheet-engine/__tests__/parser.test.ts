@@ -178,7 +178,7 @@ describe("Parser - Range References", () => {
   test("throws on invalid range", () => {
     expect(() => parseRangeRef("A1")).toThrow("Invalid range reference");
     expect(() => parseRangeRef("invalid:range")).toThrow(
-      "Invalid cell reference"
+      "Invalid cell reference",
     );
   });
 });
@@ -192,32 +192,25 @@ describe("Parser - Cell Reference to A1", () => {
 
   test("converts absolute references to A1", () => {
     expect(
-      cellRefToA1({ row: 0, col: 0, absolute: { row: true, col: true } })
+      cellRefToA1({ row: 0, col: 0, absolute: { row: true, col: true } }),
     ).toBe("$A$1");
     expect(
-      cellRefToA1({ row: 0, col: 0, absolute: { row: false, col: true } })
+      cellRefToA1({ row: 0, col: 0, absolute: { row: false, col: true } }),
     ).toBe("$A1");
     expect(
-      cellRefToA1({ row: 0, col: 0, absolute: { row: true, col: false } })
+      cellRefToA1({ row: 0, col: 0, absolute: { row: true, col: false } }),
     ).toBe("A$1");
   });
 
   test("converts cross-sheet references to A1", () => {
     expect(cellRefToA1({ row: 0, col: 0, sheet: "Sheet1" })).toBe("Sheet1!A1");
     expect(cellRefToA1({ row: 1, col: 1, sheet: "My Sheet" })).toBe(
-      "'My Sheet'!B2"
+      "'My Sheet'!B2",
     );
   });
 
   test("round-trip conversion works", () => {
-    const testRefs = [
-      "A1",
-      "$A$1",
-      "$A1",
-      "A$1",
-      "Sheet1!A1",
-      "'My Sheet'!B2",
-    ];
+    const testRefs = ["A1", "$A$1", "$A1", "A$1", "Sheet1!A1", "'My Sheet'!B2"];
 
     for (const ref of testRefs) {
       const parsed = parseCellRef(ref);

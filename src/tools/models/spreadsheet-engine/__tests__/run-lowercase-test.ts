@@ -36,10 +36,7 @@ test("calculates lowercase sum", () => {
     ["=sum(A1:C1)"], // lowercase sum
   ]);
   const result = calculateSheet(sheet);
-  const expected = [
-    ["10", "20", "30"],
-    ["60"],
-  ];
+  const expected = [["10", "20", "30"], ["60"]];
   expectSheetOutput(result, expected);
 });
 
@@ -49,10 +46,7 @@ test("calculates lowercase average", () => {
     ["=average(A1:C1)"], // lowercase average
   ]);
   const result = calculateSheet(sheet);
-  const expected = [
-    ["10", "20", "30"],
-    ["20"],
-  ];
+  const expected = [["10", "20", "30"], ["20"]];
   expectSheetOutput(result, expected);
 });
 
@@ -62,10 +56,7 @@ test("calculates mixed case function", () => {
     ["=SuM(A1:C1)"], // mixed case
   ]);
   const result = calculateSheet(sheet);
-  const expected = [
-    ["10", "20", "30"],
-    ["60"],
-  ];
+  const expected = [["10", "20", "30"], ["60"]];
   expectSheetOutput(result, expected);
 });
 
@@ -75,10 +66,7 @@ test("calculates nested lowercase functions", () => {
     ["=round(average(A1:C1), 2)"], // nested lowercase
   ]);
   const result = calculateSheet(sheet);
-  const expected = [
-    ["10", "20", "30"],
-    ["20"],
-  ];
+  const expected = [["10", "20", "30"], ["20"]];
   expectSheetOutput(result, expected);
 });
 

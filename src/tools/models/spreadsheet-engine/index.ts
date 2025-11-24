@@ -14,4 +14,4 @@ export * from "./evaluator";
 export * from "./calculator";
 
 // Export main SpreadsheetEngine class
-export { SpreadsheetEngine } from './engine';
+export { SpreadsheetEngine } from "./engine";

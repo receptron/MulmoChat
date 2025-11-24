@@ -10,109 +10,93 @@ import "../../functions/index"; // Load all functions
 console.log("\n=== PV Analysis - Complete Array Output Test ===\n");
 
 const pvAnalysisSheet = {
-  "name": "PV Analysis",
-  "data": [
+  name: "PV Analysis",
+  data: [
+    [{ v: "Parameter" }, { v: "Value" }, { v: "" }],
     [
-      { "v": "Parameter" },
-      { "v": "Value" },
-      { "v": "" }
+      { v: "Monthly Income" },
+      { f: "$#,##0.00", v: 1000 },
+      { v: "Change this value" },
     ],
     [
-      { "v": "Monthly Income" },
-      { "f": "$#,##0.00", "v": 1000 },
-      { "v": "Change this value" }
+      { v: "Annual Discount Rate" },
+      { f: "0.00%", v: 0.05 },
+      { v: "Change this value" },
     ],
     [
-      { "v": "Annual Discount Rate" },
-      { "f": "0.00%", "v": 0.05 },
-      { "v": "Change this value" }
+      { v: "Monthly Discount Rate" },
+      { f: "0.00%", v: "=B3/12" },
+      { v: "Calculated automatically" },
     ],
     [
-      { "v": "Monthly Discount Rate" },
-      { "f": "0.00%", "v": "=B3/12" },
-      { "v": "Calculated automatically" }
+      { v: "Total Present Value" },
+      { v: "=SUM(C9:C20)", f: "$#,##0.00" },
+      { v: "Sum of discounted cash flows" },
+    ],
+    [{ v: "" }, { v: "" }, { v: "" }],
+    [{ v: "" }, { v: "" }, { v: "" }],
+    [{ v: "Month" }, { v: "Cash Flow" }, { v: "Present Value" }],
+    [
+      { v: 1 },
+      { f: "$#,##0.00", v: "=$B$2" },
+      { f: "$#,##0.00", v: "=B9/(1+$B$4)^A9" },
     ],
     [
-      { "v": "Total Present Value" },
-      { "v": "=SUM(C9:C20)", "f": "$#,##0.00" },
-      { "v": "Sum of discounted cash flows" }
+      { v: 2 },
+      { f: "$#,##0.00", v: "=$B$2" },
+      { v: "=B10/(1+$B$4)^A10", f: "$#,##0.00" },
     ],
     [
-      { "v": "" },
-      { "v": "" },
-      { "v": "" }
+      { v: 3 },
+      { v: "=$B$2", f: "$#,##0.00" },
+      { v: "=B11/(1+$B$4)^A11", f: "$#,##0.00" },
     ],
     [
-      { "v": "" },
-      { "v": "" },
-      { "v": "" }
+      { v: 4 },
+      { f: "$#,##0.00", v: "=$B$2" },
+      { v: "=B12/(1+$B$4)^A12", f: "$#,##0.00" },
     ],
     [
-      { "v": "Month" },
-      { "v": "Cash Flow" },
-      { "v": "Present Value" }
+      { v: 5 },
+      { v: "=$B$2", f: "$#,##0.00" },
+      { v: "=B13/(1+$B$4)^A13", f: "$#,##0.00" },
     ],
     [
-      { "v": 1 },
-      { "f": "$#,##0.00", "v": "=$B$2" },
-      { "f": "$#,##0.00", "v": "=B9/(1+$B$4)^A9" }
+      { v: 6 },
+      { f: "$#,##0.00", v: "=$B$2" },
+      { v: "=B14/(1+$B$4)^A14", f: "$#,##0.00" },
     ],
     [
-      { "v": 2 },
-      { "f": "$#,##0.00", "v": "=$B$2" },
-      { "v": "=B10/(1+$B$4)^A10", "f": "$#,##0.00" }
+      { v: 7 },
+      { v: "=$B$2", f: "$#,##0.00" },
+      { v: "=B15/(1+$B$4)^A15", f: "$#,##0.00" },
     ],
     [
-      { "v": 3 },
-      { "v": "=$B$2", "f": "$#,##0.00" },
-      { "v": "=B11/(1+$B$4)^A11", "f": "$#,##0.00" }
+      { v: 8 },
+      { v: "=$B$2", f: "$#,##0.00" },
+      { v: "=B16/(1+$B$4)^A16", f: "$#,##0.00" },
     ],
     [
-      { "v": 4 },
-      { "f": "$#,##0.00", "v": "=$B$2" },
-      { "v": "=B12/(1+$B$4)^A12", "f": "$#,##0.00" }
+      { v: 9 },
+      { f: "$#,##0.00", v: "=$B$2" },
+      { f: "$#,##0.00", v: "=B17/(1+$B$4)^A17" },
     ],
     [
-      { "v": 5 },
-      { "v": "=$B$2", "f": "$#,##0.00" },
-      { "v": "=B13/(1+$B$4)^A13", "f": "$#,##0.00" }
+      { v: 10 },
+      { f: "$#,##0.00", v: "=$B$2" },
+      { f: "$#,##0.00", v: "=B18/(1+$B$4)^A18" },
     ],
     [
-      { "v": 6 },
-      { "f": "$#,##0.00", "v": "=$B$2" },
-      { "v": "=B14/(1+$B$4)^A14", "f": "$#,##0.00" }
+      { v: 11 },
+      { f: "$#,##0.00", v: "=$B$2" },
+      { f: "$#,##0.00", v: "=B19/(1+$B$4)^A19" },
     ],
     [
-      { "v": 7 },
-      { "v": "=$B$2", "f": "$#,##0.00" },
-      { "v": "=B15/(1+$B$4)^A15", "f": "$#,##0.00" }
+      { v: 12 },
+      { v: "=$B$2", f: "$#,##0.00" },
+      { v: "=B20/(1+$B$4)^A20", f: "$#,##0.00" },
     ],
-    [
-      { "v": 8 },
-      { "v": "=$B$2", "f": "$#,##0.00" },
-      { "v": "=B16/(1+$B$4)^A16", "f": "$#,##0.00" }
-    ],
-    [
-      { "v": 9 },
-      { "f": "$#,##0.00", "v": "=$B$2" },
-      { "f": "$#,##0.00", "v": "=B17/(1+$B$4)^A17" }
-    ],
-    [
-      { "v": 10 },
-      { "f": "$#,##0.00", "v": "=$B$2" },
-      { "f": "$#,##0.00", "v": "=B18/(1+$B$4)^A18" }
-    ],
-    [
-      { "v": 11 },
-      { "f": "$#,##0.00", "v": "=$B$2" },
-      { "f": "$#,##0.00", "v": "=B19/(1+$B$4)^A19" }
-    ],
-    [
-      { "v": 12 },
-      { "v": "=$B$2", "f": "$#,##0.00" },
-      { "v": "=B20/(1+$B$4)^A20", "f": "$#,##0.00" }
-    ]
-  ]
+  ],
 };
 
 try {
@@ -162,14 +146,14 @@ try {
   console.log("Expected Output:");
   console.log("================");
   expected.forEach((row, i) => {
-    console.log(`Row ${i + 1}: [${row.map(c => `"${c}"`).join(", ")}]`);
+    console.log(`Row ${i + 1}: [${row.map((c) => `"${c}"`).join(", ")}]`);
   });
 
   console.log("\n\nActual Output:");
   console.log("==============");
   const actual = toStringArray(result.data);
   actual.forEach((row, i) => {
-    console.log(`Row ${i + 1}: [${row.map(c => `"${c}"`).join(", ")}]`);
+    console.log(`Row ${i + 1}: [${row.map((c) => `"${c}"`).join(", ")}]`);
   });
 
   console.log("\n\nComparison:");
@@ -190,15 +174,16 @@ try {
   // Check for errors
   if (result.errors.length > 0) {
     console.log("\n\n⚠ Errors detected:");
-    result.errors.forEach(error => {
-      console.log(`  - Row ${error.cell.row}, Col ${error.cell.col}: ${error.error}`);
+    result.errors.forEach((error) => {
+      console.log(
+        `  - Row ${error.cell.row}, Col ${error.cell.col}: ${error.error}`,
+      );
     });
     process.exit(1);
   }
 
   console.log("\n\n✓ PV Analysis test passed - all calculations correct!");
   process.exit(0);
-
 } catch (error) {
   console.error("\n❌ Test failed:");
   console.error(error);
@@ -206,7 +191,9 @@ try {
   if (error instanceof Error && error.message.includes("Expected")) {
     console.error("\n💡 Hint: The calculated values differ from expected.");
     console.error("   This could be due to rounding differences.");
-    console.error("   Check the comparison above to see which values don't match.");
+    console.error(
+      "   Check the comparison above to see which values don't match.",
+    );
   }
 
   process.exit(1);

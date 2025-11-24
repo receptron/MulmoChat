@@ -55,7 +55,7 @@ function expect(actual: any) {
             error instanceof Error ? error.message : String(error);
           if (!errorMessage.includes(message)) {
             throw new Error(
-              `Expected error to include "${message}", got "${errorMessage}"`
+              `Expected error to include "${message}", got "${errorMessage}"`,
             );
           }
         }
@@ -174,7 +174,7 @@ test("cellRefToA1: basic", () => {
 });
 test("cellRefToA1: absolute", () => {
   expect(
-    cellRefToA1({ row: 0, col: 0, absolute: { row: true, col: true } })
+    cellRefToA1({ row: 0, col: 0, absolute: { row: true, col: true } }),
   ).toBe("$A$1");
 });
 test("cellRefToA1: cross-sheet", () => {
@@ -182,7 +182,7 @@ test("cellRefToA1: cross-sheet", () => {
 });
 test("cellRefToA1: cross-sheet with spaces", () => {
   expect(cellRefToA1({ row: 1, col: 1, sheet: "My Sheet" })).toBe(
-    "'My Sheet'!B2"
+    "'My Sheet'!B2",
   );
 });
 

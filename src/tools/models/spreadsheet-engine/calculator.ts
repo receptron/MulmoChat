@@ -7,7 +7,14 @@
 import { formatNumber } from "./formatter";
 import { columnToIndex } from "./parser";
 import { evaluateFormula as evaluateFormulaFn } from "./evaluator";
-import type { SheetData, SpreadsheetCell, CellValue, CalculatedSheet, CalculationError, FormulaInfo } from "./types";
+import type {
+  SheetData,
+  SpreadsheetCell,
+  CellValue,
+  CalculatedSheet,
+  CalculationError,
+  FormulaInfo,
+} from "./types";
 
 /**
  * Calculate formulas in a single sheet
@@ -18,7 +25,7 @@ import type { SheetData, SpreadsheetCell, CellValue, CalculatedSheet, Calculatio
  */
 export function calculateSheet(
   sheet: SheetData,
-  allSheets?: SheetData[]
+  allSheets?: SheetData[],
 ): CalculatedSheet {
   const data = sheet.data;
   const sheetName = sheet.name;
@@ -75,7 +82,7 @@ export function calculateSheet(
           // Check for circular reference
           if (calculating.has(cellKey)) {
             console.warn(
-              `Circular reference detected at row ${row}, col ${col}`
+              `Circular reference detected at row ${row}, col ${col}`,
             );
             errors.push({
               cell: { row, col },
@@ -108,7 +115,7 @@ export function calculateSheet(
             calculating.delete(cellKey);
             console.error(
               `Error evaluating formula at row ${row}, col ${col}:`,
-              error
+              error,
             );
             errors.push({
               cell: { row, col },
@@ -184,7 +191,7 @@ export function calculateSheet(
     return getRawValue(
       cell,
       isCurrentSheet ? row : undefined,
-      isCurrentSheet ? col : undefined
+      isCurrentSheet ? col : undefined,
     );
   };
 
@@ -244,7 +251,7 @@ export function calculateSheet(
           const num = getRawValue(
             cell,
             isCurrentSheet ? row : undefined,
-            isCurrentSheet ? col : undefined
+            isCurrentSheet ? col : undefined,
           );
           if (!isNaN(num)) values.push(num);
         }
@@ -269,7 +276,12 @@ export function calculateSheet(
       const calculatedCell = calculated[rowIdx][colIdx];
 
       // Check if cell was already calculated recursively (it's now a number)
-      if (typeof calculatedCell === "number" && originalCell && typeof originalCell === "object" && "f" in originalCell) {
+      if (
+        typeof calculatedCell === "number" &&
+        originalCell &&
+        typeof originalCell === "object" &&
+        "f" in originalCell
+      ) {
         // Cell was recursively evaluated - apply formatting now
         const format = originalCell.f;
         if (format) {
@@ -279,7 +291,11 @@ export function calculateSheet(
       }
 
       // Handle cell format {v, f}
-      if (originalCell && typeof originalCell === "object" && "v" in originalCell) {
+      if (
+        originalCell &&
+        typeof originalCell === "object" &&
+        "v" in originalCell
+      ) {
         const value = originalCell.v;
         const format = originalCell.f;
 

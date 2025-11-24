@@ -3,7 +3,11 @@
  * Run with: npx tsx src/tools/models/spreadsheet-engine/__tests__/run-evaluator-tests.ts
  */
 
-import { parseFunctionArgs, evaluateFormula, type EvaluatorContext } from "../evaluator";
+import {
+  parseFunctionArgs,
+  evaluateFormula,
+  type EvaluatorContext,
+} from "../evaluator";
 import "../../functions/index"; // Load all functions
 
 let passedTests = 0;
@@ -43,7 +47,7 @@ function expect(actual: any) {
 // Helper to create mock context
 function createContext(
   cells: Record<string, number | string> = {},
-  ranges: Record<string, (number | string)[]> = {}
+  ranges: Record<string, (number | string)[]> = {},
 ): EvaluatorContext {
   const context: EvaluatorContext = {
     getCellValue: (ref: string) => cells[ref] ?? 0,

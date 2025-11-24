@@ -1,11 +1,7 @@
 {
   "name": "PV Analysis",
   "data": [
-    [
-      { "v": "Parameter" },
-      { "v": "Value" },
-      { "v": "" }
-    ],
+    [{ "v": "Parameter" }, { "v": "Value" }, { "v": "" }],
     [
       { "v": "Monthly Income" },
       { "f": "$#,##0.00", "v": 1000 },
@@ -26,21 +22,9 @@
       { "v": "=SUM(C9:C20)", "f": "$#,##0.00" },
       { "v": "Sum of discounted cash flows" }
     ],
-    [
-      { "v": "" },
-      { "v": "" },
-      { "v": "" }
-    ],
-    [
-      { "v": "" },
-      { "v": "" },
-      { "v": "" }
-    ],
-    [
-      { "v": "Month" },
-      { "v": "Cash Flow" },
-      { "v": "Present Value" }
-    ],
+    [{ "v": "" }, { "v": "" }, { "v": "" }],
+    [{ "v": "" }, { "v": "" }, { "v": "" }],
+    [{ "v": "Month" }, { "v": "Cash Flow" }, { "v": "Present Value" }],
     [
       { "v": 1 },
       { "f": "$#,##0.00", "v": "=$B$2" },

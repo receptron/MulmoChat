@@ -59,10 +59,14 @@ if (!fs.existsSync(EXPECTED_DIR)) {
 
 console.log("\n=== Spreadsheet Fixture Test Suite ===\n");
 console.log(`Input Directory:    ${path.relative(process.cwd(), INPUT_DIR)}`);
-console.log(`Expected Directory: ${path.relative(process.cwd(), EXPECTED_DIR)}\n`);
+console.log(
+  `Expected Directory: ${path.relative(process.cwd(), EXPECTED_DIR)}\n`,
+);
 
 // Discover all test files
-const inputFiles = fs.readdirSync(INPUT_DIR).filter(file => file.endsWith('.json'));
+const inputFiles = fs
+  .readdirSync(INPUT_DIR)
+  .filter((file) => file.endsWith(".json"));
 
 if (inputFiles.length === 0) {
   console.log("⚠ No test files found in input directory\n");
@@ -70,7 +74,7 @@ if (inputFiles.length === 0) {
 }
 
 console.log(`Found ${inputFiles.length} test file(s):\n`);
-inputFiles.forEach(file => {
+inputFiles.forEach((file) => {
   console.log(`  • ${file}`);
 });
 console.log();
@@ -80,24 +84,26 @@ let totalDuration = 0;
 
 // Run each test
 for (const inputFile of inputFiles) {
-  const testName = path.basename(inputFile, '.json');
+  const testName = path.basename(inputFile, ".json");
   const inputPath = path.join(INPUT_DIR, inputFile);
   const expectedPath = path.join(EXPECTED_DIR, inputFile);
 
-  console.log(`${'='.repeat(60)}`);
+  console.log(`${"=".repeat(60)}`);
   console.log(`Test: ${testName}`);
-  console.log(`${'='.repeat(60)}\n`);
+  console.log(`${"=".repeat(60)}\n`);
 
   // Check if expected file exists
   if (!fs.existsSync(expectedPath)) {
     console.log(`❌ SKIP: Expected output file not found`);
-    console.log(`   Looking for: ${path.relative(process.cwd(), expectedPath)}\n`);
+    console.log(
+      `   Looking for: ${path.relative(process.cwd(), expectedPath)}\n`,
+    );
 
     results.push({
       name: testName,
       passed: false,
       error: "Expected output file not found",
-      duration: 0
+      duration: 0,
     });
     continue;
   }
@@ -135,9 +141,15 @@ for (const inputFile of inputFiles) {
 
     // Display dimensions
     console.log("Dimensions:");
-    console.log(`  Input:    ${inputSheet.data.length} rows × ${inputSheet.data[0]?.length || 0} columns`);
-    console.log(`  Expected: ${expected.length} rows × ${expected[0]?.length || 0} columns`);
-    console.log(`  Actual:   ${actual.length} rows × ${actual[0]?.length || 0} columns\n`);
+    console.log(
+      `  Input:    ${inputSheet.data.length} rows × ${inputSheet.data[0]?.length || 0} columns`,
+    );
+    console.log(
+      `  Expected: ${expected.length} rows × ${expected[0]?.length || 0} columns`,
+    );
+    console.log(
+      `  Actual:   ${actual.length} rows × ${actual[0]?.length || 0} columns\n`,
+    );
 
     // Compare output
     try {
@@ -148,8 +160,10 @@ for (const inputFile of inputFiles) {
       // Check for calculation errors
       if (result.errors.length > 0) {
         console.log("⚠ Calculation errors detected:");
-        result.errors.forEach(error => {
-          console.log(`  - Row ${error.cell.row}, Col ${error.cell.col}: ${error.error}`);
+        result.errors.forEach((error) => {
+          console.log(
+            `  - Row ${error.cell.row}, Col ${error.cell.col}: ${error.error}`,
+          );
         });
         console.log();
       }
@@ -171,9 +185,8 @@ for (const inputFile of inputFiles) {
         duration,
         cellCount,
         formulaCount: result.formulas.length,
-        errorCount: result.errors.length
+        errorCount: result.errors.length,
       });
-
     } catch (error) {
       console.log("❌ Output does not match expected values\n");
 
@@ -187,14 +200,16 @@ for (const inputFile of inputFiles) {
         const maxCols = Math.max(expectedRow.length, actualRow.length);
 
         for (let j = 0; j < maxCols && differences.length < 5; j++) {
-          const expectedCell = expectedRow[j] !== undefined ? String(expectedRow[j]) : undefined;
-          const actualCell = actualRow[j] !== undefined ? String(actualRow[j]) : undefined;
+          const expectedCell =
+            expectedRow[j] !== undefined ? String(expectedRow[j]) : undefined;
+          const actualCell =
+            actualRow[j] !== undefined ? String(actualRow[j]) : undefined;
 
           if (expectedCell !== actualCell) {
             differences.push(
               `  Row ${i + 1}, Col ${j + 1}:\n` +
-              `    Expected: "${expectedCell}"\n` +
-              `    Actual:   "${actualCell}"`
+                `    Expected: "${expectedCell}"\n` +
+                `    Actual:   "${actualCell}"`,
             );
           }
         }
@@ -212,10 +227,9 @@ for (const inputFile of inputFiles) {
         name: testName,
         passed: false,
         error: "Output mismatch",
-        duration
+        duration,
       });
     }
-
   } catch (error) {
     console.log("❌ Test execution failed\n");
 
@@ -234,35 +248,39 @@ for (const inputFile of inputFiles) {
       name: testName,
       passed: false,
       error: error instanceof Error ? error.message : String(error),
-      duration: 0
+      duration: 0,
     });
   }
 }
 
 // Display final summary
-console.log(`\n${'='.repeat(60)}`);
+console.log(`\n${"=".repeat(60)}`);
 console.log("Test Suite Summary");
-console.log(`${'='.repeat(60)}\n`);
+console.log(`${"=".repeat(60)}\n`);
 
-const passedTests = results.filter(r => r.passed);
-const failedTests = results.filter(r => !r.passed);
+const passedTests = results.filter((r) => r.passed);
+const failedTests = results.filter((r) => !r.passed);
 
 console.log(`Total Tests:   ${results.length}`);
 console.log(`Passed:        ${passedTests.length} ✓`);
-console.log(`Failed:        ${failedTests.length} ${failedTests.length > 0 ? '❌' : ''}`);
+console.log(
+  `Failed:        ${failedTests.length} ${failedTests.length > 0 ? "❌" : ""}`,
+);
 console.log(`Total Time:    ${totalDuration}ms\n`);
 
 if (passedTests.length > 0) {
   console.log("Passed Tests:");
-  passedTests.forEach(result => {
-    console.log(`  ✓ ${result.name} (${result.duration}ms, ${result.cellCount} cells, ${result.formulaCount} formulas)`);
+  passedTests.forEach((result) => {
+    console.log(
+      `  ✓ ${result.name} (${result.duration}ms, ${result.cellCount} cells, ${result.formulaCount} formulas)`,
+    );
   });
   console.log();
 }
 
 if (failedTests.length > 0) {
   console.log("Failed Tests:");
-  failedTests.forEach(result => {
+  failedTests.forEach((result) => {
     console.log(`  ❌ ${result.name} - ${result.error}`);
   });
   console.log();

@@ -148,7 +148,7 @@ export class SpreadsheetEngine {
    */
   createSheet(
     name: string,
-    data: Array<Array<SpreadsheetCell | string | number>>
+    data: Array<Array<SpreadsheetCell | string | number>>,
   ): SheetData {
     return {
       name,
@@ -158,7 +158,7 @@ export class SpreadsheetEngine {
             return cell as SpreadsheetCell;
           }
           return { v: cell };
-        })
+        }),
       ),
     };
   }

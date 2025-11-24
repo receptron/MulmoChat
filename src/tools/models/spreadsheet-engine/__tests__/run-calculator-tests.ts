@@ -116,24 +116,8 @@ test("year-over-year growth percentages", () => {
 console.log("\nFinancial Model:");
 test("quarterly budget with SUM and AVERAGE", () => {
   const sheet = createSheet("Budget", [
-    [
-      "Category",
-      "Q1",
-      "Q2",
-      "Q3",
-      "Q4",
-      "Total",
-      "Avg",
-    ],
-    [
-      "Marketing",
-      5000,
-      6000,
-      5500,
-      7000,
-      "=SUM(B2:E2)",
-      "=AVERAGE(B2:E2)",
-    ],
+    ["Category", "Q1", "Q2", "Q3", "Q4", "Total", "Avg"],
+    ["Marketing", 5000, 6000, 5500, 7000, "=SUM(B2:E2)", "=AVERAGE(B2:E2)"],
     [
       "Engineering",
       15000,
@@ -143,15 +127,7 @@ test("quarterly budget with SUM and AVERAGE", () => {
       "=SUM(B3:E3)",
       "=AVERAGE(B3:E3)",
     ],
-    [
-      "Sales",
-      8000,
-      9000,
-      8500,
-      10000,
-      "=SUM(B4:E4)",
-      "=AVERAGE(B4:E4)",
-    ],
+    ["Sales", 8000, 9000, 8500, 10000, "=SUM(B4:E4)", "=AVERAGE(B4:E4)"],
     [
       "Total",
       "=SUM(B2:B4)",
@@ -170,7 +146,15 @@ test("quarterly budget with SUM and AVERAGE", () => {
     ["Marketing", "5000", "6000", "5500", "7000", "23500", "5875"],
     ["Engineering", "15000", "16000", "15500", "17000", "63500", "15875"],
     ["Sales", "8000", "9000", "8500", "10000", "35500", "8875"],
-    ["Total", "28000", "31000", "29500", "34000", "122500", "40833.333333333336"],
+    [
+      "Total",
+      "28000",
+      "31000",
+      "29500",
+      "34000",
+      "122500",
+      "40833.333333333336",
+    ],
   ];
 
   expectSheetOutput(result, expected);
@@ -343,12 +327,7 @@ test("sales commission with rates", () => {
   const sheet = {
     name: "Commission",
     data: [
-      [
-        { v: "Sales Rep" },
-        { v: "Sales" },
-        { v: "Rate" },
-        { v: "Commission" },
-      ],
+      [{ v: "Sales Rep" }, { v: "Sales" }, { v: "Rate" }, { v: "Commission" }],
       [
         { v: "Alice" },
         { v: 50000, f: "$#,##0" },
@@ -395,7 +374,7 @@ test("detects circular references", () => {
   }
   if (result.errors[0].type !== "circular") {
     throw new Error(
-      `Expected circular error type, got ${result.errors[0].type}`
+      `Expected circular error type, got ${result.errors[0].type}`,
     );
   }
 });
