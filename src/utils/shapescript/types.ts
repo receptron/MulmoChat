@@ -69,6 +69,11 @@ export type SceneNode =
   | SwitchNode
   | DefineNode
   | ExtrudeNode
+  | LoftNode
+  | LatheNode
+  | FillNode
+  | HullNode
+  | GroupNode
   | DetailNode
   | PathNode
   | BackgroundNode
@@ -81,7 +86,15 @@ export type SceneNode =
 
 export interface ShapeNode {
   type: "shape";
-  primitive: "cube" | "sphere" | "cylinder" | "cone" | "torus";
+  primitive:
+    | "cube"
+    | "sphere"
+    | "cylinder"
+    | "cone"
+    | "torus"
+    | "circle"
+    | "square"
+    | "polygon";
   properties: ShapeProperties;
   children?: SceneNode[];
 }
@@ -207,6 +220,35 @@ export interface ExtrudeNode {
   children?: SceneNode[];
 }
 
+export interface LoftNode {
+  type: "loft";
+  properties: ShapeProperties;
+  children: SceneNode[];
+}
+
+export interface LatheNode {
+  type: "lathe";
+  properties: ShapeProperties;
+  children: SceneNode[];
+}
+
+export interface FillNode {
+  type: "fill";
+  properties: ShapeProperties;
+  children: SceneNode[];
+}
+
+export interface HullNode {
+  type: "hull";
+  properties: ShapeProperties;
+  children: SceneNode[];
+}
+
+export interface GroupNode {
+  type: "group";
+  children: SceneNode[];
+}
+
 export interface PathNode {
   type: "path";
   commands: PathCommand[];
@@ -267,9 +309,17 @@ export enum TokenType {
   CYLINDER = "CYLINDER",
   CONE = "CONE",
   TORUS = "TORUS",
+  CIRCLE = "CIRCLE",
+  SQUARE = "SQUARE",
+  POLYGON = "POLYGON",
 
   // Builders
   EXTRUDE = "EXTRUDE",
+  LOFT = "LOFT",
+  LATHE = "LATHE",
+  FILL = "FILL",
+  HULL = "HULL",
+  GROUP = "GROUP",
   PATH = "PATH",
   POINT = "POINT",
   CURVE = "CURVE",

@@ -133,7 +133,15 @@ class Lexer {
       cylinder: TokenType.CYLINDER,
       cone: TokenType.CONE,
       torus: TokenType.TORUS,
+      circle: TokenType.CIRCLE,
+      square: TokenType.SQUARE,
+      polygon: TokenType.POLYGON,
       extrude: TokenType.EXTRUDE,
+      loft: TokenType.LOFT,
+      lathe: TokenType.LATHE,
+      fill: TokenType.FILL,
+      hull: TokenType.HULL,
+      group: TokenType.GROUP,
       path: TokenType.PATH,
       point: TokenType.POINT,
       curve: TokenType.CURVE,
@@ -862,7 +870,15 @@ export class Parser {
   }
 
   private parseShape(
-    primitive: "cube" | "sphere" | "cylinder" | "cone" | "torus",
+    primitive:
+      | "cube"
+      | "sphere"
+      | "cylinder"
+      | "cone"
+      | "torus"
+      | "circle"
+      | "square"
+      | "polygon",
   ): ShapeNode {
     this.advance(); // consume primitive token
 
@@ -1185,8 +1201,28 @@ export class Parser {
     };
   }
 
-  private parseExtrude(): ExtrudeNode {
-    this.advance(); // consume 'extrude'
+  private parseGroup(): GroupNode {
+    this.advance(); // consume 'group'
+    this.expect(TokenType.LBRACE);
+    const children = this.parseBlock();
+    this.expect(TokenType.RBRACE);
+    return {
+      type: "group",
+      children,
+    };
+  }
+
+  private parseBuilder(
+    builderType: "extrude" | "loft" | "lathe" | "fill" | "hull",
+  ): ExtrudeNode | LoftNode | LatheNode | FillNode | HullNode {
+    this.advance(); // consume builder keyword
+
+    // Check for optional "path" keyword (e.g., "lathe path { ... }")
+    let hasInlinePath = false;
+    if (this.current().type === TokenType.PATH) {
+      hasInlinePath = true;
+      this.advance(); // consume "path"
+    }
 
     // Parse properties and child nodes in the block
     this.expect(TokenType.LBRACE);
@@ -1196,49 +1232,113 @@ export class Parser {
     let path: PathNode | undefined;
     const children: SceneNode[] = [];
 
-    while (
-      this.current().type !== TokenType.RBRACE &&
-      this.current().type !== TokenType.EOF
-    ) {
-      const token = this.current();
+    // If we have inline path syntax (e.g., "lathe path { ... }"),
+    // parse the content as path commands directly
+    if (hasInlinePath) {
+      const commands: PathCommand[] = [];
 
-      // Check for path definition
-      if (token.type === TokenType.PATH) {
-        path = this.parsePath();
-        this.skipNewlines();
-        continue;
-      }
-
-      // Check for properties
-      if (
-        token.type === TokenType.SIZE ||
-        token.type === TokenType.COLOR ||
-        token.type === TokenType.OPACITY ||
-        token.type === TokenType.POSITION ||
-        token.type === TokenType.ROTATION
+      while (
+        this.current().type !== TokenType.RBRACE &&
+        this.current().type !== TokenType.EOF
       ) {
-        const props = this.parseProperties();
-        Object.assign(properties, props);
+        const token = this.current();
+
+        if (token.type === TokenType.POINT) {
+          this.advance();
+          const x = this.parsePathValue();
+          const y = this.parsePathValue();
+          commands.push({ type: "point", x, y });
+        } else if (token.type === TokenType.CURVE) {
+          this.advance();
+          const x = this.parsePathValue();
+          const y = this.parsePathValue();
+          // Optional control points
+          let controlX: Expression | undefined;
+          let controlY: Expression | undefined;
+
+          if (
+            this.current().type === TokenType.NUMBER ||
+            this.current().type === TokenType.MINUS ||
+            this.current().type === TokenType.IDENTIFIER ||
+            this.current().type === TokenType.LPAREN
+          ) {
+            const hasMoreValues =
+              this.peek().type === TokenType.NUMBER ||
+              this.peek().type === TokenType.MINUS ||
+              this.peek().type === TokenType.IDENTIFIER ||
+              this.peek().type === TokenType.LPAREN;
+
+            if (hasMoreValues) {
+              controlX = this.parsePathValue();
+              controlY = this.parsePathValue();
+            }
+          }
+          commands.push({ type: "curve", x, y, controlX, controlY });
+        } else {
+          break;
+        }
+
         this.skipNewlines();
-        continue;
       }
 
-      // Otherwise, parse as child node
-      const node = this.parseNode();
-      if (node) {
-        children.push(node);
+      path = {
+        type: "path",
+        commands,
+      };
+    } else {
+      // Normal builder parsing
+      while (
+        this.current().type !== TokenType.RBRACE &&
+        this.current().type !== TokenType.EOF
+      ) {
+        const token = this.current();
+
+        // Check for path definition (for extrude)
+        if (token.type === TokenType.PATH && builderType === "extrude") {
+          path = this.parsePath();
+          this.skipNewlines();
+          continue;
+        }
+
+        // Check for properties
+        if (
+          token.type === TokenType.SIZE ||
+          token.type === TokenType.COLOR ||
+          token.type === TokenType.OPACITY ||
+          token.type === TokenType.POSITION ||
+          token.type === TokenType.ROTATION
+        ) {
+          const props = this.parseProperties();
+          Object.assign(properties, props);
+          this.skipNewlines();
+          continue;
+        }
+
+        // Otherwise, parse as child node
+        const node = this.parseNode();
+        if (node) {
+          children.push(node);
+        }
+        this.skipNewlines();
       }
-      this.skipNewlines();
     }
 
     this.expect(TokenType.RBRACE);
 
-    return {
-      type: "extrude",
-      path,
-      properties,
-      children: children.length > 0 ? children : undefined,
-    };
+    if (builderType === "extrude") {
+      return {
+        type: "extrude",
+        path,
+        properties,
+        children: children.length > 0 ? children : undefined,
+      };
+    } else {
+      return {
+        type: builderType,
+        properties,
+        children,
+      };
+    }
   }
 
   private parsePathValue(): Expression {
@@ -1598,6 +1698,12 @@ export class Parser {
         return this.parseShape("cone");
       case TokenType.TORUS:
         return this.parseShape("torus");
+      case TokenType.CIRCLE:
+        return this.parseShape("circle");
+      case TokenType.SQUARE:
+        return this.parseShape("square");
+      case TokenType.POLYGON:
+        return this.parseShape("polygon");
 
       case TokenType.UNION:
         return this.parseCSG("union");
@@ -1623,7 +1729,22 @@ export class Parser {
         return this.parseDefine();
 
       case TokenType.EXTRUDE:
-        return this.parseExtrude();
+        return this.parseBuilder("extrude");
+
+      case TokenType.LOFT:
+        return this.parseBuilder("loft");
+
+      case TokenType.LATHE:
+        return this.parseBuilder("lathe");
+
+      case TokenType.FILL:
+        return this.parseBuilder("fill");
+
+      case TokenType.HULL:
+        return this.parseBuilder("hull");
+
+      case TokenType.GROUP:
+        return this.parseGroup();
 
       case TokenType.DETAIL:
         return this.parseDetail();

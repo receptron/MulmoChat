@@ -815,3 +815,43 @@ The most impactful early win is **Phase 1 + 2**: enabling expressions, variables
 3. Fix tuple expression handling (Priority 4 - Icosahedron)
 4. Investigate Spirals syntax issues (possible malformed test file)
 5. Complete evaluator implementation to actually execute parsed nodes
+
+---
+
+### 2025-11-24 (Continued): Additional Builder & Shape Support
+
+**Objective**: Add remaining builders and shape primitives to achieve broader test coverage.
+
+**Changes Made**:
+1. **Added builder keywords** (src/utils/shapescript/parser.ts, types.ts)
+   - `loft`, `lathe`, `fill`, `hull`, `group`
+   - Created generic `parseBuilder()` function to handle all builders uniformly
+   - Added support for optional `path` keyword syntax: `lathe path { ... }`
+   - Inline path parsing: when `builder path { }` syntax is used, parses path commands directly
+
+2. **Added shape primitives** (src/utils/shapescript/parser.ts, types.ts)
+   - `circle`, `square`, `polygon`
+   - These are 2D shapes used in extrusion/lofting contexts
+
+3. **GroupNode implementation** (src/utils/shapescript/types.ts:76, 247-250)
+   - Container for organizing shapes with transform context
+   - Simplifies scene hierarchy management
+
+**Test Results**:
+- **Before (continued session)**: 3/9 tests passing
+- **After**: **5/9 tests passing** (55.6% success rate!)
+  - ✅ Ball
+  - ✅ Chessboard (was failing at line 12 → now PASSES)
+  - ✅ Earth
+  - ✅ Spring (was failing at line 10 → now PASSES)
+  - ✅ cube
+
+**Remaining Failures**:
+- Cog (line 22): Custom shape invocation in extrude context
+- Icosahedron (line 6): Tuple expression handling
+- Spirals (line 13): Possible syntax error in test file (3-value curve)
+- Train (line 35): Group/transform interaction issue
+
+**Key Achievement**: **Chessboard** (230 lines, 101 nodes) and **Spring** (26 lines, 12 nodes) now parse successfully!
+
+**Status**: ✅ **Significant Progress** - More than half of test files now parse correctly
