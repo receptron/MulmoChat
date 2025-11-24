@@ -3,7 +3,71 @@
 export type Vector3 = [number, number, number];
 export type Color = [number, number, number];
 
-export type SceneNode = ShapeNode | CSGNode | BlockNode | ForLoopNode;
+// Expression types
+export type Expression =
+  | NumberLiteral
+  | IdentifierExpr
+  | BinaryExpr
+  | UnaryExpr
+  | FunctionCall
+  | MemberAccess
+  | SubscriptExpr
+  | TupleExpr;
+
+export interface NumberLiteral {
+  type: "number";
+  value: number;
+}
+
+export interface IdentifierExpr {
+  type: "identifier";
+  name: string;
+}
+
+export interface BinaryExpr {
+  type: "binary";
+  operator: string; // +, -, *, /, %, =, <>, <, <=, >, >=, and, or
+  left: Expression;
+  right: Expression;
+}
+
+export interface UnaryExpr {
+  type: "unary";
+  operator: string; // -, not
+  operand: Expression;
+}
+
+export interface FunctionCall {
+  type: "call";
+  name: string;
+  args: Expression[];
+}
+
+export interface MemberAccess {
+  type: "member";
+  object: Expression;
+  member: string;
+}
+
+export interface SubscriptExpr {
+  type: "subscript";
+  object: Expression;
+  index: Expression;
+}
+
+export interface TupleExpr {
+  type: "tuple";
+  elements: Expression[];
+}
+
+export type SceneNode =
+  | ShapeNode
+  | CSGNode
+  | BlockNode
+  | ForLoopNode
+  | IfNode
+  | SwitchNode
+  | DefineNode;
 
 export interface ShapeNode {
   type: "shape";
@@ -13,18 +77,18 @@ export interface ShapeNode {
 }
 
 export interface ShapeProperties {
-  position?: Vector3;
-  rotation?: Vector3;
-  size?: Vector3;
-  color?: Color;
-  opacity?: number;
+  position?: Vector3 | Expression;
+  rotation?: Vector3 | Expression;
+  size?: Vector3 | Expression;
+  color?: Color | Expression;
+  opacity?: number | Expression;
   // For cylinder/cone specific properties
-  radiusTop?: number;
-  radiusBottom?: number;
-  height?: number;
+  radiusTop?: number | Expression;
+  radiusBottom?: number | Expression;
+  height?: number | Expression;
   // For torus
-  innerRadius?: number;
-  outerRadius?: number;
+  innerRadius?: number | Expression;
+  outerRadius?: number | Expression;
 }
 
 export interface CSGNode {
@@ -41,11 +105,29 @@ export interface BlockNode {
 export interface ForLoopNode {
   type: "for";
   variable: string;
-  from: number;
-  to: number;
-  step?: number;
+  from: Expression | number;
+  to: Expression | number;
+  step?: Expression | number;
+  iterableValues?: Expression; // For "for i in values"
   body: SceneNode[];
   transforms?: TransformNode[];
+}
+
+export interface IfNode {
+  type: "if";
+  condition: Expression;
+  thenBody: SceneNode[];
+  elseBody?: SceneNode[];
+}
+
+export interface SwitchNode {
+  type: "switch";
+  value: Expression;
+  cases: Array<{
+    values: Expression[];
+    body: SceneNode[];
+  }>;
+  defaultCase?: SceneNode[];
 }
 
 export interface TransformNode {
@@ -56,8 +138,7 @@ export interface TransformNode {
 export interface DefineNode {
   type: "define";
   name: string;
-  options: Record<string, any>;
-  body: SceneNode[];
+  value: Expression;
 }
 
 // Token types for the lexer
@@ -78,7 +159,13 @@ export enum TokenType {
 
   // Control Flow
   FOR = "FOR",
+  IN = "IN",
   TO = "TO",
+  STEP = "STEP",
+  IF = "IF",
+  ELSE = "ELSE",
+  SWITCH = "SWITCH",
+  CASE = "CASE",
   DEFINE = "DEFINE",
   OPTION = "OPTION",
 
@@ -97,6 +184,27 @@ export enum TokenType {
   IDENTIFIER = "IDENTIFIER",
   STRING = "STRING",
 
+  // Operators
+  PLUS = "PLUS",
+  MINUS = "MINUS",
+  STAR = "STAR",
+  DIVIDE = "DIVIDE",
+  PERCENT = "PERCENT",
+  LPAREN = "LPAREN",
+  RPAREN = "RPAREN",
+  LBRACKET = "LBRACKET",
+  RBRACKET = "RBRACKET",
+  DOT = "DOT",
+  EQUALS = "EQUALS",
+  NOT_EQUALS = "NOT_EQUALS",
+  LESS = "LESS",
+  LESS_EQUAL = "LESS_EQUAL",
+  GREATER = "GREATER",
+  GREATER_EQUAL = "GREATER_EQUAL",
+  AND = "AND",
+  OR = "OR",
+  NOT = "NOT",
+
   // Symbols
   LBRACE = "LBRACE",
   RBRACE = "RBRACE",
@@ -114,6 +222,7 @@ export interface Token {
   value: string | number;
   line: number;
   column: number;
+  precedingWhitespace?: boolean; // True if whitespace came before this token
 }
 
 export class ParseError extends Error {

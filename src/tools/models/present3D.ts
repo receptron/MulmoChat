@@ -12,7 +12,7 @@ const toolDefinition = {
   type: "function" as const,
   name: toolName,
   description:
-    "Display interactive 3D visualizations using ShapeScript language.",
+    "Display interactive 3D visualizations using the full ShapeScript language with expressions, variables, control flow, and functions.",
   parameters: {
     type: "object" as const,
     properties: {
@@ -22,48 +22,129 @@ const toolDefinition = {
       },
       script: {
         type: "string",
-        description: `ShapeScript code defining the 3D scene.
+        description: `ShapeScript code defining the 3D scene. Full language features supported.
 
-CRITICAL SYNTAX RULES - READ CAREFULLY:
-1. ONLY use literal numbers: 1, 2.5, -3.14
-2. NO parentheses, NO math operators (+ - * /), NO variables (i), NO functions
-3. For loops: ALL objects get IDENTICAL property values
-4. For loops automatically rotate objects around Y-axis for circular patterns
-5. For objects in different positions, write them manually (NOT in a loop)
-6. Comments start with // (e.g., // This is a comment)
+## SYNTAX OVERVIEW:
 
-WRONG - DO NOT USE:
-cylinder { position (i*1.5-2.25) 0 0 }  // ERROR: NO expressions!
-cube { size 2+3 1 1 }  // ERROR: NO operators!
-sphere { position i 0 0 }  // ERROR: NO variables!
+### Expressions & Operators:
+- Arithmetic: +, -, *, /, % with proper precedence
+- Comparison: =, <>, <, <=, >, >=
+- Boolean: and, or, not
+- Parentheses for grouping: (2 + 3) * 4
 
-CORRECT EXAMPLES:
+### Variables:
+define radius 2
+define red (1 0 0)
+sphere { size radius color red }
 
-Simple objects:
-sphere { color 1 0 0 size 2 }
-cube { position -2 0 0 color 1 0 0 }
+### Control Flow:
 
-Ring pattern (for loops create circles):
-for i to 12 {
-    cube { position 3 0 0 size 0.5 color 1 0.5 0 }
+For loops with variables:
+for i in 1 to 5 {
+    cube { position (i * 2) 0 0 size 1 }
 }
 
-Objects in a row (write manually, NOT with loops):
-cylinder { position -2.25 0 0 size 0.4 1 color 0.8 0.8 0.8 }
-cylinder { position -0.75 0 0 size 0.4 1 color 0.8 0.8 0.8 }
-cylinder { position 0.75 0 0 size 0.4 1 color 0.8 0.8 0.8 }
-cylinder { position 2.25 0 0 size 0.4 1 color 0.8 0.8 0.8 }
+For loops with step:
+for i in 0 to 10 step 2 {
+    sphere { position 0 i 0 }
+}
 
-CSG operations:
+If/else conditionals:
+define showSphere 1
+if showSphere {
+    sphere { size 2 }
+} else {
+    cube { size 2 }
+}
+
+Switch statements:
+define shape 2
+switch shape {
+case 1
+    cube
+case 2
+    sphere
+else
+    cone
+}
+
+### Built-in Functions:
+
+Math: round, floor, ceil, abs, sign, sqrt, pow, min, max
+Trig: sin, cos, tan, asin, acos, atan, atan2 (uses radians)
+Vector: dot, cross, length, normalize, sum
+
+IMPORTANT: Function calls require NO space between name and parenthesis:
+- sin(x) ✓ function call
+- sin (x) ✗ NOT a function call (identifier + parenthesized expression)
+
+Examples:
+for i in 1 to 8 {
+    define angle (i * 0.785)  // 45 degrees in radians
+    cube { position (cos(angle) * 3) 0 (sin(angle) * 3) }
+}
+
+### Primitives & Properties:
+
+Shapes: cube, sphere, cylinder, cone, torus
+Properties: position X Y Z, rotation X Y Z, size X Y Z
+Materials: color R G B (0-1), opacity (0-1)
+
+### CSG Operations:
+union, difference, intersection, xor, stencil
+
+Example:
 difference {
-    sphere { color 1 0.5 0 size 2 }
-    sphere { size 1.8 }
+    sphere { size 2 color (1 0.5 0) }
+    cube { size 1.5 }
 }
 
-Primitives: cube, sphere, cylinder, cone, torus
-CSG: union, difference, intersection, xor
-Transforms: position X Y Z, rotation X Y Z (radians), size X Y Z
-Materials: color R G B (0-1), opacity (0-1)`,
+### Comments:
+// Single-line comment
+/* Multi-line
+   comment */
+
+## COMPLETE EXAMPLES:
+
+Linear arrangement with expressions:
+define spacing 1.5
+for i in 1 to 4 {
+    cylinder { position ((i - 2.5) * spacing) 0 0 size 0.4 1 }
+}
+
+Circular pattern:
+define count 12
+for i in 1 to count {
+    define angle ((i / count) * 6.283)  // 2 * PI
+    cube {
+        position (cos(angle) * 3) 0 (sin(angle) * 3)
+        color (i / count) 0.5 (1 - i / count)
+        size 0.5
+    }
+}
+
+Conditional geometry:
+define makeHollow 1
+if makeHollow {
+    difference {
+        sphere { size 2 color (1 0 0) }
+        sphere { size 1.7 }
+    }
+} else {
+    sphere { size 2 color (1 0 0) }
+}
+
+Mathematical visualization:
+for x in -5 to 5 {
+    for z in -5 to 5 {
+        define height (sin(x * 0.5) * cos(z * 0.5) * 2)
+        cube {
+            position (x * 0.3) height (z * 0.3)
+            size 0.25 (abs(height) + 0.1) 0.25
+            color (0.5 + height * 0.25) 0.3 (0.5 - height * 0.25)
+        }
+    }
+}`,
       },
     },
     required: ["title", "script"],
@@ -109,32 +190,77 @@ export const plugin: ToolPlugin = {
 - Game boards or 3D game states
 - Any spatial or geometric concepts
 
-CRITICAL ShapeScript Syntax Rules - MUST FOLLOW:
-1. ONLY literal numbers allowed: 1, 2.5, -3.14
-2. NEVER use: parentheses (), math operators (+ - * /), variables (i), functions (cos, sin, rand)
-3. For loops: ALL objects get IDENTICAL properties - same position, same color, same size
-4. For loops automatically rotate objects to create circular patterns
-5. For objects at different positions: write each one separately (NOT in a loop)
-6. Comments start with // (e.g., // Red sphere)
+## ShapeScript Language Features (FULL SUPPORT):
 
-WRONG - NEVER DO THIS:
-- cylinder { position (i*1.5-2.25) 0 0 }  // NO expressions!
-- cube { size 2+3 1 1 }  // NO operators!
-- sphere { position i 0 0 }  // NO variable i!
-- for i to 4 { cube { position i 0 0 } }  // NO variable usage!
+### Variables & Expressions:
+- Define variables: define radius 2, define spacing 1.5
+- Use expressions: position (i * 2) 0 0, size (radius * 1.5)
+- Math operators: +, -, *, /, % with proper precedence
+- Parentheses for grouping: (2 + 3) * 4
 
-CORRECT - DO THIS:
-- Ring: "for i to 12 { cube { position 3 0 0 color 1 0 0 } }"  (12 identical red cubes in circle)
-- Row: Write each cylinder separately with different literal numbers:
-  cylinder { position -2.25 0 0 size 0.4 1 }
-  cylinder { position -0.75 0 0 size 0.4 1 }
-  cylinder { position 0.75 0 0 size 0.4 1 }
-  cylinder { position 2.25 0 0 size 0.4 1 }
+### Control Flow:
 
-Primitives: cube, sphere, cylinder, cone, torus
-Properties: position X Y Z, rotation X Y Z, size X Y Z, color R G B, opacity
-CSG: difference, union, intersection, xor
-Colors: RGB 0-1 range (color 1 0 0 = red, color 0 1 0 = green)
+For loops with variables (use loop variable in calculations):
+for i in 1 to 5 {
+    cube { position (i * 2 - 6) 0 0 size 1 }
+}
 
-Keep visualizations clear and well-organized.`,
+For loops with step:
+for i in 0 to 10 step 2 {
+    sphere { position 0 i 0 }
+}
+
+If/else conditionals:
+if x > 0 {
+    sphere
+} else {
+    cube
+}
+
+Switch statements for multiple cases
+
+### Built-in Functions:
+- Math: round, floor, ceil, abs, sign, sqrt, pow, min, max
+- Trig: sin, cos, tan, asin, acos, atan, atan2 (radians!)
+- Vector: dot, cross, length, normalize, sum
+
+CRITICAL: Function calls require NO space between name and (
+- sin(x) ✓ correct
+- sin (x) ✗ wrong - this is NOT a function call!
+
+### Best Practices:
+1. Use variables for repeated values
+2. Use loop variables (i) for positioning and calculations
+3. Use trig functions for circular/spiral patterns
+4. Use conditionals for parametric designs
+5. Keep code readable with meaningful variable names
+
+### Common Patterns:
+
+Linear arrangement:
+for i in 1 to 5 {
+    cube { position (i * 2) 0 0 }
+}
+
+Circular pattern:
+define count 12
+for i in 1 to count {
+    define angle ((i / count) * 6.283)
+    cube { position (cos(angle) * 3) 0 (sin(angle) * 3) }
+}
+
+Parametric surface:
+for x in -5 to 5 {
+    for z in -5 to 5 {
+        define y (sin(x * 0.5) * cos(z * 0.5))
+        cube { position (x * 0.3) y (z * 0.3) size 0.2 }
+    }
+}
+
+### Primitives & CSG:
+Shapes: cube, sphere, cylinder, cone, torus
+CSG: union, difference, intersection, xor, stencil
+Properties: position, rotation, size, color, opacity
+
+Keep visualizations clear, well-organized, and leverage the full power of expressions and control flow.`,
 };

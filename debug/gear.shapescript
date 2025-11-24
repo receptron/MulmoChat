@@ -1,0 +1,26 @@
+define teeth 12
+define gearRadius 2
+define gearHeight 0.5
+
+difference {
+    // The main disk of the gear
+    cylinder { 
+        size (gearRadius * 2) gearHeight (gearRadius * 2)
+        color 0.4 0.6 0.8 
+    }
+
+    // Subtracting cubes around the edge to create the teeth pattern
+    for i in 1 to teeth {
+        define angle ((i / teeth) * 6.283) // 2 * PI
+        cube {
+            position (cos(angle) * gearRadius) 0 (sin(angle) * gearRadius)
+            rotation 0 (angle * -57.296) 0 // Convert radians to degrees for rotation
+            size 0.6 1 0.6
+        }
+    }
+    
+    // Adding a hole in the center for the axle
+    cylinder {
+        size 0.8 1 0.8
+    }
+}

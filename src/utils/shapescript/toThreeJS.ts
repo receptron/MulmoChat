@@ -1,12 +1,24 @@
 import * as THREE from "three";
 import {
   Brush,
-  Evaluator,
+  Evaluator as CSGEvaluator,
   ADDITION,
   SUBTRACTION,
   INTERSECTION,
 } from "three-bvh-csg";
-import { SceneNode, ShapeNode, CSGNode, ForLoopNode } from "./types";
+import {
+  SceneNode,
+  ShapeNode,
+  CSGNode,
+  ForLoopNode,
+  IfNode,
+  SwitchNode,
+  DefineNode,
+  Expression,
+  Vector3,
+  Color,
+} from "./types";
+import { Evaluator, SymbolTable } from "./evaluator";
 
 export interface ConversionOptions {
   wireframe?: boolean;
@@ -14,9 +26,13 @@ export interface ConversionOptions {
 
 export class Converter {
   private options: ConversionOptions;
+  private evaluator: Evaluator;
+  private symbols: SymbolTable;
 
   constructor(options: ConversionOptions = {}) {
     this.options = options;
+    this.symbols = new SymbolTable();
+    this.evaluator = new Evaluator(this.symbols);
   }
 
   convert(nodes: SceneNode[]): THREE.Group {
@@ -42,6 +58,13 @@ export class Converter {
         return this.convertBlock(node);
       case "for":
         return this.convertForLoop(node);
+      case "if":
+        return this.convertIf(node);
+      case "switch":
+        return this.convertSwitch(node);
+      case "define":
+        this.handleDefine(node);
+        return null; // Define doesn't create geometry
       default:
         return null;
     }
@@ -50,12 +73,18 @@ export class Converter {
   private convertBlock(node: { children: SceneNode[] }): THREE.Group {
     const group = new THREE.Group();
 
+    // Create new scope for block
+    this.symbols.pushScope();
+
     for (const child of node.children) {
       const object = this.convertNode(child);
       if (object) {
         group.add(object);
       }
     }
+
+    // Pop scope
+    this.symbols.popScope();
 
     return group;
   }
@@ -65,13 +94,15 @@ export class Converter {
     const material = this.createMaterial(node);
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Apply transforms
+    // Apply transforms (evaluate expressions)
     if (node.properties.position) {
-      mesh.position.set(...node.properties.position);
+      const pos = this.evaluateVector3(node.properties.position);
+      mesh.position.set(...pos);
     }
 
     if (node.properties.rotation) {
-      mesh.rotation.set(...node.properties.rotation);
+      const rot = this.evaluateVector3(node.properties.rotation);
+      mesh.rotation.set(...rot);
     }
 
     // Note: size is already baked into geometry, don't apply as scale
@@ -80,7 +111,11 @@ export class Converter {
   }
 
   private createGeometry(node: ShapeNode): THREE.BufferGeometry {
-    let size = node.properties.size || [1, 1, 1];
+    let size: Vector3 = [1, 1, 1];
+
+    if (node.properties.size) {
+      size = this.evaluateVector3(node.properties.size);
+    }
 
     // If only one dimension specified (others are 0), make it uniform
     if (size[1] === 0 && size[2] === 0 && size[0] !== 0) {
@@ -95,21 +130,33 @@ export class Converter {
         return new THREE.SphereGeometry(size[0], 32, 32);
 
       case "cylinder": {
-        const radiusTop = node.properties.radiusTop ?? size[0];
-        const radiusBottom = node.properties.radiusBottom ?? size[0];
-        const height = node.properties.height ?? size[1];
+        const radiusTop = node.properties.radiusTop
+          ? this.evaluateNumber(node.properties.radiusTop)
+          : size[0];
+        const radiusBottom = node.properties.radiusBottom
+          ? this.evaluateNumber(node.properties.radiusBottom)
+          : size[0];
+        const height = node.properties.height
+          ? this.evaluateNumber(node.properties.height)
+          : size[1];
         return new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 32);
       }
 
       case "cone": {
         const radius = size[0];
-        const height = node.properties.height ?? size[1];
+        const height = node.properties.height
+          ? this.evaluateNumber(node.properties.height)
+          : size[1];
         return new THREE.ConeGeometry(radius, height, 32);
       }
 
       case "torus": {
-        const outerRadius = node.properties.outerRadius ?? size[0];
-        const innerRadius = node.properties.innerRadius ?? 0.4;
+        const outerRadius = node.properties.outerRadius
+          ? this.evaluateNumber(node.properties.outerRadius)
+          : size[0];
+        const innerRadius = node.properties.innerRadius
+          ? this.evaluateNumber(node.properties.innerRadius)
+          : 0.4;
         return new THREE.TorusGeometry(outerRadius, innerRadius, 16, 32);
       }
 
@@ -120,18 +167,18 @@ export class Converter {
 
   private createMaterial(node: ShapeNode): THREE.Material {
     const color = node.properties.color
-      ? new THREE.Color(
-          node.properties.color[0],
-          node.properties.color[1],
-          node.properties.color[2],
-        )
-      : new THREE.Color(0.8, 0.8, 0.8);
+      ? this.evaluateColor(node.properties.color)
+      : [0.8, 0.8, 0.8];
 
-    const opacity = node.properties.opacity ?? 1;
+    const threeColor = new THREE.Color(color[0], color[1], color[2]);
+
+    const opacity = node.properties.opacity
+      ? this.evaluateNumber(node.properties.opacity)
+      : 1;
     const transparent = opacity < 1;
 
     return new THREE.MeshStandardMaterial({
-      color,
+      color: threeColor,
       opacity,
       transparent,
       wireframe: this.options.wireframe ?? false,
@@ -144,7 +191,7 @@ export class Converter {
     }
 
     try {
-      const evaluator = new Evaluator();
+      const csgEvaluator = new CSGEvaluator();
 
       // Convert all children to meshes
       const meshes: THREE.Mesh[] = [];
@@ -189,32 +236,32 @@ export class Converter {
 
         switch (node.operation) {
           case "union":
-            result = evaluator.evaluate(result, brush, ADDITION);
+            result = csgEvaluator.evaluate(result, brush, ADDITION);
             break;
           case "difference":
-            result = evaluator.evaluate(result, brush, SUBTRACTION);
+            result = csgEvaluator.evaluate(result, brush, SUBTRACTION);
             break;
           case "intersection":
-            result = evaluator.evaluate(result, brush, INTERSECTION);
+            result = csgEvaluator.evaluate(result, brush, INTERSECTION);
             break;
           case "xor": {
             // XOR = (A - B) + (B - A)
-            const aMinusB = evaluator.evaluate(
+            const aMinusB = csgEvaluator.evaluate(
               result.clone(),
               brush.clone(),
               SUBTRACTION,
             );
-            const bMinusA = evaluator.evaluate(
+            const bMinusA = csgEvaluator.evaluate(
               brush.clone(),
               result.clone(),
               SUBTRACTION,
             );
-            result = evaluator.evaluate(aMinusB, bMinusA, ADDITION);
+            result = csgEvaluator.evaluate(aMinusB, bMinusA, ADDITION);
             break;
           }
           case "stencil":
-            // Stencil keeps shape of first but uses material of intersection
-            result = evaluator.evaluate(result, brush, INTERSECTION);
+            // Stencil keeps shape of first but 'paints' the intersecting areas
+            result = csgEvaluator.evaluate(result, brush, INTERSECTION);
             break;
         }
       }
@@ -244,35 +291,198 @@ export class Converter {
   private convertForLoop(node: ForLoopNode): THREE.Group {
     const group = new THREE.Group();
 
-    const from = node.from;
-    const to = node.to;
-    const step = node.step ?? 1;
+    // Create new scope for loop
+    this.symbols.pushScope();
 
-    for (let i = from; i <= to; i += step) {
-      // Create a sub-group for this iteration
-      const iterationGroup = new THREE.Group();
+    // Check if it's a values iteration or range iteration
+    if (node.iterableValues) {
+      // for i in values
+      const values = this.evaluator.evaluate(node.iterableValues);
+      const valueArray = Array.isArray(values) ? values : [values];
 
-      // Convert body nodes
-      for (const bodyNode of node.body) {
-        const object = this.convertNode(bodyNode);
-        if (object) {
-          iterationGroup.add(object);
+      for (let idx = 0; idx < valueArray.length; idx++) {
+        this.symbols.set(node.variable, valueArray[idx]);
+
+        // Convert body nodes
+        for (const bodyNode of node.body) {
+          const object = this.convertNode(bodyNode);
+          if (object) {
+            group.add(object);
+          }
+        }
+      }
+    } else {
+      // for i in from to to
+      const from = this.evaluateNumber(node.from);
+      const to = this.evaluateNumber(node.to);
+      const step = node.step ? this.evaluateNumber(node.step) : 1;
+
+      // Determine iteration direction
+      const iterations: number[] = [];
+      if (step > 0) {
+        for (let i = from; i <= to; i += step) {
+          iterations.push(i);
+        }
+      } else if (step < 0) {
+        for (let i = from; i >= to; i += step) {
+          iterations.push(i);
         }
       }
 
-      // Apply rotation for circular patterns
-      // This is a common use case: rotating objects around origin
-      // The rotation is calculated as a fraction of a full circle
-      if (to > from) {
-        const fraction = (i - from) / (to - from + 1);
-        const angle = fraction * Math.PI * 2;
-        iterationGroup.rotation.y = angle;
-      }
+      for (let idx = 0; idx < iterations.length; idx++) {
+        const i = iterations[idx];
+        this.symbols.set(node.variable, i);
 
-      group.add(iterationGroup);
+        // Create a sub-group for this iteration
+        const iterationGroup = new THREE.Group();
+
+        // Convert body nodes
+        for (const bodyNode of node.body) {
+          const object = this.convertNode(bodyNode);
+          if (object) {
+            iterationGroup.add(object);
+          }
+        }
+
+        // Apply rotation for circular patterns
+        // This maintains compatibility with the old behavior
+        if (iterations.length > 1) {
+          const fraction = idx / iterations.length;
+          const angle = fraction * Math.PI * 2;
+          iterationGroup.rotation.y = angle;
+        }
+
+        group.add(iterationGroup);
+      }
     }
 
+    // Pop scope
+    this.symbols.popScope();
+
     return group;
+  }
+
+  private convertIf(node: IfNode): THREE.Group {
+    const group = new THREE.Group();
+
+    // Evaluate condition
+    const condition = this.evaluator.evaluateToBoolean(node.condition);
+
+    // Create new scope
+    this.symbols.pushScope();
+
+    if (condition) {
+      // Execute then body
+      for (const child of node.thenBody) {
+        const object = this.convertNode(child);
+        if (object) {
+          group.add(object);
+        }
+      }
+    } else if (node.elseBody) {
+      // Execute else body
+      for (const child of node.elseBody) {
+        const object = this.convertNode(child);
+        if (object) {
+          group.add(object);
+        }
+      }
+    }
+
+    // Pop scope
+    this.symbols.popScope();
+
+    return group;
+  }
+
+  private convertSwitch(node: SwitchNode): THREE.Group {
+    const group = new THREE.Group();
+
+    // Evaluate switch value
+    const switchValue = this.evaluator.evaluate(node.value);
+
+    // Create new scope
+    this.symbols.pushScope();
+
+    let matched = false;
+
+    // Check each case
+    for (const caseNode of node.cases) {
+      for (const caseValue of caseNode.values) {
+        const evalCaseValue = this.evaluator.evaluate(caseValue);
+
+        // Simple equality check
+        if (this.valuesEqual(switchValue, evalCaseValue)) {
+          // Execute case body
+          for (const child of caseNode.body) {
+            const object = this.convertNode(child);
+            if (object) {
+              group.add(object);
+            }
+          }
+          matched = true;
+          break;
+        }
+      }
+
+      if (matched) break;
+    }
+
+    // If no case matched, execute default case
+    if (!matched && node.defaultCase) {
+      for (const child of node.defaultCase) {
+        const object = this.convertNode(child);
+        if (object) {
+          group.add(object);
+        }
+      }
+    }
+
+    // Pop scope
+    this.symbols.popScope();
+
+    return group;
+  }
+
+  private handleDefine(node: DefineNode): void {
+    const value = this.evaluator.evaluate(node.value);
+    this.symbols.set(node.name, value);
+  }
+
+  // Helper methods
+
+  private evaluateNumber(value: number | Expression | undefined): number {
+    if (value === undefined) return 0;
+    if (typeof value === "number") return value;
+    return this.evaluator.evaluateToNumber(value);
+  }
+
+  private evaluateVector3(value: Vector3 | Expression | undefined): Vector3 {
+    if (value === undefined) return [0, 0, 0];
+    if (Array.isArray(value) && typeof value[0] === "number") {
+      return value as Vector3;
+    }
+    return this.evaluator.evaluateToVector3(value as Expression);
+  }
+
+  private evaluateColor(value: Color | Expression | undefined): Color {
+    if (value === undefined) return [0.8, 0.8, 0.8];
+    if (Array.isArray(value) && typeof value[0] === "number") {
+      return value as Color;
+    }
+    return this.evaluator.evaluateToColor(value as Expression);
+  }
+
+  private valuesEqual(a: any, b: any): boolean {
+    if (typeof a !== typeof b) return false;
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (!this.valuesEqual(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    return a === b;
   }
 }
 

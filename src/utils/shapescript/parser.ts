@@ -5,6 +5,16 @@ import {
   ShapeNode,
   CSGNode,
   ForLoopNode,
+  IfNode,
+  SwitchNode,
+  DefineNode,
+  Expression,
+  NumberLiteral,
+  IdentifierExpr,
+  BinaryExpr,
+  UnaryExpr,
+  FunctionCall,
+  TupleExpr,
   Vector3,
   Color,
   ParseError,
@@ -42,9 +52,27 @@ class Lexer {
       if (char === " " || char === "\t" || char === "\r") {
         this.advance();
       } else if (char === "/" && this.peek(1) === "/") {
-        // Skip comment
+        // Skip single-line comment
         while (this.peek() && this.peek() !== "\n") {
           this.advance();
+        }
+      } else if (char === "/" && this.peek(1) === "*") {
+        // Skip multi-line comment (with nesting support)
+        this.advance(); // /
+        this.advance(); // *
+        let depth = 1;
+        while (this.pos < this.input.length && depth > 0) {
+          if (this.peek() === "/" && this.peek(1) === "*") {
+            depth++;
+            this.advance();
+            this.advance();
+          } else if (this.peek() === "*" && this.peek(1) === "/") {
+            depth--;
+            this.advance();
+            this.advance();
+          } else {
+            this.advance();
+          }
         }
       } else {
         break;
@@ -57,7 +85,7 @@ class Lexer {
     const column = this.column;
     let numStr = "";
 
-    // Handle negative numbers
+    // Handle negative numbers (but be careful about subtraction)
     if (this.peek() === "-") {
       numStr += this.advance();
     }
@@ -111,7 +139,13 @@ class Lexer {
       xor: TokenType.XOR,
       stencil: TokenType.STENCIL,
       for: TokenType.FOR,
+      in: TokenType.IN,
       to: TokenType.TO,
+      step: TokenType.STEP,
+      if: TokenType.IF,
+      else: TokenType.ELSE,
+      switch: TokenType.SWITCH,
+      case: TokenType.CASE,
       define: TokenType.DEFINE,
       option: TokenType.OPTION,
       position: TokenType.POSITION,
@@ -122,6 +156,9 @@ class Lexer {
       rotate: TokenType.ROTATE,
       translate: TokenType.TRANSLATE,
       scale: TokenType.SCALE,
+      and: TokenType.AND,
+      or: TokenType.OR,
+      not: TokenType.NOT,
     };
 
     const type = keywords[id.toLowerCase()] || TokenType.IDENTIFIER;
@@ -138,7 +175,10 @@ class Lexer {
     const tokens: Token[] = [];
 
     while (this.pos < this.input.length) {
+      // Track if we skipped whitespace before this token
+      const startPos = this.pos;
       this.skipWhitespace();
+      const hadWhitespace = this.pos > startPos;
 
       if (this.pos >= this.input.length) break;
 
@@ -149,30 +189,212 @@ class Lexer {
       // Numbers
       if (
         (char >= "0" && char <= "9") ||
-        (char === "-" && this.peek(1) >= "0" && this.peek(1) <= "9")
+        (char === "-" &&
+          this.peek(1) >= "0" &&
+          this.peek(1) <= "9" &&
+          (tokens.length === 0 ||
+            tokens[tokens.length - 1].type === TokenType.LPAREN ||
+            tokens[tokens.length - 1].type === TokenType.COMMA ||
+            tokens[tokens.length - 1].type === TokenType.LBRACE ||
+            tokens[tokens.length - 1].type === TokenType.LBRACKET ||
+            this.isOperator(tokens[tokens.length - 1].type)))
       ) {
-        tokens.push(this.readNumber());
+        const token = this.readNumber();
+        token.precedingWhitespace = hadWhitespace;
+        tokens.push(token);
       }
       // Identifiers and keywords
       else if ((char >= "a" && char <= "z") || (char >= "A" && char <= "Z")) {
-        tokens.push(this.readIdentifier());
+        const token = this.readIdentifier();
+        token.precedingWhitespace = hadWhitespace;
+        tokens.push(token);
       }
-      // Symbols
-      else if (char === "{") {
+      // Two-character operators
+      else if (char === "<" && this.peek(1) === ">") {
         this.advance();
-        tokens.push({ type: TokenType.LBRACE, value: "{", line, column });
-      } else if (char === "}") {
         this.advance();
-        tokens.push({ type: TokenType.RBRACE, value: "}", line, column });
-      } else if (char === ",") {
+        tokens.push({
+          type: TokenType.NOT_EQUALS,
+          value: "<>",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "<" && this.peek(1) === "=") {
         this.advance();
-        tokens.push({ type: TokenType.COMMA, value: ",", line, column });
+        this.advance();
+        tokens.push({
+          type: TokenType.LESS_EQUAL,
+          value: "<=",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === ">" && this.peek(1) === "=") {
+        this.advance();
+        this.advance();
+        tokens.push({
+          type: TokenType.GREATER_EQUAL,
+          value: ">=",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      }
+      // Single-character operators and symbols
+      else if (char === "+") {
+        this.advance();
+        tokens.push({
+          type: TokenType.PLUS,
+          value: "+",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "-") {
+        this.advance();
+        tokens.push({
+          type: TokenType.MINUS,
+          value: "-",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "*") {
+        this.advance();
+        tokens.push({
+          type: TokenType.STAR,
+          value: "*",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
       } else if (char === "/") {
         this.advance();
-        tokens.push({ type: TokenType.SLASH, value: "/", line, column });
+        tokens.push({
+          type: TokenType.DIVIDE,
+          value: "/",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "%") {
+        this.advance();
+        tokens.push({
+          type: TokenType.PERCENT,
+          value: "%",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "(") {
+        this.advance();
+        tokens.push({
+          type: TokenType.LPAREN,
+          value: "(",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === ")") {
+        this.advance();
+        tokens.push({
+          type: TokenType.RPAREN,
+          value: ")",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "[") {
+        this.advance();
+        tokens.push({
+          type: TokenType.LBRACKET,
+          value: "[",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "]") {
+        this.advance();
+        tokens.push({
+          type: TokenType.RBRACKET,
+          value: "]",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "{") {
+        this.advance();
+        tokens.push({
+          type: TokenType.LBRACE,
+          value: "{",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "}") {
+        this.advance();
+        tokens.push({
+          type: TokenType.RBRACE,
+          value: "}",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === ",") {
+        this.advance();
+        tokens.push({
+          type: TokenType.COMMA,
+          value: ",",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === ".") {
+        this.advance();
+        tokens.push({
+          type: TokenType.DOT,
+          value: ".",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "=") {
+        this.advance();
+        tokens.push({
+          type: TokenType.EQUALS,
+          value: "=",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === "<") {
+        this.advance();
+        tokens.push({
+          type: TokenType.LESS,
+          value: "<",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
+      } else if (char === ">") {
+        this.advance();
+        tokens.push({
+          type: TokenType.GREATER,
+          value: ">",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
       } else if (char === "\n") {
         this.advance();
-        tokens.push({ type: TokenType.NEWLINE, value: "\n", line, column });
+        tokens.push({
+          type: TokenType.NEWLINE,
+          value: "\n",
+          line,
+          column,
+          precedingWhitespace: hadWhitespace,
+        });
       } else {
         throw new ParseError(`Unexpected character: '${char}'`, line, column);
       }
@@ -183,9 +405,28 @@ class Lexer {
       value: "",
       line: this.line,
       column: this.column,
+      precedingWhitespace: false,
     });
 
     return tokens;
+  }
+
+  private isOperator(type: TokenType): boolean {
+    return (
+      type === TokenType.PLUS ||
+      type === TokenType.MINUS ||
+      type === TokenType.STAR ||
+      type === TokenType.DIVIDE ||
+      type === TokenType.PERCENT ||
+      type === TokenType.EQUALS ||
+      type === TokenType.NOT_EQUALS ||
+      type === TokenType.LESS ||
+      type === TokenType.LESS_EQUAL ||
+      type === TokenType.GREATER ||
+      type === TokenType.GREATER_EQUAL ||
+      type === TokenType.AND ||
+      type === TokenType.OR
+    );
   }
 }
 
@@ -230,31 +471,229 @@ export class Parser {
     }
   }
 
-  private parseNumber(): number {
-    const token = this.expect(TokenType.NUMBER);
-    return token.value as number;
+  // Expression parsing with precedence climbing
+  private parseExpression(minPrec = 0): Expression {
+    let left = this.parsePrimary();
+
+    while (true) {
+      const token = this.current();
+      const prec = this.getPrecedence(token.type);
+
+      if (prec < minPrec) break;
+
+      const operator = this.tokenTypeToOperator(token.type);
+      if (!operator) break;
+
+      this.advance(); // consume operator
+
+      const right = this.parseExpression(prec + 1);
+
+      left = {
+        type: "binary",
+        operator,
+        left,
+        right,
+      };
+    }
+
+    return left;
   }
 
-  private parseVector3(): Vector3 {
-    const x = this.parseNumber();
-    let y = 0;
-    let z = 0;
+  private parsePrimary(): Expression {
+    const token = this.current();
 
-    if (this.current().type === TokenType.NUMBER) {
-      y = this.parseNumber();
-      if (this.current().type === TokenType.NUMBER) {
-        z = this.parseNumber();
+    // Unary operators
+    if (token.type === TokenType.MINUS || token.type === TokenType.NOT) {
+      this.advance();
+      return {
+        type: "unary",
+        operator: token.type === TokenType.MINUS ? "-" : "not",
+        operand: this.parsePrimary(),
+      };
+    }
+
+    // Parenthesized expression or tuple
+    if (token.type === TokenType.LPAREN) {
+      this.advance();
+      const elements: Expression[] = [];
+      elements.push(this.parseExpression());
+
+      // Check if it's a tuple
+      while (this.current().type === TokenType.COMMA) {
+        this.advance();
+        if (this.current().type === TokenType.RPAREN) break;
+        elements.push(this.parseExpression());
+      }
+
+      this.expect(TokenType.RPAREN);
+
+      if (elements.length === 1) {
+        return elements[0]; // Single parenthesized expression
+      } else {
+        return { type: "tuple", elements }; // Tuple
       }
     }
 
-    return [x, y, z];
+    // Number literal
+    if (token.type === TokenType.NUMBER) {
+      this.advance();
+      return {
+        type: "number",
+        value: token.value as number,
+      };
+    }
+
+    // Identifier or function call
+    if (token.type === TokenType.IDENTIFIER) {
+      const name = token.value as string;
+      this.advance();
+
+      // Function call: only if '(' immediately follows with NO space
+      // e.g., "sin(x)" is a function call, but "sin (x)" is not
+      if (
+        this.current().type === TokenType.LPAREN &&
+        !this.current().precedingWhitespace
+      ) {
+        this.advance();
+        const args: Expression[] = [];
+
+        if (this.current().type !== TokenType.RPAREN) {
+          args.push(this.parseExpression());
+
+          while (this.current().type === TokenType.COMMA) {
+            this.advance();
+            if (this.current().type === TokenType.RPAREN) break;
+            args.push(this.parseExpression());
+          }
+        }
+
+        this.expect(TokenType.RPAREN);
+
+        return {
+          type: "call",
+          name,
+          args,
+        };
+      }
+
+      // Simple identifier
+      return {
+        type: "identifier",
+        name,
+      };
+    }
+
+    throw new ParseError(
+      `Unexpected token in expression: ${token.type}`,
+      token.line,
+      token.column,
+    );
   }
 
-  private parseColor(): Color {
-    const r = this.parseNumber();
-    const g = this.parseNumber();
-    const b = this.parseNumber();
-    return [r, g, b];
+  private getPrecedence(type: TokenType): number {
+    switch (type) {
+      case TokenType.OR:
+        return 1;
+      case TokenType.AND:
+        return 2;
+      case TokenType.EQUALS:
+      case TokenType.NOT_EQUALS:
+        return 3;
+      case TokenType.LESS:
+      case TokenType.LESS_EQUAL:
+      case TokenType.GREATER:
+      case TokenType.GREATER_EQUAL:
+        return 4;
+      case TokenType.PLUS:
+      case TokenType.MINUS:
+        return 5;
+      case TokenType.STAR:
+      case TokenType.DIVIDE:
+      case TokenType.PERCENT:
+        return 6;
+      default:
+        return 0;
+    }
+  }
+
+  private tokenTypeToOperator(type: TokenType): string | null {
+    switch (type) {
+      case TokenType.PLUS:
+        return "+";
+      case TokenType.MINUS:
+        return "-";
+      case TokenType.STAR:
+        return "*";
+      case TokenType.DIVIDE:
+        return "/";
+      case TokenType.PERCENT:
+        return "%";
+      case TokenType.EQUALS:
+        return "=";
+      case TokenType.NOT_EQUALS:
+        return "<>";
+      case TokenType.LESS:
+        return "<";
+      case TokenType.LESS_EQUAL:
+        return "<=";
+      case TokenType.GREATER:
+        return ">";
+      case TokenType.GREATER_EQUAL:
+        return ">=";
+      case TokenType.AND:
+        return "and";
+      case TokenType.OR:
+        return "or";
+      default:
+        return null;
+    }
+  }
+
+  // Parse vector or expression
+  // Handles both: "x y z" (space-separated) and "(x, y, z)" (tuple)
+  private parseVectorOrExpression(): Vector3 | Expression {
+    const first = this.parseExpression();
+
+    // Check if there are more expressions following (space-separated values)
+    // Look ahead to see if next token could be part of a vector
+    const nextToken = this.current();
+    const canBeVectorComponent =
+      nextToken.type === TokenType.NUMBER ||
+      nextToken.type === TokenType.IDENTIFIER ||
+      nextToken.type === TokenType.MINUS ||
+      nextToken.type === TokenType.LPAREN;
+
+    if (canBeVectorComponent && nextToken.type !== TokenType.COMMA) {
+      // Parse space-separated values: x y z
+      const elements: Expression[] = [first];
+
+      // Parse up to 2 more values
+      for (let i = 0; i < 2; i++) {
+        const token = this.current();
+        if (
+          token.type === TokenType.NUMBER ||
+          token.type === TokenType.IDENTIFIER ||
+          token.type === TokenType.MINUS ||
+          token.type === TokenType.LPAREN
+        ) {
+          elements.push(this.parseExpression());
+        } else {
+          break;
+        }
+      }
+
+      if (elements.length > 1) {
+        return { type: "tuple", elements };
+      }
+    }
+
+    // If it's already a tuple, return it
+    if (first.type === "tuple") {
+      return first;
+    }
+
+    // Single expression
+    return first;
   }
 
   private parseProperties(): Record<string, any> {
@@ -271,27 +710,27 @@ export class Parser {
       switch (token.type) {
         case TokenType.POSITION:
           this.advance();
-          properties.position = this.parseVector3();
+          properties.position = this.parseVectorOrExpression();
           break;
 
         case TokenType.ROTATION:
           this.advance();
-          properties.rotation = this.parseVector3();
+          properties.rotation = this.parseVectorOrExpression();
           break;
 
         case TokenType.SIZE:
           this.advance();
-          properties.size = this.parseVector3();
+          properties.size = this.parseVectorOrExpression();
           break;
 
         case TokenType.COLOR:
           this.advance();
-          properties.color = this.parseColor();
+          properties.color = this.parseVectorOrExpression();
           break;
 
         case TokenType.OPACITY:
           this.advance();
-          properties.opacity = this.parseNumber();
+          properties.opacity = this.parseExpression();
           break;
 
         case TokenType.RBRACE:
@@ -368,31 +807,212 @@ export class Parser {
     this.advance(); // consume 'for'
 
     let variable = "i";
-    let from = 1;
-    let to = 1;
 
-    // Parse: for <identifier>? <from>? to <to>
+    // Parse: for <identifier> in <expr> to <expr>
+    // or: for <identifier> in <expr>
     if (this.current().type === TokenType.IDENTIFIER) {
       variable = this.current().value as string;
       this.advance();
     }
 
-    // Optional 'from' value
+    // Check for 'in' keyword
+    if (this.current().type === TokenType.IN) {
+      this.advance();
+
+      const fromExpr = this.parseExpression();
+
+      // Check if there's a 'to' keyword (range) or not (values)
+      if (this.current().type === TokenType.TO) {
+        this.advance();
+        const toExpr = this.parseExpression();
+
+        // Optional step
+        let stepExpr: Expression | undefined;
+        if (this.current().type === TokenType.STEP) {
+          this.advance();
+          stepExpr = this.parseExpression();
+        }
+
+        const body = this.parseBlock();
+
+        return {
+          type: "for",
+          variable,
+          from: fromExpr,
+          to: toExpr,
+          step: stepExpr,
+          body,
+        };
+      } else {
+        // for i in values
+        const body = this.parseBlock();
+
+        return {
+          type: "for",
+          variable,
+          from: { type: "number", value: 0 },
+          to: { type: "number", value: 0 },
+          iterableValues: fromExpr,
+          body,
+        };
+      }
+    }
+
+    // Old syntax: for <from>? to <to>
+    let fromExpr: Expression = { type: "number", value: 1 };
     if (this.current().type === TokenType.NUMBER) {
-      from = this.parseNumber();
+      fromExpr = this.parseExpression();
     }
 
     this.expect(TokenType.TO);
-    to = this.parseNumber();
+    const toExpr = this.parseExpression();
 
     const body = this.parseBlock();
 
     return {
       type: "for",
       variable,
-      from,
-      to,
+      from: fromExpr,
+      to: toExpr,
       body,
+    };
+  }
+
+  private parseIf(): IfNode {
+    this.advance(); // consume 'if'
+
+    const condition = this.parseExpression();
+    const thenBody = this.parseBlock();
+
+    let elseBody: SceneNode[] | undefined;
+
+    this.skipNewlines();
+
+    if (this.current().type === TokenType.ELSE) {
+      this.advance();
+      this.skipNewlines();
+
+      // Check for 'else if'
+      if (this.current().type === TokenType.IF) {
+        elseBody = [this.parseIf()];
+      } else {
+        elseBody = this.parseBlock();
+      }
+    }
+
+    return {
+      type: "if",
+      condition,
+      thenBody,
+      elseBody,
+    };
+  }
+
+  private parseSwitch(): SwitchNode {
+    this.advance(); // consume 'switch'
+
+    const value = this.parseExpression();
+
+    this.expect(TokenType.LBRACE);
+    this.skipNewlines();
+
+    const cases: Array<{ values: Expression[]; body: SceneNode[] }> = [];
+    let defaultCase: SceneNode[] | undefined;
+
+    while (
+      this.current().type !== TokenType.RBRACE &&
+      this.current().type !== TokenType.EOF
+    ) {
+      if (this.current().type === TokenType.CASE) {
+        this.advance();
+
+        const caseValues: Expression[] = [];
+        caseValues.push(this.parseExpression());
+
+        // Multiple values for same case
+        while (
+          this.current().type !== TokenType.NEWLINE &&
+          this.current().type !== TokenType.LBRACE &&
+          this.current().type !== TokenType.EOF
+        ) {
+          caseValues.push(this.parseExpression());
+        }
+
+        this.skipNewlines();
+
+        // Case body can be a block or statements until next case
+        let caseBody: SceneNode[];
+        if (this.current().type === TokenType.LBRACE) {
+          caseBody = this.parseBlock();
+        } else {
+          caseBody = [];
+          while (
+            this.current().type !== TokenType.CASE &&
+            this.current().type !== TokenType.ELSE &&
+            this.current().type !== TokenType.RBRACE &&
+            this.current().type !== TokenType.EOF
+          ) {
+            const node = this.parseNode();
+            if (node) caseBody.push(node);
+            this.skipNewlines();
+          }
+        }
+
+        cases.push({ values: caseValues, body: caseBody });
+      } else if (this.current().type === TokenType.ELSE) {
+        this.advance();
+        this.skipNewlines();
+
+        if (this.current().type === TokenType.LBRACE) {
+          defaultCase = this.parseBlock();
+        } else {
+          defaultCase = [];
+          while (
+            this.current().type !== TokenType.CASE &&
+            this.current().type !== TokenType.RBRACE &&
+            this.current().type !== TokenType.EOF
+          ) {
+            const node = this.parseNode();
+            if (node) defaultCase.push(node);
+            this.skipNewlines();
+          }
+        }
+      } else {
+        this.skipNewlines();
+        if (
+          this.current().type !== TokenType.CASE &&
+          this.current().type !== TokenType.ELSE &&
+          this.current().type !== TokenType.RBRACE
+        ) {
+          this.advance(); // skip unexpected token
+        }
+      }
+
+      this.skipNewlines();
+    }
+
+    this.expect(TokenType.RBRACE);
+
+    return {
+      type: "switch",
+      value,
+      cases,
+      defaultCase,
+    };
+  }
+
+  private parseDefine(): DefineNode {
+    this.advance(); // consume 'define'
+
+    const nameToken = this.expect(TokenType.IDENTIFIER);
+    const name = nameToken.value as string;
+
+    const value = this.parseExpression();
+
+    return {
+      type: "define",
+      name,
+      value,
     };
   }
 
@@ -426,6 +1046,15 @@ export class Parser {
 
       case TokenType.FOR:
         return this.parseForLoop();
+
+      case TokenType.IF:
+        return this.parseIf();
+
+      case TokenType.SWITCH:
+        return this.parseSwitch();
+
+      case TokenType.DEFINE:
+        return this.parseDefine();
 
       case TokenType.RBRACE:
       case TokenType.EOF:
