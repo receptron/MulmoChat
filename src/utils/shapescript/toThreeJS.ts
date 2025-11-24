@@ -14,6 +14,10 @@ import {
   IfNode,
   SwitchNode,
   DefineNode,
+  ExtrudeNode,
+  DetailNode,
+  PathNode,
+  PathCommand,
   Expression,
   Vector3,
   Color,
@@ -28,6 +32,7 @@ export class Converter {
   private options: ConversionOptions;
   private evaluator: Evaluator;
   private symbols: SymbolTable;
+  private detailLevel: number = 32; // Default detail level for curved shapes
 
   constructor(options: ConversionOptions = {}) {
     this.options = options;
@@ -65,6 +70,11 @@ export class Converter {
       case "define":
         this.handleDefine(node);
         return null; // Define doesn't create geometry
+      case "extrude":
+        return this.convertExtrude(node);
+      case "detail":
+        this.handleDetail(node);
+        return null; // Detail doesn't create geometry
       default:
         return null;
     }
@@ -127,7 +137,11 @@ export class Converter {
         return new THREE.BoxGeometry(size[0], size[1], size[2]);
 
       case "sphere":
-        return new THREE.SphereGeometry(size[0], 32, 32);
+        return new THREE.SphereGeometry(
+          size[0],
+          this.detailLevel,
+          this.detailLevel,
+        );
 
       case "cylinder": {
         const radiusTop = node.properties.radiusTop
@@ -139,7 +153,12 @@ export class Converter {
         const height = node.properties.height
           ? this.evaluateNumber(node.properties.height)
           : size[1];
-        return new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 32);
+        return new THREE.CylinderGeometry(
+          radiusTop,
+          radiusBottom,
+          height,
+          this.detailLevel,
+        );
       }
 
       case "cone": {
@@ -147,7 +166,7 @@ export class Converter {
         const height = node.properties.height
           ? this.evaluateNumber(node.properties.height)
           : size[1];
-        return new THREE.ConeGeometry(radius, height, 32);
+        return new THREE.ConeGeometry(radius, height, this.detailLevel);
       }
 
       case "torus": {
@@ -157,7 +176,12 @@ export class Converter {
         const innerRadius = node.properties.innerRadius
           ? this.evaluateNumber(node.properties.innerRadius)
           : 0.4;
-        return new THREE.TorusGeometry(outerRadius, innerRadius, 16, 32);
+        return new THREE.TorusGeometry(
+          outerRadius,
+          innerRadius,
+          Math.max(3, Math.floor(this.detailLevel / 2)),
+          this.detailLevel,
+        );
       }
 
       default:
@@ -165,7 +189,7 @@ export class Converter {
     }
   }
 
-  private createMaterial(node: ShapeNode): THREE.Material {
+  private createMaterial(node: ShapeNode | ExtrudeNode): THREE.Material {
     const color = node.properties.color
       ? this.evaluateColor(node.properties.color)
       : [0.8, 0.8, 0.8];
@@ -447,6 +471,161 @@ export class Converter {
   private handleDefine(node: DefineNode): void {
     const value = this.evaluator.evaluate(node.value);
     this.symbols.set(node.name, value);
+  }
+
+  private handleDetail(node: DetailNode): void {
+    this.detailLevel = this.evaluateNumber(node.value);
+  }
+
+  private convertExtrude(node: ExtrudeNode): THREE.Mesh {
+    // Build the 2D shape from the path
+    const shape = node.path
+      ? this.buildPath(node.path)
+      : new THREE.Shape([new THREE.Vector2(0, 0)]);
+
+    // Get extrusion depth from size property
+    const size = node.properties.size
+      ? this.evaluateVector3(node.properties.size)
+      : [1, 1, 1];
+    const depth = size[2] || 1;
+
+    // Create extruded geometry
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth,
+      bevelEnabled: false,
+      curveSegments: Math.max(1, Math.floor(this.detailLevel / 4)),
+    });
+
+    // Create material
+    const material = this.createMaterial(node);
+
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Apply transforms
+    if (node.properties.position) {
+      const pos = this.evaluateVector3(node.properties.position);
+      mesh.position.set(...pos);
+    }
+
+    if (node.properties.rotation) {
+      const rot = this.evaluateVector3(node.properties.rotation);
+      mesh.rotation.set(...rot);
+    }
+
+    return mesh;
+  }
+
+  private buildPath(pathNode: PathNode): THREE.Shape {
+    const shape = new THREE.Shape();
+    let currentX = 0;
+    let currentY = 0;
+    let currentAngle = 0; // In radians
+
+    const processCommand = (command: PathCommand) => {
+      switch (command.type) {
+        case "point": {
+          const x = this.evaluateNumber(command.x);
+          const y = this.evaluateNumber(command.y);
+
+          // Apply current rotation
+          const cos = Math.cos(currentAngle);
+          const sin = Math.sin(currentAngle);
+          const rotatedX = x * cos - y * sin;
+          const rotatedY = x * sin + y * cos;
+
+          currentX += rotatedX;
+          currentY += rotatedY;
+
+          if (shape.curves.length === 0) {
+            shape.moveTo(currentX, currentY);
+          } else {
+            shape.lineTo(currentX, currentY);
+          }
+          break;
+        }
+
+        case "curve": {
+          const x = this.evaluateNumber(command.x);
+          const y = this.evaluateNumber(command.y);
+
+          // Apply current rotation
+          const cos = Math.cos(currentAngle);
+          const sin = Math.sin(currentAngle);
+          const rotatedX = x * cos - y * sin;
+          const rotatedY = x * sin + y * cos;
+
+          currentX += rotatedX;
+          currentY += rotatedY;
+
+          if (command.controlX !== undefined && command.controlY !== undefined) {
+            const cx = this.evaluateNumber(command.controlX);
+            const cy = this.evaluateNumber(command.controlY);
+            const rotatedCX = cx * cos - cy * sin;
+            const rotatedCY = cx * sin + cy * cos;
+            shape.quadraticCurveTo(
+              currentX + rotatedCX,
+              currentY + rotatedCY,
+              currentX,
+              currentY,
+            );
+          } else {
+            shape.lineTo(currentX, currentY);
+          }
+          break;
+        }
+
+        case "rotate": {
+          // In ShapeScript, 1 = 360 degrees = 2π radians
+          const angle = this.evaluateNumber(command.angle);
+          currentAngle += angle * Math.PI * 2;
+          break;
+        }
+
+        case "translate": {
+          const x = this.evaluateNumber(command.x);
+          const y = this.evaluateNumber(command.y);
+          currentX += x;
+          currentY += y;
+          break;
+        }
+
+        case "for": {
+          // Expand for loop
+          this.symbols.pushScope();
+
+          const from = this.evaluateNumber(command.from);
+          const to = this.evaluateNumber(command.to);
+          const step = command.step ? this.evaluateNumber(command.step) : 1;
+
+          const iterations: number[] = [];
+          if (step > 0) {
+            for (let i = from; i <= to; i += step) {
+              iterations.push(i);
+            }
+          } else if (step < 0) {
+            for (let i = from; i >= to; i += step) {
+              iterations.push(i);
+            }
+          }
+
+          for (const i of iterations) {
+            this.symbols.set(command.variable, i);
+            for (const bodyCmd of command.commands) {
+              processCommand(bodyCmd);
+            }
+          }
+
+          this.symbols.popScope();
+          break;
+        }
+      }
+    };
+
+    for (const command of pathNode.commands) {
+      processCommand(command);
+    }
+
+    return shape;
   }
 
   // Helper methods

@@ -67,7 +67,9 @@ export type SceneNode =
   | ForLoopNode
   | IfNode
   | SwitchNode
-  | DefineNode;
+  | DefineNode
+  | ExtrudeNode
+  | DetailNode;
 
 export interface ShapeNode {
   type: "shape";
@@ -141,6 +143,64 @@ export interface DefineNode {
   value: Expression;
 }
 
+export interface DetailNode {
+  type: "detail";
+  value: number | Expression;
+}
+
+export interface ExtrudeNode {
+  type: "extrude";
+  path?: PathNode;
+  properties: ShapeProperties;
+  children?: SceneNode[];
+}
+
+export interface PathNode {
+  type: "path";
+  commands: PathCommand[];
+}
+
+export type PathCommand =
+  | PointCommand
+  | CurveCommand
+  | RotateCommand
+  | TranslateCommand
+  | ForLoopPathCommand;
+
+export interface PointCommand {
+  type: "point";
+  x: number | Expression;
+  y: number | Expression;
+}
+
+export interface CurveCommand {
+  type: "curve";
+  x: number | Expression;
+  y: number | Expression;
+  controlX?: number | Expression;
+  controlY?: number | Expression;
+}
+
+export interface RotateCommand {
+  type: "rotate";
+  angle: number | Expression; // In ShapeScript, 1 = 360 degrees
+}
+
+export interface TranslateCommand {
+  type: "translate";
+  x: number | Expression;
+  y: number | Expression;
+}
+
+export interface ForLoopPathCommand {
+  type: "for";
+  variable: string;
+  from: number | Expression;
+  to: number | Expression;
+  step?: number | Expression;
+  commands: PathCommand[];
+}
+
 // Token types for the lexer
 export enum TokenType {
   // Primitives
@@ -149,6 +209,13 @@ export enum TokenType {
   CYLINDER = "CYLINDER",
   CONE = "CONE",
   TORUS = "TORUS",
+
+  // Builders
+  EXTRUDE = "EXTRUDE",
+  PATH = "PATH",
+  POINT = "POINT",
+  CURVE = "CURVE",
+  DETAIL = "DETAIL",
 
   // CSG Operations
   UNION = "UNION",

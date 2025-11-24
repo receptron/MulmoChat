@@ -8,6 +8,10 @@ import {
   IfNode,
   SwitchNode,
   DefineNode,
+  ExtrudeNode,
+  DetailNode,
+  PathNode,
+  PathCommand,
   Expression,
   Vector3,
   ParseError,
@@ -126,6 +130,11 @@ class Lexer {
       cylinder: TokenType.CYLINDER,
       cone: TokenType.CONE,
       torus: TokenType.TORUS,
+      extrude: TokenType.EXTRUDE,
+      path: TokenType.PATH,
+      point: TokenType.POINT,
+      curve: TokenType.CURVE,
+      detail: TokenType.DETAIL,
       union: TokenType.UNION,
       difference: TokenType.DIFFERENCE,
       intersection: TokenType.INTERSECTION,
@@ -1009,6 +1018,212 @@ export class Parser {
     };
   }
 
+  private parseDetail(): DetailNode {
+    this.advance(); // consume 'detail'
+
+    const value = this.parseExpression();
+
+    return {
+      type: "detail",
+      value,
+    };
+  }
+
+  private parseExtrude(): ExtrudeNode {
+    this.advance(); // consume 'extrude'
+
+    // Parse properties and child nodes in the block
+    this.expect(TokenType.LBRACE);
+    this.skipNewlines();
+
+    const properties: any = {};
+    let path: PathNode | undefined;
+    const children: SceneNode[] = [];
+
+    while (
+      this.current().type !== TokenType.RBRACE &&
+      this.current().type !== TokenType.EOF
+    ) {
+      const token = this.current();
+
+      // Check for path definition
+      if (token.type === TokenType.PATH) {
+        path = this.parsePath();
+        this.skipNewlines();
+        continue;
+      }
+
+      // Check for properties
+      if (
+        token.type === TokenType.SIZE ||
+        token.type === TokenType.COLOR ||
+        token.type === TokenType.OPACITY ||
+        token.type === TokenType.POSITION ||
+        token.type === TokenType.ROTATION
+      ) {
+        const props = this.parseProperties();
+        Object.assign(properties, props);
+        this.skipNewlines();
+        continue;
+      }
+
+      // Otherwise, parse as child node
+      const node = this.parseNode();
+      if (node) {
+        children.push(node);
+      }
+      this.skipNewlines();
+    }
+
+    this.expect(TokenType.RBRACE);
+
+    return {
+      type: "extrude",
+      path,
+      properties,
+      children: children.length > 0 ? children : undefined,
+    };
+  }
+
+  private parsePath(): PathNode {
+    this.advance(); // consume 'path'
+
+    this.expect(TokenType.LBRACE);
+    this.skipNewlines();
+
+    const commands: PathCommand[] = [];
+
+    while (
+      this.current().type !== TokenType.RBRACE &&
+      this.current().type !== TokenType.EOF
+    ) {
+      const token = this.current();
+
+      switch (token.type) {
+        case TokenType.POINT: {
+          this.advance();
+          const x = this.parseExpression();
+          const y = this.parseExpression();
+          commands.push({ type: "point", x, y });
+          break;
+        }
+
+        case TokenType.CURVE: {
+          this.advance();
+          const x = this.parseExpression();
+          const y = this.parseExpression();
+          // Optional control points
+          const controlX = this.current().type === TokenType.NUMBER ? this.parseExpression() : undefined;
+          const controlY = controlX !== undefined ? this.parseExpression() : undefined;
+          commands.push({ type: "curve", x, y, controlX, controlY });
+          break;
+        }
+
+        case TokenType.ROTATE: {
+          this.advance();
+          const angle = this.parseExpression();
+          commands.push({ type: "rotate", angle });
+          break;
+        }
+
+        case TokenType.TRANSLATE: {
+          this.advance();
+          const x = this.parseExpression();
+          const y = this.parseExpression();
+          commands.push({ type: "translate", x, y });
+          break;
+        }
+
+        case TokenType.FOR: {
+          // Handle for loops inside path - expand them inline
+          this.advance(); // consume 'for'
+
+          const variable = this.expect(TokenType.IDENTIFIER).value as string;
+          this.expect(TokenType.IN);
+
+          const from = this.parseExpression();
+          this.expect(TokenType.TO);
+          const to = this.parseExpression();
+
+          const step =
+            this.current().type === TokenType.STEP
+              ? (this.advance(), this.parseExpression())
+              : { type: "number" as const, value: 1 };
+
+          // Parse the body commands
+          this.expect(TokenType.LBRACE);
+          this.skipNewlines();
+
+          const bodyCommands: PathCommand[] = [];
+          while (
+            this.current().type !== TokenType.RBRACE &&
+            this.current().type !== TokenType.EOF
+          ) {
+            const cmd = this.current();
+            switch (cmd.type) {
+              case TokenType.POINT: {
+                this.advance();
+                const x = this.parseExpression();
+                const y = this.parseExpression();
+                bodyCommands.push({ type: "point", x, y });
+                break;
+              }
+              case TokenType.ROTATE: {
+                this.advance();
+                const angle = this.parseExpression();
+                bodyCommands.push({ type: "rotate", angle });
+                break;
+              }
+              case TokenType.TRANSLATE: {
+                this.advance();
+                const x = this.parseExpression();
+                const y = this.parseExpression();
+                bodyCommands.push({ type: "translate", x, y });
+                break;
+              }
+              default:
+                throw new ParseError(
+                  `Unexpected token in path for loop: ${cmd.type}`,
+                  cmd.line,
+                  cmd.column,
+                );
+            }
+            this.skipNewlines();
+          }
+
+          this.expect(TokenType.RBRACE);
+
+          // Add the for loop command - it will be expanded during rendering
+          commands.push({
+            type: "for",
+            variable,
+            from,
+            to,
+            step,
+            commands: bodyCommands,
+          });
+          break;
+        }
+
+        default:
+          throw new ParseError(
+            `Unexpected token in path: ${token.type}`,
+            token.line,
+            token.column,
+          );
+      }
+
+      this.skipNewlines();
+    }
+
+    this.expect(TokenType.RBRACE);
+
+    return {
+      type: "path",
+      commands,
+    };
+  }
+
   private parseNode(): SceneNode | null {
     this.skipNewlines();
 
@@ -1048,6 +1263,12 @@ export class Parser {
 
       case TokenType.DEFINE:
         return this.parseDefine();
+
+      case TokenType.EXTRUDE:
+        return this.parseExtrude();
+
+      case TokenType.DETAIL:
+        return this.parseDetail();
 
       case TokenType.RBRACE:
       case TokenType.EOF:
