@@ -1,0 +1,14 @@
+{
+  "title": "Monthly Expenses",
+  "sheets": [
+    {
+      "name": "Expenses",
+      "data": [
+        [{ "v": "Rent" }, { "v": 1200 }],
+        [{ "v": "Food" }, { "v": 400 }],
+        [{ "v": "Transport" }, { "v": 200 }],
+        [{ "v": "Total" }, { "v": 1800 }]
+      ]
+    }
+  ]
+}

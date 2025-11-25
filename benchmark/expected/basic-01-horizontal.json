@@ -1,0 +1,12 @@
+{
+  "title": "Monthly Expenses",
+  "sheets": [
+    {
+      "name": "Budget",
+      "data": [
+        [{ "v": "Expense" }, { "v": "Rent" }, { "v": "Food" }, { "v": "Transport" }, { "v": "Total" }],
+        [{ "v": "Amount" }, { "v": 1200 }, { "v": 400 }, { "v": 200 }, { "v": "=B2+C2+D2" }]
+      ]
+    }
+  ]
+}

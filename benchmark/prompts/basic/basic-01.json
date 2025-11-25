@@ -1,0 +1,67 @@
+{
+  "id": "basic-01",
+  "title": "Monthly Expenses",
+  "prompt": "Create a spreadsheet showing monthly expenses with the following items:\n- Rent: $1200\n- Food: $400\n- Transport: $200\n\nInclude a Total row that calculates the sum of all expenses using a formula.",
+  "level": 1,
+  "category": "basic",
+  "requiredElements": [
+    {
+      "type": "label",
+      "value": "Rent",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Food",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Transport",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Total",
+      "caseSensitive": false
+    }
+  ],
+  "requiredValues": [
+    {
+      "label": "Rent",
+      "value": 1200,
+      "tolerance": 0
+    },
+    {
+      "label": "Food",
+      "value": 400,
+      "tolerance": 0
+    },
+    {
+      "label": "Transport",
+      "value": 200,
+      "tolerance": 0
+    }
+  ],
+  "assertions": [
+    {
+      "name": "Total is correct",
+      "description": "Total should equal the sum of all expenses (1800)",
+      "extractor": "Total",
+      "expected": 1800,
+      "tolerance": 0.01
+    }
+  ],
+  "formulaRequirements": [
+    {
+      "description": "Total uses a formula, not hard-coded value",
+      "check": "cellWithLabel('Total').hasFormula()"
+    }
+  ],
+  "expectedFunctions": ["SUM"],
+  "metadata": {
+    "author": "Benchmark System",
+    "created": "2025-11-25",
+    "notes": "Basic level test to verify simple formula usage and structure-agnostic verification"
+  }
+}
