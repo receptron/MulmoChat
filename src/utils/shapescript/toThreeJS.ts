@@ -281,7 +281,7 @@ export class Converter {
       return new THREE.Group();
     }
 
-    // Save current transform state - CSG result will be positioned here
+    // Save the transform state BEFORE entering block - CSG result will be positioned here
     const savedTransform = this.currentTransform();
     const savedPosition = savedTransform.position.clone();
     const savedRotation = savedTransform.rotation.clone();
@@ -290,11 +290,12 @@ export class Converter {
     try {
       const csgEvaluator = new CSGEvaluator();
 
-      // Create new scope for CSG block - children are positioned relative to origin
+      // CSG blocks create both symbol and transform scopes
+      // Blocks start at identity - shapes are relative to block origin
       this.symbols.pushScope();
       this.pushTransform();
 
-      // Reset current transform to identity so children start at origin
+      // Reset to identity for block's local coordinate space
       const current = this.currentTransform();
       current.position.set(0, 0, 0);
       current.rotation.set(0, 0, 0);
@@ -322,7 +323,7 @@ export class Converter {
         }
       }
 
-      // Pop scope
+      // Pop scopes - transforms and symbols
       this.popTransform();
       this.symbols.popScope();
 
@@ -383,7 +384,7 @@ export class Converter {
         result.material = brushes[0].material;
       }
 
-      // Apply saved transform to position the CSG result
+      // Apply saved transform to position the CSG result in world space
       result.position.copy(savedPosition);
       result.rotation.copy(savedRotation);
       result.scale.copy(savedScale);
@@ -398,7 +399,6 @@ export class Converter {
 
       // Create scope for fallback
       this.symbols.pushScope();
-      this.pushTransform();
 
       for (const child of node.children) {
         const object = this.convertNode(child);
@@ -407,7 +407,6 @@ export class Converter {
         }
       }
 
-      this.popTransform();
       this.symbols.popScope();
 
       // Apply saved transform to fallback group
