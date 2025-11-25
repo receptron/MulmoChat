@@ -30,12 +30,18 @@ import {
   Expression,
   Vector3,
   Color,
+  ShapeProperties,
 } from "./types";
 import { Evaluator, SymbolTable } from "./evaluator";
 
 export interface ConversionOptions {
   wireframe?: boolean;
 }
+
+type TransformState = {
+  matrix: THREE.Matrix4;
+  color?: THREE.Color;
+};
 
 export class Converter {
   private options: ConversionOptions;
@@ -44,12 +50,7 @@ export class Converter {
   private detailLevel: number = 32; // Default detail level for curved shapes
 
   // Transform state stack for relative transforms
-  private transformStack: {
-    position: THREE.Vector3;
-    rotation: THREE.Euler;
-    scale: THREE.Vector3;
-    color?: THREE.Color;
-  }[] = [];
+  private transformStack: TransformState[] = [];
 
   constructor(options: ConversionOptions = {}) {
     this.options = options;
@@ -150,21 +151,11 @@ export class Converter {
     const material = this.createMaterial(node);
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Apply current transform state first
+    // Apply any property-specific transforms first (local)
+    this.applyExplicitTransforms(mesh, node.properties);
+
+    // Then apply the current scope transform so relative transforms compose correctly
     this.applyCurrentTransform(mesh);
-
-    // Then apply any property-specific transforms (these override the current state)
-    if (node.properties.position) {
-      const pos = this.evaluateVector3(node.properties.position);
-      mesh.position.set(...pos);
-    }
-
-    if (node.properties.rotation) {
-      const rot = this.evaluateVector3(node.properties.rotation);
-      mesh.rotation.set(...rot);
-    }
-
-    // Note: size is already baked into geometry, don't apply as scale
 
     return mesh;
   }
@@ -282,10 +273,7 @@ export class Converter {
     }
 
     // Save the transform state BEFORE entering block - CSG result will be positioned here
-    const savedTransform = this.currentTransform();
-    const savedPosition = savedTransform.position.clone();
-    const savedRotation = savedTransform.rotation.clone();
-    const savedScale = savedTransform.scale.clone();
+    const savedMatrix = this.currentTransform().matrix.clone();
 
     try {
       const csgEvaluator = new CSGEvaluator();
@@ -297,9 +285,7 @@ export class Converter {
 
       // Reset to identity for block's local coordinate space
       const current = this.currentTransform();
-      current.position.set(0, 0, 0);
-      current.rotation.set(0, 0, 0);
-      current.scale.set(1, 1, 1);
+      current.matrix.identity();
       current.color = undefined;
 
       // Convert all children to meshes
@@ -385,11 +371,7 @@ export class Converter {
       }
 
       // Apply saved transform to position the CSG result in world space
-      result.position.copy(savedPosition);
-      result.rotation.copy(savedRotation);
-      result.scale.copy(savedScale);
-
-      // Update matrix world one final time
+      result.applyMatrix4(savedMatrix);
       result.updateMatrixWorld(true);
 
       return result;
@@ -410,9 +392,8 @@ export class Converter {
       this.symbols.popScope();
 
       // Apply saved transform to fallback group
-      fallbackGroup.position.copy(savedPosition);
-      fallbackGroup.rotation.copy(savedRotation);
-      fallbackGroup.scale.copy(savedScale);
+      fallbackGroup.applyMatrix4(savedMatrix);
+      fallbackGroup.updateMatrixWorld(true);
 
       return fallbackGroup;
     }
@@ -635,9 +616,7 @@ export class Converter {
   private pushTransform(): void {
     const current = this.currentTransform();
     this.transformStack.push({
-      position: current.position.clone(),
-      rotation: current.rotation.clone(),
-      scale: current.scale.clone(),
+      matrix: current.matrix.clone(),
       color: current.color?.clone(),
     });
   }
@@ -648,13 +627,11 @@ export class Converter {
     }
   }
 
-  private currentTransform() {
+  private currentTransform(): TransformState {
     if (this.transformStack.length === 0) {
       // Initialize default transform
       return {
-        position: new THREE.Vector3(0, 0, 0),
-        rotation: new THREE.Euler(0, 0, 0),
-        scale: new THREE.Vector3(1, 1, 1),
+        matrix: new THREE.Matrix4(),
         color: undefined,
       };
     }
@@ -663,9 +640,22 @@ export class Converter {
 
   private applyCurrentTransform(object: THREE.Object3D): void {
     const transform = this.currentTransform();
-    object.position.copy(transform.position);
-    object.rotation.copy(transform.rotation);
-    object.scale.copy(transform.scale);
+    object.applyMatrix4(transform.matrix);
+  }
+
+  private applyExplicitTransforms(
+    object: THREE.Object3D,
+    properties: ShapeProperties,
+  ): void {
+    if (properties.position) {
+      const pos = this.evaluateVector3(properties.position);
+      object.position.set(...pos);
+    }
+
+    if (properties.rotation) {
+      const rot = this.evaluateVector3(properties.rotation);
+      object.rotation.set(...rot);
+    }
   }
 
   private handleDetail(node: DetailNode): void {
@@ -686,40 +676,35 @@ export class Converter {
   private handleRotateCommand(node: RotateNode): void {
     const rotation = this.evaluateVector3(node.value);
     const transform = this.currentTransform();
-    // In ShapeScript, rotations are in half-turns (0.5 = 180 degrees)
-    // Apply rotation relative to current rotation
-    transform.rotation.x += rotation[0] * Math.PI * 2;
-    transform.rotation.y += rotation[1] * Math.PI * 2;
-    transform.rotation.z += rotation[2] * Math.PI * 2;
+    const rotationMatrix = new THREE.Matrix4();
+
+    const euler = new THREE.Euler(
+      rotation[0] * Math.PI * 2,
+      rotation[1] * Math.PI * 2,
+      rotation[2] * Math.PI * 2,
+      "XYZ",
+    );
+
+    rotationMatrix.makeRotationFromEuler(euler);
+    transform.matrix.multiply(rotationMatrix);
   }
 
   private handleTranslateCommand(node: TranslateNode): void {
     const transform = this.currentTransform();
-
-    // Check if value is a single number or a vector
-    const value = this.evaluator.evaluate(node.value);
-
-    if (typeof value === "number") {
-      // Single number translates on X-axis only
-      transform.position.x += value;
-    } else if (Array.isArray(value)) {
-      // Vector translates on specified axes
-      const x = value.length > 0 ? (typeof value[0] === "number" ? value[0] : 0) : 0;
-      const y = value.length > 1 ? (typeof value[1] === "number" ? value[1] : 0) : 0;
-      const z = value.length > 2 ? (typeof value[2] === "number" ? value[2] : 0) : 0;
-      transform.position.x += x;
-      transform.position.y += y;
-      transform.position.z += z;
-    }
+    const [x, y, z] = this.evaluateTranslateVector(node.value);
+    const translationMatrix = new THREE.Matrix4().makeTranslation(x, y, z);
+    transform.matrix.multiply(translationMatrix);
   }
 
   private handleScaleCommand(node: ScaleNode): void {
     const scale = this.evaluateVector3(node.value);
     const transform = this.currentTransform();
-    // Apply scale relative to current scale
-    transform.scale.x *= scale[0];
-    transform.scale.y *= scale[1];
-    transform.scale.z *= scale[2];
+    const scaleMatrix = new THREE.Matrix4().makeScale(
+      scale[0],
+      scale[1],
+      scale[2],
+    );
+    transform.matrix.multiply(scaleMatrix);
   }
 
   private convertExtrude(node: ExtrudeNode): THREE.Mesh {
@@ -746,16 +731,8 @@ export class Converter {
 
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Apply transforms
-    if (node.properties.position) {
-      const pos = this.evaluateVector3(node.properties.position);
-      mesh.position.set(...pos);
-    }
-
-    if (node.properties.rotation) {
-      const rot = this.evaluateVector3(node.properties.rotation);
-      mesh.rotation.set(...rot);
-    }
+    this.applyExplicitTransforms(mesh, node.properties);
+    this.applyCurrentTransform(mesh);
 
     return mesh;
   }
@@ -1013,16 +990,8 @@ export class Converter {
     const material = this.createMaterial(node);
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Apply transforms
-    if (node.properties.position) {
-      const pos = this.evaluateVector3(node.properties.position);
-      mesh.position.set(...pos);
-    }
-
-    if (node.properties.rotation) {
-      const rot = this.evaluateVector3(node.properties.rotation);
-      mesh.rotation.set(...rot);
-    }
+    this.applyExplicitTransforms(mesh, node.properties);
+    this.applyCurrentTransform(mesh);
 
     this.popTransform();
     this.symbols.popScope();
@@ -1048,16 +1017,8 @@ export class Converter {
       }
     }
 
-    // Apply transforms
-    if (node.properties.position) {
-      const pos = this.evaluateVector3(node.properties.position);
-      group.position.set(...pos);
-    }
-
-    if (node.properties.rotation) {
-      const rot = this.evaluateVector3(node.properties.rotation);
-      group.rotation.set(...rot);
-    }
+    this.applyExplicitTransforms(group, node.properties);
+    this.applyCurrentTransform(group);
 
     this.popTransform();
     this.symbols.popScope();
@@ -1099,16 +1060,8 @@ export class Converter {
     const material = this.createMaterial(node);
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Apply transforms
-    if (node.properties.position) {
-      const pos = this.evaluateVector3(node.properties.position);
-      mesh.position.set(...pos);
-    }
-
-    if (node.properties.rotation) {
-      const rot = this.evaluateVector3(node.properties.rotation);
-      mesh.rotation.set(...rot);
-    }
+    this.applyExplicitTransforms(mesh, node.properties);
+    this.applyCurrentTransform(mesh);
 
     this.popTransform();
     this.symbols.popScope();
@@ -1134,16 +1087,8 @@ export class Converter {
       }
     }
 
-    // Apply transforms
-    if (node.properties.position) {
-      const pos = this.evaluateVector3(node.properties.position);
-      group.position.set(...pos);
-    }
-
-    if (node.properties.rotation) {
-      const rot = this.evaluateVector3(node.properties.rotation);
-      group.rotation.set(...rot);
-    }
+    this.applyExplicitTransforms(group, node.properties);
+    this.applyCurrentTransform(group);
 
     this.popTransform();
     this.symbols.popScope();
@@ -1165,6 +1110,26 @@ export class Converter {
       return value as Vector3;
     }
     return this.evaluator.evaluateToVector3(value as Expression);
+  }
+
+  private evaluateTranslateVector(value: Expression): Vector3 {
+    const result = this.evaluator.evaluate(value);
+
+    if (typeof result === "number") {
+      return [result, 0, 0];
+    }
+
+    if (Array.isArray(result)) {
+      const x =
+        result.length > 0 && typeof result[0] === "number" ? result[0] : 0;
+      const y =
+        result.length > 1 && typeof result[1] === "number" ? result[1] : 0;
+      const z =
+        result.length > 2 && typeof result[2] === "number" ? result[2] : 0;
+      return [x, y, z];
+    }
+
+    return [0, 0, 0];
   }
 
   private evaluateColor(value: Color | Expression | undefined): Color {

@@ -4,7 +4,9 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import * as THREE from 'three';
 import { parseShapeScript } from './src/utils/shapescript/parser.js';
+import { astToThreeJS } from './src/utils/shapescript/toThreeJS.ts';
 import { SceneNode } from './src/utils/shapescript/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +27,12 @@ interface TestResult {
   nodes?: SceneNode[];
   error?: Error;
   parseTime?: number;
+}
+
+interface TransformTestCase {
+  description: string;
+  script: string;
+  expectedPositions: [number, number, number][];
 }
 
 // Read all .shape files from the examples directory
@@ -145,4 +153,93 @@ if (failed > 0) {
   console.log(`  Total AST nodes: ${totalNodes}`);
   console.log(`  Total parse time: ${totalTime.toFixed(2)}ms`);
   console.log(`  Average time per file: ${(totalTime / examples.length).toFixed(2)}ms`);
+}
+
+console.log('\nRunning ShapeScript transform regression tests...\n');
+runTransformRegressionTests();
+
+function runTransformRegressionTests(): void {
+  const tests: TransformTestCase[] = [
+    {
+      description: 'rotate then translate uses rotated axes',
+      script: `
+        rotate 0 0 0.25
+        translate 1 0 0
+        cube
+      `,
+      expectedPositions: [[0, 1, 0]],
+    },
+    {
+      description: 'scale affects subsequent translations',
+      script: `
+        scale 0.5
+        translate 2 0 0
+        cube
+      `,
+      expectedPositions: [[1, 0, 0]],
+    },
+    {
+      description: 'absolute position composes with relative translate',
+      script: `
+        translate 1 0 0
+        cube { position 1 0 0 }
+      `,
+      expectedPositions: [[2, 0, 0]],
+    },
+  ];
+
+  let passed = 0;
+
+  for (const test of tests) {
+    try {
+      const nodes = parseShapeScript(test.script);
+      const group = astToThreeJS(nodes);
+      const positions = collectMeshPositions(group);
+
+      if (positions.length < test.expectedPositions.length) {
+        throw new Error(
+          `Expected at least ${test.expectedPositions.length} meshes, found ${positions.length}`,
+        );
+      }
+
+      const allMatch = test.expectedPositions.every((expected, index) =>
+        vectorsAlmostEqual(positions[index], new THREE.Vector3(...expected)),
+      );
+
+      if (allMatch) {
+        passed++;
+        console.log(`✅ ${test.description}`);
+      } else {
+        console.log(`❌ ${test.description} (unexpected positions)`);
+        positions.forEach((pos, idx) => {
+          console.log(
+            `  Mesh ${idx}: (${pos.x.toFixed(4)}, ${pos.y.toFixed(4)}, ${pos.z.toFixed(4)})`,
+          );
+        });
+      }
+    } catch (error) {
+      console.log(`❌ ${test.description}`);
+      console.log(`   ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  console.log(`\nTransform tests: ${passed}/${tests.length} passed`);
+}
+
+function collectMeshPositions(root: THREE.Object3D): THREE.Vector3[] {
+  const positions: THREE.Vector3[] = [];
+  root.traverse((object) => {
+    if (object instanceof THREE.Mesh) {
+      positions.push(object.position.clone());
+    }
+  });
+  return positions;
+}
+
+function vectorsAlmostEqual(a: THREE.Vector3, b: THREE.Vector3, epsilon = 1e-6): boolean {
+  return (
+    Math.abs(a.x - b.x) <= epsilon &&
+    Math.abs(a.y - b.y) <= epsilon &&
+    Math.abs(a.z - b.z) <= epsilon
+  );
 }
