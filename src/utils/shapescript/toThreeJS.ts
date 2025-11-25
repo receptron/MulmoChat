@@ -281,8 +281,18 @@ export class Converter {
       return new THREE.Group();
     }
 
+    // Save current transform state - CSG result will be positioned here
+    const savedTransform = this.currentTransform();
+    const savedPosition = savedTransform.position.clone();
+    const savedRotation = savedTransform.rotation.clone();
+    const savedScale = savedTransform.scale.clone();
+
     try {
       const csgEvaluator = new CSGEvaluator();
+
+      // Create new scope for CSG block - children are positioned relative to each other
+      this.symbols.pushScope();
+      this.pushTransform();
 
       // Convert all children to meshes
       const meshes: THREE.Mesh[] = [];
@@ -304,6 +314,10 @@ export class Converter {
           });
         }
       }
+
+      // Pop scope
+      this.popTransform();
+      this.symbols.popScope();
 
       if (meshes.length === 0) {
         return new THREE.Group();
@@ -362,8 +376,10 @@ export class Converter {
         result.material = brushes[0].material;
       }
 
-      // Apply current transform state to the CSG result
-      this.applyCurrentTransform(result);
+      // Apply saved transform to position the CSG result
+      result.position.copy(savedPosition);
+      result.rotation.copy(savedRotation);
+      result.scale.copy(savedScale);
 
       // Update matrix world one final time
       result.updateMatrixWorld(true);
@@ -372,12 +388,26 @@ export class Converter {
     } catch {
       // Return original shapes as a group if CSG fails
       const fallbackGroup = new THREE.Group();
+
+      // Create scope for fallback
+      this.symbols.pushScope();
+      this.pushTransform();
+
       for (const child of node.children) {
         const object = this.convertNode(child);
         if (object) {
           fallbackGroup.add(object);
         }
       }
+
+      this.popTransform();
+      this.symbols.popScope();
+
+      // Apply saved transform to fallback group
+      fallbackGroup.position.copy(savedPosition);
+      fallbackGroup.rotation.copy(savedRotation);
+      fallbackGroup.scale.copy(savedScale);
+
       return fallbackGroup;
     }
   }
