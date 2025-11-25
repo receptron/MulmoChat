@@ -4,7 +4,7 @@
 
 import { SpreadsheetEngine } from "../engine";
 import type { SheetData } from "../types";
-import "../../functions/index";
+import "../functions";
 
 console.log("\n=== Re-calculation Test ===\n");
 

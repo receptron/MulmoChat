@@ -25,7 +25,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { calculateSheet } from "../calculator";
 import { toStringArray, expectSheetOutput } from "./test-utils";
-import "../../functions/index"; // Load all functions
+import "../functions"; // Load all functions
 
 // Get current file's directory
 const __filename = fileURLToPath(import.meta.url);

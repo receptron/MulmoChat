@@ -5,7 +5,7 @@
 
 import { calculateSheet } from "../calculator";
 import { toStringArray, expectSheetOutput } from "./test-utils";
-import "../../functions/index"; // Load all functions
+import "../functions"; // Load all functions
 
 console.log("\n=== PV Analysis - Complete Array Output Test ===\n");
 

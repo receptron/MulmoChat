@@ -3,7 +3,7 @@
  */
 
 import { calculateSheet } from "../calculator";
-import "../../functions/index"; // Load all functions
+import "../functions"; // Load all functions
 
 console.log("\n=== PV Analysis Test ===\n");
 

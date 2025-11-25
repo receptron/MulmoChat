@@ -5,7 +5,7 @@
 
 import { calculateSheet, calculateWorkbook } from "../calculator";
 import { createSheet, expectSheetOutput } from "./test-utils";
-import "../../functions/index"; // Load all functions
+import "../functions"; // Load all functions
 
 let passedTests = 0;
 let failedTests = 0;

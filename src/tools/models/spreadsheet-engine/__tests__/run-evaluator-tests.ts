@@ -8,7 +8,7 @@ import {
   evaluateFormula,
   type EvaluatorContext,
 } from "../evaluator";
-import "../../functions/index"; // Load all functions
+import "../functions"; // Load all functions
 
 let passedTests = 0;
 let failedTests = 0;
