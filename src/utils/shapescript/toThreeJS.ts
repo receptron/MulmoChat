@@ -862,14 +862,100 @@ export class Converter {
       return new THREE.Group();
     }
 
-    // Build path and extract points for lathe
-    const shape = this.buildPath(pathNode);
+    // Extract points directly from path commands
     const points: THREE.Vector2[] = [];
+    let currentX = 0;
+    let currentY = 0;
+    let currentAngle = 0;
 
-    // Extract points from the shape
-    shape.getPoints(this.detailLevel).forEach((point) => {
-      points.push(new THREE.Vector2(point.x, point.y));
-    });
+    const processCommand = (command: PathCommand) => {
+      switch (command.type) {
+        case "point": {
+          const x = this.evaluateNumber(command.x);
+          const y = this.evaluateNumber(command.y);
+
+          // Apply current rotation
+          const cos = Math.cos(currentAngle);
+          const sin = Math.sin(currentAngle);
+          const rotatedX = x * cos - y * sin;
+          const rotatedY = x * sin + y * cos;
+
+          currentX += rotatedX;
+          currentY += rotatedY;
+
+          points.push(new THREE.Vector2(currentX, currentY));
+          break;
+        }
+
+        case "curve": {
+          const x = this.evaluateNumber(command.x);
+          const y = this.evaluateNumber(command.y);
+
+          // Apply current rotation
+          const cos = Math.cos(currentAngle);
+          const sin = Math.sin(currentAngle);
+          const rotatedX = x * cos - y * sin;
+          const rotatedY = x * sin + y * cos;
+
+          currentX += rotatedX;
+          currentY += rotatedY;
+
+          // For lathe, we approximate curves with line segments
+          // Add the endpoint (control points affect the curve shape but for simple lathe we just use endpoints)
+          points.push(new THREE.Vector2(currentX, currentY));
+          break;
+        }
+
+        case "rotate": {
+          const angle = this.evaluateNumber(command.angle);
+          currentAngle += angle * Math.PI * 2;
+          break;
+        }
+
+        case "translate": {
+          const x = this.evaluateNumber(command.x);
+          const y = this.evaluateNumber(command.y);
+          currentX += x;
+          currentY += y;
+          break;
+        }
+
+        case "for": {
+          // Expand for loop
+          this.symbols.pushScope();
+
+          const from = this.evaluateNumber(command.from);
+          const to = this.evaluateNumber(command.to);
+          const step = command.step ? this.evaluateNumber(command.step) : 1;
+
+          const iterations: number[] = [];
+          if (step > 0) {
+            for (let i = from; i <= to; i += step) {
+              iterations.push(i);
+            }
+          } else if (step < 0) {
+            for (let i = from; i >= to; i += step) {
+              iterations.push(i);
+            }
+          }
+
+          for (const i of iterations) {
+            this.symbols.set(command.variable, i);
+            for (const bodyCmd of command.commands) {
+              processCommand(bodyCmd);
+            }
+          }
+
+          this.symbols.popScope();
+          break;
+        }
+      }
+    };
+
+    // Process all path commands
+    for (const command of pathNode.commands) {
+      processCommand(command);
+    }
 
     if (points.length < 2) {
       console.warn("Lathe path must have at least 2 points");
