@@ -290,9 +290,16 @@ export class Converter {
     try {
       const csgEvaluator = new CSGEvaluator();
 
-      // Create new scope for CSG block - children are positioned relative to each other
+      // Create new scope for CSG block - children are positioned relative to origin
       this.symbols.pushScope();
       this.pushTransform();
+
+      // Reset current transform to identity so children start at origin
+      const current = this.currentTransform();
+      current.position.set(0, 0, 0);
+      current.rotation.set(0, 0, 0);
+      current.scale.set(1, 1, 1);
+      current.color = undefined;
 
       // Convert all children to meshes
       const meshes: THREE.Mesh[] = [];
