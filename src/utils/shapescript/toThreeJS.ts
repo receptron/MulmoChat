@@ -382,7 +382,8 @@ export class Converter {
   private convertForLoop(node: ForLoopNode): THREE.Group {
     const group = new THREE.Group();
 
-    // Create new scope for loop
+    // Create new scope for loop - both symbols and transforms
+    // Transforms accumulate across iterations but are scoped to the loop
     this.symbols.pushScope();
     this.pushTransform();
 
@@ -395,7 +396,7 @@ export class Converter {
       for (let idx = 0; idx < valueArray.length; idx++) {
         this.symbols.set(node.variable, valueArray[idx]);
 
-        // Convert body nodes
+        // Convert body nodes - transforms accumulate across iterations
         for (const bodyNode of node.body) {
           const object = this.convertNode(bodyNode);
           if (object) {
@@ -425,30 +426,18 @@ export class Converter {
         const i = iterations[idx];
         this.symbols.set(node.variable, i);
 
-        // Create a sub-group for this iteration
-        const iterationGroup = new THREE.Group();
-
-        // Convert body nodes
+        // Convert body nodes directly - no iteration sub-groups
+        // Transforms accumulate across iterations within the loop scope
         for (const bodyNode of node.body) {
           const object = this.convertNode(bodyNode);
           if (object) {
-            iterationGroup.add(object);
+            group.add(object);
           }
         }
-
-        // Apply rotation for circular patterns
-        // This maintains compatibility with the old behavior
-        if (iterations.length > 1) {
-          const fraction = idx / iterations.length;
-          const angle = fraction * Math.PI * 2;
-          iterationGroup.rotation.y = angle;
-        }
-
-        group.add(iterationGroup);
       }
     }
 
-    // Pop scope
+    // Pop scope - both symbols and transforms
     this.popTransform();
     this.symbols.popScope();
 
