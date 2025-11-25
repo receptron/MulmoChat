@@ -362,6 +362,9 @@ export class Converter {
         result.material = brushes[0].material;
       }
 
+      // Apply current transform state to the CSG result
+      this.applyCurrentTransform(result);
+
       // Update matrix world one final time
       result.updateMatrixWorld(true);
 
