@@ -4,6 +4,22 @@
 
 A command-line benchmarking system to evaluate Large Language Models' ability to generate accurate, formula-based spreadsheets. The benchmark tests LLMs on creating structured spreadsheet data with formulas, which are then verified by our spreadsheet engine.
 
+## 🔑 Key Design Decision: Structure-Agnostic Verification
+
+**Critical Insight**: LLMs can structure spreadsheets in infinitely many valid ways. The same task might produce:
+- Vertical vs horizontal layouts
+- Different starting positions (A1 vs B2)
+- Different cell orderings
+- Various formula approaches (SUM vs manual addition)
+
+**Our Solution**: Verify *semantic correctness* (what data exists and what results are calculated), NOT structural properties (which cell contains what). We use:
+- **Label-based lookup**: Find values by nearby text labels
+- **Assertion-based testing**: Check calculated results match expected values
+- **Pattern matching**: Identify formulas and functions used
+- **Flexible extraction**: Support multiple valid structural arrangements
+
+This approach ensures fair evaluation across different LLM reasoning patterns while maintaining rigor.
+
 ## Goals
 
 1. **Objective Evaluation**: Quantitatively measure LLM performance on spreadsheet generation tasks
@@ -108,17 +124,26 @@ Output Format:
 
 ### 1. Basic Arithmetic (Level 1)
 **Prompt**: "Create a spreadsheet showing monthly expenses (Rent: $1200, Food: $400, Transport: $200) with a total."
-**Expected**: Uses =SUM(B1:B3) or =B1+B2+B3 for total
-**Tests**: Basic cell references, SUM function
+**Verification Criteria**:
+- Required labels: Rent, Food, Transport, Total
+- Required values: 1200, 400, 200
+- Assertion: Total calculates to 1800
+- Formula requirement: Total uses a formula (not hard-coded)
+- Expected functions: SUM or arithmetic operators
+**Tests**: Basic cell references, SUM function, label-based lookup
 
 ### 2. Sales Analysis (Level 2)
 **Prompt**: "Create a sales spreadsheet with Product, Unit Price, Quantity, and Total columns for 5 products. Include sum, average, and highest sale."
-**Expected**:
-- Total column: =B2*C2
-- Sum row: =SUM(D2:D6)
-- Average: =AVERAGE(D2:D6)
-- Max: =MAX(D2:D6)
-**Tests**: Multiple functions, ranges, basic math
+**Verification Criteria**:
+- Required elements: 5 product names, prices, quantities, calculated totals
+- Assertions:
+  - Each product total = price × quantity (5 checks)
+  - Sum of totals present
+  - Average of totals present
+  - Maximum total present
+- Formula requirements: Totals use formulas, aggregations use functions
+- Expected functions: Multiplication operator or formula, SUM, AVERAGE, MAX
+**Tests**: Multiple functions, ranges, basic math, multi-assertion
 
 ### 3. Budget Planning (Level 2)
 **Prompt**: "Create a monthly budget with Income ($5000) and categories (Housing 30%, Food 15%, Transport 10%, Savings 20%, Other 25%). Show dollar amounts and remaining balance."
@@ -221,63 +246,199 @@ Output Format:
 
 ## Verification Strategy
 
+### Key Insight: Structure-Agnostic Verification
+
+**Important**: LLMs can structure spreadsheets in many valid ways. A "Monthly Expenses" spreadsheet could be:
+- Vertical layout (expenses in rows)
+- Horizontal layout (expenses in columns)
+- Different starting positions
+- Different label naming
+- Various formula approaches (SUM vs manual addition)
+
+**All are correct as long as they produce the right results!**
+
 ### Verification Process
 
 ```typescript
 // Pseudo-code
-function verifySpreadsheet(llmOutput: string, expectedTemplate: any): VerificationResult {
+function verifySpreadsheet(
+  llmOutput: string,
+  testCase: TestCase
+): VerificationResult {
   // 1. Parse LLM output as JSON
   const generated = JSON.parse(llmOutput);
 
   // 2. Calculate formulas using spreadsheet engine
-  const calculatedGenerated = engine.calculate(generated.sheets[0]);
-  const calculatedExpected = engine.calculate(expectedTemplate.sheets[0]);
+  const calculated = engine.calculate(generated.sheets[0]);
 
-  // 3. Compare results
+  // 3. Extract semantic values (not position-based!)
+  const extractedValues = extractSemanticValues(calculated, testCase.extractors);
+
+  // 4. Verify against expected assertions
   return {
-    structureMatch: checkStructure(generated, expectedTemplate),
-    formulaCorrectness: compareValues(calculatedGenerated, calculatedExpected),
-    formulaCount: countFormulas(generated),
+    dataPresence: checkRequiredData(calculated, testCase.requiredElements),
+    resultCorrectness: verifyAssertions(extractedValues, testCase.assertions),
+    formulaUsage: analyzeFormulas(generated, testCase.expectedFunctions),
     functionUsage: extractFunctions(generated),
-    errors: collectErrors(calculatedGenerated)
+    errors: collectErrors(calculated)
   };
 }
 ```
 
+### Test Case Structure
+
+Each test case defines **what to verify** rather than **where**:
+
+```json
+{
+  "id": "basic-01",
+  "prompt": "Create a spreadsheet showing monthly expenses...",
+  "requiredElements": [
+    {"type": "label", "value": "Rent", "caseSensitive": false},
+    {"type": "label", "value": "Food", "caseSensitive": false},
+    {"type": "label", "value": "Transport", "caseSensitive": false},
+    {"type": "label", "value": "Total", "caseSensitive": false}
+  ],
+  "requiredValues": [
+    {"label": "Rent", "value": 1200, "tolerance": 0},
+    {"label": "Food", "value": 400, "tolerance": 0},
+    {"label": "Transport", "value": 200, "tolerance": 0}
+  ],
+  "assertions": [
+    {
+      "name": "Total is correct",
+      "extractor": "findByLabel('Total')",
+      "expected": 1800,
+      "tolerance": 0.01
+    }
+  ],
+  "formulaRequirements": [
+    {
+      "description": "Total uses a formula, not hard-coded value",
+      "check": "cellWithLabel('Total').hasFormula()"
+    },
+    {
+      "description": "Total uses SUM or addition",
+      "check": "cellWithLabel('Total').usesFunction(['SUM', '+'])"
+    }
+  ],
+  "expectedFunctions": ["SUM"],
+  "level": 1,
+  "category": "basic"
+}
+```
+
+### Semantic Extraction Strategies
+
+**1. Label-Based Lookup**
+- Find cell by label/header text (case-insensitive)
+- Extract adjacent numeric value
+- Works regardless of layout orientation
+
+```typescript
+function findByLabel(sheet: any[], label: string): number {
+  // Search all cells for label
+  for (let row of sheet) {
+    for (let i = 0; i < row.length; i++) {
+      if (matchesLabel(row[i], label)) {
+        // Check right, below, or nearby cells for value
+        return findAdjacentValue(sheet, row, i);
+      }
+    }
+  }
+}
+```
+
+**2. Pattern Matching**
+- Identify calculation patterns (e.g., last row often contains totals)
+- Find cells with specific formulas (contains "SUM", "AVERAGE", etc.)
+- Detect semantic relationships
+
+**3. Result Validation**
+- Calculate what the answer *should* be from inputs
+- Find any cell matching that result
+- Verify it uses a formula, not hard-coded
+
 ### Verification Criteria
 
-1. **Structure Match (20%)**
-   - Correct number of sheets
-   - Correct sheet names
-   - Correct dimensions (rows × columns)
-   - Correct cell types (formulas vs values)
+1. **Data Presence (15%)**
+   - All required labels/headers present
+   - All required input values present
+   - Correct data types (numbers vs text)
+   - **NOT checked**: Specific positions or dimensions
 
-2. **Formula Correctness (50%)**
-   - Formula syntax validity
-   - Calculated values match expected
-   - Proper cell references
-   - No circular references
+2. **Result Correctness (50%)**
+   - Assertions pass (extracted values match expected)
+   - Calculated results are mathematically correct
    - Tolerance: ±0.01 for floating point
+   - Percentage calculations handle both 0.05 and 5%
+   - **NOT checked**: Which cell contains the result
 
-3. **Function Usage (20%)**
-   - Uses appropriate functions
-   - Follows best practices (formulas vs hard-coded)
-   - Proper formula complexity for task
+3. **Formula Usage (25%)**
+   - Uses formulas for calculations (not hard-coded)
+   - Uses appropriate functions for the task
+   - Formula complexity matches requirement
+   - No circular references
+   - **NOT checked**: Exact formula syntax if result is correct
 
 4. **Formatting (10%)**
-   - Appropriate format codes
-   - Currency, percentage, decimal formatting
-   - Optional but adds points
+   - Appropriate format codes for currency, percentages
+   - Consistent formatting within categories
+   - **NOT checked**: Aesthetic choices, colors, etc.
+
+### Example Verification
+
+**Prompt**: "Monthly expenses: Rent $1200, Food $400, Transport $200, show total"
+
+**Valid Output A** (Vertical):
+```
+| Rent      | $1200        |
+| Food      | $400         |
+| Transport | $200         |
+| Total     | =SUM(B1:B3)  |  → Calculates to $1800 ✓
+```
+
+**Valid Output B** (Horizontal):
+```
+| Category | Rent | Food | Transport | Total        |
+| Amount   | 1200 | 400  | 200       | =SUM(B2:D2) |  → Calculates to 1800 ✓
+```
+
+**Valid Output C** (With Headers):
+```
+| Category  | Amount    |
+| Rent      | 1200      |
+| Food      | 400       |
+| Transport | 200       |
+| Total     | =B2+B3+B4 |  → Calculates to 1800 ✓
+```
+
+**All three pass verification** because:
+- ✓ Required labels present (Rent, Food, Transport, Total)
+- ✓ Required values present (1200, 400, 200)
+- ✓ Total calculates to 1800
+- ✓ Total uses a formula (not hard-coded)
+
+**Invalid Output D**:
+```
+| Rent      | 1200 |
+| Food      | 400  |
+| Transport | 200  |
+| Total     | 1800 |  → Hard-coded, no formula ✗
+```
+
+**Fails because**: Total is hard-coded instead of using a formula
 
 ### Error Categories
 
 - **Parse Error**: Invalid JSON output
-- **Structure Error**: Wrong dimensions or missing sheets
+- **Missing Data**: Required labels or values not found
 - **Formula Error**: Invalid formula syntax
 - **Reference Error**: Invalid cell references
-- **Calculation Error**: Wrong result
+- **Calculation Error**: Wrong result (assertion failed)
 - **Missing Formula**: Hard-coded value instead of formula
-- **Wrong Function**: Used incorrect function
+- **Wrong Function**: Used incorrect or suboptimal function
+- **Circular Reference**: Detected circular dependency
 
 ## Scoring System
 
@@ -285,31 +446,37 @@ function verifySpreadsheet(llmOutput: string, expectedTemplate: any): Verificati
 
 ```
 Score = (
-  Structure Score (0-20) +
-  Formula Correctness (0-50) +
-  Function Usage (0-20) +
+  Data Presence (0-15) +
+  Result Correctness (0-50) +
+  Formula Usage (0-25) +
   Formatting (0-10)
 )
 ```
 
-**Structure Score (0-20)**:
-- Correct dimensions: 10 points
-- Correct sheet names: 5 points
-- Correct cell types: 5 points
+**Data Presence (0-15)**:
+- All required labels found: 7 points
+- All required values found: 8 points
+- Deduction for missing elements: -3 per missing item
 
-**Formula Correctness (0-50)**:
-- Each formula that produces correct result: proportional points
-- Penalty for hard-coded values: -5 per instance
-- Penalty for wrong formula: -10 per instance
+**Result Correctness (0-50)**:
+- Each assertion passes: proportional points
+- Example: 3 assertions → ~16.7 points each
+- Tolerance respected for floating point
+- Handles multiple valid result formats
 
-**Function Usage (0-20)**:
-- Uses expected function categories: 10 points
-- Appropriate complexity: 5 points
-- Best practices (e.g., SUM instead of manual addition): 5 points
+**Formula Usage (0-25)**:
+- Uses formulas (not hard-coded): 15 points
+- Uses appropriate functions: 7 points
+- Best practices (e.g., SUM over addition): 3 points
+- Deduction for hard-coded calculations: -5 per instance
+- Deduction for inefficient formulas: -2 per instance
 
 **Formatting (0-10)**:
 - Appropriate format codes: 10 points
 - Partial credit for some formatting
+- Currency symbols: 3 points
+- Percentage format: 3 points
+- Number formatting (decimals, thousands): 4 points
 
 ### Aggregate Metrics
 
