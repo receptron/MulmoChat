@@ -2,11 +2,7 @@
  * Financial Functions
  */
 
-import {
-  functionRegistry,
-  toNumber,
-  type FunctionHandler,
-} from "../spreadsheet-functions";
+import { functionRegistry, toNumber, type FunctionHandler } from "../registry";
 
 /**
  * FV - Future Value

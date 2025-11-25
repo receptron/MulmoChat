@@ -7,7 +7,7 @@ import {
   toNumber,
   parseCriteria,
   type FunctionHandler,
-} from "../spreadsheet-functions";
+} from "../registry";
 
 const sumHandler: FunctionHandler = (args, context) => {
   if (args.length !== 1) throw new Error("SUM requires 1 argument");

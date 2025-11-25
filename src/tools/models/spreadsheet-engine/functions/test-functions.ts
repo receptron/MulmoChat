@@ -4,7 +4,7 @@
  */
 
 import { functionRegistry } from "./index";
-import type { FunctionContext } from "../spreadsheet-functions";
+import type { FunctionContext } from "../registry";
 
 // Test result tracking
 let passedTests = 0;

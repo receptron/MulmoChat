@@ -9,7 +9,7 @@ import {
   toNumber,
   toString,
   type FunctionHandler,
-} from "../spreadsheet-functions";
+} from "../registry";
 
 // Helper: Convert JS Date to Excel Serial Number
 // Excel base date: Dec 30, 1899 (to handle the 1900 leap year bug correctly)

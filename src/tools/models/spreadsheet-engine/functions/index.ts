@@ -13,4 +13,4 @@ import "./financial";
 import "./lookup";
 import "./date";
 
-export { functionRegistry } from "../spreadsheet-functions";
+export { functionRegistry } from "../registry";

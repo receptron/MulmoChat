@@ -1,5 +1,5 @@
 import { functionRegistry } from "./index";
-import { FunctionContext } from "../spreadsheet-functions";
+import { FunctionContext } from "../registry";
 
 // Mock context
 const mockContext: FunctionContext = {

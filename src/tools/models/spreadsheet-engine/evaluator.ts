@@ -4,7 +4,7 @@
  * Evaluates spreadsheet formulas including functions, cell references, and arithmetic
  */
 
-import { functionRegistry } from "../spreadsheet-functions";
+import { functionRegistry } from "./registry";
 import type { CellValue } from "./types";
 
 /**

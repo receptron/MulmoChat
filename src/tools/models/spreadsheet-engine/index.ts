@@ -13,5 +13,8 @@ export * from "./formatter";
 export * from "./evaluator";
 export * from "./calculator";
 
+// Export function registry
+export * from "./registry";
+
 // Export main SpreadsheetEngine class
 export { SpreadsheetEngine } from "./engine";

@@ -7,7 +7,7 @@ import {
   toNumber,
   parseCriteria,
   type FunctionHandler,
-} from "../spreadsheet-functions";
+} from "../registry";
 
 // Helper to convert Excel column letters to 0-based index (A=0, Z=25, AA=26, etc.)
 const colToIndex = (col: string): number => {

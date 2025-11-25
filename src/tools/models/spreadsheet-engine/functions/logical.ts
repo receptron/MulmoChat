@@ -4,10 +4,7 @@
 
 /* eslint-disable sonarjs/slow-regex, sonarjs/regex-complexity, sonarjs/code-eval */
 
-import {
-  functionRegistry,
-  type FunctionHandler,
-} from "../spreadsheet-functions";
+import { functionRegistry, type FunctionHandler } from "../registry";
 
 const ifHandler: FunctionHandler = (args, context) => {
   if (args.length !== 3) throw new Error("IF requires 3 arguments");

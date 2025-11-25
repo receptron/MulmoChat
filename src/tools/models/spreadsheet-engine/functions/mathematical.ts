@@ -2,11 +2,7 @@
  * Mathematical Functions
  */
 
-import {
-  functionRegistry,
-  toNumber,
-  type FunctionHandler,
-} from "../spreadsheet-functions";
+import { functionRegistry, toNumber, type FunctionHandler } from "../registry";
 
 const roundHandler: FunctionHandler = (args, context) => {
   if (args.length !== 2) throw new Error("ROUND requires 2 arguments");

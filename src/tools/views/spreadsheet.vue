@@ -131,7 +131,7 @@ import {
 } from "../models/spreadsheet-engine";
 
 // Import all spreadsheet functions to populate the function registry
-import "../models/functions/index";
+import "../models/spreadsheet-engine/functions";
 
 const props = defineProps<{
   selectedResult: ToolResult<SpreadsheetToolData>;

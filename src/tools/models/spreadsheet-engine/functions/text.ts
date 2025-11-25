@@ -2,11 +2,7 @@
  * Text Functions
  */
 
-import {
-  functionRegistry,
-  toString,
-  type FunctionHandler,
-} from "../spreadsheet-functions";
+import { functionRegistry, toString, type FunctionHandler } from "../registry";
 
 const concatenateHandler: FunctionHandler = (args, context) => {
   if (args.length === 0)
