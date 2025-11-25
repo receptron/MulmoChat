@@ -246,7 +246,7 @@ export function evaluateFormula(
         // 2. No access to local scope variables
         // 3. No this binding issues
         // This is safe because we validate the expression first
-        // eslint-disable-next-line no-new-func, sonarjs/code-eval
+        // eslint-disable-next-line sonarjs/code-eval
         const result = new Function(`return (${expr})`)();
         return result;
       } catch {

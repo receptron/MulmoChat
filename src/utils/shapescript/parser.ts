@@ -535,7 +535,7 @@ export class Parser {
       return this.advance();
     }
     // Allow certain keywords to be used as identifiers
-    if (typeof token.value === 'string') {
+    if (typeof token.value === "string") {
       return this.advance();
     }
     throw new ParseError(
@@ -674,7 +674,7 @@ export class Parser {
 
     // Allow keywords to be used as identifiers in expressions
     // (e.g., "define step 5" then "rotate step")
-    if (typeof token.value === 'string') {
+    if (typeof token.value === "string") {
       const name = token.value;
       this.advance();
       return {
@@ -1691,35 +1691,63 @@ export class Parser {
 
     const token = this.current();
 
+    // Map token types to shape names
+    const shapeMap: Record<string, string> = {
+      [TokenType.CUBE]: "cube",
+      [TokenType.SPHERE]: "sphere",
+      [TokenType.CYLINDER]: "cylinder",
+      [TokenType.CONE]: "cone",
+      [TokenType.TORUS]: "torus",
+      [TokenType.CIRCLE]: "circle",
+      [TokenType.SQUARE]: "square",
+      [TokenType.POLYGON]: "polygon",
+    };
+
+    // Map token types to CSG operations
+    const csgMap: Record<string, string> = {
+      [TokenType.UNION]: "union",
+      [TokenType.DIFFERENCE]: "difference",
+      [TokenType.INTERSECTION]: "intersection",
+      [TokenType.XOR]: "xor",
+      [TokenType.STENCIL]: "stencil",
+    };
+
+    // Map token types to builder operations
+    const builderMap: Record<string, string> = {
+      [TokenType.EXTRUDE]: "extrude",
+      [TokenType.LOFT]: "loft",
+      [TokenType.LATHE]: "lathe",
+      [TokenType.FILL]: "fill",
+      [TokenType.HULL]: "hull",
+    };
+
+    // Map token types to transform types
+    const transformMap: Record<string, string> = {
+      [TokenType.COLOR]: "color",
+      [TokenType.ROTATE]: "rotate",
+      [TokenType.TRANSLATE]: "translate",
+      [TokenType.SCALE]: "scale",
+    };
+
+    // Check mapped operations first
+    if (token.type in shapeMap) {
+      return this.parseShape(shapeMap[token.type]);
+    }
+    if (token.type in csgMap) {
+      return this.parseCSG(csgMap[token.type]);
+    }
+    if (token.type in builderMap) {
+      return this.parseBuilder(builderMap[token.type]);
+    }
+    if (token.type in transformMap) {
+      this.advance();
+      return {
+        type: transformMap[token.type],
+        value: this.parseVectorOrExpression(),
+      };
+    }
+
     switch (token.type) {
-      case TokenType.CUBE:
-        return this.parseShape("cube");
-      case TokenType.SPHERE:
-        return this.parseShape("sphere");
-      case TokenType.CYLINDER:
-        return this.parseShape("cylinder");
-      case TokenType.CONE:
-        return this.parseShape("cone");
-      case TokenType.TORUS:
-        return this.parseShape("torus");
-      case TokenType.CIRCLE:
-        return this.parseShape("circle");
-      case TokenType.SQUARE:
-        return this.parseShape("square");
-      case TokenType.POLYGON:
-        return this.parseShape("polygon");
-
-      case TokenType.UNION:
-        return this.parseCSG("union");
-      case TokenType.DIFFERENCE:
-        return this.parseCSG("difference");
-      case TokenType.INTERSECTION:
-        return this.parseCSG("intersection");
-      case TokenType.XOR:
-        return this.parseCSG("xor");
-      case TokenType.STENCIL:
-        return this.parseCSG("stencil");
-
       case TokenType.FOR:
         return this.parseForLoop();
 
@@ -1731,21 +1759,6 @@ export class Parser {
 
       case TokenType.DEFINE:
         return this.parseDefine();
-
-      case TokenType.EXTRUDE:
-        return this.parseBuilder("extrude");
-
-      case TokenType.LOFT:
-        return this.parseBuilder("loft");
-
-      case TokenType.LATHE:
-        return this.parseBuilder("lathe");
-
-      case TokenType.FILL:
-        return this.parseBuilder("fill");
-
-      case TokenType.HULL:
-        return this.parseBuilder("hull");
 
       case TokenType.GROUP:
         return this.parseGroup();
@@ -1762,34 +1775,6 @@ export class Parser {
       case TokenType.PATH:
         return this.parsePath();
 
-      case TokenType.COLOR:
-        this.advance();
-        return {
-          type: "color",
-          value: this.parseVectorOrExpression(),
-        };
-
-      case TokenType.ROTATE:
-        this.advance();
-        return {
-          type: "rotate",
-          value: this.parseVectorOrExpression(),
-        };
-
-      case TokenType.TRANSLATE:
-        this.advance();
-        return {
-          type: "translate",
-          value: this.parseVectorOrExpression(),
-        };
-
-      case TokenType.SCALE:
-        this.advance();
-        return {
-          type: "scale",
-          value: this.parseVectorOrExpression(),
-        };
-
       case TokenType.RBRACE:
       case TokenType.EOF:
         return null;
@@ -1799,7 +1784,7 @@ export class Parser {
         const name = token.value as string;
         this.advance();
 
-        let properties: Record<string, any> = {};
+        const properties: Record<string, any> = {};
 
         if (this.current().type === TokenType.LBRACE) {
           this.expect(TokenType.LBRACE);

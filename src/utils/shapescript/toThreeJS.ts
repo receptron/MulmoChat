@@ -567,7 +567,11 @@ export class Converter {
     // Look up the custom shape definition
     const definition = this.symbols.get(node.name);
 
-    if (!definition || typeof definition !== "object" || !("type" in definition)) {
+    if (
+      !definition ||
+      typeof definition !== "object" ||
+      !("type" in definition)
+    ) {
       console.warn(`Custom shape '${node.name}' not found`);
       return null;
     }
@@ -886,23 +890,7 @@ export class Converter {
 
     const processCommand = (command: PathCommand) => {
       switch (command.type) {
-        case "point": {
-          const x = this.evaluateNumber(command.x);
-          const y = this.evaluateNumber(command.y);
-
-          // Apply current rotation
-          const cos = Math.cos(currentAngle);
-          const sin = Math.sin(currentAngle);
-          const rotatedX = x * cos - y * sin;
-          const rotatedY = x * sin + y * cos;
-
-          currentX += rotatedX;
-          currentY += rotatedY;
-
-          points.push(new THREE.Vector2(currentX, currentY));
-          break;
-        }
-
+        case "point":
         case "curve": {
           const x = this.evaluateNumber(command.x);
           const y = this.evaluateNumber(command.y);
@@ -999,11 +987,8 @@ export class Converter {
     return mesh;
   }
 
-  private convertLoft(node: LoftNode): THREE.Object3D {
-    // Loft creates a 3D shape by interpolating between multiple 2D cross-sections
-    // For now, implement as a simple group that renders all children
-    // A proper implementation would use spline interpolation between shapes
-
+  private convertGroupBuilder(node: LoftNode | HullNode): THREE.Object3D {
+    // Generic converter for builders that just group their children
     this.symbols.pushScope();
     this.pushTransform();
 
@@ -1024,6 +1009,13 @@ export class Converter {
     this.symbols.popScope();
 
     return group;
+  }
+
+  private convertLoft(node: LoftNode): THREE.Object3D {
+    // Loft creates a 3D shape by interpolating between multiple 2D cross-sections
+    // For now, implement as a simple group that renders all children
+    // A proper implementation would use spline interpolation between shapes
+    return this.convertGroupBuilder(node);
   }
 
   private convertFill(node: FillNode): THREE.Object3D {
@@ -1073,27 +1065,7 @@ export class Converter {
     // Hull creates a convex hull around child shapes
     // Proper implementation requires computing convex hull from point cloud
     // For now, just render children as a group
-
-    this.symbols.pushScope();
-    this.pushTransform();
-
-    const group = new THREE.Group();
-
-    // Convert all children
-    for (const child of node.children) {
-      const object = this.convertNode(child);
-      if (object) {
-        group.add(object);
-      }
-    }
-
-    this.applyExplicitTransforms(group, node.properties);
-    this.applyCurrentTransform(group);
-
-    this.popTransform();
-    this.symbols.popScope();
-
-    return group;
+    return this.convertGroupBuilder(node);
   }
 
   // Helper methods
