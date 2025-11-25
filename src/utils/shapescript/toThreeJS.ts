@@ -695,12 +695,23 @@ export class Converter {
   }
 
   private handleTranslateCommand(node: TranslateNode): void {
-    const translation = this.evaluateVector3(node.value);
     const transform = this.currentTransform();
-    // Apply translation relative to current position
-    transform.position.x += translation[0];
-    transform.position.y += translation[1];
-    transform.position.z += translation[2];
+
+    // Check if value is a single number or a vector
+    const value = this.evaluator.evaluate(node.value);
+
+    if (typeof value === "number") {
+      // Single number translates on X-axis only
+      transform.position.x += value;
+    } else if (Array.isArray(value)) {
+      // Vector translates on specified axes
+      const x = value.length > 0 ? (typeof value[0] === "number" ? value[0] : 0) : 0;
+      const y = value.length > 1 ? (typeof value[1] === "number" ? value[1] : 0) : 0;
+      const z = value.length > 2 ? (typeof value[2] === "number" ? value[2] : 0) : 0;
+      transform.position.x += x;
+      transform.position.y += y;
+      transform.position.z += z;
+    }
   }
 
   private handleScaleCommand(node: ScaleNode): void {
