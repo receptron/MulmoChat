@@ -4,3 +4,4 @@ build
 .env
 .DS_Store
 output
+benchmark/results
