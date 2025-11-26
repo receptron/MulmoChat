@@ -60,6 +60,19 @@
       "optional": true
     }
   ],
+  "formattingRequirements": [
+    {
+      "type": "currency",
+      "appliesTo": ["Principal", "Payment", "Interest"],
+      "description": "Dollar amounts should have currency formatting"
+    },
+    {
+      "type": "percentage",
+      "appliesTo": [],
+      "description": "Interest rate could have percentage formatting",
+      "required": false
+    }
+  ],
   "expectedFunctions": ["PMT"],
   "metadata": {
     "author": "Benchmark System",

@@ -39,6 +39,13 @@ export interface FormulaRequirement {
   optional?: boolean;
 }
 
+export interface FormattingRequirement {
+  type: "currency" | "percentage" | "number" | "date" | "text";
+  appliesTo: string[]; // Labels of cells that should have this format (e.g., ["Rent", "Food", "Total"])
+  description?: string;
+  required?: boolean; // default true
+}
+
 export interface TestCase {
   id: string;
   title: string;
@@ -59,6 +66,7 @@ export interface TestCase {
   requiredValues?: RequiredValue[];
   assertions: Assertion[];
   formulaRequirements?: FormulaRequirement[];
+  formattingRequirements?: FormattingRequirement[];
   expectedFunctions?: string[];
   metadata?: {
     author?: string;
@@ -122,6 +130,14 @@ export interface FormulaUsageResult {
 export interface FormattingResult {
   score: number;
   maxScore: number;
+  requirementResults: Array<{
+    type: string;
+    appliesTo: string[];
+    required: boolean;
+    passed: boolean;
+    details: string;
+  }>;
+  // Legacy fields for backward compatibility
   hasCurrency: boolean;
   hasPercentage: boolean;
   hasNumberFormatting: boolean;

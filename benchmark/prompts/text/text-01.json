@@ -36,6 +36,14 @@
       "check": "hasFormulasInEmailColumn()"
     }
   ],
+  "formattingRequirements": [
+    {
+      "type": "text",
+      "appliesTo": [],
+      "description": "No specific formatting required for text data",
+      "required": false
+    }
+  ],
   "expectedFunctions": ["LOWER", "CONCAT"],
   "metadata": {
     "author": "Benchmark System",

@@ -53,6 +53,19 @@
       "check": "hasFormulaWithOperator('^')"
     }
   ],
+  "formattingRequirements": [
+    {
+      "type": "currency",
+      "appliesTo": ["Principal", "Final", "Interest"],
+      "description": "Dollar amounts should have currency formatting"
+    },
+    {
+      "type": "percentage",
+      "appliesTo": [],
+      "description": "Interest rate should have percentage formatting",
+      "required": false
+    }
+  ],
   "expectedFunctions": [],
   "metadata": {
     "author": "Benchmark System",

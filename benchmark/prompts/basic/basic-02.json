@@ -64,6 +64,13 @@
       "check": "cellWithLabel('Housing').hasFormula()"
     }
   ],
+  "formattingRequirements": [
+    {
+      "type": "currency",
+      "appliesTo": ["Income", "Housing", "Food", "Transport", "Savings", "Other", "Total"],
+      "description": "All dollar amounts should have currency formatting"
+    }
+  ],
   "expectedFunctions": [],
   "metadata": {
     "author": "Benchmark System",

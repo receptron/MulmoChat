@@ -58,6 +58,13 @@
       "check": "hasFunction('IF')"
     }
   ],
+  "formattingRequirements": [
+    {
+      "type": "number",
+      "appliesTo": ["Alice", "Bob", "Charlie", "Diana", "Eve"],
+      "description": "Average scores should have number formatting (decimal places)"
+    }
+  ],
   "expectedFunctions": ["AVERAGE", "IF"],
   "metadata": {
     "author": "Benchmark System",

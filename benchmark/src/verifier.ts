@@ -65,7 +65,7 @@ export async function verifySpreadsheet(
     const formulaUsage = verifyFormulaUsage(sheet, calculated, testCase);
 
     // 6. Check formatting
-    const formatting = checkFormatting(sheet);
+    const formatting = checkFormatting(sheet, testCase);
 
     // 7. Calculate total score
     const totalScore =
@@ -400,51 +400,168 @@ function verifyFormulaUsage(
 }
 
 /**
- * Check for appropriate formatting
+ * Check if a cell has a specific type of formatting
  */
-function checkFormatting(sheet: SpreadsheetSheet): FormattingResult {
+function hasFormatType(
+  formatString: string | undefined,
+  type: "currency" | "percentage" | "number" | "date" | "text",
+): boolean {
+  if (!formatString) return false;
+
+  switch (type) {
+    case "currency":
+      return (
+        formatString.includes("$") ||
+        formatString.includes("€") ||
+        formatString.includes("£") ||
+        formatString.includes("¥")
+      );
+    case "percentage":
+      return formatString.includes("%");
+    case "number":
+      return (
+        formatString.includes("#,##0") ||
+        formatString.includes("0.00") ||
+        formatString.includes("0.0") ||
+        /\d/.test(formatString)
+      );
+    case "date":
+      return (
+        formatString.includes("MM") ||
+        formatString.includes("DD") ||
+        formatString.includes("YYYY") ||
+        formatString.includes("m/d/y")
+      );
+    case "text":
+      return formatString.includes("@");
+    default:
+      return false;
+  }
+}
+
+/**
+ * Check for appropriate formatting based on test case requirements
+ */
+function checkFormatting(
+  sheet: SpreadsheetSheet,
+  testCase: TestCase,
+): FormattingResult {
   const maxScore = 10;
   let score = 0;
 
+  // Legacy fields for backward compatibility
   let hasCurrency = false;
   let hasPercentage = false;
   let hasNumberFormatting = false;
   let formatCount = 0;
 
-  // Check all cells for formatting
+  // Count all formatting in the sheet (for legacy fields)
   for (const row of sheet.data) {
     for (const cell of row) {
       if (typeof cell === "object" && cell !== null && "f" in cell) {
         const format = cell.f;
         if (format) {
           formatCount++;
-
-          if (format.includes("$") || format.includes("€") || format.includes("£")) {
-            hasCurrency = true;
-          }
-          if (format.includes("%")) {
-            hasPercentage = true;
-          }
-          if (
-            format.includes("#,##0") ||
-            format.includes("0.00") ||
-            format.includes("0.0")
-          ) {
-            hasNumberFormatting = true;
-          }
+          if (hasFormatType(format, "currency")) hasCurrency = true;
+          if (hasFormatType(format, "percentage")) hasPercentage = true;
+          if (hasFormatType(format, "number")) hasNumberFormatting = true;
         }
       }
     }
   }
 
-  // Score formatting
-  if (hasCurrency) score += 3;
-  if (hasPercentage) score += 3;
-  if (hasNumberFormatting) score += 4;
+  const requirementResults: FormattingResult["requirementResults"] = [];
+
+  // If no formatting requirements specified, use legacy scoring
+  if (
+    !testCase.formattingRequirements ||
+    testCase.formattingRequirements.length === 0
+  ) {
+    // Legacy behavior: give full score if any appropriate formatting is present
+    // This prevents penalizing old test cases
+    if (hasCurrency || hasPercentage || hasNumberFormatting) {
+      score = maxScore;
+    } else {
+      score = 0;
+    }
+
+    return {
+      score,
+      maxScore,
+      requirementResults: [],
+      hasCurrency,
+      hasPercentage,
+      hasNumberFormatting,
+      formatCount,
+    };
+  }
+
+  // New context-aware scoring based on formatting requirements
+  const pointsPerRequirement = maxScore / testCase.formattingRequirements.length;
+
+  for (const requirement of testCase.formattingRequirements) {
+    const required = requirement.required !== false; // default true
+    let passed = true;
+    const details: string[] = [];
+    let formattedCount = 0;
+    let totalCount = 0;
+
+    // Check each label that should have this formatting
+    for (const label of requirement.appliesTo) {
+      totalCount++;
+      const extracted = findByLabel(sheet, label, false);
+
+      if (!extracted) {
+        details.push(`❌ "${label}" not found`);
+        passed = false;
+        continue;
+      }
+
+      // Get the format string from the original cell
+      const cellValue = sheet.data[extracted.location.row]?.[extracted.location.col];
+      const formatString =
+        typeof cellValue === "object" && cellValue !== null && "f" in cellValue
+          ? cellValue.f
+          : undefined;
+
+      if (hasFormatType(formatString, requirement.type)) {
+        details.push(`✓ "${label}" has ${requirement.type} format`);
+        formattedCount++;
+      } else {
+        details.push(`❌ "${label}" missing ${requirement.type} format`);
+        passed = false;
+      }
+    }
+
+    // Calculate partial credit based on how many cells have correct formatting
+    const partialScore =
+      totalCount > 0
+        ? (formattedCount / totalCount) * pointsPerRequirement
+        : 0;
+
+    if (passed) {
+      score += pointsPerRequirement;
+    } else if (!required) {
+      // Optional requirements don't affect score negatively
+      score += partialScore;
+    } else {
+      // Required but not fully met - give partial credit
+      score += partialScore;
+    }
+
+    requirementResults.push({
+      type: requirement.type,
+      appliesTo: requirement.appliesTo,
+      required,
+      passed,
+      details: details.join("; "),
+    });
+  }
 
   return {
-    score,
+    score: Math.min(maxScore, Math.round(score * 10) / 10),
     maxScore,
+    requirementResults,
     hasCurrency,
     hasPercentage,
     hasNumberFormatting,
