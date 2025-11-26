@@ -383,27 +383,55 @@ npm run benchmark:test -- basic-01 benchmark/expected/basic-01-hardcoded.json
 
 ## 📦 Available Models
 
-| Model | Provider | API Key Required |
-|-------|----------|-----------------|
-| `gpt-4` | OpenAI | `OPENAI_API_KEY` |
-| `gpt-4o` | OpenAI | `OPENAI_API_KEY` |
-| `claude-3.5-sonnet` | Anthropic | `ANTHROPIC_API_KEY` |
-| `claude-3-opus` | Anthropic | `ANTHROPIC_API_KEY` |
-| `gemini-pro` | Google | `GEMINI_API_KEY` |
+### OpenAI Models (8 models)
+| Model | Description | API Key Required |
+|-------|-------------|-----------------|
+| `gpt-5.1` | GPT-5.1 (Latest) | `OPENAI_API_KEY` |
+| `gpt-5` | GPT-5 | `OPENAI_API_KEY` |
+| `gpt-5-mini` | GPT-5 Mini (Budget) | `OPENAI_API_KEY` |
+| `gpt-4.1` | GPT-4.1 | `OPENAI_API_KEY` |
+| `gpt-4o` | GPT-4o | `OPENAI_API_KEY` |
+| `gpt-4o-mini` | GPT-4o Mini (Budget) | `OPENAI_API_KEY` |
+| `gpt-4.1-mini` | GPT-4.1 Mini (Budget) | `OPENAI_API_KEY` |
+| `gpt-4` | GPT-4 Turbo Preview | `OPENAI_API_KEY` |
+
+### Anthropic Models (6 models)
+| Model | Description | API Key Required |
+|-------|-------------|-----------------|
+| `claude-sonnet-4-5` | Claude Sonnet 4.5 (Latest) | `ANTHROPIC_API_KEY` |
+| `claude-opus-4-1` | Claude Opus 4.1 | `ANTHROPIC_API_KEY` |
+| `claude-haiku-4-5` | Claude Haiku 4.5 (Fast) | `ANTHROPIC_API_KEY` |
+| `claude-3.5-sonnet` | Alias → claude-sonnet-4-5 | `ANTHROPIC_API_KEY` |
+| `claude-3.5-haiku` | Claude 3.5 Haiku Latest (Fast) | `ANTHROPIC_API_KEY` |
+| `claude-3-opus` | Alias → claude-opus-4-1 | `ANTHROPIC_API_KEY` |
+
+> **Note**: Anthropic changed their model naming convention. Old version-dated names (e.g., `claude-3-5-sonnet-20241022`) no longer work. The aliases above map to the current model names for backward compatibility.
+
+### Google Models (5 models)
+| Model | Description | API Key Required |
+|-------|-------------|-----------------|
+| `gemini-3-pro` | Gemini 3 Pro Preview (Latest) | `GEMINI_API_KEY` |
+| `gemini-2.5-pro` | Gemini 2.5 Pro | `GEMINI_API_KEY` |
+| `gemini-2.5-flash` | Gemini 2.5 Flash (Fast) | `GEMINI_API_KEY` |
+| `gemini-1.5-pro` | Gemini 1.5 Pro | `GEMINI_API_KEY` |
+| `gemini-pro` | Alias for gemini-1.5-pro | `GEMINI_API_KEY` |
+
+**Total: 23 models** across 3 providers
 
 ## 🎓 Examples
 
 ### Example 1: Compare Models
 
 ```bash
-# Test GPT-4o
-npm run benchmark:llm -- run --model gpt-4o --level 1
+# Test latest models
+npm run benchmark:llm -- run --model gpt-5.1 --level 1
+npm run benchmark:llm -- run --model claude-sonnet-4-5 --level 1
+npm run benchmark:llm -- run --model gemini-3-pro --level 1
 
-# Test Claude
-npm run benchmark:llm -- run --model claude-3.5-sonnet --level 1
-
-# Test Gemini
-npm run benchmark:llm -- run --model gemini-pro --level 1
+# Test budget models
+npm run benchmark:llm -- run --model gpt-4o-mini --level 1
+npm run benchmark:llm -- run --model claude-haiku-4-5 --level 1
+npm run benchmark:llm -- run --model gemini-2.5-flash --level 1
 
 # Compare results in benchmark/results/
 ```

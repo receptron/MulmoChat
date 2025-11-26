@@ -72,9 +72,31 @@ Respond ONLY with valid JSON. No additional text or explanation.`;
  * Available LLM model configurations
  */
 export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
-  "gpt-4": {
+  // OpenAI Models (Newest First)
+  "gpt-5.1": {
     provider: "openai",
-    model: "gpt-4-turbo-preview",
+    model: "gpt-5.1",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "gpt-5": {
+    provider: "openai",
+    model: "gpt-5",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "gpt-5-mini": {
+    provider: "openai",
+    model: "gpt-5-mini",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "gpt-4.1": {
+    provider: "openai",
+    model: "gpt-4.1",
     temperature: 0.0,
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -86,20 +108,105 @@ export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
   },
+  "gpt-4o-mini": {
+    provider: "openai",
+    model: "gpt-4o-mini",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "gpt-4.1-mini": {
+    provider: "openai",
+    model: "gpt-4.1-mini",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "gpt-4": {
+    provider: "openai",
+    model: "gpt-4-turbo-preview",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+
+  // Anthropic Models (Newest First)
+  // Note: Anthropic changed model naming - old version-dated names no longer work
+  "claude-sonnet-4-5": {
+    provider: "anthropic",
+    model: "claude-sonnet-4-5",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "claude-opus-4-1": {
+    provider: "anthropic",
+    model: "claude-opus-4-1-20250805",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "claude-haiku-4-5": {
+    provider: "anthropic",
+    model: "claude-haiku-4-5",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  // Alias for backward compatibility (maps to latest Sonnet)
   "claude-3.5-sonnet": {
     provider: "anthropic",
-    model: "claude-3-5-sonnet-20241022",
+    model: "claude-sonnet-4-5",
     temperature: 0.0,
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
   },
+  "claude-3.5-haiku": {
+    provider: "anthropic",
+    model: "claude-3-5-haiku-latest",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  // Alias for backward compatibility (maps to latest Opus)
   "claude-3-opus": {
     provider: "anthropic",
-    model: "claude-3-opus-20240229",
+    model: "claude-opus-4-1-20250805",
     temperature: 0.0,
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
   },
+
+  // Google Models (Newest First)
+  "gemini-3-pro": {
+    provider: "google",
+    model: "gemini-3-pro-preview",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "gemini-2.5-pro": {
+    provider: "google",
+    model: "gemini-2.5-pro",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "gemini-2.5-flash": {
+    provider: "google",
+    model: "gemini-2.5-flash",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "gemini-1.5-pro": {
+    provider: "google",
+    model: "gemini-1.5-pro",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  // Alias for backward compatibility
   "gemini-pro": {
     provider: "google",
     model: "gemini-1.5-pro",
