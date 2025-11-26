@@ -13,22 +13,22 @@
   },
   "summary": {
     "totalPrompts": 2,
-    "averageScore": 69,
-    "medianScore": 69,
+    "averageScore": 69.5,
+    "medianScore": 69.5,
     "passRate": 0.5,
     "perfectRate": 0.5
   },
   "byLevel": {
     "1": {
       "count": 2,
-      "avgScore": 69,
+      "avgScore": 69.5,
       "passRate": 0.5
     }
   },
   "byCategory": {
     "basic": {
       "count": 2,
-      "avgScore": 69,
+      "avgScore": 69.5,
       "passRate": 0.5
     }
   },
@@ -196,7 +196,7 @@
     {
       "testCaseId": "basic-02",
       "passed": false,
-      "score": 38,
+      "score": 39,
       "maxScore": 100,
       "dataPresence": {
         "score": 4.05,
@@ -293,7 +293,7 @@
         ]
       },
       "formatting": {
-        "score": 8.6,
+        "score": 10,
         "maxScore": 10,
         "requirementResults": [
           {
@@ -308,8 +308,8 @@
               "Total"
             ],
             "required": true,
-            "passed": false,
-            "details": "❌ \"Income\" missing currency format; ✓ \"Housing\" has currency format; ✓ \"Food\" has currency format; ✓ \"Transport\" has currency format; ✓ \"Savings\" has currency format; ✓ \"Other\" has currency format; ✓ \"Total\" has currency format"
+            "passed": true,
+            "details": "✓ \"Income\" has currency format; ✓ \"Housing\" has currency format; ✓ \"Food\" has currency format; ✓ \"Transport\" has currency format; ✓ \"Savings\" has currency format; ✓ \"Other\" has currency format; ✓ \"Total\" has currency format"
           }
         ],
         "hasCurrency": true,

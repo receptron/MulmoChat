@@ -412,9 +412,9 @@ export function findByLabelWithFormulas(
           };
         }
 
-        // If no formula cells, return the first numeric cell
+        // If no formula cells, return the rightmost numeric cell (usually the final value)
         if (numericCells.length > 0) {
-          const bestCell = numericCells[0];
+          const bestCell = numericCells[numericCells.length - 1];
           return {
             label,
             value: bestCell.value,
