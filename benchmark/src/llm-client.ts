@@ -233,6 +233,161 @@ class GeminiClient implements LLMClient {
 }
 
 /**
+ * Ollama API Client (Local)
+ */
+class OllamaClient implements LLMClient {
+  public readonly name: string;
+  private config: LLMConfig;
+  private baseUrl: string;
+
+  constructor(config: LLMConfig) {
+    if (config.provider !== "ollama") {
+      throw new Error("OllamaClient requires provider to be 'ollama'");
+    }
+    this.config = config;
+    this.name = `Ollama ${config.model}`;
+    this.baseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+  }
+
+  async generateSpreadsheet(
+    prompt: string,
+    systemPrompt?: string,
+  ): Promise<LLMResponse> {
+    const startTime = Date.now();
+
+    try {
+      const messages: any[] = [];
+
+      if (systemPrompt || this.config.systemPrompt) {
+        messages.push({
+          role: "system",
+          content: systemPrompt || this.config.systemPrompt,
+        });
+      }
+
+      messages.push({
+        role: "user",
+        content: prompt,
+      });
+
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages,
+          stream: false,
+          options: {
+            temperature: this.config.temperature || 0,
+            num_predict: this.config.maxTokens || 4000,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ollama API error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      const latency = Date.now() - startTime;
+
+      return {
+        content: data.message?.content || data.response || "",
+        latency,
+      };
+    } catch (error) {
+      const latency = Date.now() - startTime;
+      return {
+        content: "",
+        latency,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+}
+
+/**
+ * Grok/xAI API Client
+ */
+class GrokClient implements LLMClient {
+  public readonly name: string;
+  private config: LLMConfig;
+
+  constructor(config: LLMConfig) {
+    if (config.provider !== "grok") {
+      throw new Error("GrokClient requires provider to be 'grok'");
+    }
+    this.config = config;
+    this.name = `Grok ${config.model}`;
+  }
+
+  async generateSpreadsheet(
+    prompt: string,
+    systemPrompt?: string,
+  ): Promise<LLMResponse> {
+    const startTime = Date.now();
+
+    try {
+      const messages: any[] = [];
+
+      if (systemPrompt || this.config.systemPrompt) {
+        messages.push({
+          role: "system",
+          content: systemPrompt || this.config.systemPrompt,
+        });
+      }
+
+      messages.push({
+        role: "user",
+        content: prompt,
+      });
+
+      const response = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.config.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages,
+          temperature: this.config.temperature || 0,
+          max_tokens: this.config.maxTokens || 4000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Grok API error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      const latency = Date.now() - startTime;
+
+      return {
+        content: data.choices[0].message.content,
+        usage: {
+          promptTokens: data.usage?.prompt_tokens || 0,
+          completionTokens: data.usage?.completion_tokens || 0,
+          totalTokens: data.usage?.total_tokens || 0,
+        },
+        latency,
+      };
+    } catch (error) {
+      const latency = Date.now() - startTime;
+      return {
+        content: "",
+        latency,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+}
+
+/**
  * Create LLM client based on configuration
  */
 export function createLLMClient(config: LLMConfig): LLMClient {
@@ -243,6 +398,10 @@ export function createLLMClient(config: LLMConfig): LLMClient {
       return new AnthropicClient(config);
     case "google":
       return new GeminiClient(config);
+    case "ollama":
+      return new OllamaClient(config);
+    case "grok":
+      return new GrokClient(config);
     default:
       throw new Error(`Unsupported provider: ${config.provider}`);
   }

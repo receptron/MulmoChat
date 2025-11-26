@@ -164,7 +164,7 @@ export interface VerificationResult {
 // ============================================================================
 
 export interface LLMConfig {
-  provider: "openai" | "anthropic" | "google";
+  provider: "openai" | "anthropic" | "google" | "ollama" | "grok";
   apiKey: string;
   model: string;
   temperature?: number;

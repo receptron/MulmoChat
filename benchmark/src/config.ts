@@ -214,6 +214,67 @@ export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
   },
+
+  // Ollama Models (Local)
+  // No API key required - runs on localhost:11434
+  "ollama-gpt-oss-20b": {
+    provider: "ollama",
+    model: "gpt-oss:20b",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "ollama-gpt-oss-120b": {
+    provider: "ollama",
+    model: "gpt-oss:120b",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "ollama-qwen3-30b": {
+    provider: "ollama",
+    model: "qwen3:30b",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "ollama-phi4-mini": {
+    provider: "ollama",
+    model: "phi4-mini:latest",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+
+  // Grok/xAI Models
+  "grok-4-1": {
+    provider: "grok",
+    model: "grok-4-1",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "grok-4-1-fast": {
+    provider: "grok",
+    model: "grok-4-1-fast-reasoning",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "grok-4": {
+    provider: "grok",
+    model: "grok-4",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "grok-beta": {
+    provider: "grok",
+    model: "grok-beta",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
 };
 
 /**
@@ -238,6 +299,13 @@ export function getLLMConfig(modelName: string): LLMConfig {
       break;
     case "google":
       apiKey = getApiKey("GEMINI_API_KEY");
+      break;
+    case "ollama":
+      // Ollama runs locally, no API key needed (but use empty string)
+      apiKey = "";
+      break;
+    case "grok":
+      apiKey = getApiKey("XAI_API_KEY");
       break;
     default:
       throw new Error(`Unknown provider: ${config.provider}`);
@@ -288,10 +356,15 @@ export function checkApiKeys(): {
     { name: "OpenAI", env: "OPENAI_API_KEY" },
     { name: "Anthropic", env: "ANTHROPIC_API_KEY" },
     { name: "Google", env: "GEMINI_API_KEY" },
+    { name: "Grok/xAI", env: "XAI_API_KEY" },
+    { name: "Ollama", env: "", special: "Local (no key needed)" },
   ];
 
   for (const key of keys) {
-    if (getOptionalApiKey(key.env)) {
+    if ((key as any).special) {
+      // Special case: Ollama runs locally
+      available.push(key.name);
+    } else if (getOptionalApiKey(key.env)) {
       available.push(key.name);
     } else {
       missing.push(key.name);

@@ -22,10 +22,15 @@ This benchmark tests LLMs on creating structured spreadsheet data with formulas,
 Ensure you have API keys set in your `.env` file (in the project root):
 
 ```bash
-# Required: At least one of these
+# Cloud Providers (at least one required)
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=AIza...
+XAI_API_KEY=xai-...
+
+# Local Provider (optional)
+# Ollama: No API key needed, runs locally on http://localhost:11434
+# Install from https://ollama.ai/ and run: ollama pull gpt-oss:20b
 ```
 
 ### 2. Check Configuration
@@ -416,22 +421,45 @@ npm run benchmark:test -- basic-01 benchmark/expected/basic-01-hardcoded.json
 | `gemini-1.5-pro` | Gemini 1.5 Pro | `GEMINI_API_KEY` |
 | `gemini-pro` | Alias for gemini-1.5-pro | `GEMINI_API_KEY` |
 
-**Total: 23 models** across 3 providers
+### Ollama Models (4 models - Local)
+| Model | Description | Requirements |
+|-------|-------------|--------------|
+| `ollama-gpt-oss-20b` | GPT-OSS 20B (Local) | Ollama running locally |
+| `ollama-gpt-oss-120b` | GPT-OSS 120B (Local) | Ollama running locally |
+| `ollama-qwen3-30b` | Qwen3 30B (Local) | Ollama running locally |
+| `ollama-phi4-mini` | Phi4 Mini (Local, Fast) | Ollama running locally |
+
+> **Note**: Ollama models run locally on your machine. Install [Ollama](https://ollama.ai/) and pull the models first: `ollama pull gpt-oss:20b`
+
+### Grok/xAI Models (4 models)
+| Model | Description | API Key Required |
+|-------|-------------|-----------------|
+| `grok-4-1` | Grok 4.1 (Latest) | `XAI_API_KEY` |
+| `grok-4-1-fast` | Grok 4.1 Fast Reasoning | `XAI_API_KEY` |
+| `grok-4` | Grok 4 | `XAI_API_KEY` |
+| `grok-beta` | Grok Beta | `XAI_API_KEY` |
+
+**Total: 36 models** across 5 providers
 
 ## 🎓 Examples
 
 ### Example 1: Compare Models
 
 ```bash
-# Test latest models
+# Test latest cloud models
 npm run benchmark:llm -- run --model gpt-5.1 --level 1
 npm run benchmark:llm -- run --model claude-sonnet-4-5 --level 1
 npm run benchmark:llm -- run --model gemini-3-pro --level 1
+npm run benchmark:llm -- run --model grok-4-1 --level 1
 
 # Test budget models
 npm run benchmark:llm -- run --model gpt-4o-mini --level 1
 npm run benchmark:llm -- run --model claude-haiku-4-5 --level 1
 npm run benchmark:llm -- run --model gemini-2.5-flash --level 1
+
+# Test local models (requires Ollama)
+npm run benchmark:llm -- run --model ollama-gpt-oss-20b --level 1
+npm run benchmark:llm -- run --model ollama-phi4-mini --level 1
 
 # Compare results in benchmark/results/
 ```
@@ -460,6 +488,20 @@ npm run benchmark:llm -- run --model gpt-4o --ids basic-01
 Set your API key in `.env` file:
 ```bash
 OPENAI_API_KEY=sk-...
+```
+
+### Ollama connection errors
+
+Make sure Ollama is running:
+```bash
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
+
+# Start Ollama (if needed)
+ollama serve
+
+# Pull required model
+ollama pull gpt-oss:20b
 ```
 
 ### "Unknown model: xyz"
