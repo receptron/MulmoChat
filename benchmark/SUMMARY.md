@@ -40,7 +40,7 @@ Each result file contains:
 ### Latest Update
 
 **Date:** November 26, 2025
-**Models Tested:** 10 (8 completed full suite)
+**Models Tested:** 11 (10 completed full suite)
 **Test Cases:** 7 total
 
 ---
@@ -57,12 +57,14 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 | Rank | Model | Avg Score | Median Score | Pass Rate | Perfect Rate | Test Cases |
 |------|-------|-----------|--------------|-----------|--------------|------------|
-| 1 | **gemini-3-pro-preview** | 58.4 | 49 | 29% | 14% | 7/7 |
-| 2 | **gpt-4o-mini** | 56.0 | 57 | 14% | 14% | 7/7 |
-| 3 | **claude-sonnet-4-5** | 55.4 | 57 | 14% | 14% | 7/7 |
-| 4 | **claude-haiku-4-5** | 55.3 | 57 | 14% | 14% | 7/7 |
-| 5 | **gpt-4o** | 53.3 | 49 | 14% | 14% | 7/7 |
-| - | claude-3.5-sonnet | 100.0 | 100 | 100% | 100% | 1/7 ⚠️ |
+| 1 | **ollama-gpt-oss-20b** | 65.0 | 59 | 29% | 14% | 7/7 |
+| 2 | **gemini-3-pro-preview** | 58.4 | 49 | 29% | 14% | 7/7 |
+| 3 | **gpt-4o-mini** | 56.0 | 57 | 14% | 14% | 7/7 |
+| 4 | **claude-sonnet-4-5** | 55.4 | 57 | 14% | 14% | 7/7 |
+| 5 | **claude-haiku-4-5** | 55.3 | 57 | 14% | 14% | 7/7 |
+| 6 | **gpt-4o** | 53.3 | 49 | 14% | 14% | 7/7 |
+| 7 | **grok-4-1-fast-reasoning** | 50.3 | 47 | 14% | 14% | 7/7 |
+| - | claude-3.5-sonnet | 55.4 | 57 | 14% | 14% | 7/7 |
 | - | ollama-phi4-mini | 12.0 | 12 | 0% | 0% | 1/7 ⚠️ |
 | - | grok-4-1 | 0.0 | 0 | 0% | 0% | 0/7 ❌ |
 
@@ -72,12 +74,12 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 ## Performance by Complexity Level
 
 ### Level 1 (Basic)
-- **Average Score:** 56.5 - 71.5
-- **Pass Rate:** 50%
-- **Notes:** Most models achieved perfect scores on basic-01 (simple expense tracking) but struggled with basic-02 (percentage-based budget calculations). Gemini-3-pro-preview showed strongest Level 1 performance (71.5 avg).
+- **Average Score:** 56.5 - 94.0
+- **Pass Rate:** 50% - 100%
+- **Notes:** Most models achieved perfect scores on basic-01 (simple expense tracking). ollama-gpt-oss-20b achieved 100% pass rate at Level 1 with 94.0 avg score. Gemini-3-pro-preview also showed strong Level 1 performance (71.5 avg).
 
 ### Level 2 (Intermediate)
-- **Average Score:** 51.0 - 53.3
+- **Average Score:** 42.7 - 53.3
 - **Pass Rate:** 0% - 33%
 - **Notes:** Gemini-3-pro-preview achieved 33% pass rate at Level 2 (passing mathematical-01), while other models struggled consistently across statistical analysis, text manipulation, and mathematical calculations
 
@@ -90,12 +92,12 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 | Category | Avg Score Range | Pass Rate | Best Performer |
 |----------|----------------|-----------|----------------|
-| **Basic** | 56.5 - 71.5 | 50% | gemini-3-pro-preview (71.5) |
-| **Mathematical** | 67.0 - 73.0 | 0% - 100% | gemini-3-pro-preview (73, passed) |
+| **Basic** | 56.5 - 94.0 | 50% - 100% | ollama-gpt-oss-20b (94, 100% pass) |
+| **Mathematical** | 42.0 - 73.0 | 0% - 100% | gemini-3-pro-preview (73, passed) |
 | **Statistical** | 39.0 - 44.0 | 0% | gpt-4o-mini (44) |
-| **Text** | 47.0 | 0% | All top 5 models (tied) |
-| **Financial** | 57.0 | 0% | All top 5 models (tied) |
-| **Logical** | 49.0 - 59.0 | 0% | claude-sonnet-4-5 (59) |
+| **Text** | 47.0 | 0% | All top models (tied) |
+| **Financial** | 57.0 | 0% | All top models (tied) |
+| **Logical** | 49.0 - 59.0 | 0% | claude-sonnet-4-5 & ollama-gpt-oss-20b (59, tied) |
 
 ## Test Case Analysis
 
@@ -169,11 +171,19 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 ### Model-Specific Notes
 
+**ollama-gpt-oss-20b**:
+- **NEW TOP PERFORMER** with highest average score (65.0) and 29% pass rate
+- **Perfect on Level 1 tasks** - 100% pass rate, 94.0 avg score on basic tests
+- Excellent on basic-01 (100/100) and strong on basic-02 (88/100)
+- Tied with claude-sonnet-4-5 for best logical operations score (59/100)
+- Local model - runs on Ollama without API costs
+- Completed full test suite in 212 seconds
+- **Best choice for cost-effective, high-quality spreadsheet generation**
+
 **gemini-3-pro-preview**:
-- **Best overall performance** with highest average score (58.4) and pass rate (29%)
+- **Second-best overall** with 58.4 average score and 29% pass rate (tied with ollama for pass rate)
 - **Only model to pass mathematical-01** (compound interest) test
-- Strongest on basic tasks (71.5/100 average)
-- Only model to achieve >20% pass rate
+- Strong on basic tasks (71.5/100 average)
 - Completed full test suite in 173 seconds
 - Well-balanced across categories with no major weaknesses
 
@@ -194,9 +204,17 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 - Very efficient (41s total duration vs 65s for sonnet-4-5)
 
 **gpt-4o**:
-- Lowest average score among tested models (53.3)
+- Average score: 53.3
 - Weakest on logical operations (49/100)
 - Missing number formatting in logical-01 test
+
+**grok-4-1-fast-reasoning**:
+- Average score: 50.3 (14% pass rate)
+- Completed full test suite in 120 seconds
+- Performed well on basic-01 (100/100) but struggled with basic-02 (18/100)
+- Weak on mathematical tasks (42/100) compared to Gemini (73/100)
+- Standard performance on financial and logical operations
+- **Now working** after bug fixes to benchmark client
 
 **ollama-phi4-mini**:
 - Failed most basic requirements
@@ -212,12 +230,14 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 ## Recommendations
 
 ### For Model Selection
-1. **General Use:** gemini-3-pro-preview offers best overall performance with 29% pass rate
-2. **Mathematical Tasks:** gemini-3-pro-preview is the only model to pass compound interest calculations
-3. **Statistical Analysis:** gpt-4o-mini shows best performance (44/100)
-4. **Logical Operations:** claude-sonnet-4-5 excels in grade calculations and conditional logic (59/100)
-5. **Cost-Sensitive:** claude-haiku-4-5 matches claude-sonnet-4-5 performance at potentially lower cost
-6. **Second Choice:** gpt-4o-mini for balanced performance across all categories
+1. **General Use & Best Overall:** ollama-gpt-oss-20b with 65.0 avg score and 29% pass rate
+2. **Cost-Free/Local Deployment:** ollama-gpt-oss-20b runs locally without API costs - best choice for production
+3. **Mathematical Tasks:** gemini-3-pro-preview is the only model to pass compound interest calculations (73/100)
+4. **Basic Tasks:** ollama-gpt-oss-20b achieves perfect 100% pass rate on Level 1 (94.0 avg)
+5. **Statistical Analysis:** gpt-4o-mini shows best performance (44/100)
+6. **Logical Operations:** claude-sonnet-4-5 & ollama-gpt-oss-20b tied at (59/100)
+7. **Cloud API Alternative:** gemini-3-pro-preview for cloud-based deployment (58.4 avg, 29% pass rate)
+8. **Cost-Sensitive Cloud:** claude-haiku-4-5 matches claude-sonnet-4-5 performance at lower cost
 
 ### For Benchmark Improvement
 1. **Test Validation:** Review basic-02 test expectations - all models failed despite correct formula logic
@@ -233,26 +253,32 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 ## Conclusion
 
-The benchmark reveals that current AI models excel at structured spreadsheet generation with clear requirements but struggle with complex multi-step calculations and formatting edge cases. **Google's gemini-3-pro-preview emerges as the clear leader** with a 29% pass rate and 58.4 average score, nearly doubling the pass rate of other tested models.
+The benchmark reveals that current AI models excel at structured spreadsheet generation with clear requirements but struggle with complex multi-step calculations and formatting edge cases. **Ollama's gpt-oss:20b emerges as the surprise leader** with a 65.0 average score and 29% pass rate, outperforming all cloud-based API models while running entirely locally.
 
 ### Key Takeaways
 
-1. **Gemini-3-pro-preview leads the pack**: The only model to achieve >20% pass rate and successfully handle compound interest calculations, demonstrating superior mathematical reasoning.
+1. **Local model dominance**: ollama-gpt-oss-20b achieves the highest average score (65.0) and perfect performance on basic tasks (100% pass rate at Level 1), demonstrating that local models can compete with and exceed cloud API performance.
 
-2. **Performance clustering among non-Gemini models**: OpenAI and Anthropic models cluster tightly (53-56 average score), suggesting similar capability levels for this task type.
+2. **Cost-performance breakthrough**: The top-performing model runs locally without API costs, making high-quality spreadsheet generation accessible and cost-effective for production deployments.
 
-3. **Mathematical reasoning gap**: Gemini's ability to pass the mathematical-01 test while all other models failed highlights a significant advantage in complex formula generation.
+3. **Tied pass rates with Gemini**: Both ollama-gpt-oss-20b and gemini-3-pro-preview achieve 29% pass rate, but ollama excels on basic tasks (94.0 avg vs 71.5 avg) while Gemini uniquely passes mathematical tasks.
 
-4. **All models struggle with advanced tasks**: Despite Gemini's lead, even the best model only achieved 29% pass rate, indicating substantial room for improvement across the board.
+4. **Mathematical reasoning gap**: Gemini-3-pro-preview remains the only model to pass the mathematical-01 test (compound interest), highlighting its advantage in complex formula generation.
+
+5. **Cloud model clustering**: OpenAI and Anthropic models cluster tightly (50-56 average score), suggesting similar capability levels for this task type.
+
+6. **Grok models now functional**: After bug fixes to the benchmark client, grok-4-1-fast-reasoning successfully completes tests with 50.3 average score.
 
 Future improvements may require:
-- Enhanced training on spreadsheet-specific tasks (particularly for non-Gemini models)
+- Enhanced training on spreadsheet-specific tasks for cloud models to match local model performance
 - Better handling of multi-step numerical calculations
 - Improved understanding of when to format as percentage vs. calculated amount
 - More robust formula evaluation logic
 
 ### Production Readiness
 
-- **gemini-3-pro-preview**: Production-ready for Level 1 and some Level 2 tasks (especially mathematical)
-- **gpt-4o-mini, claude-sonnet-4-5, claude-haiku-4-5**: Production-ready for simple spreadsheet generation (Level 1), requires validation for intermediate and advanced use cases
+- **ollama-gpt-oss-20b**: **RECOMMENDED** - Production-ready for all Level 1 tasks (100% pass rate), cost-free local deployment, 65.0 average score
+- **gemini-3-pro-preview**: Production-ready for Level 1 and mathematical tasks, best cloud API option (58.4 avg)
+- **gpt-4o-mini, claude-sonnet-4-5, claude-haiku-4-5**: Production-ready for simple spreadsheet generation (Level 1), requires validation for intermediate tasks
+- **grok-4-1-fast-reasoning**: Functional but below-average performance (50.3), suitable for basic tasks only
 - **gpt-4o**: Suitable for basic tasks, needs careful validation for complex operations
