@@ -65,7 +65,7 @@ export async function verifySpreadsheet(
     const formulaUsage = verifyFormulaUsage(sheet, calculated, testCase);
 
     // 6. Check formatting
-    const formatting = checkFormatting(sheet, testCase);
+    const formatting = checkFormatting(sheet, calculated, testCase);
 
     // 7. Calculate total score
     const totalScore =
@@ -322,7 +322,7 @@ function verifyResultCorrectness(
  * Find value associated with a label, using original sheet to detect formulas
  * This version checks the original sheet for formulas and returns calculated values
  */
-function findByLabelWithFormulas(
+export function findByLabelWithFormulas(
   originalSheet: SpreadsheetSheet,
   calculatedSheet: SpreadsheetSheet,
   label: string,
@@ -331,19 +331,30 @@ function findByLabelWithFormulas(
   const originalData = originalSheet.data;
   const calculatedData = calculatedSheet.data;
 
-  // Search all cells for the label
-  for (let row = 0; row < originalData.length; row++) {
-    for (let col = 0; col < originalData[row].length; col++) {
-      const cell = originalData[row][col];
-      const cellValue = typeof cell === "object" && cell !== null && "v" in cell ? cell.v : cell;
-      const cellStr = String(cellValue);
+  // First pass: look for exact matches
+  // Second pass: look for partial matches
+  for (const exactMatch of [true, false]) {
+    for (let row = 0; row < originalData.length; row++) {
+      for (let col = 0; col < originalData[row].length; col++) {
+        const cell = originalData[row][col];
+        const cellValue = typeof cell === "object" && cell !== null && "v" in cell ? cell.v : cell;
+        const cellStr = String(cellValue);
 
-      // Check if this cell matches the label
-      const matches = caseSensitive
-        ? cellStr === label
-        : cellStr.toLowerCase().includes(label.toLowerCase());
+        // Check if this cell matches the label
+        let matches = false;
+        if (exactMatch) {
+          // Exact match (or match ignoring case)
+          matches = caseSensitive
+            ? cellStr === label
+            : cellStr.toLowerCase() === label.toLowerCase();
+        } else {
+          // Partial match (includes)
+          matches = caseSensitive
+            ? cellStr.includes(label)
+            : cellStr.toLowerCase().includes(label.toLowerCase());
+        }
 
-      if (matches) {
+        if (matches) {
         // Found the label, now look for value in the same row
         // Collect all numeric cells in the same row (to the right of the label)
         const numericCells: Array<{
@@ -414,6 +425,7 @@ function findByLabelWithFormulas(
 
         // Fallback: use original findByLabel on calculated sheet
         return findByLabel(calculatedSheet, label, caseSensitive);
+        }
       }
     }
   }
@@ -445,7 +457,12 @@ function verifyFormulaUsage(
   let hardCodedCount = 0;
 
   for (const assertion of testCase.assertions) {
-    const extracted = findByLabel(calculatedSheet, assertion.extractor, false);
+    const extracted = findByLabelWithFormulas(
+      originalSheet,
+      calculatedSheet,
+      assertion.extractor,
+      false,
+    );
     if (extracted && !cellHasFormula(originalSheet, extracted.location.row, extracted.location.col)) {
       // This should be a formula but it's hard-coded
       if (typeof extracted.value === "number") {
@@ -558,7 +575,8 @@ function hasFormatType(
  * Check for appropriate formatting based on test case requirements
  */
 function checkFormatting(
-  sheet: SpreadsheetSheet,
+  originalSheet: SpreadsheetSheet,
+  calculatedSheet: SpreadsheetSheet,
   testCase: TestCase,
 ): FormattingResult {
   const maxScore = 10;
@@ -571,7 +589,7 @@ function checkFormatting(
   let formatCount = 0;
 
   // Count all formatting in the sheet (for legacy fields)
-  for (const row of sheet.data) {
+  for (const row of originalSheet.data) {
     for (const cell of row) {
       if (typeof cell === "object" && cell !== null && "f" in cell) {
         const format = cell.f;
@@ -624,7 +642,12 @@ function checkFormatting(
     // Check each label that should have this formatting
     for (const label of requirement.appliesTo) {
       totalCount++;
-      const extracted = findByLabel(sheet, label, false);
+      const extracted = findByLabelWithFormulas(
+        originalSheet,
+        calculatedSheet,
+        label,
+        false,
+      );
 
       if (!extracted) {
         details.push(`❌ "${label}" not found`);
@@ -633,7 +656,7 @@ function checkFormatting(
       }
 
       // Get the format string from the original cell
-      const cellValue = sheet.data[extracted.location.row]?.[extracted.location.col];
+      const cellValue = originalSheet.data[extracted.location.row]?.[extracted.location.col];
       const formatString =
         typeof cellValue === "object" && cellValue !== null && "f" in cellValue
           ? cellValue.f

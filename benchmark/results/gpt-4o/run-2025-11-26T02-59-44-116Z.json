@@ -13,22 +13,22 @@
   },
   "summary": {
     "totalPrompts": 2,
-    "averageScore": 56.5,
-    "medianScore": 56.5,
+    "averageScore": 69,
+    "medianScore": 69,
     "passRate": 0.5,
     "perfectRate": 0.5
   },
   "byLevel": {
     "1": {
       "count": 2,
-      "avgScore": 56.5,
+      "avgScore": 69,
       "passRate": 0.5
     }
   },
   "byCategory": {
     "basic": {
       "count": 2,
-      "avgScore": 56.5,
+      "avgScore": 69,
       "passRate": 0.5
     }
   },
@@ -196,7 +196,7 @@
     {
       "testCaseId": "basic-02",
       "passed": false,
-      "score": 13,
+      "score": 38,
       "maxScore": 100,
       "dataPresence": {
         "score": 4.05,
@@ -241,10 +241,10 @@
         "totalCount": 3
       },
       "formulaUsage": {
-        "score": 8.5,
+        "score": 25,
         "maxScore": 25,
         "formulaCount": 6,
-        "hardCodedCount": 3,
+        "hardCodedCount": 0,
         "formulasFound": [
           {
             "cell": "C3",
@@ -293,7 +293,7 @@
         ]
       },
       "formatting": {
-        "score": 0,
+        "score": 8.6,
         "maxScore": 10,
         "requirementResults": [
           {
@@ -309,7 +309,7 @@
             ],
             "required": true,
             "passed": false,
-            "details": "❌ \"Income\" missing currency format; ❌ \"Housing\" missing currency format; ❌ \"Food\" missing currency format; ❌ \"Transport\" missing currency format; ❌ \"Savings\" missing currency format; ❌ \"Other\" missing currency format; ❌ \"Total\" missing currency format"
+            "details": "❌ \"Income\" missing currency format; ✓ \"Housing\" has currency format; ✓ \"Food\" has currency format; ✓ \"Transport\" has currency format; ✓ \"Savings\" has currency format; ✓ \"Other\" has currency format; ✓ \"Total\" has currency format"
           }
         ],
         "hasCurrency": true,
@@ -319,7 +319,7 @@
       },
       "errors": [],
       "warnings": [],
-      "executionTime": 1,
+      "executionTime": 0,
       "generatedOutput": {
         "title": "Monthly Budget",
         "sheets": [
