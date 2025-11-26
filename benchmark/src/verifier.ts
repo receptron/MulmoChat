@@ -169,8 +169,8 @@ function verifyDataPresence(
   const labels = extractLabels(sheet);
 
   // Check required elements
-  if (testCase.requiredElements) {
-    const elementScore = maxScore * 0.47; // 7 points
+  const elementScore = maxScore * 0.47; // 7 points
+  if (testCase.requiredElements && testCase.requiredElements.length > 0) {
     let foundCount = 0;
 
     for (const element of testCase.requiredElements) {
@@ -189,11 +189,14 @@ function verifyDataPresence(
 
     score +=
       (foundCount / testCase.requiredElements.length) * elementScore;
+  } else {
+    // No element requirements - award full credit for this section
+    score += elementScore;
   }
 
   // Check required values
-  if (testCase.requiredValues) {
-    const valueScore = maxScore * 0.53; // 8 points
+  const valueScore = maxScore * 0.53; // 8 points
+  if (testCase.requiredValues && testCase.requiredValues.length > 0) {
     let foundCount = 0;
 
     for (const reqValue of testCase.requiredValues) {
@@ -220,6 +223,9 @@ function verifyDataPresence(
     }
 
     score += (foundCount / testCase.requiredValues.length) * valueScore;
+  } else {
+    // No value requirements - award full credit for this section
+    score += valueScore;
   }
 
   // Deduct for missing elements
