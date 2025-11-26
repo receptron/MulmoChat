@@ -40,7 +40,7 @@ Each result file contains:
 ### Latest Update
 
 **Date:** November 26, 2025
-**Models Tested:** 9 (7 completed full suite)
+**Models Tested:** 10 (8 completed full suite)
 **Test Cases:** 7 total
 
 ---
@@ -57,10 +57,11 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 | Rank | Model | Avg Score | Median Score | Pass Rate | Perfect Rate | Test Cases |
 |------|-------|-----------|--------------|-----------|--------------|------------|
-| 1 | **gpt-4o-mini** | 56.0 | 57 | 14% | 14% | 7/7 |
-| 2 | **claude-sonnet-4-5** | 55.4 | 57 | 14% | 14% | 7/7 |
-| 3 | **claude-haiku-4-5** | 55.3 | 57 | 14% | 14% | 7/7 |
-| 4 | **gpt-4o** | 53.3 | 49 | 14% | 14% | 7/7 |
+| 1 | **gemini-3-pro-preview** | 58.4 | 49 | 29% | 14% | 7/7 |
+| 2 | **gpt-4o-mini** | 56.0 | 57 | 14% | 14% | 7/7 |
+| 3 | **claude-sonnet-4-5** | 55.4 | 57 | 14% | 14% | 7/7 |
+| 4 | **claude-haiku-4-5** | 55.3 | 57 | 14% | 14% | 7/7 |
+| 5 | **gpt-4o** | 53.3 | 49 | 14% | 14% | 7/7 |
 | - | claude-3.5-sonnet | 100.0 | 100 | 100% | 100% | 1/7 ⚠️ |
 | - | ollama-phi4-mini | 12.0 | 12 | 0% | 0% | 1/7 ⚠️ |
 | - | grok-4-1 | 0.0 | 0 | 0% | 0% | 0/7 ❌ |
@@ -71,14 +72,14 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 ## Performance by Complexity Level
 
 ### Level 1 (Basic)
-- **Average Score:** 56.5 - 59.0
+- **Average Score:** 56.5 - 71.5
 - **Pass Rate:** 50%
-- **Notes:** Most models achieved perfect scores on basic-01 (simple expense tracking) but struggled with basic-02 (percentage-based budget calculations)
+- **Notes:** Most models achieved perfect scores on basic-01 (simple expense tracking) but struggled with basic-02 (percentage-based budget calculations). Gemini-3-pro-preview showed strongest Level 1 performance (71.5 avg).
 
 ### Level 2 (Intermediate)
-- **Average Score:** 51.0 - 52.7
-- **Pass Rate:** 0%
-- **Notes:** Consistent challenges across statistical analysis, text manipulation, and mathematical calculations
+- **Average Score:** 51.0 - 53.3
+- **Pass Rate:** 0% - 33%
+- **Notes:** Gemini-3-pro-preview achieved 33% pass rate at Level 2 (passing mathematical-01), while other models struggled consistently across statistical analysis, text manipulation, and mathematical calculations
 
 ### Level 3 (Advanced)
 - **Average Score:** 53.0 - 58.0
@@ -89,11 +90,11 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 | Category | Avg Score Range | Pass Rate | Best Performer |
 |----------|----------------|-----------|----------------|
-| **Basic** | 56.5 - 59.0 | 50% | All top 4 models (tied) |
-| **Mathematical** | 67.0 | 0% | All top 4 models (tied) |
+| **Basic** | 56.5 - 71.5 | 50% | gemini-3-pro-preview (71.5) |
+| **Mathematical** | 67.0 - 73.0 | 0% - 100% | gemini-3-pro-preview (73, passed) |
 | **Statistical** | 39.0 - 44.0 | 0% | gpt-4o-mini (44) |
-| **Text** | 47.0 | 0% | All top 4 models (tied) |
-| **Financial** | 57.0 | 0% | All top 4 models (tied) |
+| **Text** | 47.0 | 0% | All top 5 models (tied) |
+| **Financial** | 57.0 | 0% | All top 5 models (tied) |
 | **Logical** | 49.0 - 59.0 | 0% | claude-sonnet-4-5 (59) |
 
 ## Test Case Analysis
@@ -111,13 +112,14 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
   - Missing currency formatting on calculated amounts
   - Incorrect total calculation
 
-### ⚠️ mathematical-01: Compound Interest (Level 2)
-- **Success Rate:** 0%
-- **Average Score:** 67/100
+### ✅ mathematical-01: Compound Interest (Level 2)
+- **Success Rate:** 12.5% (1/8 models passed)
+- **Average Score:** 67-73/100
+- **Passing Model:** gemini-3-pro-preview (73/100)
 - **Common Issues:**
-  - Correct final amount calculation (~$13,488.50)
-  - Incorrect interest earned display (showing raw percentage instead of dollar amount)
-  - Missing currency format on interest field
+  - Most models correctly calculated final amount (~$13,488.50)
+  - Some models incorrectly displayed interest earned (showing raw percentage instead of dollar amount)
+  - Missing currency format on interest field in some outputs
 
 ### ❌ statistical-01: Sales Analysis (Level 2)
 - **Success Rate:** 0%
@@ -167,10 +169,19 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 ### Model-Specific Notes
 
+**gemini-3-pro-preview**:
+- **Best overall performance** with highest average score (58.4) and pass rate (29%)
+- **Only model to pass mathematical-01** (compound interest) test
+- Strongest on basic tasks (71.5/100 average)
+- Only model to achieve >20% pass rate
+- Completed full test suite in 173 seconds
+- Well-balanced across categories with no major weaknesses
+
 **gpt-4o-mini**:
-- Best overall performance with highest average score
+- Second-best overall performance (56.0 average score)
 - Strongest on statistical tasks (44/100 - highest among all models)
 - Most consistent across categories
+- Faster execution than Gemini models
 
 **claude-sonnet-4-5**:
 - Strong on logical operations (59/100 - highest among all models)
@@ -201,10 +212,12 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 ## Recommendations
 
 ### For Model Selection
-1. **General Use:** gpt-4o-mini offers best overall performance
-2. **Cost-Sensitive:** claude-haiku-4-5 matches claude-sonnet-4-5 performance at potentially lower cost
-3. **Logical Operations:** claude-sonnet-4-5 excels in grade calculations and conditional logic
-4. **Statistical Analysis:** gpt-4o-mini shows best performance
+1. **General Use:** gemini-3-pro-preview offers best overall performance with 29% pass rate
+2. **Mathematical Tasks:** gemini-3-pro-preview is the only model to pass compound interest calculations
+3. **Statistical Analysis:** gpt-4o-mini shows best performance (44/100)
+4. **Logical Operations:** claude-sonnet-4-5 excels in grade calculations and conditional logic (59/100)
+5. **Cost-Sensitive:** claude-haiku-4-5 matches claude-sonnet-4-5 performance at potentially lower cost
+6. **Second Choice:** gpt-4o-mini for balanced performance across all categories
 
 ### For Benchmark Improvement
 1. **Test Validation:** Review basic-02 test expectations - all models failed despite correct formula logic
@@ -220,12 +233,26 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 ## Conclusion
 
-The benchmark reveals that current AI models excel at structured spreadsheet generation with clear requirements but struggle with complex multi-step calculations and formatting edge cases. The 14% pass rate across top models indicates significant room for improvement in spreadsheet generation tasks.
+The benchmark reveals that current AI models excel at structured spreadsheet generation with clear requirements but struggle with complex multi-step calculations and formatting edge cases. **Google's gemini-3-pro-preview emerges as the clear leader** with a 29% pass rate and 58.4 average score, nearly doubling the pass rate of other tested models.
 
-The close performance clustering (53-56 average score) suggests these models have reached a similar capability ceiling for this task type. Future improvements may require:
-- Enhanced training on spreadsheet-specific tasks
+### Key Takeaways
+
+1. **Gemini-3-pro-preview leads the pack**: The only model to achieve >20% pass rate and successfully handle compound interest calculations, demonstrating superior mathematical reasoning.
+
+2. **Performance clustering among non-Gemini models**: OpenAI and Anthropic models cluster tightly (53-56 average score), suggesting similar capability levels for this task type.
+
+3. **Mathematical reasoning gap**: Gemini's ability to pass the mathematical-01 test while all other models failed highlights a significant advantage in complex formula generation.
+
+4. **All models struggle with advanced tasks**: Despite Gemini's lead, even the best model only achieved 29% pass rate, indicating substantial room for improvement across the board.
+
+Future improvements may require:
+- Enhanced training on spreadsheet-specific tasks (particularly for non-Gemini models)
 - Better handling of multi-step numerical calculations
 - Improved understanding of when to format as percentage vs. calculated amount
 - More robust formula evaluation logic
 
-All top 4 models are production-ready for simple spreadsheet generation tasks (Level 1), but require careful validation for intermediate and advanced use cases.
+### Production Readiness
+
+- **gemini-3-pro-preview**: Production-ready for Level 1 and some Level 2 tasks (especially mathematical)
+- **gpt-4o-mini, claude-sonnet-4-5, claude-haiku-4-5**: Production-ready for simple spreadsheet generation (Level 1), requires validation for intermediate and advanced use cases
+- **gpt-4o**: Suitable for basic tasks, needs careful validation for complex operations
