@@ -60,12 +60,16 @@ class OpenAIClient implements LLMClient {
       const data = await response.json();
       const latency = Date.now() - startTime;
 
+      // Use optional chaining to handle potential API variations
+      const message = data.choices?.[0]?.message;
+      const content = message?.content ?? "";
+
       return {
-        content: data.choices[0].message.content,
+        content,
         usage: {
-          promptTokens: data.usage.prompt_tokens,
-          completionTokens: data.usage.completion_tokens,
-          totalTokens: data.usage.total_tokens,
+          promptTokens: data.usage?.prompt_tokens || 0,
+          completionTokens: data.usage?.completion_tokens || 0,
+          totalTokens: data.usage?.total_tokens || 0,
         },
         latency,
       };
@@ -131,12 +135,15 @@ class AnthropicClient implements LLMClient {
       const data = await response.json();
       const latency = Date.now() - startTime;
 
+      // Use optional chaining to handle potential API variations
+      const content = data.content?.[0]?.text ?? "";
+
       return {
-        content: data.content[0].text,
+        content,
         usage: {
-          promptTokens: data.usage.input_tokens,
-          completionTokens: data.usage.output_tokens,
-          totalTokens: data.usage.input_tokens + data.usage.output_tokens,
+          promptTokens: data.usage?.input_tokens || 0,
+          completionTokens: data.usage?.output_tokens || 0,
+          totalTokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
         },
         latency,
       };
@@ -367,8 +374,12 @@ class GrokClient implements LLMClient {
       const data = await response.json();
       const latency = Date.now() - startTime;
 
+      // Use optional chaining like server implementation
+      const message = data.choices?.[0]?.message;
+      const content = message?.content ?? "";
+
       return {
-        content: data.choices[0].message.content,
+        content,
         usage: {
           promptTokens: data.usage?.prompt_tokens || 0,
           completionTokens: data.usage?.completion_tokens || 0,

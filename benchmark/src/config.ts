@@ -255,23 +255,16 @@ export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
   },
 
   // Grok/xAI Models
-  "grok-4-1": {
-    provider: "grok",
-    model: "grok-4-1",
-    temperature: 0.0,
-    maxTokens: 4000,
-    systemPrompt: DEFAULT_SYSTEM_PROMPT,
-  },
-  "grok-4-1-fast": {
+  "grok-4-1-fast-reasoning": {
     provider: "grok",
     model: "grok-4-1-fast-reasoning",
     temperature: 0.0,
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
   },
-  "grok-4": {
+  "grok-2-latest": {
     provider: "grok",
-    model: "grok-4",
+    model: "grok-2-latest",
     temperature: 0.0,
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -279,6 +272,13 @@ export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
   "grok-beta": {
     provider: "grok",
     model: "grok-beta",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  "grok-2-1212": {
+    provider: "grok",
+    model: "grok-2-1212",
     temperature: 0.0,
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
