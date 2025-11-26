@@ -1,0 +1,67 @@
+{
+  "id": "logical-01",
+  "title": "Grade Calculator",
+  "prompt": "Create a grade calculator for 5 students with 3 test scores each:\n\n1. Alice: 92, 88, 95\n2. Bob: 78, 82, 75\n3. Charlie: 65, 70, 68\n4. Diana: 88, 92, 90\n5. Eve: 55, 62, 58\n\nFor each student, calculate:\n- Average score (using AVERAGE function)\n- Letter grade using IF:\n  - A: ≥ 90\n  - B: ≥ 80\n  - C: ≥ 70\n  - D: ≥ 60\n  - F: < 60\n\nUse nested IF formulas for letter grades.",
+  "level": 3,
+  "category": "logical",
+  "requiredElements": [
+    {
+      "type": "label",
+      "value": "Student",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Average",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Grade",
+      "caseSensitive": false
+    }
+  ],
+  "requiredValues": [],
+  "assertions": [
+    {
+      "name": "Alice's average is correct (~91.67)",
+      "extractor": "Alice",
+      "expected": 91.67,
+      "tolerance": 0.5
+    },
+    {
+      "name": "Bob's average is correct (~78.33)",
+      "extractor": "Bob",
+      "expected": 78.33,
+      "tolerance": 0.5
+    },
+    {
+      "name": "Charlie's average is correct (~67.67)",
+      "extractor": "Charlie",
+      "expected": 67.67,
+      "tolerance": 0.5
+    },
+    {
+      "name": "Eve's average is correct (~58.33)",
+      "extractor": "Eve",
+      "expected": 58.33,
+      "tolerance": 0.5
+    }
+  ],
+  "formulaRequirements": [
+    {
+      "description": "Uses AVERAGE function for calculating averages",
+      "check": "hasFunction('AVERAGE')"
+    },
+    {
+      "description": "Uses IF function for letter grades",
+      "check": "hasFunction('IF')"
+    }
+  ],
+  "expectedFunctions": ["AVERAGE", "IF"],
+  "metadata": {
+    "author": "Benchmark System",
+    "created": "2025-11-25",
+    "notes": "Tests nested IF statements and AVERAGE function"
+  }
+}

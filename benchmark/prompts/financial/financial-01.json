@@ -1,0 +1,69 @@
+{
+  "id": "financial-01",
+  "title": "Loan Calculator",
+  "prompt": "Create a loan payment calculator with the following:\n\nLoan Details:\n- Principal Amount: $250,000\n- Annual Interest Rate: 4.5%\n- Loan Term: 30 years\n\nCalculate:\n- Monthly Interest Rate (Annual Rate / 12)\n- Number of Payments (Years × 12)\n- Monthly Payment (use PMT function or equivalent formula)\n- Total Amount Paid (Monthly Payment × Number of Payments)\n- Total Interest Paid (Total Paid - Principal)\n\nUse formulas for all calculations.",
+  "level": 3,
+  "category": "financial",
+  "requiredElements": [
+    {
+      "type": "label",
+      "value": "Principal",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Rate",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Term",
+      "caseSensitive": false
+    }
+  ],
+  "requiredValues": [
+    {
+      "label": "Principal",
+      "value": 250000,
+      "tolerance": 0
+    },
+    {
+      "label": "Term",
+      "value": 30,
+      "tolerance": 0
+    }
+  ],
+  "assertions": [
+    {
+      "name": "Number of payments is 360 (30 years × 12)",
+      "extractor": "Payments",
+      "expected": 360,
+      "tolerance": 0
+    },
+    {
+      "name": "Monthly payment is correct (~$1,267)",
+      "extractor": "Payment",
+      "expected": 1267,
+      "tolerance": 10
+    },
+    {
+      "name": "Total interest paid (~$206,000)",
+      "extractor": "Interest",
+      "expected": 206000,
+      "tolerance": 5000
+    }
+  ],
+  "formulaRequirements": [
+    {
+      "description": "Uses PMT function or equivalent formula",
+      "check": "hasFunction('PMT') || hasComplexFormula()",
+      "optional": true
+    }
+  ],
+  "expectedFunctions": ["PMT"],
+  "metadata": {
+    "author": "Benchmark System",
+    "created": "2025-11-25",
+    "notes": "Tests financial PMT function and multi-step calculations"
+  }
+}

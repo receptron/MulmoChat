@@ -30,7 +30,11 @@
     "test:image:comfy": "tsx server/tests/test-comfyui.ts",
     "test:functions": "tsx src/tools/models/functions/test-functions.ts",
     "test:spreadsheet": "tsx src/tools/models/spreadsheet-engine/__tests__/run-all-fixtures.ts",
-    "test:shapescript": "tsx test-shapescript.ts"
+    "test:shapescript": "tsx test-shapescript.ts",
+    "benchmark:llm": "tsx benchmark/src/cli.ts",
+    "benchmark:test": "tsx benchmark/src/test-runner.ts",
+    "benchmark:check": "tsx benchmark/src/cli.ts check",
+    "benchmark:list": "tsx benchmark/src/cli.ts list"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",

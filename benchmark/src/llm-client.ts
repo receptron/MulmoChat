@@ -1,0 +1,278 @@
+/**
+ * LLM Client Abstraction
+ *
+ * Provides unified interface for calling different LLM providers
+ * (OpenAI, Anthropic, Google Gemini) for spreadsheet generation.
+ */
+
+import type { LLMClient, LLMConfig, LLMResponse } from "./types";
+
+/**
+ * OpenAI API Client
+ */
+class OpenAIClient implements LLMClient {
+  public readonly name: string;
+  private config: LLMConfig;
+
+  constructor(config: LLMConfig) {
+    if (config.provider !== "openai") {
+      throw new Error("OpenAIClient requires provider to be 'openai'");
+    }
+    this.config = config;
+    this.name = `OpenAI ${config.model}`;
+  }
+
+  async generateSpreadsheet(
+    prompt: string,
+    systemPrompt?: string,
+  ): Promise<LLMResponse> {
+    const startTime = Date.now();
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.config.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt || this.config.systemPrompt,
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: this.config.temperature || 0,
+          max_tokens: this.config.maxTokens || 4000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      const latency = Date.now() - startTime;
+
+      return {
+        content: data.choices[0].message.content,
+        usage: {
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens,
+        },
+        latency,
+      };
+    } catch (error) {
+      const latency = Date.now() - startTime;
+      return {
+        content: "",
+        latency,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+}
+
+/**
+ * Anthropic API Client
+ */
+class AnthropicClient implements LLMClient {
+  public readonly name: string;
+  private config: LLMConfig;
+
+  constructor(config: LLMConfig) {
+    if (config.provider !== "anthropic") {
+      throw new Error("AnthropicClient requires provider to be 'anthropic'");
+    }
+    this.config = config;
+    this.name = `Anthropic ${config.model}`;
+  }
+
+  async generateSpreadsheet(
+    prompt: string,
+    systemPrompt?: string,
+  ): Promise<LLMResponse> {
+    const startTime = Date.now();
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": this.config.apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          max_tokens: this.config.maxTokens || 4000,
+          temperature: this.config.temperature || 0,
+          system: systemPrompt || this.config.systemPrompt,
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Anthropic API error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      const latency = Date.now() - startTime;
+
+      return {
+        content: data.content[0].text,
+        usage: {
+          promptTokens: data.usage.input_tokens,
+          completionTokens: data.usage.output_tokens,
+          totalTokens: data.usage.input_tokens + data.usage.output_tokens,
+        },
+        latency,
+      };
+    } catch (error) {
+      const latency = Date.now() - startTime;
+      return {
+        content: "",
+        latency,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+}
+
+/**
+ * Google Gemini API Client
+ */
+class GeminiClient implements LLMClient {
+  public readonly name: string;
+  private config: LLMConfig;
+
+  constructor(config: LLMConfig) {
+    if (config.provider !== "google") {
+      throw new Error("GeminiClient requires provider to be 'google'");
+    }
+    this.config = config;
+    this.name = `Google ${config.model}`;
+  }
+
+  async generateSpreadsheet(
+    prompt: string,
+    systemPrompt?: string,
+  ): Promise<LLMResponse> {
+    const startTime = Date.now();
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`;
+
+      const fullPrompt = systemPrompt
+        ? `${systemPrompt}\n\n${prompt}`
+        : `${this.config.systemPrompt}\n\n${prompt}`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: fullPrompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: this.config.temperature || 0,
+            maxOutputTokens: this.config.maxTokens || 4000,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      const latency = Date.now() - startTime;
+
+      // Extract text from Gemini response
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      return {
+        content,
+        usage: {
+          promptTokens: data.usageMetadata?.promptTokenCount || 0,
+          completionTokens: data.usageMetadata?.candidatesTokenCount || 0,
+          totalTokens: data.usageMetadata?.totalTokenCount || 0,
+        },
+        latency,
+      };
+    } catch (error) {
+      const latency = Date.now() - startTime;
+      return {
+        content: "",
+        latency,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+}
+
+/**
+ * Create LLM client based on configuration
+ */
+export function createLLMClient(config: LLMConfig): LLMClient {
+  switch (config.provider) {
+    case "openai":
+      return new OpenAIClient(config);
+    case "anthropic":
+      return new AnthropicClient(config);
+    case "google":
+      return new GeminiClient(config);
+    default:
+      throw new Error(`Unsupported provider: ${config.provider}`);
+  }
+}
+
+/**
+ * Extract JSON from LLM response
+ * Handles cases where LLM wraps JSON in markdown code blocks
+ */
+export function extractJSON(content: string): string {
+  // Try to parse as-is first
+  try {
+    JSON.parse(content);
+    return content;
+  } catch {
+    // Not valid JSON, try to extract from markdown
+  }
+
+  // Look for JSON in markdown code blocks
+  const jsonBlockMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+  if (jsonBlockMatch) {
+    return jsonBlockMatch[1].trim();
+  }
+
+  // Look for JSON object anywhere in the content
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return jsonMatch[0].trim();
+  }
+
+  // Return original content if no JSON found
+  return content;
+}

@@ -1,0 +1,62 @@
+{
+  "id": "mathematical-01",
+  "title": "Compound Interest Calculator",
+  "prompt": "Create a compound interest calculator with the following:\n\nInput values:\n- Principal: $10,000\n- Annual Interest Rate: 6%\n- Years: 5\n- Compounds per year: 12 (monthly)\n\nCalculate:\n- Total periods (Years × Compounds per year)\n- Rate per period (Annual Rate / Compounds per year)\n- Final Amount using the formula: Principal × (1 + rate per period)^total periods\n- Interest Earned (Final Amount - Principal)\n\nUse formulas for all calculations.",
+  "level": 2,
+  "category": "mathematical",
+  "requiredElements": [
+    {
+      "type": "label",
+      "value": "Principal",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Rate",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Years",
+      "caseSensitive": false
+    }
+  ],
+  "requiredValues": [
+    {
+      "label": "Principal",
+      "value": 10000,
+      "tolerance": 0
+    },
+    {
+      "label": "Years",
+      "value": 5,
+      "tolerance": 0
+    }
+  ],
+  "assertions": [
+    {
+      "name": "Final amount is correct (~$13,488.50)",
+      "extractor": "Final",
+      "expected": 13488.5,
+      "tolerance": 10
+    },
+    {
+      "name": "Interest earned is correct (~$3,488.50)",
+      "extractor": "Interest",
+      "expected": 3488.5,
+      "tolerance": 10
+    }
+  ],
+  "formulaRequirements": [
+    {
+      "description": "Final amount uses exponentiation formula",
+      "check": "hasFormulaWithOperator('^')"
+    }
+  ],
+  "expectedFunctions": [],
+  "metadata": {
+    "author": "Benchmark System",
+    "created": "2025-11-25",
+    "notes": "Tests mathematical operations including exponentiation"
+  }
+}

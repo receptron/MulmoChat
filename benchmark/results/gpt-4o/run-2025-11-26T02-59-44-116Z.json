@@ -1,0 +1,407 @@
+{
+  "metadata": {
+    "model": "gpt-4o",
+    "timestamp": "2025-11-26T02:59:44.115Z",
+    "duration": 7,
+    "config": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "temperature": 0,
+      "maxTokens": 4000,
+      "systemPrompt": "You are a spreadsheet generation assistant. Your task is to generate spreadsheets using structured JSON format.\n\nIMPORTANT RULES:\n1. Always use formulas (starting with =) for calculations. NEVER hard-code calculated values.\n2. Use appropriate spreadsheet functions (SUM, AVERAGE, IF, VLOOKUP, etc.)\n3. Format numbers appropriately (currency with $, percentages with %, etc.)\n4. Include clear labels and headers\n5. Organize data logically\n\nOutput Format:\n{\n  \"title\": \"Spreadsheet Title\",\n  \"sheets\": [\n    {\n      \"name\": \"Sheet Name\",\n      \"data\": [\n        [{\"v\": \"Label\", \"f\": \"format\"}, {\"v\": 123, \"f\": \"$#,##0\"}],\n        [{\"v\": \"Total\", \"f\": \"$#,##0\"}, {\"v\": \"=SUM(B1:B10)\", \"f\": \"$#,##0\"}]\n      ]\n    }\n  ]\n}\n\nCell format:\n- v: value (can be string, number, or formula starting with =)\n- f: format code (optional, e.g., \"$#,##0\" for currency, \"0.00%\" for percentage)\n\nRespond ONLY with valid JSON. No additional text or explanation."
+    }
+  },
+  "summary": {
+    "totalPrompts": 2,
+    "averageScore": 60,
+    "medianScore": 60,
+    "passRate": 0.5,
+    "perfectRate": 0
+  },
+  "byLevel": {
+    "1": {
+      "count": 2,
+      "avgScore": 60,
+      "passRate": 0.5
+    }
+  },
+  "byCategory": {
+    "basic": {
+      "count": 2,
+      "avgScore": 60,
+      "passRate": 0.5
+    }
+  },
+  "results": [
+    {
+      "testCaseId": "basic-01",
+      "passed": true,
+      "score": 97,
+      "maxScore": 100,
+      "dataPresence": {
+        "score": 15,
+        "maxScore": 15,
+        "foundElements": [
+          "Rent",
+          "Food",
+          "Transport",
+          "Total"
+        ],
+        "missingElements": [],
+        "foundValues": [
+          {
+            "label": "Rent",
+            "value": 1200
+          },
+          {
+            "label": "Food",
+            "value": 400
+          },
+          {
+            "label": "Transport",
+            "value": 200
+          }
+        ],
+        "missingValues": []
+      },
+      "resultCorrectness": {
+        "score": 50,
+        "maxScore": 50,
+        "assertions": [
+          {
+            "name": "Total is correct",
+            "passed": true,
+            "expected": 1800,
+            "actual": 1800
+          }
+        ],
+        "passedCount": 1,
+        "totalCount": 1
+      },
+      "formulaUsage": {
+        "score": 25,
+        "maxScore": 25,
+        "formulaCount": 1,
+        "hardCodedCount": 0,
+        "formulasFound": [
+          {
+            "cell": "B5",
+            "formula": "=SUM(B2:B4)",
+            "functions": [
+              "SUM"
+            ]
+          }
+        ],
+        "functionsUsed": [
+          "SUM"
+        ],
+        "expectedFunctions": [
+          "SUM"
+        ],
+        "missingFunctions": [],
+        "requirementResults": [
+          {
+            "description": "Total uses a formula, not hard-coded value",
+            "passed": true,
+            "optional": false
+          }
+        ]
+      },
+      "formatting": {
+        "score": 7,
+        "maxScore": 10,
+        "hasCurrency": true,
+        "hasPercentage": false,
+        "hasNumberFormatting": true,
+        "formatCount": 4
+      },
+      "errors": [],
+      "warnings": [],
+      "executionTime": 2,
+      "generatedOutput": {
+        "title": "Monthly Expenses",
+        "sheets": [
+          {
+            "name": "Expenses",
+            "data": [
+              [
+                {
+                  "v": "Item",
+                  "f": ""
+                },
+                {
+                  "v": "Cost",
+                  "f": ""
+                }
+              ],
+              [
+                {
+                  "v": "Rent",
+                  "f": ""
+                },
+                {
+                  "v": 1200,
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Food",
+                  "f": ""
+                },
+                {
+                  "v": 400,
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Transport",
+                  "f": ""
+                },
+                {
+                  "v": 200,
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Total",
+                  "f": ""
+                },
+                {
+                  "v": "=SUM(B2:B4)",
+                  "f": "$#,##0"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "testCaseId": "basic-02",
+      "passed": false,
+      "score": 23,
+      "maxScore": 100,
+      "dataPresence": {
+        "score": 4.05,
+        "maxScore": 15,
+        "foundElements": [
+          "Income",
+          "Housing",
+          "Food",
+          "Transport",
+          "Savings"
+        ],
+        "missingElements": [],
+        "foundValues": [],
+        "missingValues": [
+          "Income"
+        ]
+      },
+      "resultCorrectness": {
+        "score": 0,
+        "maxScore": 50,
+        "assertions": [
+          {
+            "name": "Housing is 30% of income ($1500)",
+            "passed": false,
+            "expected": 1500,
+            "actual": 30
+          },
+          {
+            "name": "Food is 15% of income ($750)",
+            "passed": false,
+            "expected": 750,
+            "actual": 15
+          },
+          {
+            "name": "Total expenses equal income ($5000)",
+            "passed": false,
+            "expected": 5000,
+            "actual": 100
+          }
+        ],
+        "passedCount": 0,
+        "totalCount": 3
+      },
+      "formulaUsage": {
+        "score": 8.5,
+        "maxScore": 25,
+        "formulaCount": 6,
+        "hardCodedCount": 3,
+        "formulasFound": [
+          {
+            "cell": "C3",
+            "formula": "=B2*0.30",
+            "functions": []
+          },
+          {
+            "cell": "C4",
+            "formula": "=B2*0.15",
+            "functions": []
+          },
+          {
+            "cell": "C5",
+            "formula": "=B2*0.10",
+            "functions": []
+          },
+          {
+            "cell": "C6",
+            "formula": "=B2*0.20",
+            "functions": []
+          },
+          {
+            "cell": "C7",
+            "formula": "=B2*0.25",
+            "functions": []
+          },
+          {
+            "cell": "C8",
+            "formula": "=SUM(C3:C7)",
+            "functions": [
+              "SUM"
+            ]
+          }
+        ],
+        "functionsUsed": [
+          "SUM"
+        ],
+        "expectedFunctions": [],
+        "missingFunctions": [],
+        "requirementResults": [
+          {
+            "description": "Category amounts use formulas (percentage calculations)",
+            "passed": true,
+            "optional": false
+          }
+        ]
+      },
+      "formatting": {
+        "score": 10,
+        "maxScore": 10,
+        "hasCurrency": true,
+        "hasPercentage": true,
+        "hasNumberFormatting": true,
+        "formatCount": 15
+      },
+      "errors": [],
+      "warnings": [],
+      "executionTime": 1,
+      "generatedOutput": {
+        "title": "Monthly Budget",
+        "sheets": [
+          {
+            "name": "Budget",
+            "data": [
+              [
+                {
+                  "v": "Category"
+                },
+                {
+                  "v": "Percentage"
+                },
+                {
+                  "v": "Amount",
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Income"
+                },
+                {
+                  "v": "100%",
+                  "f": "0.00%"
+                },
+                {
+                  "v": 5000,
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Housing"
+                },
+                {
+                  "v": "30%",
+                  "f": "0.00%"
+                },
+                {
+                  "v": "=B2*0.30",
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Food"
+                },
+                {
+                  "v": "15%",
+                  "f": "0.00%"
+                },
+                {
+                  "v": "=B2*0.15",
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Transport"
+                },
+                {
+                  "v": "10%",
+                  "f": "0.00%"
+                },
+                {
+                  "v": "=B2*0.10",
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Savings"
+                },
+                {
+                  "v": "20%",
+                  "f": "0.00%"
+                },
+                {
+                  "v": "=B2*0.20",
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Other"
+                },
+                {
+                  "v": "25%",
+                  "f": "0.00%"
+                },
+                {
+                  "v": "=B2*0.25",
+                  "f": "$#,##0"
+                }
+              ],
+              [
+                {
+                  "v": "Total Expenses"
+                },
+                {
+                  "v": "100%",
+                  "f": "0.00%"
+                },
+                {
+                  "v": "=SUM(C3:C7)",
+                  "f": "$#,##0"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

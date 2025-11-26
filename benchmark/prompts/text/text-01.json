@@ -1,0 +1,45 @@
+{
+  "id": "text-01",
+  "title": "Email Generator",
+  "prompt": "Create a contact list with first names and last names for 5 people:\n\n1. John Smith\n2. Sarah Johnson\n3. Michael Brown\n4. Emily Davis\n5. David Wilson\n\nGenerate email addresses in the format: firstname.lastname@company.com\nUse text formulas to:\n- Convert names to lowercase\n- Concatenate first name, dot, last name, and domain\n\nAll email addresses should use formulas, not hard-coded values.",
+  "level": 2,
+  "category": "text",
+  "requiredElements": [
+    {
+      "type": "label",
+      "value": "First",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Last",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Email",
+      "caseSensitive": false
+    }
+  ],
+  "requiredValues": [],
+  "assertions": [
+    {
+      "name": "John's email contains expected format",
+      "extractor": "john.smith",
+      "expected": "john.smith@company.com",
+      "tolerance": 0
+    }
+  ],
+  "formulaRequirements": [
+    {
+      "description": "Email addresses use formulas (concatenation)",
+      "check": "hasFormulasInEmailColumn()"
+    }
+  ],
+  "expectedFunctions": ["LOWER", "CONCAT"],
+  "metadata": {
+    "author": "Benchmark System",
+    "created": "2025-11-25",
+    "notes": "Tests text manipulation functions (LOWER, CONCAT)"
+  }
+}

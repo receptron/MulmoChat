@@ -1,0 +1,73 @@
+{
+  "id": "basic-02",
+  "title": "Simple Budget",
+  "prompt": "Create a monthly budget spreadsheet with:\n- Income: $5000\n- Housing: 30% of income\n- Food: 15% of income\n- Transport: 10% of income\n- Savings: 20% of income\n- Other: 25% of income\n\nShow both the percentage and dollar amount for each category using formulas. Include a total expenses row.",
+  "level": 1,
+  "category": "basic",
+  "requiredElements": [
+    {
+      "type": "label",
+      "value": "Income",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Housing",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Food",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Transport",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Savings",
+      "caseSensitive": false
+    }
+  ],
+  "requiredValues": [
+    {
+      "label": "Income",
+      "value": 5000,
+      "tolerance": 0
+    }
+  ],
+  "assertions": [
+    {
+      "name": "Housing is 30% of income ($1500)",
+      "extractor": "Housing",
+      "expected": 1500,
+      "tolerance": 1
+    },
+    {
+      "name": "Food is 15% of income ($750)",
+      "extractor": "Food",
+      "expected": 750,
+      "tolerance": 1
+    },
+    {
+      "name": "Total expenses equal income ($5000)",
+      "extractor": "Total",
+      "expected": 5000,
+      "tolerance": 1
+    }
+  ],
+  "formulaRequirements": [
+    {
+      "description": "Category amounts use formulas (percentage calculations)",
+      "check": "cellWithLabel('Housing').hasFormula()"
+    }
+  ],
+  "expectedFunctions": [],
+  "metadata": {
+    "author": "Benchmark System",
+    "created": "2025-11-25",
+    "notes": "Tests percentage calculations and cell references"
+  }
+}

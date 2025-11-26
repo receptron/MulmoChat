@@ -1,0 +1,74 @@
+{
+  "id": "statistical-01",
+  "title": "Sales Analysis",
+  "prompt": "Create a sales spreadsheet with the following products:\n\n1. Laptop - Unit Price: $999, Quantity: 5\n2. Mouse - Unit Price: $25, Quantity: 15\n3. Keyboard - Unit Price: $75, Quantity: 10\n4. Monitor - Unit Price: $299, Quantity: 8\n5. Headphones - Unit Price: $149, Quantity: 12\n\nFor each product, calculate the Total (Price × Quantity).\nAt the bottom, show:\n- Sum of all sales\n- Average sale amount\n- Highest sale\n- Lowest sale\n\nUse formulas for all calculations.",
+  "level": 2,
+  "category": "statistical",
+  "requiredElements": [
+    {
+      "type": "label",
+      "value": "Product",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Price",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Quantity",
+      "caseSensitive": false
+    },
+    {
+      "type": "label",
+      "value": "Total",
+      "caseSensitive": false
+    }
+  ],
+  "requiredValues": [],
+  "assertions": [
+    {
+      "name": "Laptop total is correct (999 × 5 = 4995)",
+      "extractor": "Laptop",
+      "expected": 4995,
+      "tolerance": 1
+    },
+    {
+      "name": "Sum of all sales",
+      "extractor": "Sum",
+      "expected": 11654,
+      "tolerance": 2
+    },
+    {
+      "name": "Average sale amount",
+      "extractor": "Average",
+      "expected": 2330.8,
+      "tolerance": 2
+    },
+    {
+      "name": "Highest sale (Laptop: 4995)",
+      "extractor": "Highest",
+      "expected": 4995,
+      "tolerance": 1
+    },
+    {
+      "name": "Lowest sale (Mouse: 375)",
+      "extractor": "Lowest",
+      "expected": 375,
+      "tolerance": 1
+    }
+  ],
+  "formulaRequirements": [
+    {
+      "description": "Product totals use multiplication formulas",
+      "check": "hasFormulasWithOperator('*')"
+    }
+  ],
+  "expectedFunctions": ["SUM", "AVERAGE", "MAX", "MIN"],
+  "metadata": {
+    "author": "Benchmark System",
+    "created": "2025-11-25",
+    "notes": "Tests statistical functions and basic arithmetic"
+  }
+}
