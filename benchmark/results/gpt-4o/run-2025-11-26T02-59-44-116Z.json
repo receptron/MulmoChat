@@ -13,22 +13,22 @@
   },
   "summary": {
     "totalPrompts": 2,
-    "averageScore": 60,
-    "medianScore": 60,
+    "averageScore": 56.5,
+    "medianScore": 56.5,
     "passRate": 0.5,
-    "perfectRate": 0
+    "perfectRate": 0.5
   },
   "byLevel": {
     "1": {
       "count": 2,
-      "avgScore": 60,
+      "avgScore": 56.5,
       "passRate": 0.5
     }
   },
   "byCategory": {
     "basic": {
       "count": 2,
-      "avgScore": 60,
+      "avgScore": 56.5,
       "passRate": 0.5
     }
   },
@@ -36,7 +36,7 @@
     {
       "testCaseId": "basic-01",
       "passed": true,
-      "score": 97,
+      "score": 100,
       "maxScore": 100,
       "dataPresence": {
         "score": 15,
@@ -108,8 +108,22 @@
         ]
       },
       "formatting": {
-        "score": 7,
+        "score": 10,
         "maxScore": 10,
+        "requirementResults": [
+          {
+            "type": "currency",
+            "appliesTo": [
+              "Rent",
+              "Food",
+              "Transport",
+              "Total"
+            ],
+            "required": true,
+            "passed": true,
+            "details": "✓ \"Rent\" has currency format; ✓ \"Food\" has currency format; ✓ \"Transport\" has currency format; ✓ \"Total\" has currency format"
+          }
+        ],
         "hasCurrency": true,
         "hasPercentage": false,
         "hasNumberFormatting": true,
@@ -117,7 +131,7 @@
       },
       "errors": [],
       "warnings": [],
-      "executionTime": 2,
+      "executionTime": 0,
       "generatedOutput": {
         "title": "Monthly Expenses",
         "sheets": [
@@ -182,7 +196,7 @@
     {
       "testCaseId": "basic-02",
       "passed": false,
-      "score": 23,
+      "score": 13,
       "maxScore": 100,
       "dataPresence": {
         "score": 4.05,
@@ -208,19 +222,19 @@
             "name": "Housing is 30% of income ($1500)",
             "passed": false,
             "expected": 1500,
-            "actual": 30
+            "actual": 0
           },
           {
             "name": "Food is 15% of income ($750)",
             "passed": false,
             "expected": 750,
-            "actual": 15
+            "actual": 0
           },
           {
             "name": "Total expenses equal income ($5000)",
             "passed": false,
             "expected": 5000,
-            "actual": 100
+            "actual": 0
           }
         ],
         "passedCount": 0,
@@ -279,8 +293,25 @@
         ]
       },
       "formatting": {
-        "score": 10,
+        "score": 0,
         "maxScore": 10,
+        "requirementResults": [
+          {
+            "type": "currency",
+            "appliesTo": [
+              "Income",
+              "Housing",
+              "Food",
+              "Transport",
+              "Savings",
+              "Other",
+              "Total"
+            ],
+            "required": true,
+            "passed": false,
+            "details": "❌ \"Income\" missing currency format; ❌ \"Housing\" missing currency format; ❌ \"Food\" missing currency format; ❌ \"Transport\" missing currency format; ❌ \"Savings\" missing currency format; ❌ \"Other\" missing currency format; ❌ \"Total\" missing currency format"
+          }
+        ],
         "hasCurrency": true,
         "hasPercentage": true,
         "hasNumberFormatting": true,

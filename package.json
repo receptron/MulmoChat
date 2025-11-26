@@ -34,7 +34,8 @@
     "benchmark:llm": "tsx benchmark/src/cli.ts",
     "benchmark:test": "tsx benchmark/src/test-runner.ts",
     "benchmark:check": "tsx benchmark/src/cli.ts check",
-    "benchmark:list": "tsx benchmark/src/cli.ts list"
+    "benchmark:list": "tsx benchmark/src/cli.ts list",
+    "benchmark:re-evaluate": "tsx benchmark/src/re-evaluate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
