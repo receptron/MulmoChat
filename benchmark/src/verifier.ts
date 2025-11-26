@@ -331,32 +331,41 @@ export function findByLabelWithFormulas(
   const originalData = originalSheet.data;
   const calculatedData = calculatedSheet.data;
 
-  // First pass: look for exact matches
-  // Second pass: look for partial matches
-  for (const exactMatch of [true, false]) {
-    for (let row = 0; row < originalData.length; row++) {
-      for (let col = 0; col < originalData[row].length; col++) {
-        const cell = originalData[row][col];
-        const cellValue = typeof cell === "object" && cell !== null && "v" in cell ? cell.v : cell;
-        const cellStr = String(cellValue);
+  // Collect all potential matches with scoring
+  const potentialMatches: Array<{
+    row: number;
+    col: number;
+    cellStr: string;
+    numericCells: Array<{ col: number; value: number; hasFormula: boolean }>;
+    score: number;
+  }> = [];
 
-        // Check if this cell matches the label
-        let matches = false;
-        if (exactMatch) {
-          // Exact match (or match ignoring case)
-          matches = caseSensitive
-            ? cellStr === label
-            : cellStr.toLowerCase() === label.toLowerCase();
-        } else {
-          // Partial match (includes)
-          matches = caseSensitive
-            ? cellStr.includes(label)
-            : cellStr.toLowerCase().includes(label.toLowerCase());
-        }
+  for (let row = 0; row < originalData.length; row++) {
+    for (let col = 0; col < originalData[row].length; col++) {
+      const cell = originalData[row][col];
+      const cellValue = typeof cell === "object" && cell !== null && "v" in cell ? cell.v : cell;
+      const cellStr = String(cellValue);
 
-        if (matches) {
-        // Found the label, now look for value in the same row
-        // Collect all numeric cells in the same row (to the right of the label)
+      // Calculate match score
+      let matchScore = 0;
+      const searchLower = label.toLowerCase();
+      const cellLower = cellStr.toLowerCase();
+
+      if (caseSensitive ? cellStr === label : cellLower === searchLower) {
+        matchScore = 1000; // Exact match - highest priority
+      } else if (caseSensitive ? cellStr.startsWith(label) : cellLower.startsWith(searchLower)) {
+        matchScore = 100; // Starts with - high priority
+      } else if (caseSensitive ? cellStr.includes(label) : cellLower.includes(searchLower)) {
+        matchScore = 10; // Contains - lower priority
+      }
+
+      // Apply length penalty - prefer shorter, more specific labels
+      if (matchScore > 0) {
+        matchScore -= cellStr.length * 0.1;
+      }
+
+      if (matchScore > 0) {
+        // Found a matching label, collect numeric cells in the same row
         const numericCells: Array<{
           col: number;
           value: number;
@@ -399,35 +408,57 @@ export function findByLabelWithFormulas(
           }
         }
 
-        // Prioritize cells with formulas over static values
-        const formulaCells = numericCells.filter((c) => c.hasFormula);
-        if (formulaCells.length > 0) {
-          // Return the rightmost formula cell (often the final result)
-          const bestCell = formulaCells[formulaCells.length - 1];
-          return {
-            label,
-            value: bestCell.value,
-            location: { row, col: bestCell.col, value: calculatedData[row][bestCell.col] },
-            confidence: 1.0,
-          };
-        }
-
-        // If no formula cells, return the rightmost numeric cell (usually the final value)
+        // Only add to potential matches if we found numeric cells
         if (numericCells.length > 0) {
-          const bestCell = numericCells[numericCells.length - 1];
-          return {
-            label,
-            value: bestCell.value,
-            location: { row, col: bestCell.col, value: calculatedData[row][bestCell.col] },
-            confidence: 0.9,
-          };
-        }
-
-        // Fallback: use original findByLabel on calculated sheet
-        return findByLabel(calculatedSheet, label, caseSensitive);
+          potentialMatches.push({
+            row,
+            col,
+            cellStr,
+            numericCells,
+            score: matchScore,
+          });
         }
       }
     }
+  }
+
+  // Sort matches by score (highest first)
+  potentialMatches.sort((a, b) => b.score - a.score);
+
+  // Return the best match
+  if (potentialMatches.length > 0) {
+    const bestMatch = potentialMatches[0];
+    const numericCells = bestMatch.numericCells;
+
+    // Prioritize cells with formulas over static values
+    const formulaCells = numericCells.filter((c) => c.hasFormula);
+    if (formulaCells.length > 0) {
+      // Return the rightmost formula cell (often the final result)
+      const bestCell = formulaCells[formulaCells.length - 1];
+      return {
+        label,
+        value: bestCell.value,
+        location: {
+          row: bestMatch.row,
+          col: bestCell.col,
+          value: calculatedData[bestMatch.row][bestCell.col],
+        },
+        confidence: 1.0,
+      };
+    }
+
+    // If no formula cells, return the rightmost numeric cell (usually the final value)
+    const bestCell = numericCells[numericCells.length - 1];
+    return {
+      label,
+      value: bestCell.value,
+      location: {
+        row: bestMatch.row,
+        col: bestCell.col,
+        value: calculatedData[bestMatch.row][bestCell.col],
+      },
+      confidence: 0.9,
+    };
   }
 
   return null;
