@@ -178,6 +178,14 @@ export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
   },
 
   // Google Models (Newest First)
+  "gemini-3-pro-preview": {
+    provider: "google",
+    model: "gemini-3-pro-preview",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
+  // Alias for backward compatibility
   "gemini-3-pro": {
     provider: "google",
     model: "gemini-3-pro-preview",
