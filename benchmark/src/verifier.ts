@@ -56,7 +56,7 @@ export async function verifySpreadsheet(
     const calculated = engine.calculate(sheet);
 
     // 3. Verify data presence
-    const dataPresence = verifyDataPresence(calculated, testCase);
+    const dataPresence = verifyDataPresence(sheet, calculated, testCase);
 
     // 4. Verify result correctness
     const resultCorrectness = verifyResultCorrectness(sheet, calculated, testCase);
@@ -154,7 +154,8 @@ export async function verifySpreadsheet(
  * Verify presence of required data elements and values
  */
 function verifyDataPresence(
-  sheet: SpreadsheetSheet,
+  originalSheet: SpreadsheetSheet,
+  calculatedSheet: SpreadsheetSheet,
   testCase: TestCase,
 ): DataPresenceResult {
   const maxScore = 15;
@@ -165,8 +166,8 @@ function verifyDataPresence(
   const foundValues: Array<{ label: string; value: number }> = [];
   const missingValues: string[] = [];
 
-  // Extract all labels from the sheet
-  const labels = extractLabels(sheet);
+  // Extract all labels from the calculated sheet
+  const labels = extractLabels(calculatedSheet);
 
   // Check required elements
   const elementScore = maxScore * 0.47; // 7 points
@@ -200,8 +201,9 @@ function verifyDataPresence(
     let foundCount = 0;
 
     for (const reqValue of testCase.requiredValues) {
-      const extracted = findByLabel(
-        sheet,
+      const extracted = findByLabelWithFormulas(
+        originalSheet,
+        calculatedSheet,
         reqValue.label,
         false,
       );

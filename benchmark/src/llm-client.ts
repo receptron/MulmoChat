@@ -29,27 +29,36 @@ class OpenAIClient implements LLMClient {
     const startTime = Date.now();
 
     try {
+      // Determine which token parameter to use based on model
+      // GPT-5+ models use max_completion_tokens, older models use max_tokens
+      const useNewTokenParam = this.config.model.startsWith("gpt-5");
+      const tokenParam = useNewTokenParam ? "max_completion_tokens" : "max_tokens";
+
+      const requestBody: any = {
+        model: this.config.model,
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt || this.config.systemPrompt,
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: this.config.temperature || 0,
+      };
+
+      // Add the appropriate token limit parameter
+      requestBody[tokenParam] = this.config.maxTokens || 4000;
+
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${this.config.apiKey}`,
         },
-        body: JSON.stringify({
-          model: this.config.model,
-          messages: [
-            {
-              role: "system",
-              content: systemPrompt || this.config.systemPrompt,
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-          temperature: this.config.temperature || 0,
-          max_tokens: this.config.maxTokens || 4000,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

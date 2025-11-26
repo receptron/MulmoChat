@@ -13,22 +13,22 @@
   },
   "summary": {
     "totalPrompts": 2,
-    "averageScore": 69.5,
-    "medianScore": 69.5,
+    "averageScore": 75,
+    "medianScore": 75,
     "passRate": 0.5,
     "perfectRate": 0.5
   },
   "byLevel": {
     "1": {
       "count": 2,
-      "avgScore": 69.5,
+      "avgScore": 75,
       "passRate": 0.5
     }
   },
   "byCategory": {
     "basic": {
       "count": 2,
-      "avgScore": 69.5,
+      "avgScore": 75,
       "passRate": 0.5
     }
   },
@@ -196,10 +196,10 @@
     {
       "testCaseId": "basic-02",
       "passed": false,
-      "score": 39,
+      "score": 50,
       "maxScore": 100,
       "dataPresence": {
-        "score": 4.05,
+        "score": 15,
         "maxScore": 15,
         "foundElements": [
           "Income",
@@ -209,10 +209,13 @@
           "Savings"
         ],
         "missingElements": [],
-        "foundValues": [],
-        "missingValues": [
-          "Income"
-        ]
+        "foundValues": [
+          {
+            "label": "Income",
+            "value": 5000
+          }
+        ],
+        "missingValues": []
       },
       "resultCorrectness": {
         "score": 0,
@@ -319,7 +322,7 @@
       },
       "errors": [],
       "warnings": [],
-      "executionTime": 0,
+      "executionTime": 1,
       "generatedOutput": {
         "title": "Monthly Budget",
         "sheets": [
