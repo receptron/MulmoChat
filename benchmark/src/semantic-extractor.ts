@@ -135,7 +135,7 @@ function findAdjacentCells(
 
 /**
  * Find value associated with a label
- * Looks in adjacent cells (right first, then down, then left, then up)
+ * Searches the entire row and prioritizes formula cells over static values
  */
 export function findByLabel(
   sheet: SpreadsheetSheet,
@@ -151,7 +151,56 @@ export function findByLabel(
       const cellStr = extractStringValue(cell);
 
       if (matchesLabel(cellStr, label, caseSensitive)) {
-        // Found the label, now look for adjacent value
+        // Found the label, now look for value in the same row
+        // Collect all numeric cells in the same row (to the right of the label)
+        const numericCells: Array<{
+          location: CellLocation;
+          value: number;
+          hasFormula: boolean;
+        }> = [];
+
+        for (let c = col + 1; c < data[row].length; c++) {
+          const candidateCell = data[row][c];
+          const numValue = extractNumericValue(candidateCell);
+          if (numValue !== null) {
+            numericCells.push({
+              location: {
+                row,
+                col: c,
+                value: candidateCell,
+                formula: extractFormula(candidateCell) || undefined,
+              },
+              value: numValue,
+              hasFormula: hasFormula(candidateCell),
+            });
+          }
+        }
+
+        // Prioritize cells with formulas over static values
+        const formulaCells = numericCells.filter((c) => c.hasFormula);
+        if (formulaCells.length > 0) {
+          // Return the rightmost formula cell (often the final result)
+          const bestCell = formulaCells[formulaCells.length - 1];
+          return {
+            label,
+            value: bestCell.value,
+            location: bestCell.location,
+            confidence: 1.0,
+          };
+        }
+
+        // If no formula cells, return the first numeric cell
+        if (numericCells.length > 0) {
+          const bestCell = numericCells[0];
+          return {
+            label,
+            value: bestCell.value,
+            location: bestCell.location,
+            confidence: 0.9,
+          };
+        }
+
+        // If no numeric cells in the row, check adjacent cells (fallback)
         const adjacent = findAdjacentCells(data, row, col);
 
         for (const adjCell of adjacent) {
@@ -161,12 +210,12 @@ export function findByLabel(
               label,
               value: numValue,
               location: adjCell,
-              confidence: 1.0,
+              confidence: 0.8,
             };
           }
         }
 
-        // If no numeric adjacent cell, return string value if available
+        // If still no numeric value, return string value if available
         for (const adjCell of adjacent) {
           const strValue = extractStringValue(adjCell.value);
           if (strValue && strValue !== label) {
@@ -174,7 +223,7 @@ export function findByLabel(
               label,
               value: strValue,
               location: adjCell,
-              confidence: 0.8,
+              confidence: 0.7,
             };
           }
         }

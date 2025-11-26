@@ -59,7 +59,7 @@ export async function verifySpreadsheet(
     const dataPresence = verifyDataPresence(calculated, testCase);
 
     // 4. Verify result correctness
-    const resultCorrectness = verifyResultCorrectness(calculated, testCase);
+    const resultCorrectness = verifyResultCorrectness(sheet, calculated, testCase);
 
     // 5. Verify formula usage
     const formulaUsage = verifyFormulaUsage(sheet, calculated, testCase);
@@ -246,7 +246,8 @@ function verifyDataPresence(
  * Verify calculated results match expected assertions
  */
 function verifyResultCorrectness(
-  sheet: SpreadsheetSheet,
+  originalSheet: SpreadsheetSheet,
+  calculatedSheet: SpreadsheetSheet,
   testCase: TestCase,
 ): ResultCorrectnessResult {
   const maxScore = 50;
@@ -256,7 +257,12 @@ function verifyResultCorrectness(
   for (const assertion of testCase.assertions) {
     try {
       // Simple label-based extraction (can be extended with more complex extractors)
-      const extracted = findByLabel(sheet, assertion.extractor, false);
+      const extracted = findByLabelWithFormulas(
+        originalSheet,
+        calculatedSheet,
+        assertion.extractor,
+        false,
+      );
 
       if (extracted === null) {
         assertions.push({
@@ -310,6 +316,109 @@ function verifyResultCorrectness(
     passedCount,
     totalCount: testCase.assertions.length,
   };
+}
+
+/**
+ * Find value associated with a label, using original sheet to detect formulas
+ * This version checks the original sheet for formulas and returns calculated values
+ */
+function findByLabelWithFormulas(
+  originalSheet: SpreadsheetSheet,
+  calculatedSheet: SpreadsheetSheet,
+  label: string,
+  caseSensitive: boolean,
+): { label: string; value: any; location: any; confidence: number } | null {
+  const originalData = originalSheet.data;
+  const calculatedData = calculatedSheet.data;
+
+  // Search all cells for the label
+  for (let row = 0; row < originalData.length; row++) {
+    for (let col = 0; col < originalData[row].length; col++) {
+      const cell = originalData[row][col];
+      const cellValue = typeof cell === "object" && cell !== null && "v" in cell ? cell.v : cell;
+      const cellStr = String(cellValue);
+
+      // Check if this cell matches the label
+      const matches = caseSensitive
+        ? cellStr === label
+        : cellStr.toLowerCase().includes(label.toLowerCase());
+
+      if (matches) {
+        // Found the label, now look for value in the same row
+        // Collect all numeric cells in the same row (to the right of the label)
+        const numericCells: Array<{
+          col: number;
+          value: number;
+          hasFormula: boolean;
+        }> = [];
+
+        for (let c = col + 1; c < originalData[row].length; c++) {
+          // Check if original cell has formula
+          const originalCell = originalData[row][c];
+          const originalValue =
+            typeof originalCell === "object" && originalCell !== null && "v" in originalCell
+              ? originalCell.v
+              : originalCell;
+          const hasFormula =
+            typeof originalValue === "string" && originalValue.startsWith("=");
+
+          // Get calculated numeric value
+          const calculatedCell = calculatedData[row][c];
+          const calculatedValue =
+            typeof calculatedCell === "object" && calculatedCell !== null && "v" in calculatedCell
+              ? calculatedCell.v
+              : calculatedCell;
+
+          // Extract numeric value from calculated cell
+          let numValue: number | null = null;
+          if (typeof calculatedValue === "number") {
+            numValue = calculatedValue;
+          } else if (typeof calculatedValue === "string") {
+            const cleaned = calculatedValue.replace(/[$,€£¥%]/g, "").trim();
+            const parsed = parseFloat(cleaned);
+            numValue = isNaN(parsed) ? null : parsed;
+          }
+
+          if (numValue !== null) {
+            numericCells.push({
+              col: c,
+              value: numValue,
+              hasFormula,
+            });
+          }
+        }
+
+        // Prioritize cells with formulas over static values
+        const formulaCells = numericCells.filter((c) => c.hasFormula);
+        if (formulaCells.length > 0) {
+          // Return the rightmost formula cell (often the final result)
+          const bestCell = formulaCells[formulaCells.length - 1];
+          return {
+            label,
+            value: bestCell.value,
+            location: { row, col: bestCell.col, value: calculatedData[row][bestCell.col] },
+            confidence: 1.0,
+          };
+        }
+
+        // If no formula cells, return the first numeric cell
+        if (numericCells.length > 0) {
+          const bestCell = numericCells[0];
+          return {
+            label,
+            value: bestCell.value,
+            location: { row, col: bestCell.col, value: calculatedData[row][bestCell.col] },
+            confidence: 0.9,
+          };
+        }
+
+        // Fallback: use original findByLabel on calculated sheet
+        return findByLabel(calculatedSheet, label, caseSensitive);
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
