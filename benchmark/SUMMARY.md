@@ -41,13 +41,13 @@ Each result file contains:
 ### Latest Update
 
 **Date:** November 27, 2025
-**Models Tested:** 10 (all completed the 7-case suite)
+**Models Tested:** 11 (all completed the 7-case suite)
 **Major Changes:**
+- Fixed spreadsheet engine null handling bug that prevented gemini-2.5-flash from running
+- Added null/undefined cell safeguards to formula evaluator and calculator
 - Enhanced verifier to support label synonyms (e.g., "Total|Sum") to accommodate different model wording choices
-- Updated `statistical-01` test case to accept both "Total" and "Sum" as valid labels for the sum calculation
-- Re-ran `yarn run benchmark:re-evaluate` after verifier improvements
-- **All four top-tier Claude models now achieve perfect 100/100 scores:** `claude-sonnet-4-5`, `claude-3.5-sonnet`, `claude-haiku-4-5`, and `gemini-3-pro-preview`
-- 4 models improved in re-evaluation, 0 degraded
+- **New model tested:** `gemini-2.5-flash` scores 92.9 (tied with gpt-4o)
+- **All four top-tier models achieve perfect 100/100 scores:** `claude-sonnet-4-5`, `claude-3.5-sonnet`, `claude-haiku-4-5`, and `gemini-3-pro-preview`
 
 ---
 
@@ -75,18 +75,17 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 | Rank | Model | Avg Score | Pass Rate | Perfect Rate | Tests |
 |------|-------|-----------|-----------|--------------|-------|
-| 🥇 1 | **gemini-3-pro-preview** | **100.0** | **100%** | **100%** | 7/7 |
-| 🥇 1 | **claude-sonnet-4-5** | **100.0** | 100% | 100% | 7/7 |
-| 🥇 1 | **claude-3.5-sonnet** | **100.0** | 100% | 100% | 7/7 |
-| 🥇 1 | **claude-haiku-4-5** | **100.0** | 100% | 100% | 7/7 |
-| 5 | **gpt-4o** | **92.9** | 86% | 86% | 7/7 |
-| 6 | **gpt-5.1** | **91.3** | 86% | 71% | 7/7 |
-| 6 | **grok-4-1-fast-reasoning** | **91.3** | 86% | 71% | 7/7 |
-| 8 | **gpt-4o-mini** | **84.6** | 71% | 57% | 7/7 |
-| 9 | **ollama-gpt-oss-20b** | **78.4** | 71% | 57% | 7/7 |
-| 10 | ollama-phi4-mini ⚠️ | 16.3 | 0% | 0% | 7/7 |
-
-**Legend:** 🥇 = top performer, ⚠️ = not production-ready.
+| 1 | gemini-3-pro-preview | 100.0 | 100% | 100% | 7/7 |
+| 1 | claude-sonnet-4-5 | 100.0 | 100% | 100% | 7/7 |
+| 1 | claude-3.5-sonnet | 100.0 | 100% | 100% | 7/7 |
+| 1 | claude-haiku-4-5 | 100.0 | 100% | 100% | 7/7 |
+| 5 | gpt-4o | 92.9 | 86% | 86% | 7/7 |
+| 5 | gemini-2.5-flash | 92.9 | 86% | 86% | 7/7 |
+| 7 | gpt-5.1 | 91.3 | 86% | 71% | 7/7 |
+| 7 | grok-4-1-fast-reasoning | 91.3 | 86% | 71% | 7/7 |
+| 9 | gpt-4o-mini | 84.6 | 71% | 57% | 7/7 |
+| 10 | ollama-gpt-oss-20b | 78.4 | 71% | 57% | 7/7 |
+| 11 | ollama-phi4-mini | 16.3 | 0% | 0% | 7/7 |
 
 ## Performance by Complexity Level
 
@@ -121,21 +120,24 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 ## Key Findings
 
-1. **Four-way tie at the top:** Gemini and all three Claude models (Sonnet 4.5, Sonnet 3.5, Haiku 4.5) achieve perfect 100/100 averages.
+1. **Four-way tie at the top:** Gemini Pro and all three Claude models (Sonnet 4.5, Sonnet 3.5, Haiku 4.5) achieve perfect 100/100 averages.
 2. **Haiku now perfect:** claude-haiku-4-5 delivers 100/100 with lower cost/latency—best value in the benchmark.
-3. **Synonym support critical:** Verifier now handles label variations (e.g., "Total" vs "Sum of All Sales"), improving accuracy.
-4. **OpenAI & Grok parity:** gpt-4o, gpt-5.1, and grok-4-1-fast-reasoning sit in the low 90s.
-5. **Budget test is still the hardest:** only 60% pass basic-02.
-6. **Text & financial tasks are solved problems** for top models after engine/test tweaks.
-7. **Local deployment viable:** ollama-gpt-oss-20b still passes 5/7 tests fully offline.
-8. **phi4-mini remains non-viable** (16.3 average, 0% pass).
+3. **New Google Flash model:** gemini-2.5-flash scores 92.9, matching gpt-4o performance.
+4. **Null handling critical:** Engine fixes for null/undefined cells enabled gemini-2.5-flash testing.
+5. **Synonym support critical:** Verifier now handles label variations (e.g., "Total" vs "Sum of All Sales"), improving accuracy.
+6. **OpenAI & Grok parity:** gpt-4o, gpt-5.1, and grok-4-1-fast-reasoning sit in the low 90s.
+7. **Budget test is still the hardest:** only 60% pass basic-02.
+8. **Text & financial tasks are solved problems** for top models after engine/test tweaks.
+9. **Local deployment viable:** ollama-gpt-oss-20b still passes 5/7 tests fully offline.
+10. **phi4-mini remains non-viable** (16.3 average, 0% pass).
 
 ## Model-Specific Notes
 
 - **gemini-3-pro-preview:** Perfect 100/100 average, tied for #1.
 - **claude-sonnet-4-5 / claude-3.5-sonnet:** Perfect 100/100 averages; fully production-ready.
 - **claude-haiku-4-5:** Perfect 100/100 average, 41 s runtime, **best cost/performance** in the benchmark.
-- **gpt-4o:** 92.9 average, still only misses basic-02.
+- **gpt-4o:** 92.9 average, only misses mathematical-01.
+- **gemini-2.5-flash:** 92.9 average, fast and cost-effective; fails mathematical-01 due to incorrect cell references in compound interest formula.
 - **gpt-5.1:** 91.3 average; minor formatting nits on mathematical-01 remain.
 - **grok-4-1-fast-reasoning:** 91.3 average, 120 s run; similar issues as gpt-5.1.
 - **gpt-4o-mini:** 84.6 average; passes 5/7 tests, budget-friendly cloud option.
@@ -149,6 +151,7 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 - Spreadsheet engine (Nov 27) fully supports string operations.
 - Financial-01 update (Nov 28) aligns assertions/formatting with "Interest Paid" row.
 - **Synonym support (Nov 27):** Verifier accepts pipe-separated alternatives (e.g., "Total|Sum") for flexible label matching.
+- **Null handling fix (Nov 27):** Formula evaluator and calculator now safely handle null/undefined/empty cells, treating them as 0.
 
 ### Re-Evaluation Impact
 
@@ -161,9 +164,10 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 ### Model Selection
 1. **Best overall:** All four top-tier models (gemini-3-pro-preview, claude-sonnet-4-5, claude-3.5-sonnet, claude-haiku-4-5) achieve perfect 100/100 averages.
 2. **Best value:** claude-haiku-4-5 (perfect 100/100, lowest latency/cost among perfect scorers).
-3. **Best OpenAI stack:** gpt-5.1 for flagship accuracy, gpt-4o-mini for budget workloads.
-4. **Fast reasoning:** grok-4-1-fast-reasoning balances speed and accuracy.
-5. **Privacy/offline:** ollama-gpt-oss-20b for local deployments.
+3. **Best Google option:** gemini-3-pro-preview for perfect accuracy, gemini-2.5-flash for speed/cost (92.9 average).
+4. **Best OpenAI stack:** gpt-4o for reliability (92.9), gpt-4o-mini for budget workloads.
+5. **Fast reasoning:** grok-4-1-fast-reasoning balances speed and accuracy.
+6. **Privacy/offline:** ollama-gpt-oss-20b for local deployments.
 
 ### Application Guidance
 - Keep the verifier in loop for every generated spreadsheet.
@@ -180,15 +184,16 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 ## Conclusion
 
 Modern LLMs can generate production-ready spreadsheets across the full difficulty range. After the latest fixes:
-- **Four perfect models:** Gemini and all three Claude models achieve flawless 100/100 averages.
+- **Four perfect models:** Gemini Pro and all three Claude models achieve flawless 100/100 averages.
 - **Haiku stands out:** claude-haiku-4-5 delivers perfect scores at the lowest cost/latency.
-- **GPT-4o, GPT-5.1, and Grok** deliver low-90s reliability, with only the budget test requiring manual prompting.
+- **Google Flash competitive:** gemini-2.5-flash scores 92.9, matching gpt-4o at lower cost.
+- **GPT-4o, GPT-5.1, and Grok** deliver low-90s reliability, with only mathematical test requiring manual prompting.
 - **Text/financial/statistical logic** are fully solved for top-tier models.
 - **Only ollama-phi4-mini** remains unsuitable for production.
 
 ### Production Readiness
 - **Tier 1 (100 avg, 100% pass):** gemini-3-pro-preview; claude-sonnet-4-5; claude-3.5-sonnet; claude-haiku-4-5.
-- **Tier 2 (90‑95 avg, ≥86% pass):** gpt-4o; gpt-5.1; grok-4-1-fast-reasoning.
+- **Tier 2 (90‑95 avg, ≥86% pass):** gpt-4o; gemini-2.5-flash; gpt-5.1; grok-4-1-fast-reasoning.
 - **Tier 3 (75‑89 avg, ≥71% pass):** gpt-4o-mini; ollama-gpt-oss-20b.
 - **Not ready:** ollama-phi4-mini.
 

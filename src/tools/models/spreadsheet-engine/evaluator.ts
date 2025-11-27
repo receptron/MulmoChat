@@ -270,8 +270,15 @@ export function evaluateFormula(
         // Escape special regex characters
         const escapedRef = ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         // Wrap string values in quotes for proper evaluation
-        const replacement =
-          typeof value === "string" ? `"${value}"` : value.toString();
+        // Handle null/undefined values by treating them as 0
+        let replacement: string;
+        if (value === null || value === undefined) {
+          replacement = "0";
+        } else if (typeof value === "string") {
+          replacement = `"${value}"`;
+        } else {
+          replacement = value.toString();
+        }
         expr = expr.replace(new RegExp(escapedRef, "g"), replacement);
       }
     }

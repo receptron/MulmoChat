@@ -43,10 +43,16 @@ export function calculateSheet(
 
   // Helper to extract raw value from cell with recursive formula evaluation
   const getRawValue = (cell: any, row?: number, col?: number): number => {
+    // Handle null/undefined cells - treat as 0
+    if (cell === null || cell === undefined) return 0;
+
     if (typeof cell === "number") return cell;
 
     // Handle string values (for legacy or calculated cells)
     if (typeof cell === "string") {
+      // Handle empty strings as 0
+      if (cell.trim() === "") return 0;
+
       // Handle percentage strings like "5%" or "0.4167%"
       if (cell.includes("%")) {
         const numericPart = cell.replace("%", "").trim();
