@@ -48,7 +48,7 @@
     },
     {
       "name": "Total interest paid (~$206,000)",
-      "extractor": "Interest",
+      "extractor": "Interest Paid",
       "expected": 206000,
       "tolerance": 5000
     }
@@ -63,7 +63,7 @@
   "formattingRequirements": [
     {
       "type": "currency",
-      "appliesTo": ["Principal", "Payment", "Interest"],
+      "appliesTo": ["Principal", "Payment", "Interest Paid"],
       "description": "Dollar amounts should have currency formatting"
     },
     {
