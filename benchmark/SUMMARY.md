@@ -40,12 +40,14 @@ Each result file contains:
 
 ### Latest Update
 
-**Date:** November 28, 2025  
-**Models Tested:** 10 (all completed the 7-case suite)  
+**Date:** November 27, 2025
+**Models Tested:** 10 (all completed the 7-case suite)
 **Major Changes:**
-- Re-ran `yarn run benchmark:re-evaluate` after tweaking the `financial-01` test so "Interest Paid" formatting is checked on the currency row (not the percent row). This fixed the last stray formatting warning.
-- `claude-sonnet-4-5`, `claude-3.5-sonnet`, and `claude-haiku-4-5` now report true 100/100 averages (monthly payment + interest assertions both passing).
-- Updated the ranking table, average-by-level/category, and per-test stats accordingly.
+- Enhanced verifier to support label synonyms (e.g., "Total|Sum") to accommodate different model wording choices
+- Updated `statistical-01` test case to accept both "Total" and "Sum" as valid labels for the sum calculation
+- Re-ran `yarn run benchmark:re-evaluate` after verifier improvements
+- **All four top-tier Claude models now achieve perfect 100/100 scores:** `claude-sonnet-4-5`, `claude-3.5-sonnet`, `claude-haiku-4-5`, and `gemini-3-pro-preview`
+- 4 models improved in re-evaluation, 0 degraded
 
 ---
 
@@ -53,8 +55,8 @@ Each result file contains:
 
 This benchmark evaluates AI model performance on structured spreadsheet generation tasks using JSON format. Models are tested on their ability to generate spreadsheets with proper formulas, formatting, and calculations across various complexity levels and categories.
 
-**Benchmark Run Date:** November 26, 2025 (latest result files)  
-**Re-evaluation Date:** November 28, 2025  
+**Benchmark Run Date:** November 26, 2025 (latest result files)
+**Re-evaluation Date:** November 27, 2025
 **Total Test Cases:** 7 (Basic, Mathematical, Statistical, Text, Financial, Logical)
 
 ## Important Note: Verification & Test Fixes
@@ -67,6 +69,8 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 **Test fix (Nov 28):** `financial-01` now targets the "Total Interest Paid" row for assertions/formatting, preventing false "missing currency" warnings.
 
+**Synonym support (Nov 27):** Verifier now accepts pipe-separated label alternatives (e.g., "Total|Sum") to handle different model wording. Applied to `statistical-01` test case, allowing both "Total" and "Sum of All Sales" as valid labels.
+
 ## Model Performance Rankings
 
 | Rank | Model | Avg Score | Pass Rate | Perfect Rate | Tests |
@@ -74,7 +78,7 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 | 🥇 1 | **gemini-3-pro-preview** | **100.0** | **100%** | **100%** | 7/7 |
 | 🥇 1 | **claude-sonnet-4-5** | **100.0** | 100% | 100% | 7/7 |
 | 🥇 1 | **claude-3.5-sonnet** | **100.0** | 100% | 100% | 7/7 |
-| 4 | **claude-haiku-4-5** | **98.4** | 100% | 86% | 7/7 |
+| 🥇 1 | **claude-haiku-4-5** | **100.0** | 100% | 100% | 7/7 |
 | 5 | **gpt-4o** | **92.9** | 86% | 86% | 7/7 |
 | 6 | **gpt-5.1** | **91.3** | 86% | 71% | 7/7 |
 | 6 | **grok-4-1-fast-reasoning** | **91.3** | 86% | 71% | 7/7 |
@@ -98,7 +102,7 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 |----------|-----------|-----------|------------|
 | **Basic** | 83.4 | 75% | Budgets-in-percent (basic-02) still causes most misses. |
 | **Mathematical** | 70.6 | 60% | gpt-5.1/grok lose points on formatting; Geminis/Claudes perfect it. |
-| **Statistical** | 85.6 | 90% | After expectation fix, only phi4-mini fails. |
+| **Statistical** | 87.2 | 90% | Synonym support fixed labeling issues; top models now perfect. |
 | **Text** | 90.0 | 90% | Engine fix validated email formulas; phi4-mini still broken. |
 | **Financial** | 90.7 | 80% | New extractor highlights real currency rows; only gpt-4o-mini + phi4-mini drop points. |
 | **Logical** | 93.5 | 90% | Semantic extractor eliminated false negatives; phi4-mini still fails. |
@@ -110,26 +114,27 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 | ✅ **basic-01** | 91.0 | 90% | Only phi4-mini misses currency formatting. |
 | ⚠️ **basic-02** | 75.8 | 60% | gpt-4o, gpt-4o-mini, Ollama 20B, and phi4-mini hard-code totals. |
 | ✅ **mathematical-01** | 70.6 | 60% | gpt-5.1/grok lose formatting points; others perfect. |
-| ✅ **statistical-01** | 85.6 | 90% | Expectation fix raised every model but phi4-mini. |
+| ✅ **statistical-01** | 87.2 | 90% | Synonym support (Total|Sum) resolved labeling conflicts. |
 | ✅ **text-01** | 90.0 | 90% | String formulas now stable (thanks engine fix); phi4-mini fails. |
 | ✅ **financial-01** | 90.7 | 80% | Currency requirement now checks the correct row; only gpt-4o-mini & phi4-mini lag. |
 | ✅ **logical-01** | 93.5 | 90% | Numeric-first extractor picks the average cells; phi4-mini misses formulas. |
 
 ## Key Findings
 
-1. **Triple tie at the top:** Gemini and both Claude Sonnet variants now share perfect 100/100 averages.
-2. **Haiku value play:** claude-haiku-4-5 delivers 98.4/100 at lower cost/latency.
-3. **OpenAI & Grok parity:** gpt-4o, gpt-5.1, and grok-4-1-fast-reasoning sit in the low 90s after the financial fix.
-4. **Budget test is still the hardest:** only 60% pass basic-02.
-5. **Text & financial tasks are solved problems** for top models after engine/test tweaks.
-6. **Local deployment viable:** ollama-gpt-oss-20b still passes 5/7 tests fully offline.
-7. **phi4-mini remains non-viable** (16.3 average, 0% pass).
+1. **Four-way tie at the top:** Gemini and all three Claude models (Sonnet 4.5, Sonnet 3.5, Haiku 4.5) achieve perfect 100/100 averages.
+2. **Haiku now perfect:** claude-haiku-4-5 delivers 100/100 with lower cost/latency—best value in the benchmark.
+3. **Synonym support critical:** Verifier now handles label variations (e.g., "Total" vs "Sum of All Sales"), improving accuracy.
+4. **OpenAI & Grok parity:** gpt-4o, gpt-5.1, and grok-4-1-fast-reasoning sit in the low 90s.
+5. **Budget test is still the hardest:** only 60% pass basic-02.
+6. **Text & financial tasks are solved problems** for top models after engine/test tweaks.
+7. **Local deployment viable:** ollama-gpt-oss-20b still passes 5/7 tests fully offline.
+8. **phi4-mini remains non-viable** (16.3 average, 0% pass).
 
 ## Model-Specific Notes
 
-- **gemini-3-pro-preview:** Still the benchmark leader, now tied with Sonnet on perfect averages.
-- **claude-sonnet-4-5 / claude-3.5-sonnet:** 100/100 averages after financial fix; fully production-ready.
-- **claude-haiku-4-5:** 98.4 average, 41 s runtime, best cost/performance.
+- **gemini-3-pro-preview:** Perfect 100/100 average, tied for #1.
+- **claude-sonnet-4-5 / claude-3.5-sonnet:** Perfect 100/100 averages; fully production-ready.
+- **claude-haiku-4-5:** Perfect 100/100 average, 41 s runtime, **best cost/performance** in the benchmark.
 - **gpt-4o:** 92.9 average, still only misses basic-02.
 - **gpt-5.1:** 91.3 average; minor formatting nits on mathematical-01 remain.
 - **grok-4-1-fast-reasoning:** 91.3 average, 120 s run; similar issues as gpt-5.1.
@@ -143,18 +148,19 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 - Semantic extractor (Nov 28) ensures value lookup prioritizes numeric outputs.
 - Spreadsheet engine (Nov 27) fully supports string operations.
 - Financial-01 update (Nov 28) aligns assertions/formatting with "Interest Paid" row.
+- **Synonym support (Nov 27):** Verifier accepts pipe-separated alternatives (e.g., "Total|Sum") for flexible label matching.
 
 ### Re-Evaluation Impact
 
-- Latest re-evaluation processed 10 files, updating 3 (all improvements).
-- Financial test scores jumped for the Claude models (now 100s instead of 82s).
+- Latest re-evaluation processed 10 files, updating 4 (all improvements).
+- Synonym support fixed claude-haiku-4-5 statistical-01 test (98.4 → 100.0 overall).
 - No regressions observed; summary stats above reflect those fixes.
 
 ## Recommendations
 
 ### Model Selection
-1. **Best overall:** gemini-3-pro-preview or the Sonnet models (all 100/100 averages).
-2. **Best value:** claude-haiku-4-5 (98.4 average, low latency/cost).
+1. **Best overall:** All four top-tier models (gemini-3-pro-preview, claude-sonnet-4-5, claude-3.5-sonnet, claude-haiku-4-5) achieve perfect 100/100 averages.
+2. **Best value:** claude-haiku-4-5 (perfect 100/100, lowest latency/cost among perfect scorers).
 3. **Best OpenAI stack:** gpt-5.1 for flagship accuracy, gpt-4o-mini for budget workloads.
 4. **Fast reasoning:** grok-4-1-fast-reasoning balances speed and accuracy.
 5. **Privacy/offline:** ollama-gpt-oss-20b for local deployments.
@@ -169,18 +175,19 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 1. Add new scenarios (pivot tables, lookups, conditional formatting).
 2. Introduce adversarial/error-handling cases.
 3. Automate summary regeneration (scripts already output aggregated stats).
-4. Continue auditing test-case expectations (statistical-01, financial-01 fixes proved worthwhile).
+4. Continue auditing test-case expectations and add synonym support where appropriate (statistical-01, financial-01 fixes proved worthwhile).
 
 ## Conclusion
 
 Modern LLMs can generate production-ready spreadsheets across the full difficulty range. After the latest fixes:
-- **Gemini + Claude Sonnet** share the #1 spot with flawless averages.
-- **Haiku, GPT-4o, GPT-5.1, and Grok** deliver low-90s reliability, with only the budget test requiring manual prompting.
-- **Text/financial logic** are fully solved for top-tier models.
+- **Four perfect models:** Gemini and all three Claude models achieve flawless 100/100 averages.
+- **Haiku stands out:** claude-haiku-4-5 delivers perfect scores at the lowest cost/latency.
+- **GPT-4o, GPT-5.1, and Grok** deliver low-90s reliability, with only the budget test requiring manual prompting.
+- **Text/financial/statistical logic** are fully solved for top-tier models.
 - **Only ollama-phi4-mini** remains unsuitable for production.
 
 ### Production Readiness
-- **Tier 1 (≥98 avg, 100% pass):** gemini-3-pro-preview; claude-sonnet-4-5; claude-3.5-sonnet; claude-haiku-4-5.
+- **Tier 1 (100 avg, 100% pass):** gemini-3-pro-preview; claude-sonnet-4-5; claude-3.5-sonnet; claude-haiku-4-5.
 - **Tier 2 (90‑95 avg, ≥86% pass):** gpt-4o; gpt-5.1; grok-4-1-fast-reasoning.
 - **Tier 3 (75‑89 avg, ≥71% pass):** gpt-4o-mini; ollama-gpt-oss-20b.
 - **Not ready:** ollama-phi4-mini.

@@ -323,8 +323,37 @@ function verifyResultCorrectness(
 /**
  * Find value associated with a label, using original sheet to detect formulas
  * This version checks the original sheet for formulas and returns calculated values
+ * Supports pipe-separated synonyms (e.g., "Total|Sum" will match either "Total" or "Sum")
  */
 export function findByLabelWithFormulas(
+  originalSheet: SpreadsheetSheet,
+  calculatedSheet: SpreadsheetSheet,
+  label: string,
+  caseSensitive: boolean,
+): { label: string; value: any; location: any; confidence: number } | null {
+  // Support pipe-separated synonyms
+  const labelAlternatives = label.split('|').map(l => l.trim());
+
+  // Try each alternative and return the best match
+  for (const labelAlt of labelAlternatives) {
+    const result = findByLabelWithFormulasInternal(
+      originalSheet,
+      calculatedSheet,
+      labelAlt,
+      caseSensitive
+    );
+    if (result !== null) {
+      return result;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Internal implementation of label finding
+ */
+function findByLabelWithFormulasInternal(
   originalSheet: SpreadsheetSheet,
   calculatedSheet: SpreadsheetSheet,
   label: string,

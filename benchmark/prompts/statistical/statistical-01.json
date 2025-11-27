@@ -36,7 +36,7 @@
     },
     {
       "name": "Sum of all sales",
-      "extractor": "Total",
+      "extractor": "Total|Sum",
       "expected": 10300,
       "tolerance": 2
     },
@@ -68,7 +68,7 @@
   "formattingRequirements": [
     {
       "type": "currency",
-      "appliesTo": ["Laptop", "Mouse", "Keyboard", "Monitor", "Headphones", "Total", "Average", "Highest", "Lowest"],
+      "appliesTo": ["Laptop", "Mouse", "Keyboard", "Monitor", "Headphones", "Total|Sum", "Average", "Highest", "Lowest"],
       "description": "All price and total values should have currency formatting"
     }
   ],
