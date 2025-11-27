@@ -16,5 +16,8 @@ export * from "./calculator";
 // Export function registry
 export * from "./registry";
 
+// Load all built-in functions
+import "./functions";
+
 // Export main SpreadsheetEngine class
 export { SpreadsheetEngine } from "./engine";

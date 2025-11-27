@@ -87,6 +87,15 @@ export function evaluateFormula(
   context: EvaluatorContext,
 ): CellValue {
   try {
+    // Handle string literals - remove surrounding quotes
+    const trimmed = formula.trim();
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    ) {
+      return trimmed.slice(1, -1); // Remove first and last character (quotes)
+    }
+
     // Check if it's a SIMPLE function call (not a complex expression)
     // We need to ensure the formula is JUST a function, not "FUNC(...) + something"
     const funcMatch = formula.match(/^([A-Z]+)\((.*)\)$/i);
@@ -141,14 +150,21 @@ export function evaluateFormula(
     // First, replace any function calls within the expression
     let expr = formula;
 
-    // Find and evaluate function calls (e.g., TODAY(), SUM(A1:A10), etc.)
+    // Find and evaluate function calls (e.g., TODAY(), SUM(A1:A10), LOWER(A1), etc.)
     // Use a simpler approach: find function names followed by parentheses
     // and manually parse the matching closing parenthesis
     let searchIndex = 0;
-    while (searchIndex < expr.length) {
+    let maxIterations = 100; // Prevent infinite loops
+    let iterations = 0;
+
+    while (searchIndex < expr.length && iterations < maxIterations) {
+      iterations++;
       const funcNameMatch = expr.substring(searchIndex).match(/^([A-Z]+)\(/i);
       if (!funcNameMatch) {
-        break;
+        // No more functions found, move to next character
+        searchIndex++;
+        if (searchIndex >= expr.length) break;
+        continue;
       }
 
       const funcStartIndex = searchIndex;
@@ -158,21 +174,43 @@ export function evaluateFormula(
       // Find matching closing parenthesis
       let depth = 1;
       let argsEndIndex = argsStartIndex;
+      let inString = false;
+      let stringChar = "";
+
       while (argsEndIndex < expr.length && depth > 0) {
-        if (expr[argsEndIndex] === "(") depth++;
-        else if (expr[argsEndIndex] === ")") depth--;
+        const char = expr[argsEndIndex];
+        const prevChar = argsEndIndex > 0 ? expr[argsEndIndex - 1] : "";
+
+        // Track string boundaries
+        if ((char === '"' || char === "'") && prevChar !== "\\") {
+          if (!inString) {
+            inString = true;
+            stringChar = char;
+          } else if (char === stringChar) {
+            inString = false;
+            stringChar = "";
+          }
+        }
+
+        // Only count parens outside of strings
+        if (!inString) {
+          if (char === "(") depth++;
+          else if (char === ")") depth--;
+        }
         argsEndIndex++;
       }
 
       if (depth === 0) {
         const fullMatch = expr.substring(funcStartIndex, argsEndIndex);
         const result = context.evaluateFormula(fullMatch);
-        // Wrap result in parentheses to handle negative numbers (e.g., -PMT() → -(result))
+        // For string results, wrap in quotes; for numbers, wrap in parentheses
+        const replacement = typeof result === "string" ? `"${result}"` : `(${result})`;
         expr =
           expr.substring(0, funcStartIndex) +
-          `(${result})` +
+          replacement +
           expr.substring(argsEndIndex);
-        searchIndex = funcStartIndex + `(${result})`.length;
+        // Continue from after the replacement
+        searchIndex = funcStartIndex + replacement.length;
       } else {
         searchIndex++;
       }
@@ -230,14 +268,66 @@ export function evaluateFormula(
         const value = context.getCellValue(ref);
         // Escape special regex characters
         const escapedRef = ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        expr = expr.replace(new RegExp(escapedRef, "g"), value.toString());
+        // Wrap string values in quotes for proper evaluation
+        const replacement =
+          typeof value === "string" ? `"${value}"` : value.toString();
+        expr = expr.replace(new RegExp(escapedRef, "g"), replacement);
       }
     }
 
     // Replace ^ with ** for exponentiation
     expr = expr.replace(/\^/g, "**");
 
-    // Safely evaluate the expression using Function constructor instead of eval
+    // Check if this is a string concatenation expression (contains & and quoted strings)
+    const hasStringConcat = expr.includes("&");
+    const hasQuotedStrings = /["']/.test(expr);
+
+    // If it contains string concatenation, handle it specially
+    if (hasStringConcat && hasQuotedStrings) {
+      try {
+        // Convert & to + for JavaScript string concatenation
+        // We need to be careful to only replace & that are not inside strings
+        let inString = false;
+        let stringChar = "";
+        let result = "";
+
+        for (let i = 0; i < expr.length; i++) {
+          const char = expr[i];
+          const prevChar = i > 0 ? expr[i - 1] : "";
+
+          // Handle string boundaries
+          if ((char === '"' || char === "'") && prevChar !== "\\") {
+            if (!inString) {
+              inString = true;
+              stringChar = char;
+            } else if (char === stringChar) {
+              inString = false;
+              stringChar = "";
+            }
+          }
+
+          // Replace & with + when not in a string
+          if (char === "&" && !inString) {
+            result += "+";
+          } else {
+            result += char;
+          }
+        }
+
+        // Validate the expression contains only safe characters
+        // Allow: numbers, letters, strings (with quotes), operators, parentheses, whitespace, @, .
+        if (/^[a-zA-Z0-9+\-*/(). "'@.]+$/.test(result)) {
+          // eslint-disable-next-line sonarjs/code-eval
+          const evalResult = new Function(`return (${result})`)();
+          return evalResult;
+        }
+      } catch (error) {
+        console.error(`Failed to evaluate string concatenation: ${expr}`, error);
+        return formula;
+      }
+    }
+
+    // Safely evaluate arithmetic expressions using Function constructor instead of eval
     // Allow numbers, operators, parentheses, whitespace, and decimal points
     if (/^[\d+\-*/(). ]+$/.test(expr)) {
       try {
@@ -254,7 +344,16 @@ export function evaluateFormula(
       }
     }
 
-    return formula; // Return original if can't evaluate
+    // If the final expression is a quoted string literal, unwrap it
+    const trimmedExpr = expr.trim();
+    if (
+      (trimmedExpr.startsWith('"') && trimmedExpr.endsWith('"')) ||
+      (trimmedExpr.startsWith("'") && trimmedExpr.endsWith("'"))
+    ) {
+      return trimmedExpr.slice(1, -1); // Remove quotes
+    }
+
+    return expr; // Return processed expression (with cell refs replaced, etc.)
   } catch (error) {
     console.error(`Failed to evaluate formula: ${formula}`, error);
     return formula;

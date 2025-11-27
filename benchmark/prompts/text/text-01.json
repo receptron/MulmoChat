@@ -25,7 +25,7 @@
   "assertions": [
     {
       "name": "John's email contains expected format",
-      "extractor": "john.smith",
+      "extractor": "John",
       "expected": "john.smith@company.com",
       "tolerance": 0
     }

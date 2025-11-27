@@ -65,8 +65,9 @@ export function calculateSheet(
         const value = parseFloat(numericPart);
         return isNaN(value) ? 0 : value;
       }
-      // Handle regular numeric strings
-      return parseFloat(cell) || 0;
+      // Handle regular numeric strings, but preserve non-numeric strings
+      const num = parseFloat(cell);
+      return isNaN(num) ? cell : num;
     }
 
     // Handle new cell format {v, f}
@@ -105,11 +106,10 @@ export function calculateSheet(
             const result = evaluateFormula(formula);
             calculating.delete(cellKey);
 
-            // Cache the calculated result
-            const numResult = typeof result === "number" ? result : 0;
-            calculated[row][col] = numResult;
+            // Cache the calculated result (preserve strings and numbers)
+            calculated[row][col] = result;
 
-            return numResult;
+            return result;
           } catch (error) {
             calculating.delete(cellKey);
             console.error(
@@ -127,10 +127,14 @@ export function calculateSheet(
         }
         return 0; // No position info, can't evaluate
       }
-      return parseFloat(value) || 0;
+      // Try to parse as number, but preserve strings
+      const num = parseFloat(value);
+      return isNaN(num) ? value : num;
     }
 
-    return parseFloat(cell) || 0;
+    // Try to parse cell as number, but preserve strings
+    const num = parseFloat(cell);
+    return isNaN(num) ? cell : num;
   };
 
   // Helper to get cell value by reference (e.g., "B2", "$B$2", or "'Sheet1'!B2")
