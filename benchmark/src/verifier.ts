@@ -436,8 +436,26 @@ export function findByLabelWithFormulas(
 
     // Prioritize cells with formulas over static values
     const formulaCells = numericCells.filter((c) => c.hasFormula);
+    const numericFormulaCells = formulaCells.filter(
+      (c) => typeof c.value === "number",
+    );
+    if (numericFormulaCells.length > 0) {
+      // Prefer formula-driven numeric results (e.g., averages) over string formulas
+      const bestCell = numericFormulaCells[numericFormulaCells.length - 1];
+      return {
+        label,
+        value: bestCell.value,
+        location: {
+          row: bestMatch.row,
+          col: bestCell.col,
+          value: calculatedData[bestMatch.row][bestCell.col],
+        },
+        confidence: 1.0,
+      };
+    }
+
     if (formulaCells.length > 0) {
-      // Return the rightmost formula cell (often the final result)
+      // Fall back to any formula cell (may be string results like letter grades)
       const bestCell = formulaCells[formulaCells.length - 1];
       return {
         label,
@@ -451,7 +469,24 @@ export function findByLabelWithFormulas(
       };
     }
 
-    // If no formula cells, return the rightmost numeric cell (usually the final value)
+    const numericValueCells = numericCells.filter(
+      (c) => typeof c.value === "number",
+    );
+    if (numericValueCells.length > 0) {
+      const bestCell = numericValueCells[numericValueCells.length - 1];
+      return {
+        label,
+        value: bestCell.value,
+        location: {
+          row: bestMatch.row,
+          col: bestCell.col,
+          value: calculatedData[bestMatch.row][bestCell.col],
+        },
+        confidence: 0.9,
+      };
+    }
+
+    // If only string cells remain, fall back to the rightmost entry (string data)
     const bestCell = numericCells[numericCells.length - 1];
     return {
       label,
