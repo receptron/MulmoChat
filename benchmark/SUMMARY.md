@@ -40,10 +40,12 @@ Each result file contains:
 
 ### Latest Update
 
-**Date:** November 26, 2025
+**Date:** November 27, 2025
 **Models Tested:** 10 (all completed full suite)
 **Test Cases:** 7 total
-**Major Changes:** Fixed 6 verification bugs + 1 test case bug (statistical-01 had incorrect expected values)
+**Major Changes:**
+- Fixed 6 verification bugs + 1 test case bug (statistical-01 had incorrect expected values)
+- **NEW:** Fixed critical spreadsheet engine bugs that caused universal text-01 failures (string concatenation now works)
 
 ---
 
@@ -114,7 +116,7 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 | **Basic** | 82.5 - 100.0 | 50% - 100% | gemini (100), claude-sonnet (100) |
 | **Mathematical** | 73.0 - 100.0 | 71% - 100% | gemini (100), claude-sonnet (100) |
 | **Statistical** | 40.0 - 79.0 | 0% - 71% | claude-sonnet (79), gemini (79) |
-| **Text** | 47.0 - 47.0 | 0% | All models struggle equally |
+| **Text** | 47.0 - 47.0 | 0% ⚠️ | **ENGINE BUG** - Re-test needed with fixed engine |
 | **Financial** | 57.0 - 100.0 | 0% - 100% | gemini (100), claude-sonnet (100) |
 | **Logical** | 49.0 - 100.0 | 0% - 100% | gemini (100), claude-sonnet (100) |
 
@@ -144,13 +146,16 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 - **Best Performers:** claude-sonnet-4-5 (79), gemini-3-pro-preview (79)
 - **Common Issues:** Product totals and aggregate statistics still challenging for some models
 
-### ❌ text-01: Email Generation (Level 2)
-- **Success Rate:** 0% (universal failure point)
-- **Average Score:** 47/100
-- **Common Issues:**
-  - Correct LOWER function usage but email formulas don't concatenate properly
-  - All models generate formula syntax correctly but results not evaluated
-  - Appears to be a limitation in text manipulation capabilities
+### ⚠️ text-01: Email Generation (Level 2) - ENGINE BUG FIXED
+- **Success Rate:** 0% (was universal failure, now FIXED in engine)
+- **Average Score:** 47/100 (outdated - before engine fix)
+- **Root Cause Identified:** Spreadsheet engine bugs, NOT model limitations
+  - Models generated correct formulas: `=LOWER(A2)&"."&LOWER(B2)&"@company.com"`
+  - Engine failed to evaluate string concatenation (`&` operator)
+  - Engine failed to preserve string values in cells
+  - Engine failed to handle quoted string literals in functions
+- **Status:** ✅ **FIXED** - All bugs resolved, models should now pass when re-tested
+- **Note:** Results above are from BEFORE the fix - re-run needed to see true model performance
 
 ### ✅ financial-01: Loan Payment (Level 3)
 - **Success Rate:** 75% (6/8 models passed)
@@ -172,10 +177,16 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 3. **Basic to Advanced Tasks:** Strong performance across all complexity levels after bug fixes
 4. **Formatting:** Proper currency and percentage formatting when formulas produce values
 
-### Universal Weakness
-1. **Text Manipulation:** All models fail text-01 (email generation) - 0% success rate
-2. **String Concatenation:** Formula syntax correct but string operations don't evaluate properly
-3. **Statistical Edge Cases:** Some models still struggle with complex multi-step statistical calculations
+### Previous Universal Weakness (NOW FIXED)
+1. ~~**Text Manipulation:** All models fail text-01 (email generation) - 0% success rate~~ ✅ **FIXED**
+2. ~~**String Concatenation:** Formula syntax correct but string operations don't evaluate properly~~ ✅ **FIXED**
+   - **Root Cause:** Spreadsheet engine bugs (NOT model limitations)
+   - **Fix Date:** November 27, 2025
+   - **Details:** Engine now supports `&` operator, string preservation, and quoted literals
+   - **Impact:** Models likely to pass text-01 when re-tested
+
+### Remaining Weakness
+1. **Statistical Edge Cases:** Some models still struggle with complex multi-step statistical calculations
 
 ### Model-Specific Notes
 
@@ -305,6 +316,112 @@ Average:            2,060
 
 **Impact:** All models improved by 1.4-2.9 points after fixing test case
 
+### Spreadsheet Engine Bug Fixes (November 27, 2025)
+
+After investigation, we discovered that the **universal text-01 failure** (100% of models failing) was caused by **critical bugs in the spreadsheet engine**, NOT limitations in model capabilities.
+
+#### Problem Analysis
+
+All models generated **syntactically correct** formulas for email generation:
+- `=LOWER(A2)&"."&LOWER(B2)&"@company.com"` (using `&` operator)
+- `=CONCATENATE(LOWER(A2),".",LOWER(B2),"@company.com")` (using CONCATENATE)
+- `=A2&"."&B2&"@company.com"` (direct concatenation)
+
+However, the spreadsheet engine failed to evaluate these formulas correctly, producing results like:
+- `0.0@company.com` instead of `john.smith@company.com`
+- `LOWER(0).LOWER(0)@company.com` instead of `john.smith@company.com`
+- `john"."smith"@company.com"` instead of `john.smith@company.com`
+
+#### Root Causes Identified
+
+**Bug #1: Missing String Concatenation Support**
+- **Problem:** Engine didn't recognize or handle the `&` operator for string concatenation
+- **Impact:** Expressions like `"john"&"."&"smith"` failed to evaluate
+- **Fix:** Added `&` to `+` conversion for JavaScript evaluation with proper string literal handling
+
+**Bug #2: String Values Converted to Zero**
+- **Problem:** `getRawValue()` in calculator.ts used `parseFloat(cell) || 0`, converting non-numeric strings to 0
+- **Impact:** Cell values like "John" and "Smith" became 0
+- **Fix:** Changed to `parseFloat(cell); return isNaN(num) ? cell : num` to preserve strings
+
+**Bug #3: Missing Function Registry Import**
+- **Problem:** Main index.ts didn't import `"./functions"`, leaving function registry empty
+- **Impact:** LOWER, CONCATENATE, and other text functions weren't available
+- **Fix:** Added `import "./functions"` to index.ts
+
+**Bug #4: Formula Results Not Returned**
+- **Problem:** evaluateFormula returned original `formula` instead of processed `expr` after cell reference replacement
+- **Impact:** Cell references like "A2" returned "A2" instead of evaluated value "John"
+- **Fix:** Changed return statement from `return formula` to `return expr`
+
+**Bug #5: String Literals Not Unwrapped**
+- **Problem:** Quoted string literals like `"."` weren't having quotes stripped
+- **Impact:** CONCATENATE arguments included quotes in results: `john"."smith"@company.com"`
+- **Fix:** Added quote stripping at function entry and exit points
+
+**Bug #6: Cell References Not Quoted in Expressions**
+- **Problem:** String cell values weren't quoted when replaced in expressions
+- **Impact:** Expression `A2&"."` became `David&"."` causing ReferenceError (David is not defined)
+- **Fix:** Wrap string values in quotes when replacing cell references
+
+**Bug #7: Infinite Recursion in Function Finding**
+- **Problem:** Function finding loop restarted from index 0 after each replacement
+- **Impact:** Stack overflow when evaluating nested functions
+- **Fix:** Continue from after replacement instead of restarting loop
+
+#### Files Modified
+
+1. **src/tools/models/spreadsheet-engine/index.ts** (line 20)
+   - Added `import "./functions"` to load built-in functions
+
+2. **src/tools/models/spreadsheet-engine/evaluator.ts**
+   - Lines 90-97: Strip quotes from string literals at entry
+   - Lines 210: Fixed function finding loop continuation
+   - Lines 272-274: Quote string values when replacing cell references
+   - Lines 283-333: Added string concatenation support (`&` operator)
+   - Lines 347-354: Strip quotes from final result if single quoted string
+   - Line 356: Return processed `expr` instead of original `formula`
+
+3. **src/tools/models/spreadsheet-engine/calculator.ts**
+   - Lines 69-70: Preserve strings in `getRawValue()` for plain string cells
+   - Lines 109-111: Preserve strings in formula result caching
+   - Lines 130-131: Preserve strings in cell value extraction
+   - Lines 135-136: Preserve strings in raw cell parsing
+
+4. **benchmark/prompts/text/text-01.json** (line 28)
+   - Fixed extractor from `"john.smith"` to `"John"` (correct row label)
+
+#### Validation Tests
+
+Created comprehensive test suite validating all formula variants:
+```typescript
+✓ =LOWER(A2)&"."&LOWER(B2)&"@company.com" → john.smith@company.com
+✓ =A2&"."&B2&"@company.com" → David.Wilson@company.com
+✓ =CONCATENATE(C2,".",D2,"@company.com") → sarah.johnson@company.com
+✓ =CONCATENATE(LOWER(A2),".",LOWER(B2),"@company.com") → emily.davis@company.com
+✓ =A2&"@example.com" → Alice@example.com
+```
+
+All tests pass with the fixes applied.
+
+#### Impact
+
+**Before Fix:**
+- ❌ 100% of models failed text-01 (universal failure)
+- ❌ String concatenation formulas completely broken
+- ❌ Text functions unable to operate on cell values
+- ❌ Appeared to be fundamental model limitation
+
+**After Fix:**
+- ✅ Engine correctly evaluates all string concatenation formats
+- ✅ Text functions (LOWER, UPPER, CONCATENATE, etc.) work with cell references
+- ✅ Both `&` operator and CONCATENATE function supported
+- ✅ String literals and cell values properly handled
+- ⏳ **Models need to be re-tested** to determine true text-01 performance
+
+**Expected Outcome:**
+Models that generated syntactically correct formulas should now **PASS text-01** when re-tested, as the engine can now properly evaluate their outputs.
+
 ### Re-Evaluation Impact
 
 After fixing all bugs, result files were re-evaluated multiple times:
@@ -370,16 +487,18 @@ After fixing all bugs, result files were re-evaluated multiple times:
 
 1. **Input Validation:** Validate LLM outputs with the verification system before use
 2. **Task Complexity:** All top models handle complex tasks well (Levels 1-3)
-3. **Text Manipulation:** Be aware that string concatenation in formulas is universally weak - consider post-processing
+3. **Text Manipulation:** ~~Be aware that string concatenation in formulas is universally weak - consider post-processing~~ ✅ **FIXED** - Engine now fully supports string operations
 4. **Formatting:** Top models correctly apply currency and percentage formatting
 5. **Testing:** Use the benchmark's verification system to validate outputs in production
+6. **String Formulas:** Engine now supports `&` operator and CONCATENATE - models can generate text manipulation formulas
 
 ### For Benchmark Improvement
 
-1. **Text Manipulation:** Investigate why all models fail text-01 - may indicate a fundamental limitation
-2. **Additional Test Cases:** Add more complex scenarios (pivot tables, charts, conditional formatting)
-3. **Formula Diversity:** Test additional functions (VLOOKUP, INDEX/MATCH, array formulas)
-4. **Error Handling:** Test how models handle invalid inputs or edge cases
+1. ~~**Text Manipulation:** Investigate why all models fail text-01 - may indicate a fundamental limitation~~ ✅ **COMPLETED** - Was engine bug, now fixed
+2. **Re-test text-01:** Re-run benchmarks to measure true model performance on text manipulation now that engine supports it
+3. **Additional Test Cases:** Add more complex scenarios (pivot tables, charts, conditional formatting)
+4. **Formula Diversity:** Test additional functions (VLOOKUP, INDEX/MATCH, array formulas)
+5. **Error Handling:** Test how models handle invalid inputs or edge cases
 
 ## Conclusion
 
@@ -397,7 +516,7 @@ The corrected benchmark reveals that current AI models are **highly capable** at
 
 5. **Test case quality matters:** Found and fixed incorrect expected values in statistical-01, improving all model scores by 1.4-2.9 points
 
-6. **Universal text weakness:** All models fail text manipulation (text-01), suggesting a systematic limitation in string concatenation within formulas
+6. ~~**Universal text weakness:** All models fail text manipulation (text-01), suggesting a systematic limitation in string concatenation within formulas~~ ✅ **DEBUNKED** - Was spreadsheet engine bug (7 bugs fixed), NOT model limitation. Models generated correct formulas all along.
 
 7. **Production-ready:** Top 9 models are production-ready for spreadsheet generation (57-86% pass rates), with gemini and Claude models excelling
 
@@ -423,10 +542,11 @@ The corrected benchmark reveals that current AI models are **highly capable** at
 
 ### Next Steps
 
-1. **Investigate text-01 universal failure** - determine if it's a prompt issue or fundamental limitation
-2. **Expand test suite** - add more complex scenarios and edge cases
-3. **Cross-validation** - verify outputs with actual spreadsheet engines (Excel, Google Sheets)
-4. **Real-world testing** - test models on production use cases beyond benchmark scenarios
-5. **Test case quality assurance** - review all remaining test cases for incorrect expectations
+1. ~~**Investigate text-01 universal failure** - determine if it's a prompt issue or fundamental limitation~~ ✅ **COMPLETED** - Fixed 7 engine bugs
+2. **Re-run text-01 benchmarks** - Test all models with fixed engine to measure true text manipulation performance
+3. **Expand test suite** - add more complex scenarios and edge cases
+4. **Cross-validation** - verify outputs with actual spreadsheet engines (Excel, Google Sheets)
+5. **Real-world testing** - test models on production use cases beyond benchmark scenarios
+6. **Test case quality assurance** - review all remaining test cases for incorrect expectations
 
-The benchmark demonstrates that AI-powered spreadsheet generation has reached production-readiness for most use cases, with clear model recommendations based on specific requirements (performance, cost, privacy, speed). With 10 models tested, 6 verification bugs fixed, and 1 test case bug corrected, the results now accurately reflect true model capabilities. Gemini-3-pro-preview leads at 92.3/100, followed closely by Claude models in the 86-87 range.
+The benchmark demonstrates that AI-powered spreadsheet generation has reached production-readiness for most use cases, with clear model recommendations based on specific requirements (performance, cost, privacy, speed). With 10 models tested, 6 verification bugs fixed, 1 test case bug corrected, and **7 critical engine bugs fixed** (November 27, 2025), the system now accurately evaluates model outputs. The text-01 "universal failure" was revealed to be an engine limitation, not a model limitation - all models generated correct formulas. Gemini-3-pro-preview leads at 92.3/100, followed closely by Claude models in the 86-87 range. **Re-testing recommended** to measure true text manipulation performance with fixed engine.
