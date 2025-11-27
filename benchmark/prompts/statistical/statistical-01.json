@@ -68,7 +68,7 @@
   "formattingRequirements": [
     {
       "type": "currency",
-      "appliesTo": ["Laptop", "Mouse", "Keyboard", "Monitor", "Headphones", "Sum", "Average", "Highest", "Lowest"],
+      "appliesTo": ["Laptop", "Mouse", "Keyboard", "Monitor", "Headphones", "Total", "Average", "Highest", "Lowest"],
       "description": "All price and total values should have currency formatting"
     }
   ],
