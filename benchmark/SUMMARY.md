@@ -43,7 +43,7 @@ Each result file contains:
 **Date:** November 26, 2025
 **Models Tested:** 10 (all completed full suite)
 **Test Cases:** 7 total
-**Major Changes:** Fixed 6 critical bugs in verification logic (see Bug Fixes section below)
+**Major Changes:** Fixed 6 verification bugs + 1 test case bug (statistical-01 had incorrect expected values)
 
 ---
 
@@ -74,20 +74,20 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 
 | Rank | Model | Avg Score | Median | Pass Rate | Perfect Rate | Tests |
 |------|-------|-----------|--------|-----------|--------------|-------|
-| 🥇 1 | **gemini-3-pro-preview** | **89.4** | 100 | **86%** | **71%** | 7/7 |
-| 🥈 2 | **claude-haiku-4-5** | **84.3** | 100 | 71% | 57% | 7/7 |
-| 🥈 2 | **claude-3.5-sonnet** | **84.1** | 100 | 71% | 57% | 7/7 |
-| 🥈 2 | **claude-sonnet-4-5** | **84.1** | 100 | 71% | 57% | 7/7 |
-| 5 | **gpt-5.1** | **82.4** | 100 | 71% | 57% | 7/7 |
-| 5 | **grok-4-1-fast-reasoning** | **82.4** | 100 | 71% | 57% | 7/7 |
-| 7 | **gpt-4o** | **77.3** | 79 | 57% | 43% | 7/7 |
-| 8 | **gpt-4o-mini** | **74.0** | 75 | 57% | 29% | 7/7 |
-| 9 | **ollama-gpt-oss-20b** | **69.6** | 80 | 57% | 43% | 7/7 |
+| 🥇 1 | **gemini-3-pro-preview** | **92.3** | 100 | **86%** | **71%** | 7/7 |
+| 🥈 2 | **claude-3.5-sonnet** | **87.0** | 100 | 71% | 57% | 7/7 |
+| 🥈 2 | **claude-sonnet-4-5** | **87.0** | 100 | 71% | 57% | 7/7 |
+| 4 | **claude-haiku-4-5** | **85.7** | 100 | 71% | 57% | 7/7 |
+| 5 | **gpt-5.1** | **83.9** | 100 | 71% | 57% | 7/7 |
+| 5 | **grok-4-1-fast-reasoning** | **83.9** | 100 | 71% | 57% | 7/7 |
+| 7 | **gpt-4o** | **80.1** | 99 | 57% | 43% | 7/7 |
+| 8 | **gpt-4o-mini** | **76.9** | 75 | 57% | 29% | 7/7 |
+| 9 | **ollama-gpt-oss-20b** | **71.0** | 90 | 57% | 43% | 7/7 |
 | 10 | ollama-phi4-mini | 16.3 | 10 | 0% | 0% | 7/7 ⚠️ |
 
 **Legend:**
 - 🥇 Top performer
-- 🥈 Tied for second place (3 models: claude-haiku-4-5, claude-3.5-sonnet, claude-sonnet-4-5)
+- 🥈 Tied for second place (2 models: claude-3.5-sonnet, claude-sonnet-4-5)
 - ⚠️ Not production-ready
 
 ## Performance by Complexity Level
@@ -180,52 +180,55 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 ### Model-Specific Notes
 
 **🥇 gemini-3-pro-preview (1st Place)**:
-- **NEW TOP PERFORMER** with 89.4 average score and 86% pass rate
+- **CLEAR TOP PERFORMER** with 92.3 average score and 86% pass rate
 - **Perfect scores on 5 of 7 tests** (71% perfect rate)
-- Only model to pass all tests except text-01 (universal failure) and statistical-01
+- Only model to pass all tests except text-01 (universal failure)
+- Near-perfect on statistical-01 (99/100)
 - Excellent across all categories: Basic (100), Mathematical (100), Financial (100), Logical (100)
 - Completed full test suite in 173 seconds
 - **Best overall choice for spreadsheet generation**
 
-**🥈 claude-haiku-4-5, claude-sonnet-4-5 & claude-3.5-sonnet (Tied 2nd)**:
-- **claude-haiku-4-5**: 84.3 average score and 71% pass rate
-  - **Perfect scores on 4 of 7 tests** (57% perfect rate)
-  - Very efficient execution (41s total duration)
-  - **Best cost-performance ratio** among all models - faster and cheaper than sonnet models with nearly equal performance
+**🥈 claude-sonnet-4-5 & claude-3.5-sonnet (Tied 2nd)**:
+- Identical **87.0** average score and 71% pass rate
+- **Perfect scores on 4 of 7 tests** (57% perfect rate)
+- Strong on: Basic (100), Mathematical (100), Financial (100), Logical (100)
+- Excellent statistical performance (89-90/100)
+- Reliable performers across all task types
 
-- **claude-sonnet-4-5 & claude-3.5-sonnet**: Identical 84.1 average score and 71% pass rate
-  - **Perfect scores on 4 of 7 tests** (57% perfect rate)
-  - Strong on: Basic (100), Mathematical (100), Financial (100), Logical (100)
-  - Tied for best statistical performance (79/100) with Gemini
-  - Reliable performers across all task types
+**claude-haiku-4-5 (4th Place)**:
+- Strong **85.7** average score and 71% pass rate
+- **Perfect scores on 4 of 7 tests** (57% perfect rate)
+- Very efficient execution (41s total duration)
+- **Best cost-performance ratio** among all models - nearly matches sonnet at fraction of cost
+- Excellent on statistical tasks (90/100)
 
 **gpt-5.1 & grok-4-1-fast-reasoning (Tied 5th)**:
-- **gpt-5.1**: 82.4 average score and 71% pass rate
+- **gpt-5.1**: 83.9 average score and 71% pass rate
   - OpenAI's latest flagship model
   - **Perfect scores on 4 of 7 tests** (57% perfect rate)
   - Strong performance across all categories
   - Requires `max_completion_tokens` parameter (different from GPT-4)
 
-- **grok-4-1-fast-reasoning**: 82.4 average score and 71% pass rate
+- **grok-4-1-fast-reasoning**: 83.9 average score and 71% pass rate
   - Perfect scores on: Mathematical (100), Financial (100)
   - Completed full test suite in 120 seconds
   - Strong on advanced tasks (Level 3)
   - **Excellent speed and accuracy balance**
 
 **gpt-4o (7th Place)**:
-- Respectable 77.3 average score and 57% pass rate
+- Respectable 80.1 average score and 57% pass rate
 - Perfect scores on: Basic-01 (100), Logical-01 (100)
 - Decent mathematical performance (73/100)
-- Weaker on financial tasks compared to top performers
+- Improved statistical performance (90/100)
 
 **gpt-4o-mini (8th Place)**:
-- Good for lightweight tasks: 74.0 average score, 57% pass rate
+- Good for lightweight tasks: 76.9 average score, 57% pass rate
 - Perfect scores on: Basic-01 (100), Logical-01 (100)
 - Most cost-effective OpenAI option
 - Similar performance to gpt-4o at lower cost
 
 **ollama-gpt-oss-20b (9th Place)**:
-- Local deployment option: 69.6 average score, 57% pass rate
+- Local deployment option: 71.0 average score, 57% pass rate
 - Perfect scores on: Basic-01 (100), Financial-01 (100)
 - Runs entirely locally without API costs
 - **Best choice for privacy-sensitive or offline deployments**
@@ -274,13 +277,42 @@ The benchmark verification system had 6 critical bugs that caused systematic und
 - **Example:** gpt-5.1 basic-02 listed "Income" as missing even though it existed in the spreadsheet
 - **Impact:** False negatives on data presence checks, incorrectly reporting missing values
 
+### Test Case Bug: statistical-01 Incorrect Expectations
+
+After fixing verification bugs, we discovered **the statistical-01 test case itself had incorrect expected values**:
+
+**Problem:**
+- Expected Sum: 11,654 ❌ (actual: 10,300)
+- Expected Average: 2,330.8 ❌ (actual: 2,060)
+- Extractor label: "Sum" ❌ (models use "Total Sales", "Total", etc.)
+
+**Calculations from prompt:**
+```
+Laptop:     $999 × 5  = 4,995
+Mouse:      $25 × 15  = 375
+Keyboard:   $75 × 10  = 750
+Monitor:    $299 × 8  = 2,392
+Headphones: $149 × 12 = 1,788
+─────────────────────────────
+Total:              10,300
+Average:            2,060
+```
+
+**Fix Applied:**
+- Updated expected sum: 11,654 → 10,300 ✓
+- Updated expected average: 2,330.8 → 2,060 ✓
+- Changed extractor: "Sum" → "Total" (better label matching) ✓
+
+**Impact:** All models improved by 1.4-2.9 points after fixing test case
+
 ### Re-Evaluation Impact
 
-After fixing these bugs, all result files were re-evaluated:
+After fixing all bugs, result files were re-evaluated multiple times:
 - **Bugs 1-5:** 13 files updated, 34 test scores improved, 0 degraded
 - **Bug 6:** 10 files updated, 9 test scores improved, 1 degraded
-- **Total improvement:** +10 to +31 points per model
-- **Notable:** claude-haiku-4-5 improved from 82.7 to 84.3, grok improved from 80.9 to 82.4
+- **Test case fix:** 12 files updated, 8 improved, 4 adjusted
+- **Total improvement:** +13 to +34 points per model (from original scores)
+- **Notable:** gemini improved from 89.4 to 92.3, all Claude models gained 2-3 points
 
 ## Recommendations
 
@@ -289,40 +321,41 @@ After fixing these bugs, all result files were re-evaluated:
 **By Use Case:**
 
 1. **Best Overall Performance:** gemini-3-pro-preview
-   - Highest average score (89.4) and pass rate (86%)
-   - Perfect on 5 of 7 tests
+   - Highest average score (92.3) and pass rate (86%)
+   - Perfect on 5 of 7 tests, near-perfect on statistical (99/100)
    - Excellent across all categories
 
-2. **Best Cost-Performance:** claude-haiku-4-5
-   - Outstanding performance (84.3 avg, 71% pass rate) - **tied for 2nd place**
+2. **Best Cloud Alternatives:** claude-sonnet-4-5 or claude-3.5-sonnet
+   - Tied for second place (87.0 avg, 71% pass rate)
+   - Perfect on 4 of 7 tests
+   - Strong on mathematical and financial tasks
+   - Excellent statistical performance (89-90/100)
+
+3. **Best Cost-Performance:** claude-haiku-4-5
+   - Outstanding performance (85.7 avg, 71% pass rate)
    - Much faster and cheaper than sonnet models
    - Perfect on 4 of 7 tests
    - **Best bang-for-buck across all models**
 
-3. **Best Cloud Alternatives:** claude-sonnet-4-5 or claude-3.5-sonnet
-   - Tied for second place (84.1 avg, 71% pass rate)
-   - Perfect on 4 of 7 tests
-   - Strong on mathematical and financial tasks
-
 4. **Best OpenAI Option:** gpt-5.1
-   - Strong performance (82.4 avg, 71% pass rate)
+   - Strong performance (83.9 avg, 71% pass rate)
    - Perfect on 4 of 7 tests
    - OpenAI's latest flagship model
    - Note: Requires `max_completion_tokens` parameter
 
 5. **Best Speed:** grok-4-1-fast-reasoning
    - Fast execution (120s for full suite)
-   - Strong performance (82.4 avg, 71% pass rate)
+   - Strong performance (83.9 avg, 71% pass rate)
    - Perfect on mathematical and financial tasks
 
 6. **Best for Privacy/Offline:** ollama-gpt-oss-20b
    - Runs entirely locally without API calls
-   - Respectable performance (69.6 avg, 57% pass rate)
+   - Respectable performance (71.0 avg, 57% pass rate)
    - Zero ongoing costs
 
 7. **Budget Cloud Option:** gpt-4o-mini
    - Lowest-cost cloud API option
-   - Decent performance (74.0 avg, 57% pass rate)
+   - Decent performance (76.9 avg, 57% pass rate)
    - Good for high-volume, cost-sensitive applications
 
 **By Task Category:**
@@ -350,41 +383,43 @@ After fixing these bugs, all result files were re-evaluated:
 
 ## Conclusion
 
-The corrected benchmark reveals that current AI models are **highly capable** at spreadsheet generation across all complexity levels. **Gemini-3-pro-preview emerges as the clear leader** with 89.4 average score and 86% pass rate, achieving perfect scores on 5 of 7 tests.
+The corrected benchmark reveals that current AI models are **highly capable** at spreadsheet generation across all complexity levels. **Gemini-3-pro-preview emerges as the clear leader** with 92.3 average score and 86% pass rate, achieving perfect or near-perfect scores on 6 of 7 tests.
 
 ### Key Takeaways
 
-1. **Verification accuracy matters:** Bug fixes (6 total) increased scores by 10-31 points, revealing true model capabilities
+1. **Verification accuracy matters:** Bug fixes (6 verification bugs + 1 test case bug) increased scores by 13-34 points, revealing true model capabilities
 
-2. **Top-tier clustering:** gemini, all three Claude models (haiku, sonnet-4-5, 3.5-sonnet), gpt-5.1, and grok all score 82-90, demonstrating excellent spreadsheet generation across providers
+2. **Top-tier clustering:** gemini, all three Claude models (sonnet-4-5, 3.5-sonnet, haiku-4-5), gpt-5.1, and grok all score 84-92, demonstrating excellent spreadsheet generation across providers
 
-3. **Claude Haiku standout:** claude-haiku-4-5 now tied for 2nd place (84.3 avg) - faster and cheaper than larger models with nearly identical performance
+3. **Claude excellence:** All three Claude models score in the 86-87 range, with haiku-4-5 (85.7) offering exceptional cost-performance
 
-4. **GPT-5.1 debut:** OpenAI's latest model scores 82.4 with 71% pass rate, competitive with top performers
+4. **GPT-5.1 strong debut:** OpenAI's latest model scores 83.9 with 71% pass rate, competitive with top performers
 
-5. **Universal text weakness:** All models fail text manipulation (text-01), suggesting a systematic limitation in string concatenation within formulas
+5. **Test case quality matters:** Found and fixed incorrect expected values in statistical-01, improving all model scores by 1.4-2.9 points
 
-6. **Production-ready:** Top 9 models are production-ready for spreadsheet generation (57-86% pass rates), with gemini and Claude models excelling
+6. **Universal text weakness:** All models fail text manipulation (text-01), suggesting a systematic limitation in string concatenation within formulas
 
-7. **Cost-performance winner:** claude-haiku-4-5 offers best bang-for-buck - 2nd place performance at fraction of the cost
+7. **Production-ready:** Top 9 models are production-ready for spreadsheet generation (57-86% pass rates), with gemini and Claude models excelling
+
+8. **Cost-performance winner:** claude-haiku-4-5 offers best bang-for-buck - nearly matches sonnet models at fraction of the cost
 
 ### Production Readiness Summary
 
 **Tier 1 - Excellent (86%+ pass rate):**
-- ✅ gemini-3-pro-preview: Production-ready for all tasks, highest reliability
+- ✅ gemini-3-pro-preview (92.3): Production-ready for all tasks, highest reliability
 
 **Tier 2 - Strong (71% pass rate):**
-- ✅ claude-haiku-4-5: Production-ready, **best overall value** - 2nd place at lower cost
-- ✅ claude-sonnet-4-5, claude-3.5-sonnet: Production-ready, excellent alternatives
-- ✅ gpt-5.1: Production-ready, OpenAI's latest flagship
-- ✅ grok-4-1-fast-reasoning: Production-ready, excellent speed/accuracy
+- ✅ claude-sonnet-4-5, claude-3.5-sonnet (87.0): Production-ready, excellent alternatives
+- ✅ claude-haiku-4-5 (85.7): Production-ready, **best overall value**
+- ✅ gpt-5.1 (83.9): Production-ready, OpenAI's latest flagship
+- ✅ grok-4-1-fast-reasoning (83.9): Production-ready, excellent speed/accuracy
 
 **Tier 3 - Good (57% pass rate):**
-- ✅ gpt-4o, gpt-4o-mini: Production-ready with validation layer
-- ✅ ollama-gpt-oss-20b: Production-ready for local/offline deployments
+- ✅ gpt-4o (80.1), gpt-4o-mini (76.9): Production-ready with validation layer
+- ✅ ollama-gpt-oss-20b (71.0): Production-ready for local/offline deployments
 
 **Not Recommended:**
-- ❌ ollama-phi4-mini: Not production-ready, requires significant improvement
+- ❌ ollama-phi4-mini (16.3): Not production-ready, requires significant improvement
 
 ### Next Steps
 
@@ -392,5 +427,6 @@ The corrected benchmark reveals that current AI models are **highly capable** at
 2. **Expand test suite** - add more complex scenarios and edge cases
 3. **Cross-validation** - verify outputs with actual spreadsheet engines (Excel, Google Sheets)
 4. **Real-world testing** - test models on production use cases beyond benchmark scenarios
+5. **Test case quality assurance** - review all remaining test cases for incorrect expectations
 
-The benchmark demonstrates that AI-powered spreadsheet generation has reached production-readiness for most use cases, with clear model recommendations based on specific requirements (performance, cost, privacy, speed). With 10 models tested and 6 critical verification bugs fixed, the results now accurately reflect true model capabilities.
+The benchmark demonstrates that AI-powered spreadsheet generation has reached production-readiness for most use cases, with clear model recommendations based on specific requirements (performance, cost, privacy, speed). With 10 models tested, 6 verification bugs fixed, and 1 test case bug corrected, the results now accurately reflect true model capabilities. Gemini-3-pro-preview leads at 92.3/100, followed closely by Claude models in the 86-87 range.

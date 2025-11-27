@@ -36,14 +36,14 @@
     },
     {
       "name": "Sum of all sales",
-      "extractor": "Sum",
-      "expected": 11654,
+      "extractor": "Total",
+      "expected": 10300,
       "tolerance": 2
     },
     {
       "name": "Average sale amount",
       "extractor": "Average",
-      "expected": 2330.8,
+      "expected": 2060,
       "tolerance": 2
     },
     {
