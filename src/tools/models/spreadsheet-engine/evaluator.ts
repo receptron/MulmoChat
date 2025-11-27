@@ -154,7 +154,7 @@ export function evaluateFormula(
     // Use a simpler approach: find function names followed by parentheses
     // and manually parse the matching closing parenthesis
     let searchIndex = 0;
-    let maxIterations = 100; // Prevent infinite loops
+    const maxIterations = 100; // Prevent infinite loops
     let iterations = 0;
 
     while (searchIndex < expr.length && iterations < maxIterations) {
@@ -204,7 +204,8 @@ export function evaluateFormula(
         const fullMatch = expr.substring(funcStartIndex, argsEndIndex);
         const result = context.evaluateFormula(fullMatch);
         // For string results, wrap in quotes; for numbers, wrap in parentheses
-        const replacement = typeof result === "string" ? `"${result}"` : `(${result})`;
+        const replacement =
+          typeof result === "string" ? `"${result}"` : `(${result})`;
         expr =
           expr.substring(0, funcStartIndex) +
           replacement +
@@ -291,9 +292,9 @@ export function evaluateFormula(
         let stringChar = "";
         let result = "";
 
-        for (let i = 0; i < expr.length; i++) {
-          const char = expr[i];
-          const prevChar = i > 0 ? expr[i - 1] : "";
+        for (let index = 0; index < expr.length; index++) {
+          const char = expr[index];
+          const prevChar = index > 0 ? expr[index - 1] : "";
 
           // Handle string boundaries
           if ((char === '"' || char === "'") && prevChar !== "\\") {
@@ -316,13 +317,16 @@ export function evaluateFormula(
 
         // Validate the expression contains only safe characters
         // Allow: numbers, letters, strings (with quotes), operators, parentheses, whitespace, @, .
-        if (/^[a-zA-Z0-9+\-*/(). "'@.]+$/.test(result)) {
+        if (/^[a-zA-Z0-9+\-*/(). "'@]+$/.test(result)) {
           // eslint-disable-next-line sonarjs/code-eval
           const evalResult = new Function(`return (${result})`)();
           return evalResult;
         }
       } catch (error) {
-        console.error(`Failed to evaluate string concatenation: ${expr}`, error);
+        console.error(
+          `Failed to evaluate string concatenation: ${expr}`,
+          error,
+        );
         return formula;
       }
     }
