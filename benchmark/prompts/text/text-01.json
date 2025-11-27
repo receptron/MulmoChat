@@ -44,10 +44,10 @@
       "required": false
     }
   ],
-  "expectedFunctions": ["LOWER", "CONCAT"],
+  "expectedFunctions": ["LOWER"],
   "metadata": {
     "author": "Benchmark System",
     "created": "2025-11-25",
-    "notes": "Tests text manipulation functions (LOWER, CONCAT)"
+    "notes": "Tests text manipulation with LOWER function. Concatenation can use CONCAT/CONCATENATE function or & operator."
   }
 }

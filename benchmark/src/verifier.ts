@@ -370,7 +370,7 @@ export function findByLabelWithFormulas(
         // Found a matching label, collect numeric cells in the same row
         const numericCells: Array<{
           col: number;
-          value: number;
+          value: number | string;
           hasFormula: boolean;
         }> = [];
 
@@ -384,33 +384,35 @@ export function findByLabelWithFormulas(
           const hasFormula =
             typeof originalValue === "string" && originalValue.startsWith("=");
 
-          // Get calculated numeric value
+          // Get calculated value (numeric or string)
           const calculatedCell = calculatedData[row][c];
           const calculatedValue =
             typeof calculatedCell === "object" && calculatedCell !== null && "v" in calculatedCell
               ? calculatedCell.v
               : calculatedCell;
 
-          // Extract numeric value from calculated cell
-          let numValue: number | null = null;
+          // Extract value from calculated cell (numeric or string)
+          let value: number | string | null = null;
           if (typeof calculatedValue === "number") {
-            numValue = calculatedValue;
+            value = calculatedValue;
           } else if (typeof calculatedValue === "string") {
+            // Try to parse as number first
             const cleaned = calculatedValue.replace(/[$,€£¥%]/g, "").trim();
             const parsed = parseFloat(cleaned);
-            numValue = isNaN(parsed) ? null : parsed;
+            // If it's a valid number, use it; otherwise keep the string
+            value = isNaN(parsed) ? calculatedValue : parsed;
           }
 
-          if (numValue !== null) {
+          if (value !== null && value !== "") {
             numericCells.push({
               col: c,
-              value: numValue,
+              value: value,
               hasFormula,
             });
           }
         }
 
-        // Only add to potential matches if we found numeric cells
+        // Only add to potential matches if we found value cells
         if (numericCells.length > 0) {
           potentialMatches.push({
             row,
