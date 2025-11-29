@@ -1,0 +1,18 @@
+[
+  ["Function", "Details", "Result", "Notes"],
+  ["Monthly Payment", "PMT(6%/12, 30*12, 250000)", "-$1,498.88", "Mortgage"],
+  ["Future Value", "FV(5%/12, 12*5, -200, -5000, 0)", "$20,018.01", "Savings"],
+  ["Present Value", "PV(4%/12, 10*12, -300)", "$29,631.05", "Annuity"],
+  ["Interest Payment P1", "IPMT(5%/12,1,24,10000)", "$41.67", "Loan"],
+  ["Principal Payment P1", "PPMT(5%/12,1,24,10000)", "-$480.38", "Loan"],
+  ["Periods Needed", "NPER(7%/12,-500,15000)", "33.07", "Goal"],
+  ["Loan Rate", "RATE(36,-300,9000)", "0.0102", "Guess 10%"],
+  ["", "", "", ""],
+  ["Year", "Cash Flow", "", ""],
+  ["0", "-10000", "", "Initial"],
+  ["1", "3000", "", "Year 1"],
+  ["2", "4200", "", "Year 2"],
+  ["3", "6800", "", "Year 3"],
+  ["NPV @10%", "$1,307.29", "", ""],
+  ["IRR", "0.1634", "", ""]
+]
