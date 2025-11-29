@@ -44,7 +44,7 @@ const toolDefinition = {
             data: {
               type: "array",
               description:
-                'Rows of cells. Each cell is an object with \'v\' (value) and \'f\' (format). Use Excel-style A1 notation in formulas: columns are letters (A, B, C...), rows are 1-based numbers (1, 2, 3...). Example: [{"v": "Year", "f": ""}, {"v": 2024, "f": "#,##0"}, {"v": "=B2*1.05", "f": "$#,##0.00"}]. Format codes: \'$#,##0.00\' (currency), \'#,##0\' (integer), \'0.00%\' (percent), \'0.00\' (decimal).',
+                'Rows of cells. Each cell is an object with \'v\' (value) and \'f\' (format). Use Excel-style A1 notation in formulas: columns are letters (A, B, C...), rows are 1-based numbers (1, 2, 3...). Values can be text, numbers, dates, or formulas. Examples: [{"v": "Product"}, {"v": 2024, "f": "#,##0"}, {"v": "01/15/2025", "f": "MM/DD/YYYY"}, {"v": "=B2*1.05", "f": "$#,##0.00"}]. Format codes: \'$#,##0.00\' (currency), \'#,##0\' (integer), \'0.00%\' (percent), \'0.00\' (decimal), \'MM/DD/YYYY\' (date), \'DD-MMM-YYYY\' (date), \'YYYY-MM-DD\' (ISO date).',
               items: {
                 type: "array",
                 description:
@@ -57,12 +57,12 @@ const toolDefinition = {
                     v: {
                       oneOf: [{ type: "string" }, { type: "number" }],
                       description:
-                        "Cell value. Can be text, number, or formula (string starting with '='). Examples: 'Revenue', 1500000, '=SUM(A1:A10)', '=B2/B1-1'",
+                        "Cell value. Can be text, number, date, or formula (string starting with '='). Examples: 'Revenue', 1500000, '01/15/2025', '=SUM(A1:A10)', '=B2-TODAY()'. Date strings like '01/15/2025' are automatically parsed to date serial numbers.",
                     },
                     f: {
                       type: "string",
                       description:
-                        "Optional format code for displaying the value. Common formats: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal)",
+                        "Optional format code for displaying the value. Common formats: '$#,##0.00' (currency), '#,##0' (integer), '0.00%' (percent), '0.00' (decimal), 'MM/DD/YYYY' (date), 'DD-MMM-YYYY' (date), 'YYYY-MM-DD' (ISO date)",
                     },
                   },
                   required: ["v"],
@@ -133,5 +133,5 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: SpreadsheetView,
   previewComponent: SpreadsheetPreview,
-  systemPrompt: `Use ${toolName} whenever the user needs a spreadsheet-style table, multi-step math, or dynamic what-if analysis—do not summarize in text. Build LIVE sheets where every cell is an object {"v": value, "f": format}. For formulas, set "v" to a string starting with "=" (e.g., {"v": "=B2*1.05", "f": "$#,##0.00"}). Never pre-calculate; let the spreadsheet compute using cell refs, functions (SUM, AVERAGE, IF, etc.), and arithmetic. Standard formats: "$#,##0.00" currency, "#,##0" integer, "0.00%" percent, "0.00" decimal. Format is optional for plain text/numbers.`,
+  systemPrompt: `Use ${toolName} whenever the user needs a spreadsheet-style table, multi-step math, or dynamic what-if analysis—do not summarize in text. Build LIVE sheets where every cell is an object {"v": value, "f": format}. For formulas, set "v" to a string starting with "=" (e.g., {"v": "=B2*1.05", "f": "$#,##0.00"}). For dates, use date strings like "01/15/2025" or date formulas like "=TODAY()" or "=DATE(2025,1,15)". The spreadsheet auto-parses common date formats (MM/DD/YYYY, YYYY-MM-DD, DD-MMM-YYYY) into date serial numbers for calculations. Date arithmetic works: "=B2-TODAY()" calculates days between dates. Never pre-calculate; let the spreadsheet compute using cell refs, functions (SUM, AVERAGE, IF, TODAY, DATE, DATEDIF, etc.), and arithmetic. Standard formats: "$#,##0.00" currency, "#,##0" integer, "0.00%" percent, "0.00" decimal, "MM/DD/YYYY" date, "DD-MMM-YYYY" date, "YYYY-MM-DD" ISO date. Format is optional for plain text/numbers.`,
 };

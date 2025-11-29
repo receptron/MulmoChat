@@ -7,13 +7,50 @@
 import { formatNumber } from "./formatter";
 import { columnToIndex } from "./parser";
 import { evaluateFormula as evaluateFormulaFn } from "./evaluator";
+import { parseDate, getDefaultDateFormat } from "./date-parser";
 import type {
   SheetData,
   CellValue,
   CalculatedSheet,
   CalculationError,
   FormulaInfo,
+  SpreadsheetCell,
 } from "./types";
+
+/**
+ * Pre-process sheet data to parse date strings into serial numbers
+ *
+ * @param data - Raw sheet data
+ * @returns Processed data with dates converted to serial numbers
+ */
+function preprocessDates(data: SpreadsheetCell[][]): SpreadsheetCell[][] {
+  return data.map((row) =>
+    row.map((cell) => {
+      // Skip if not a cell object or if it has a formula
+      if (!cell || typeof cell !== "object" || !("v" in cell)) {
+        return cell;
+      }
+
+      const value = cell.v;
+
+      // Only parse strings that aren't formulas
+      if (typeof value === "string" && !value.startsWith("=")) {
+        const dateSerial = parseDate(value);
+
+        if (dateSerial !== null) {
+          // It's a date! Convert to serial number
+          return {
+            v: dateSerial,
+            f: cell.f || getDefaultDateFormat(value), // Use existing format or detect from input
+          };
+        }
+      }
+
+      // Not a date, return as-is
+      return cell;
+    }),
+  );
+}
 
 /**
  * Calculate formulas in a single sheet
@@ -26,7 +63,16 @@ export function calculateSheet(
   sheet: SheetData,
   allSheets?: SheetData[],
 ): CalculatedSheet {
-  const data = sheet.data;
+  // Pre-process dates before calculation
+  const processedData = preprocessDates(sheet.data);
+
+  // Also preprocess all sheets if provided
+  const processedAllSheets = allSheets?.map((s) => ({
+    ...s,
+    data: preprocessDates(s.data),
+  }));
+
+  const data = processedData;
   const sheetName = sheet.name;
   const sheetsCache = new Map<string, CellValue[][]>();
   const errors: CalculationError[] = [];
@@ -161,14 +207,16 @@ export function calculateSheet(
         sheetData = sheetsCache.get(targetSheetName)!;
       } else {
         // Find the sheet in all sheets
-        const targetSheet = allSheets?.find((s) => s.name === targetSheetName);
+        const targetSheet = processedAllSheets?.find(
+          (s) => s.name === targetSheetName,
+        );
         if (targetSheet && targetSheet.data) {
           // Calculate formulas for the target sheet with cache
           const targetCalculated = targetSheet.data.map((row) => [...row]);
           sheetsCache.set(targetSheetName, targetCalculated);
 
           // Recursively calculate the target sheet
-          const targetResult = calculateSheet(targetSheet, allSheets);
+          const targetResult = calculateSheet(targetSheet, processedAllSheets);
           sheetsCache.set(targetSheetName, targetResult.data);
           sheetData = targetResult.data as any[][];
         } else {
@@ -221,13 +269,15 @@ export function calculateSheet(
         sheetData = sheetsCache.get(targetSheetName)!;
       } else {
         // Find and calculate the target sheet
-        const targetSheet = allSheets?.find((s) => s.name === targetSheetName);
+        const targetSheet = processedAllSheets?.find(
+          (s) => s.name === targetSheetName,
+        );
         if (targetSheet && targetSheet.data) {
           const targetCalculated = targetSheet.data.map((row) => [...row]);
           sheetsCache.set(targetSheetName, targetCalculated);
 
           // Recursively calculate the target sheet
-          const targetResult = calculateSheet(targetSheet, allSheets);
+          const targetResult = calculateSheet(targetSheet, processedAllSheets);
           sheetsCache.set(targetSheetName, targetResult.data);
           sheetData = targetResult.data as any[][];
         } else {
@@ -282,18 +332,15 @@ export function calculateSheet(
       const originalCell = data[rowIdx][colIdx];
       const calculatedCell = calculated[rowIdx][colIdx];
 
-      // Check if cell was already calculated recursively (it's now a number)
+      // Skip if cell was already calculated recursively
       if (
         typeof calculatedCell === "number" &&
         originalCell &&
         typeof originalCell === "object" &&
         "f" in originalCell
       ) {
-        // Cell was recursively evaluated - apply formatting now
-        const format = originalCell.f;
-        if (format) {
-          calculated[rowIdx][colIdx] = formatNumber(calculatedCell, format);
-        }
+        // Cell was already evaluated - keep it as number for now
+        // Formatting will be applied at the end
         continue;
       }
 
@@ -304,7 +351,6 @@ export function calculateSheet(
         "v" in originalCell
       ) {
         const value = originalCell.v;
-        const format = originalCell.f;
 
         // Check if value is a formula (string starting with "=")
         if (typeof value === "string" && value.startsWith("=")) {
@@ -324,23 +370,37 @@ export function calculateSheet(
           // Update formula result
           formulas[formulas.length - 1].result = result;
 
-          // Apply formatting if specified
-          if (format && typeof result === "number") {
-            calculated[rowIdx][colIdx] = formatNumber(result, format);
-          } else {
-            calculated[rowIdx][colIdx] = result;
-          }
+          // Store result as-is (formatting will be applied at the end)
+          calculated[rowIdx][colIdx] = result;
         } else {
           // Regular value cell (not a formula)
-          if (format && typeof value === "number") {
-            calculated[rowIdx][colIdx] = formatNumber(value, format);
-          } else {
-            // Convert to plain value (important for range evaluation)
-            calculated[rowIdx][colIdx] = value;
-          }
+          // Convert to plain value (important for range evaluation)
+          calculated[rowIdx][colIdx] = value;
         }
       }
       // If cell is not in {v, f} format, leave it as-is (already a plain value)
+    }
+  }
+
+  // Final formatting pass: apply formatting to all cells with format codes
+  for (let rowIdx = 0; rowIdx < data.length; rowIdx++) {
+    for (let colIdx = 0; colIdx < data[rowIdx].length; colIdx++) {
+      const originalCell = data[rowIdx][colIdx];
+      const calculatedValue = calculated[rowIdx][colIdx];
+
+      // Apply formatting if cell has a format code and calculated value is a number
+      if (
+        originalCell &&
+        typeof originalCell === "object" &&
+        "f" in originalCell &&
+        originalCell.f &&
+        typeof calculatedValue === "number"
+      ) {
+        calculated[rowIdx][colIdx] = formatNumber(
+          calculatedValue,
+          originalCell.f,
+        );
+      }
     }
   }
 

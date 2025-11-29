@@ -10,30 +10,9 @@ import {
   toString,
   type FunctionHandler,
 } from "../registry";
+import { dateToSerial, serialToDate } from "../date-utils";
 
-// Helper: Convert JS Date to Excel Serial Number
-// Excel base date: Dec 30, 1899 (to handle the 1900 leap year bug correctly)
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const EXCEL_BASE_DATE = new Date(Date.UTC(1899, 11, 30));
-
-const dateToSerial = (date: Date): number => {
-  const diff = date.getTime() - EXCEL_BASE_DATE.getTime();
-  return diff / MS_PER_DAY;
-};
-
-// Helper: Convert Excel Serial Number to JS Date
-const serialToDate = (serial: number): Date => {
-  const days = Math.floor(serial);
-  const timePart = serial - days;
-
-  const date = new Date(EXCEL_BASE_DATE.getTime() + days * MS_PER_DAY);
-
-  // Add time
-  const totalSeconds = Math.round(timePart * 24 * 60 * 60);
-  date.setSeconds(date.getSeconds() + totalSeconds);
-
-  return date;
-};
 
 const nowHandler: FunctionHandler = (args) => {
   if (args.length !== 0) throw new Error("NOW requires 0 arguments");
