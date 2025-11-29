@@ -137,14 +137,16 @@ const varHandler: FunctionHandler = (args, context) => {
 
 const countaHandler: FunctionHandler = (args, context) => {
   if (args.length !== 1) throw new Error("COUNTA requires 1 argument");
-  const values = context.getRangeValues(args[0]);
+  const values =
+    context.getRangeValuesRaw?.(args[0]) ?? context.getRangeValues(args[0]);
   // Count non-empty cells
   return values.filter((v) => v !== null && v !== undefined && v !== "").length;
 };
 
 const countifHandler: FunctionHandler = (args, context) => {
   if (args.length !== 2) throw new Error("COUNTIF requires 2 arguments");
-  const values = context.getRangeValues(args[0]);
+  const values =
+    context.getRangeValuesRaw?.(args[0]) ?? context.getRangeValues(args[0]);
   const criteria = args[1].trim();
   const compareFn = parseCriteria(criteria);
   return values.filter(compareFn).length;
@@ -155,10 +157,13 @@ const sumifHandler: FunctionHandler = (args, context) => {
     throw new Error("SUMIF requires 2 or 3 arguments");
   }
 
-  const criteriaRange = context.getRangeValues(args[0]);
+  const criteriaRange =
+    context.getRangeValuesRaw?.(args[0]) ?? context.getRangeValues(args[0]);
   const criteria = args[1].trim();
   const sumRange =
-    args.length === 3 ? context.getRangeValues(args[2]) : criteriaRange;
+    args.length === 3
+      ? context.getRangeValues(args[2])
+      : context.getRangeValues(args[0]);
 
   const compareFn = parseCriteria(criteria);
 
@@ -177,10 +182,13 @@ const averageifHandler: FunctionHandler = (args, context) => {
     throw new Error("AVERAGEIF requires 2 or 3 arguments");
   }
 
-  const criteriaRange = context.getRangeValues(args[0]);
+  const criteriaRange =
+    context.getRangeValuesRaw?.(args[0]) ?? context.getRangeValues(args[0]);
   const criteria = args[1].trim();
   const avgRange =
-    args.length === 3 ? context.getRangeValues(args[2]) : criteriaRange;
+    args.length === 3
+      ? context.getRangeValues(args[2])
+      : context.getRangeValues(args[0]);
 
   const compareFn = parseCriteria(criteria);
 

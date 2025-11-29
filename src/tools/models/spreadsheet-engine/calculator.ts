@@ -251,8 +251,10 @@ export function calculateSheet(
     );
   };
 
-  // Helper to get range values (e.g., "B2:B11" or "Sheet1!B2:B11")
-  const getRangeValues = (range: string): CellValue[] => {
+  const collectRangeValues = (
+    range: string,
+    options: { numericOnly: boolean },
+  ): CellValue[] => {
     let sheetData: any[][] = calculated;
     let rangeRef = range;
     let isCurrentSheet = true;
@@ -305,23 +307,39 @@ export function calculateSheet(
         ) {
           const cell = sheetData[row][col];
           // Pass row/col only if current sheet (for recursive evaluation)
-          const num = getRawValue(
+          const rawValue = getRawValue(
             cell,
             isCurrentSheet ? row : undefined,
             isCurrentSheet ? col : undefined,
           );
-          if (!isNaN(num)) values.push(num);
+
+          if (options.numericOnly) {
+            if (!isNaN(rawValue as number)) {
+              values.push(rawValue);
+            }
+          } else {
+            values.push(rawValue);
+          }
         }
       }
     }
     return values;
   };
 
+  // Helper to get numeric-only range values (legacy behavior)
+  const getRangeValues = (range: string): CellValue[] =>
+    collectRangeValues(range, { numericOnly: true });
+
+  // Helper to get raw range values including text
+  const getRangeValuesRaw = (range: string): CellValue[] =>
+    collectRangeValues(range, { numericOnly: false });
+
   // Evaluate a formula with context
   const evaluateFormula = (formula: string): CellValue => {
     return evaluateFormulaFn(formula, {
       getCellValue,
       getRangeValues,
+      getRangeValuesRaw,
       evaluateFormula,
     });
   };

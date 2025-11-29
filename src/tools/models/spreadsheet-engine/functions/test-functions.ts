@@ -15,6 +15,7 @@ const failures: string[] = [];
 const createMockContext = (
   cellData: Record<string, any> = {},
   rangeData: Record<string, any[]> = {},
+  rawRangeData?: Record<string, any[]>,
 ): FunctionContext => {
   return {
     getCellValue: (ref: string) => {
@@ -26,7 +27,10 @@ const createMockContext = (
       return cellData[ref] ?? 0;
     },
     getRangeValues: (range: string) => {
-      return rangeData[range] ?? [];
+      return rangeData[range] ?? rawRangeData?.[range] ?? [];
+    },
+    getRangeValuesRaw: (range: string) => {
+      return rawRangeData?.[range] ?? rangeData[range] ?? [];
     },
     evaluateFormula: (formula: string) => {
       // Simple mock evaluator

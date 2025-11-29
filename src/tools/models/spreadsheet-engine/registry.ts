@@ -8,10 +8,12 @@
 export type CellValue = number | string;
 export type CellGetter = (ref: string) => CellValue;
 export type RangeGetter = (range: string) => CellValue[];
+export type RawRangeGetter = (range: string) => CellValue[];
 
 export interface FunctionContext {
   getCellValue: CellGetter;
   getRangeValues: RangeGetter;
+  getRangeValuesRaw?: RawRangeGetter;
   evaluateFormula: (formula: string) => CellValue;
 }
 

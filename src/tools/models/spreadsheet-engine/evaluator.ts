@@ -14,6 +14,7 @@ import { parseDate } from "./date-parser";
 export interface EvaluatorContext {
   getCellValue: (ref: string) => CellValue;
   getRangeValues: (range: string) => CellValue[];
+  getRangeValuesRaw?: (range: string) => CellValue[];
   evaluateFormula: (formula: string) => CellValue;
 }
 
@@ -153,6 +154,7 @@ export function evaluateFormula(
         return func.handler(args, {
           getCellValue: context.getCellValue,
           getRangeValues: context.getRangeValues,
+          getRangeValuesRaw: context.getRangeValuesRaw,
           evaluateFormula: context.evaluateFormula,
         });
       }

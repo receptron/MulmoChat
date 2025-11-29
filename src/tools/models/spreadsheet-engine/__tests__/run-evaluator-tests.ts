@@ -48,10 +48,12 @@ function expect(actual: any) {
 function createContext(
   cells: Record<string, number | string> = {},
   ranges: Record<string, (number | string)[]> = {},
+  rawRanges?: Record<string, (number | string)[]>,
 ): EvaluatorContext {
   const context: EvaluatorContext = {
     getCellValue: (ref: string) => cells[ref] ?? 0,
-    getRangeValues: (range: string) => ranges[range] ?? [],
+    getRangeValues: (range: string) => ranges[range] ?? rawRanges?.[range] ?? [],
+    getRangeValuesRaw: (range: string) => rawRanges?.[range] ?? ranges[range] ?? [],
     evaluateFormula: (formula: string) => evaluateFormula(formula, context),
   };
   return context;
@@ -161,6 +163,22 @@ test("evaluates MIN with expressions", () => {
 test("evaluates COUNT function", () => {
   const ctx = createContext({}, { "A1:A10": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });
   expect(evaluateFormula("COUNT(A1:A10)", ctx)).toBe(10);
+});
+test("evaluates COUNTA function", () => {
+  const ctx = createContext(
+    {},
+    {},
+    { "A1:A5": ["Laptop", "", 42, "Projector", ""] },
+  );
+  expect(evaluateFormula("COUNTA(A1:A5)", ctx)).toBe(3);
+});
+test("evaluates COUNTIF with text", () => {
+  const ctx = createContext(
+    {},
+    {},
+    { "K1:K4": ["YES", "NO", "YES", "YES"] },
+  );
+  expect(evaluateFormula('COUNTIF(K1:K4,"YES")', ctx)).toBe(3);
 });
 
 // Nested functions

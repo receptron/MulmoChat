@@ -38,6 +38,12 @@ const mockContext: FunctionContext = {
     if (range === "C1:C3") return [10, 20, 30];
     return [];
   },
+  getRangeValuesRaw: (range: string) => {
+    if (range === "A1:A3") return [1, 2, 3];
+    if (range === "B1:B3") return ["Apple", "Banana", "Cherry"];
+    if (range === "C1:C3") return [10, 20, 30];
+    return [];
+  },
   evaluateFormula: (formula: string) => {
     // Simple mock evaluator that returns the value if it's not a formula
     if (!isNaN(Number(formula))) return Number(formula);
