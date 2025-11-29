@@ -52,8 +52,10 @@ function createContext(
 ): EvaluatorContext {
   const context: EvaluatorContext = {
     getCellValue: (ref: string) => cells[ref] ?? 0,
-    getRangeValues: (range: string) => ranges[range] ?? rawRanges?.[range] ?? [],
-    getRangeValuesRaw: (range: string) => rawRanges?.[range] ?? ranges[range] ?? [],
+    getRangeValues: (range: string) =>
+      ranges[range] ?? rawRanges?.[range] ?? [],
+    getRangeValuesRaw: (range: string) =>
+      rawRanges?.[range] ?? ranges[range] ?? [],
     evaluateFormula: (formula: string) => evaluateFormula(formula, context),
   };
   return context;
@@ -146,10 +148,7 @@ test("evaluates MAX function", () => {
   expect(evaluateFormula("MAX(A1:A5)", ctx)).toBe(50);
 });
 test("evaluates MAX with mixed arguments", () => {
-  const ctx = createContext(
-    { B1: 75 },
-    { "A1:A3": [10, 50, 30] },
-  );
+  const ctx = createContext({ B1: 75 }, { "A1:A3": [10, 50, 30] });
   expect(evaluateFormula("MAX(B1, A1:A3, 5)", ctx)).toBe(75);
 });
 test("evaluates MIN function", () => {
@@ -173,11 +172,7 @@ test("evaluates COUNTA function", () => {
   expect(evaluateFormula("COUNTA(A1:A5)", ctx)).toBe(3);
 });
 test("evaluates COUNTIF with text", () => {
-  const ctx = createContext(
-    {},
-    {},
-    { "K1:K4": ["YES", "NO", "YES", "YES"] },
-  );
+  const ctx = createContext({}, {}, { "K1:K4": ["YES", "NO", "YES", "YES"] });
   expect(evaluateFormula('COUNTIF(K1:K4,"YES")', ctx)).toBe(3);
 });
 

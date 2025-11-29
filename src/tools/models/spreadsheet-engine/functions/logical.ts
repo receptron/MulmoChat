@@ -23,7 +23,8 @@ const ifHandler: FunctionHandler = (args, context) => {
   } else if (typeof conditionValue === "number") {
     conditionResult = conditionValue !== 0;
   } else if (typeof conditionValue === "string") {
-    conditionResult = conditionValue.toLowerCase() === "true" || conditionValue !== "";
+    conditionResult =
+      conditionValue.toLowerCase() === "true" || conditionValue !== "";
   } else {
     conditionResult = !!conditionValue;
   }
