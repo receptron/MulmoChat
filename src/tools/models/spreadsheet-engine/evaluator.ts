@@ -293,6 +293,16 @@ export function evaluateFormula(
       }
     }
 
+    // Parse date strings in arithmetic expressions (e.g., "06/01/2025" → serial number)
+    // This allows formulas like =B3-"06/01/2025" to work correctly
+    expr = expr.replace(/"([^"]+)"/g, (match, dateStr) => {
+      const dateSerial = parseDate(dateStr);
+      if (dateSerial !== null) {
+        return dateSerial.toString();
+      }
+      return match; // Keep original if not a date
+    });
+
     // Replace ^ with ** for exponentiation
     expr = expr.replace(/\^/g, "**");
 
