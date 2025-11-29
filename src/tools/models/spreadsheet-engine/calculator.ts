@@ -402,11 +402,12 @@ export function calculateSheet(
         else if (
           isFormula &&
           typeof calculatedValue === "number" &&
-          calculatedValue >= 1 &&
+          calculatedValue >= 25000 &&
           calculatedValue <= 100000 &&
           (!("f" in originalCell) || !originalCell.f)
         ) {
           // Check if this looks like a date serial number
+          // 25000 = May 10, 1968 - reasonable cutoff to avoid formatting regular numbers as dates
           // Apply default date format
           calculated[rowIdx][colIdx] = formatNumber(calculatedValue, "MM/DD/YYYY");
         }
