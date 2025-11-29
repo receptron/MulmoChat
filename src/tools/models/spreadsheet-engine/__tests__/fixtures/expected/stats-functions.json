@@ -1,0 +1,17 @@
+[
+  ["Value 1", "Value 2", "Max Result", "Min Result"],
+  ["10", "25", "30", "12"],
+  ["18", "5", "18", "13"],
+  ["4", "4", "20", "3"],
+  ["", "", "", ""],
+  ["Asset", "Status", "", ""],
+  ["Laptop", "Active", "", ""],
+  ["Printer", "Inactive", "", ""],
+  ["Projector", "Active", "", ""],
+  ["Router", "Maintenance", "", ""],
+  ["Camera", "Active", "", ""],
+  ["", "", "", ""],
+  ["Total Named Assets", "5", "", ""],
+  ["Statuses Filled", "5", "", ""],
+  ["Active Assets", "3", "", ""]
+]
