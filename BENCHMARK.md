@@ -79,6 +79,53 @@ I track software subscriptions with service names in row 1 across columns A-E (S
   - Find which service started on 6/1/2024
   - Determine how many months each subscription has been active
 
+I need a comprehensive equipment depreciation tracker. In columns A-F, I have equipment IDs
+  (EQ001-EQ010), purchase dates (various dates in 2020-2023), purchase prices ($5,000-$50,000),
+  useful life in years (5-10 years), and salvage values (10% of purchase price). Create a
+  depreciation schedule that:
+  - Calculates straight-line annual depreciation for each asset
+  - Determines accumulated depreciation as of today's date (not full years)
+  - Shows current book value (purchase price - accumulated depreciation)
+  - Identifies which assets are fully depreciated
+  - Calculates total portfolio value and total annual depreciation expense
+  - Projects the depreciation expense for each of the next 5 fiscal years
+  - Highlights assets that will be fully depreciated within the next 12 months
+  Make sure the current date calculation updates automatically.
+
+Build a multi-criteria employee performance dashboard. I have employee data across columns A-L:
+  employee IDs, names, departments (Sales, Engineering, Marketing), hire dates, last review dates,
+  performance scores (1-5), sales targets, actual sales, project completion rates (0-100%),
+  customer satisfaction scores (1-10), training hours completed, and salary bands ($50k-$150k).
+  Create an analysis that:
+  - Calculates tenure in years and months for each employee
+  - Determines if a performance review is overdue (>365 days since last review)
+  - Computes a weighted performance index combining: performance score (40%), target achievement
+    (30%), project completion (20%), and customer satisfaction (10%)
+  - Identifies top performers in each department using the weighted index
+  - Calculates average tenure by department and performance tier (top 25%, middle 50%, bottom 25%)
+  - Finds employees eligible for promotion (tenure >2 years, performance index >80, review current)
+  - Shows salary efficiency: performance index divided by salary band percentile
+  - Creates a retention risk score based on: low recent performance, high tenure, overdue review
+  All date-based calculations should reference today's date dynamically.
+
+Design an advanced project portfolio analyzer with timeline optimization. Set up a table with
+  columns A-M containing: project IDs, project names, client names, start dates, planned end dates,
+  actual completion dates (blank if ongoing), budget amounts, spent to date, assigned team size,
+  priority levels (1-5), risk categories (Low/Medium/High), revenue potential, and dependencies
+  (references to other project IDs). Build formulas to:
+  - Calculate planned duration, actual duration (or current duration if ongoing), and variance in days
+  - Determine project health status: "On Track" if within 10% of timeline and budget, "At Risk" if
+    10-25% over, "Critical" if >25% over
+  - Identify overdue projects (planned end date passed but no completion date)
+  - Calculate weighted portfolio value: (revenue potential × priority level) / team size
+  - Find resource conflicts: projects with overlapping timelines assigned to same team members
+  - Compute cash burn rate: total spent / days elapsed since start for each active project
+  - Create a project dependency chain showing which projects block others from starting
+  - Calculate expected completion dates for dependent projects based on current progress rates
+  - Show portfolio-level metrics: total projects, percentage on-track/at-risk/critical, average
+    budget variance, total revenue at risk from critical projects
+  Support automatic recalculation as project status and dates are updated.
+
 ### ShapeScript
 
 Make 6 cylinders in a row with colors gradually changing from red to blue
