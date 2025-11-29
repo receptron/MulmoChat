@@ -143,9 +143,20 @@ test("evaluates MAX function", () => {
   const ctx = createContext({}, { "A1:A5": [10, 50, 30, 20, 40] });
   expect(evaluateFormula("MAX(A1:A5)", ctx)).toBe(50);
 });
+test("evaluates MAX with mixed arguments", () => {
+  const ctx = createContext(
+    { B1: 75 },
+    { "A1:A3": [10, 50, 30] },
+  );
+  expect(evaluateFormula("MAX(B1, A1:A3, 5)", ctx)).toBe(75);
+});
 test("evaluates MIN function", () => {
   const ctx = createContext({}, { "A1:A5": [10, 50, 30, 20, 40] });
   expect(evaluateFormula("MIN(A1:A5)", ctx)).toBe(10);
+});
+test("evaluates MIN with expressions", () => {
+  const ctx = createContext({ G2: 5, H2: 3, F2: 20 });
+  expect(evaluateFormula("MIN(G2*H2, F2)", ctx)).toBe(15);
 });
 test("evaluates COUNT function", () => {
   const ctx = createContext({}, { "A1:A10": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });

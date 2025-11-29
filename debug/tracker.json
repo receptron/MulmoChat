@@ -1,0 +1,1271 @@
+[
+  {
+    "name": "Depreciation Schedule",
+    "data": [
+      [
+        {
+          "v": "Equipment ID"
+        },
+        {
+          "v": "Purchase Date"
+        },
+        {
+          "v": "Purchase Price"
+        },
+        {
+          "v": "Useful Life (Years)"
+        },
+        {
+          "v": "Salvage Value"
+        },
+        {
+          "v": "Depreciable Amount"
+        },
+        {
+          "v": "Annual Depreciation"
+        },
+        {
+          "v": "Years Elapsed"
+        },
+        {
+          "v": "Accumulated Depreciation"
+        },
+        {
+          "v": "Current Book Value"
+        },
+        {
+          "v": "Fully Depreciated?"
+        },
+        {
+          "v": "Months Until Fully Depreciated"
+        }
+      ],
+      [
+        {
+          "v": "EQ001"
+        },
+        {
+          "v": "01/15/2020",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 50000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 10
+        },
+        {
+          "v": "=C2*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C2-E2",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F2/D2",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B2)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G2*H2,F2)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C2-I2",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I2>=F2,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I2>=F2,0,MAX(0,(D2-(TODAY()-B2)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ002"
+        },
+        {
+          "v": "03/20/2020",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 35000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 7
+        },
+        {
+          "v": "=C3*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C3-E3",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F3/D3",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B3)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G3*H3,F3)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C3-I3",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I3>=F3,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I3>=F3,0,MAX(0,(D3-(TODAY()-B3)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ003"
+        },
+        {
+          "v": "06/10/2021",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 25000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 5
+        },
+        {
+          "v": "=C4*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C4-E4",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F4/D4",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B4)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G4*H4,F4)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C4-I4",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I4>=F4,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I4>=F4,0,MAX(0,(D4-(TODAY()-B4)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ004"
+        },
+        {
+          "v": "09/01/2021",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 15000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 5
+        },
+        {
+          "v": "=C5*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C5-E5",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F5/D5",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B5)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G5*H5,F5)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C5-I5",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I5>=F5,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I5>=F5,0,MAX(0,(D5-(TODAY()-B5)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ005"
+        },
+        {
+          "v": "11/15/2021",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 42000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 8
+        },
+        {
+          "v": "=C6*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C6-E6",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F6/D6",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B6)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G6*H6,F6)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C6-I6",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I6>=F6,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I6>=F6,0,MAX(0,(D6-(TODAY()-B6)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ006"
+        },
+        {
+          "v": "02/28/2022",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 28000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 6
+        },
+        {
+          "v": "=C7*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C7-E7",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F7/D7",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B7)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G7*H7,F7)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C7-I7",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I7>=F7,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I7>=F7,0,MAX(0,(D7-(TODAY()-B7)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ007"
+        },
+        {
+          "v": "05/12/2022",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 18000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 5
+        },
+        {
+          "v": "=C8*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C8-E8",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F8/D8",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B8)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G8*H8,F8)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C8-I8",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I8>=F8,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I8>=F8,0,MAX(0,(D8-(TODAY()-B8)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ008"
+        },
+        {
+          "v": "08/20/2022",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 8000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 5
+        },
+        {
+          "v": "=C9*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C9-E9",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F9/D9",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B9)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G9*H9,F9)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C9-I9",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I9>=F9,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I9>=F9,0,MAX(0,(D9-(TODAY()-B9)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ009"
+        },
+        {
+          "v": "10/05/2023",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 32000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 7
+        },
+        {
+          "v": "=C10*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C10-E10",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F10/D10",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B10)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G10*H10,F10)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C10-I10",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I10>=F10,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I10>=F10,0,MAX(0,(D10-(TODAY()-B10)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": "EQ010"
+        },
+        {
+          "v": "12/18/2023",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": 5000,
+          "f": "$#,##0.00"
+        },
+        {
+          "v": 5
+        },
+        {
+          "v": "=C11*0.1",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C11-E11",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=F11/D11",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=(TODAY()-B11)/365.25",
+          "f": "0.00"
+        },
+        {
+          "v": "=MIN(G11*H11,F11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=C11-I11",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(I11>=F11,\"YES\",\"NO\")"
+        },
+        {
+          "v": "=IF(I11>=F11,0,MAX(0,(D11-(TODAY()-B11)/365.25)*12))",
+          "f": "0.0"
+        }
+      ],
+      [
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "PORTFOLIO SUMMARY"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "Total Purchase Price:"
+        },
+        {
+          "v": "=SUM(C2:C11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": "Current Date:"
+        },
+        {
+          "v": "=TODAY()",
+          "f": "MM/DD/YYYY"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "Total Salvage Value:"
+        },
+        {
+          "v": "=SUM(E2:E11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": "Total Assets:"
+        },
+        {
+          "v": "=COUNTA(A2:A11)"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "Total Depreciable Amount:"
+        },
+        {
+          "v": "=SUM(F2:F11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": "Fully Depreciated Assets:"
+        },
+        {
+          "v": "=COUNTIF(K2:K11,\"YES\")"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "Total Annual Depreciation:"
+        },
+        {
+          "v": "=SUM(G2:G11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": "Assets Depreciating Within 12 Months:"
+        },
+        {
+          "v": "=COUNTIF(L2:L11,\"<=\"&12)-COUNTIF(K2:K11,\"YES\")"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "Total Accumulated Depreciation:"
+        },
+        {
+          "v": "=SUM(I2:I11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "Total Current Book Value:"
+        },
+        {
+          "v": "=SUM(J2:J11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ]
+    ]
+  },
+  {
+    "name": "5-Year Projection",
+    "data": [
+      [
+        {
+          "v": "Equipment ID"
+        },
+        {
+          "v": "Annual Depreciation"
+        },
+        {
+          "v": "Remaining Life (Years)"
+        },
+        {
+          "v": "Year 1 (FY2025)"
+        },
+        {
+          "v": "Year 2 (FY2026)"
+        },
+        {
+          "v": "Year 3 (FY2027)"
+        },
+        {
+          "v": "Year 4 (FY2028)"
+        },
+        {
+          "v": "Year 5 (FY2029)"
+        }
+      ],
+      [
+        {
+          "v": "EQ001"
+        },
+        {
+          "v": "='Depreciation Schedule'!G2",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D2-'Depreciation Schedule'!H2",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C2>0,MIN(B2,'Depreciation Schedule'!F2-'Depreciation Schedule'!I2),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C2>1,MIN(B2,'Depreciation Schedule'!F2-'Depreciation Schedule'!I2-D2),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C2>2,MIN(B2,'Depreciation Schedule'!F2-'Depreciation Schedule'!I2-D2-E2),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C2>3,MIN(B2,'Depreciation Schedule'!F2-'Depreciation Schedule'!I2-D2-E2-F2),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C2>4,MIN(B2,'Depreciation Schedule'!F2-'Depreciation Schedule'!I2-D2-E2-F2-G2),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ002"
+        },
+        {
+          "v": "='Depreciation Schedule'!G3",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D3-'Depreciation Schedule'!H3",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C3>0,MIN(B3,'Depreciation Schedule'!F3-'Depreciation Schedule'!I3),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C3>1,MIN(B3,'Depreciation Schedule'!F3-'Depreciation Schedule'!I3-D3),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C3>2,MIN(B3,'Depreciation Schedule'!F3-'Depreciation Schedule'!I3-D3-E3),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C3>3,MIN(B3,'Depreciation Schedule'!F3-'Depreciation Schedule'!I3-D3-E3-F3),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C3>4,MIN(B3,'Depreciation Schedule'!F3-'Depreciation Schedule'!I3-D3-E3-F3-G3),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ003"
+        },
+        {
+          "v": "='Depreciation Schedule'!G4",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D4-'Depreciation Schedule'!H4",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C4>0,MIN(B4,'Depreciation Schedule'!F4-'Depreciation Schedule'!I4),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C4>1,MIN(B4,'Depreciation Schedule'!F4-'Depreciation Schedule'!I4-D4),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C4>2,MIN(B4,'Depreciation Schedule'!F4-'Depreciation Schedule'!I4-D4-E4),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C4>3,MIN(B4,'Depreciation Schedule'!F4-'Depreciation Schedule'!I4-D4-E4-F4),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C4>4,MIN(B4,'Depreciation Schedule'!F4-'Depreciation Schedule'!I4-D4-E4-F4-G4),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ004"
+        },
+        {
+          "v": "='Depreciation Schedule'!G5",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D5-'Depreciation Schedule'!H5",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C5>0,MIN(B5,'Depreciation Schedule'!F5-'Depreciation Schedule'!I5),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C5>1,MIN(B5,'Depreciation Schedule'!F5-'Depreciation Schedule'!I5-D5),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C5>2,MIN(B5,'Depreciation Schedule'!F5-'Depreciation Schedule'!I5-D5-E5),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C5>3,MIN(B5,'Depreciation Schedule'!F5-'Depreciation Schedule'!I5-D5-E5-F5),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C5>4,MIN(B5,'Depreciation Schedule'!F5-'Depreciation Schedule'!I5-D5-E5-F5-G5),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ005"
+        },
+        {
+          "v": "='Depreciation Schedule'!G6",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D6-'Depreciation Schedule'!H6",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C6>0,MIN(B6,'Depreciation Schedule'!F6-'Depreciation Schedule'!I6),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C6>1,MIN(B6,'Depreciation Schedule'!F6-'Depreciation Schedule'!I6-D6),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C6>2,MIN(B6,'Depreciation Schedule'!F6-'Depreciation Schedule'!I6-D6-E6),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C6>3,MIN(B6,'Depreciation Schedule'!F6-'Depreciation Schedule'!I6-D6-E6-F6),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C6>4,MIN(B6,'Depreciation Schedule'!F6-'Depreciation Schedule'!I6-D6-E6-F6-G6),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ006"
+        },
+        {
+          "v": "='Depreciation Schedule'!G7",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D7-'Depreciation Schedule'!H7",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C7>0,MIN(B7,'Depreciation Schedule'!F7-'Depreciation Schedule'!I7),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C7>1,MIN(B7,'Depreciation Schedule'!F7-'Depreciation Schedule'!I7-D7),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C7>2,MIN(B7,'Depreciation Schedule'!F7-'Depreciation Schedule'!I7-D7-E7),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C7>3,MIN(B7,'Depreciation Schedule'!F7-'Depreciation Schedule'!I7-D7-E7-F7),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C7>4,MIN(B7,'Depreciation Schedule'!F7-'Depreciation Schedule'!I7-D7-E7-F7-G7),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ007"
+        },
+        {
+          "v": "='Depreciation Schedule'!G8",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D8-'Depreciation Schedule'!H8",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C8>0,MIN(B8,'Depreciation Schedule'!F8-'Depreciation Schedule'!I8),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C8>1,MIN(B8,'Depreciation Schedule'!F8-'Depreciation Schedule'!I8-D8),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C8>2,MIN(B8,'Depreciation Schedule'!F8-'Depreciation Schedule'!I8-D8-E8),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C8>3,MIN(B8,'Depreciation Schedule'!F8-'Depreciation Schedule'!I8-D8-E8-F8),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C8>4,MIN(B8,'Depreciation Schedule'!F8-'Depreciation Schedule'!I8-D8-E8-F8-G8),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ008"
+        },
+        {
+          "v": "='Depreciation Schedule'!G9",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D9-'Depreciation Schedule'!H9",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C9>0,MIN(B9,'Depreciation Schedule'!F9-'Depreciation Schedule'!I9),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C9>1,MIN(B9,'Depreciation Schedule'!F9-'Depreciation Schedule'!I9-D9),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C9>2,MIN(B9,'Depreciation Schedule'!F9-'Depreciation Schedule'!I9-D9-E9),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C9>3,MIN(B9,'Depreciation Schedule'!F9-'Depreciation Schedule'!I9-D9-E9-F9),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C9>4,MIN(B9,'Depreciation Schedule'!F9-'Depreciation Schedule'!I9-D9-E9-F9-G9),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ009"
+        },
+        {
+          "v": "='Depreciation Schedule'!G10",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D10-'Depreciation Schedule'!H10",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C10>0,MIN(B10,'Depreciation Schedule'!F10-'Depreciation Schedule'!I10),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C10>1,MIN(B10,'Depreciation Schedule'!F10-'Depreciation Schedule'!I10-D10),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C10>2,MIN(B10,'Depreciation Schedule'!F10-'Depreciation Schedule'!I10-D10-E10),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C10>3,MIN(B10,'Depreciation Schedule'!F10-'Depreciation Schedule'!I10-D10-E10-F10),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C10>4,MIN(B10,'Depreciation Schedule'!F10-'Depreciation Schedule'!I10-D10-E10-F10-G10),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": "EQ010"
+        },
+        {
+          "v": "='Depreciation Schedule'!G11",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "='Depreciation Schedule'!D11-'Depreciation Schedule'!H11",
+          "f": "0.00"
+        },
+        {
+          "v": "=IF(C11>0,MIN(B11,'Depreciation Schedule'!F11-'Depreciation Schedule'!I11),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C11>1,MIN(B11,'Depreciation Schedule'!F11-'Depreciation Schedule'!I11-D11),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C11>2,MIN(B11,'Depreciation Schedule'!F11-'Depreciation Schedule'!I11-D11-E11),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C11>3,MIN(B11,'Depreciation Schedule'!F11-'Depreciation Schedule'!I11-D11-E11-F11),0)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=IF(C11>4,MIN(B11,'Depreciation Schedule'!F11-'Depreciation Schedule'!I11-D11-E11-F11-G11),0)",
+          "f": "$#,##0.00"
+        }
+      ],
+      [
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "TOTAL DEPRECIATION BY YEAR"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": ""
+        }
+      ],
+      [
+        {
+          "v": "Total Annual Expense:"
+        },
+        {
+          "v": "=SUM(B2:B11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": ""
+        },
+        {
+          "v": "=SUM(D2:D11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=SUM(E2:E11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=SUM(F2:F11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=SUM(G2:G11)",
+          "f": "$#,##0.00"
+        },
+        {
+          "v": "=SUM(H2:H11)",
+          "f": "$#,##0.00"
+        }
+      ]
+    ]
+  }
+]

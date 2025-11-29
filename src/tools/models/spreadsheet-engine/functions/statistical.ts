@@ -6,8 +6,35 @@ import {
   functionRegistry,
   toNumber,
   parseCriteria,
+  type FunctionContext,
   type FunctionHandler,
 } from "../registry";
+
+// Matches references like A1:B10, $C$2:$D$5, or 'Sheet Name'!A1:B10
+const RANGE_REFERENCE_REGEX =
+  /^(?:(?:'[^']+'|[^'!]+)!)?\$?[A-Z]+\$?\d+:\$?[A-Z]+\$?\d+$/i;
+
+const collectNumericValues = (
+  args: string[],
+  context: FunctionContext,
+): number[] => {
+  const values: number[] = [];
+
+  for (const rawArg of args) {
+    const arg = rawArg?.trim();
+    if (!arg) continue;
+
+    if (RANGE_REFERENCE_REGEX.test(arg)) {
+      const rangeValues = context.getRangeValues(arg).map(toNumber);
+      values.push(...rangeValues);
+    } else {
+      const evaluated = context.evaluateFormula(arg);
+      values.push(toNumber(evaluated));
+    }
+  }
+
+  return values;
+};
 
 const sumHandler: FunctionHandler = (args, context) => {
   if (args.length !== 1) throw new Error("SUM requires 1 argument");
@@ -24,14 +51,18 @@ const averageHandler: FunctionHandler = (args, context) => {
 };
 
 const maxHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error("MAX requires 1 argument");
-  const values = context.getRangeValues(args[0]).map(toNumber);
+  if (args.length === 0) {
+    throw new Error("MAX requires at least 1 argument");
+  }
+  const values = collectNumericValues(args, context);
   return values.length > 0 ? Math.max(...values) : 0;
 };
 
 const minHandler: FunctionHandler = (args, context) => {
-  if (args.length !== 1) throw new Error("MIN requires 1 argument");
-  const values = context.getRangeValues(args[0]).map(toNumber);
+  if (args.length === 0) {
+    throw new Error("MIN requires at least 1 argument");
+  }
+  const values = collectNumericValues(args, context);
   return values.length > 0 ? Math.min(...values) : 0;
 };
 
@@ -190,7 +221,6 @@ functionRegistry.register({
   name: "MAX",
   handler: maxHandler,
   minArgs: 1,
-  maxArgs: 1,
   description: "Returns the largest value in a range",
   examples: ["MAX(A1:A10)", "MAX(B2:B20)"],
   category: "Statistical",
@@ -200,7 +230,6 @@ functionRegistry.register({
   name: "MIN",
   handler: minHandler,
   minArgs: 1,
-  maxArgs: 1,
   description: "Returns the smallest value in a range",
   examples: ["MIN(A1:A10)", "MIN(B2:B20)"],
   category: "Statistical",
