@@ -388,11 +388,20 @@ export function calculateSheet(
       const originalCell = data[rowIdx][colIdx];
       const calculatedValue = calculated[rowIdx][colIdx];
 
-      if (originalCell && typeof originalCell === "object" && "v" in originalCell) {
-        const isFormula = typeof originalCell.v === "string" && originalCell.v.startsWith("=");
+      if (
+        originalCell &&
+        typeof originalCell === "object" &&
+        "v" in originalCell
+      ) {
+        const isFormula =
+          typeof originalCell.v === "string" && originalCell.v.startsWith("=");
 
         // Apply formatting if cell has a format code and calculated value is a number
-        if ("f" in originalCell && originalCell.f && typeof calculatedValue === "number") {
+        if (
+          "f" in originalCell &&
+          originalCell.f &&
+          typeof calculatedValue === "number"
+        ) {
           calculated[rowIdx][colIdx] = formatNumber(
             calculatedValue,
             originalCell.f,
@@ -409,7 +418,10 @@ export function calculateSheet(
           // Check if this looks like a date serial number
           // 25000 = May 10, 1968 - reasonable cutoff to avoid formatting regular numbers as dates
           // Apply default date format
-          calculated[rowIdx][colIdx] = formatNumber(calculatedValue, "MM/DD/YYYY");
+          calculated[rowIdx][colIdx] = formatNumber(
+            calculatedValue,
+            "MM/DD/YYYY",
+          );
         }
       }
     }

@@ -1,12 +1,5 @@
 [
-  [
-    "Service",
-    "Slack",
-    "GitHub",
-    "AWS",
-    "Figma",
-    "Jira"
-  ],
+  ["Service", "Slack", "GitHub", "AWS", "Figma", "Jira"],
   [
     "Start Date",
     "01/01/2024",
@@ -23,81 +16,25 @@
     "09/10/2025",
     "11/20/2025"
   ],
-  [
-    ""
-  ],
-  [
-    "LOOKUP FORMULAS"
-  ],
-  [
-    "GitHub Renewal Date:",
-    "03/15/2025"
-  ],
-  [
-    ""
-  ],
-  [
-    "Service that started 6/1/2024:",
-    "06/01/2024"
-  ],
-  [
-    ""
-  ],
-  [
-    "DAYS UNTIL RENEWAL"
-  ],
-  [
-    "Service",
-    "Days Remaining"
-  ],
-  [
-    "Slack",
-    "-151"
-  ],
-  [
-    "GitHub",
-    "-78"
-  ],
-  [
-    "AWS",
-    "0"
-  ],
-  [
-    "Figma",
-    "101"
-  ],
-  [
-    "Jira",
-    "172"
-  ],
-  [
-    ""
-  ],
-  [
-    "MONTHS ACTIVE"
-  ],
-  [
-    "Service",
-    "Months Active"
-  ],
-  [
-    "Slack",
-    "17"
-  ],
-  [
-    "GitHub",
-    "14"
-  ],
-  [
-    "AWS",
-    "12"
-  ],
-  [
-    "Figma",
-    "8"
-  ],
-  [
-    "Jira",
-    "6"
-  ]
+  [""],
+  ["LOOKUP FORMULAS"],
+  ["GitHub Renewal Date:", "03/15/2025"],
+  [""],
+  ["Service that started 6/1/2024:", "06/01/2024"],
+  [""],
+  ["DAYS UNTIL RENEWAL"],
+  ["Service", "Days Remaining"],
+  ["Slack", "-151"],
+  ["GitHub", "-78"],
+  ["AWS", "0"],
+  ["Figma", "101"],
+  ["Jira", "172"],
+  [""],
+  ["MONTHS ACTIVE"],
+  ["Service", "Months Active"],
+  ["Slack", "17"],
+  ["GitHub", "14"],
+  ["AWS", "12"],
+  ["Figma", "8"],
+  ["Jira", "6"]
 ]
