@@ -37,6 +37,7 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       "claude-sonnet-4-5",
       "claude-haiku-4-5",
       "claude-opus-4-1-20250805",
+      "claude-opus-4-5-20251101",
       "claude-3-5-haiku-latest",
     ],
     google: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-3-pro-preview"],
