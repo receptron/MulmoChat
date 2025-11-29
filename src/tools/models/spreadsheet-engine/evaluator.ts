@@ -6,6 +6,7 @@
 
 import { functionRegistry } from "./registry";
 import type { CellValue } from "./types";
+import { parseDate } from "./date-parser";
 
 /**
  * Evaluation context for formulas
@@ -93,7 +94,16 @@ export function evaluateFormula(
       (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
       (trimmed.startsWith("'") && trimmed.endsWith("'"))
     ) {
-      return trimmed.slice(1, -1); // Remove first and last character (quotes)
+      const stringValue = trimmed.slice(1, -1); // Remove first and last character (quotes)
+
+      // Auto-parse date strings to serial numbers for compatibility with date arithmetic
+      // This allows formulas like =HLOOKUP("6/1/2024", ...) to work with parsed date cells
+      const dateSerial = parseDate(stringValue);
+      if (dateSerial !== null) {
+        return dateSerial;
+      }
+
+      return stringValue;
     }
 
     // Check if it's a SIMPLE function call (not a complex expression)

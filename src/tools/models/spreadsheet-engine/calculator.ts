@@ -388,18 +388,28 @@ export function calculateSheet(
       const originalCell = data[rowIdx][colIdx];
       const calculatedValue = calculated[rowIdx][colIdx];
 
-      // Apply formatting if cell has a format code and calculated value is a number
-      if (
-        originalCell &&
-        typeof originalCell === "object" &&
-        "f" in originalCell &&
-        originalCell.f &&
-        typeof calculatedValue === "number"
-      ) {
-        calculated[rowIdx][colIdx] = formatNumber(
-          calculatedValue,
-          originalCell.f,
-        );
+      if (originalCell && typeof originalCell === "object" && "v" in originalCell) {
+        const isFormula = typeof originalCell.v === "string" && originalCell.v.startsWith("=");
+
+        // Apply formatting if cell has a format code and calculated value is a number
+        if ("f" in originalCell && originalCell.f && typeof calculatedValue === "number") {
+          calculated[rowIdx][colIdx] = formatNumber(
+            calculatedValue,
+            originalCell.f,
+          );
+        }
+        // Auto-format date serial numbers from formulas without explicit format
+        else if (
+          isFormula &&
+          typeof calculatedValue === "number" &&
+          calculatedValue >= 1 &&
+          calculatedValue <= 100000 &&
+          (!("f" in originalCell) || !originalCell.f)
+        ) {
+          // Check if this looks like a date serial number
+          // Apply default date format
+          calculated[rowIdx][colIdx] = formatNumber(calculatedValue, "MM/DD/YYYY");
+        }
       }
     }
   }
