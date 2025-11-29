@@ -358,6 +358,22 @@ export function evaluateFormula(
       }
     }
 
+    // Safely evaluate comparison expressions (e.g., 5=6, (5)>(6))
+    // Allow numbers, comparison operators (=, !=, <, >, <=, >=), parentheses, whitespace
+    if (/^[\d+\-*/(). <>!=]+$/.test(expr)) {
+      try {
+        // Replace = with == for JavaScript comparison (but not <= or >=)
+        let jsExpr = expr.replace(/([^<>!])=([^=])/g, "$1==$2");
+
+        // Use Function constructor which is safer than eval
+        // eslint-disable-next-line sonarjs/code-eval
+        const result = new Function(`return (${jsExpr})`)();
+        return result;
+      } catch {
+        return formula;
+      }
+    }
+
     // Safely evaluate arithmetic expressions using Function constructor instead of eval
     // Allow numbers, operators, parentheses, whitespace, and decimal points
     if (/^[\d+\-*/(). ]+$/.test(expr)) {

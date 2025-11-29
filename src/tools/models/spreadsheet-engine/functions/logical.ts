@@ -13,35 +13,19 @@ const ifHandler: FunctionHandler = (args, context) => {
   const trueValue = args[1];
   const falseValue = args[2];
 
-  // Evaluate condition
+  // Evaluate condition - use evaluateFormula to handle nested functions like MONTH()
+  const conditionValue = context.evaluateFormula(condition);
+
+  // Convert to boolean
   let conditionResult = false;
-
-  // Replace cell references in condition (including cross-sheet refs)
-  let condExpr = condition;
-  // Match: 'Sheet'!A1, Sheet1!A1, $A$1, A1
-
-  const cellRefs = condition.match(
-    /(?:'[^']+'|[^'!\s]+)![A-Z]+\d+|\$?[A-Z]+\$?\d+/g,
-  );
-  if (cellRefs) {
-    for (const ref of cellRefs) {
-      const value = context.getCellValue(ref);
-      const escapedRef = ref.replace(/\$/g, "\\$").replace(/'/g, "\\'");
-      condExpr = condExpr.replace(
-        new RegExp(escapedRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
-        String(value),
-      );
-    }
-  }
-
-  // Evaluate comparison operators
-
-  if (/>=|<=|>|<|==|!=/.test(condExpr)) {
-    conditionResult = eval(condExpr);
+  if (typeof conditionValue === "boolean") {
+    conditionResult = conditionValue;
+  } else if (typeof conditionValue === "number") {
+    conditionResult = conditionValue !== 0;
+  } else if (typeof conditionValue === "string") {
+    conditionResult = conditionValue.toLowerCase() === "true" || conditionValue !== "";
   } else {
-    // Just evaluate as expression
-
-    conditionResult = !!eval(condExpr);
+    conditionResult = !!conditionValue;
   }
 
   // Return the appropriate value based on condition
