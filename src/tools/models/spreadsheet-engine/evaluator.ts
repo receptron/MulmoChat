@@ -367,7 +367,7 @@ export function evaluateFormula(
     if (/^[\d+\-*/(). <>!=]+$/.test(expr)) {
       try {
         // Replace = with == for JavaScript comparison (but not <= or >=)
-        let jsExpr = expr.replace(/([^<>!])=([^=])/g, "$1==$2");
+        const jsExpr = expr.replace(/([^<>!])=([^=])/g, "$1==$2");
 
         // Use Function constructor which is safer than eval
         // eslint-disable-next-line sonarjs/code-eval

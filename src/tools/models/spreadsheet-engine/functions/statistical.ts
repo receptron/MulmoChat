@@ -10,9 +10,35 @@ import {
   type FunctionHandler,
 } from "../registry";
 
-// Matches references like A1:B10, $C$2:$D$5, or 'Sheet Name'!A1:B10
-const RANGE_REFERENCE_REGEX =
-  /^(?:(?:'[^']+'|[^'!]+)!)?\$?[A-Z]+\$?\d+:\$?[A-Z]+\$?\d+$/i;
+const isLetter = (char: string): boolean => /[A-Z]/i.test(char);
+
+const isCellReference = (segment: string): boolean => {
+  if (!segment) return false;
+  let index = 0;
+  if (segment[index] === "$") index++;
+  const colStart = index;
+  while (index < segment.length && isLetter(segment[index])) {
+    index++;
+  }
+  if (index === colStart) return false; // Require at least one column letter
+  if (segment[index] === "$") index++;
+  if (index >= segment.length) return false; // Require row digits
+  for (; index < segment.length; index++) {
+    const char = segment[index];
+    if (char < "0" || char > "9") {
+      return false;
+    }
+  }
+  return true;
+};
+
+const isRangeReference = (value: string): boolean => {
+  if (!value) return false;
+  const rangePart = value.includes("!") ? value.split("!").slice(-1)[0] : value;
+  const [start, end] = rangePart.split(":");
+  if (!start || !end) return false;
+  return isCellReference(start) && isCellReference(end);
+};
 
 const collectNumericValues = (
   args: string[],
@@ -24,7 +50,7 @@ const collectNumericValues = (
     const arg = rawArg?.trim();
     if (!arg) continue;
 
-    if (RANGE_REFERENCE_REGEX.test(arg)) {
+    if (isRangeReference(arg)) {
       const rangeValues = context.getRangeValues(arg).map(toNumber);
       values.push(...rangeValues);
     } else {
