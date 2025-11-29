@@ -1,0 +1,83 @@
+{
+  "name": "Math Functions",
+  "data": [
+    [
+      { "v": "Function" },
+      { "v": "Formula" },
+      { "v": "Result" },
+      { "v": "Notes" }
+    ],
+    [
+      { "v": "Round" },
+      { "v": "ROUND(3.14159, 2)" },
+      { "v": "=ROUND(3.14159,2)", "f": "0.00" },
+      { "v": "Two decimals" }
+    ],
+    [
+      { "v": "Round Up" },
+      { "v": "ROUNDUP(12.345, 2)" },
+      { "v": "=ROUNDUP(12.345,2)", "f": "0.00" },
+      { "v": "Always up" }
+    ],
+    [
+      { "v": "Round Down" },
+      { "v": "ROUNDDOWN(12.345, 2)" },
+      { "v": "=ROUNDDOWN(12.345,2)", "f": "0.00" },
+      { "v": "Always down" }
+    ],
+    [
+      { "v": "Absolute" },
+      { "v": "ABS(-125.5)" },
+      { "v": "=ABS(-125.5)", "f": "0.0" },
+      { "v": "Magnitude" }
+    ],
+    [
+      { "v": "Power" },
+      { "v": "POWER(2, 8)" },
+      { "v": "=POWER(2,8)" },
+      { "v": "2^8" }
+    ],
+    [
+      { "v": "Square Root" },
+      { "v": "SQRT(196)" },
+      { "v": "=SQRT(196)" },
+      { "v": "Root" }
+    ],
+    [
+      { "v": "Modulus" },
+      { "v": "MOD(29, 4)" },
+      { "v": "=MOD(29,4)" },
+      { "v": "Remainder" }
+    ],
+    [
+      { "v": "Pi" },
+      { "v": "PI()" },
+      { "v": "=PI()", "f": "0.0000" },
+      { "v": "Constant" }
+    ],
+    [
+      { "v": "Exponential" },
+      { "v": "EXP(1)" },
+      { "v": "=EXP(1)", "f": "0.0000" },
+      { "v": "e^1" }
+    ],
+    [
+      { "v": "Natural Log" },
+      { "v": "LN(2.718281828)" },
+      { "v": "=LN(2.718281828)", "f": "0.0000" },
+      { "v": "ln(e)" }
+    ],
+    [
+      { "v": "Log Base 10" },
+      { "v": "LOG(1000)" },
+      { "v": "=LOG(1000)", "f": "0.0000" },
+      { "v": "log10" }
+    ],
+    [
+      { "v": "Log Custom Base" },
+      { "v": "LOG(81, 3)" },
+      { "v": "=LOG(81,3)", "f": "0.0000" },
+      { "v": "log base 3" }
+    ]
+  ]
+}

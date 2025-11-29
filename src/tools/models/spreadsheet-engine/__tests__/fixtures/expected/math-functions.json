@@ -1,0 +1,15 @@
+[
+  ["Function", "Formula", "Result", "Notes"],
+  ["Round", "ROUND(3.14159, 2)", "3.14", "Two decimals"],
+  ["Round Up", "ROUNDUP(12.345, 2)", "12.35", "Always up"],
+  ["Round Down", "ROUNDDOWN(12.345, 2)", "12.34", "Always down"],
+  ["Absolute", "ABS(-125.5)", "125.5", "Magnitude"],
+  ["Power", "POWER(2, 8)", "256", "2^8"],
+  ["Square Root", "SQRT(196)", "14", "Root"],
+  ["Modulus", "MOD(29, 4)", "1", "Remainder"],
+  ["Pi", "PI()", "3.1416", "Constant"],
+  ["Exponential", "EXP(1)", "2.7183", "e^1"],
+  ["Natural Log", "LN(2.718281828)", "1.0000", "ln(e)"],
+  ["Log Base 10", "LOG(1000)", "3.0000", "log10"],
+  ["Log Custom Base", "LOG(81, 3)", "4.0000", "log base 3"]
+]
