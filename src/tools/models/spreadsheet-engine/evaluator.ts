@@ -89,10 +89,12 @@ export function evaluateFormula(
 ): CellValue {
   try {
     // Handle string literals - remove surrounding quotes
+    // But NOT string concatenations (which contain & operators)
     const trimmed = formula.trim();
     if (
-      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-      (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith("'") && trimmed.endsWith("'"))) &&
+      !trimmed.includes("&") // Exclude string concatenations
     ) {
       const stringValue = trimmed.slice(1, -1); // Remove first and last character (quotes)
 
@@ -343,8 +345,8 @@ export function evaluateFormula(
         }
 
         // Validate the expression contains only safe characters
-        // Allow: numbers, letters, strings (with quotes), operators, parentheses, whitespace, @, .
-        if (/^[a-zA-Z0-9+\-*/(). "'@]+$/.test(result)) {
+        // Allow: numbers, letters, strings (with quotes), operators, parentheses, whitespace, @, ., comma
+        if (/^[a-zA-Z0-9+\-*/(). "'@,]+$/.test(result)) {
           // eslint-disable-next-line sonarjs/code-eval
           const evalResult = new Function(`return (${result})`)();
           return evalResult;
