@@ -253,6 +253,13 @@ export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
   },
+  "ollama-mistral-small3.2-24b": {
+    provider: "ollama",
+    model: "mistral-small3.2:24b",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
 
   // Grok/xAI Models
   "grok-4-1-fast-reasoning": {

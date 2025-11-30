@@ -46,6 +46,7 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       "gpt-oss:120b",
       "qwen3:30b",
       "phi4-mini:latest",
+      "mistral-small3.2:24b",
       // "deepseek-r1:32b", no tools
       // "gemma3:27b", no tools
       // "deepseek-coder:33b", no tools
