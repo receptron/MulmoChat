@@ -40,13 +40,15 @@ Each result file contains:
 
 ### Latest Update
 
-**Date:** November 27, 2025
-**Models Tested:** 11 (all completed the 7-case suite)
+**Date:** November 30, 2025
+**Models Tested:** 13 (all completed the 7-case suite)
 **Major Changes:**
+- **New Ollama models tested:**
+  - `ollama-mistral-small3.2-24b` scores 67.9 (43% pass rate, best on-prem model after gpt-oss-20b)
+  - `ollama-gemma3-tools-27b` scores 39.0 (0% pass rate, struggles with JSON format compliance)
 - Fixed spreadsheet engine null handling bug that prevented gemini-2.5-flash from running
 - Added null/undefined cell safeguards to formula evaluator and calculator
 - Enhanced verifier to support label synonyms (e.g., "Total|Sum") to accommodate different model wording choices
-- **New model tested:** `gemini-2.5-flash` scores 92.9 (tied with gpt-4o)
 - **All four top-tier models achieve perfect 100/100 scores:** `claude-sonnet-4-5`, `claude-3.5-sonnet`, `claude-haiku-4-5`, and `gemini-3-pro-preview`
 
 ---
@@ -55,7 +57,7 @@ Each result file contains:
 
 This benchmark evaluates AI model performance on structured spreadsheet generation tasks using JSON format. Models are tested on their ability to generate spreadsheets with proper formulas, formatting, and calculations across various complexity levels and categories.
 
-**Benchmark Run Date:** November 26, 2025 (latest result files)
+**Benchmark Run Date:** November 30, 2025 (latest result files)
 **Re-evaluation Date:** November 27, 2025
 **Total Test Cases:** 7 (Basic, Mathematical, Statistical, Text, Financial, Logical)
 
@@ -85,7 +87,9 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 | 7 | grok-4-1-fast-reasoning | 91.3 | 86% | 71% | 7/7 |
 | 9 | gpt-4o-mini | 84.6 | 71% | 57% | 7/7 |
 | 10 | ollama-gpt-oss-20b | 78.4 | 71% | 57% | 7/7 |
-| 11 | ollama-phi4-mini | 16.3 | 0% | 0% | 7/7 |
+| 11 | ollama-mistral-small3.2-24b | 67.9 | 43% | 29% | 7/7 |
+| 12 | ollama-gemma3-tools-27b | 39.0 | 0% | 0% | 7/7 |
+| 13 | ollama-phi4-mini | 16.3 | 0% | 0% | 7/7 |
 
 ## Performance by Complexity Level
 
@@ -128,8 +132,10 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 6. **OpenAI & Grok parity:** gpt-4o, gpt-5.1, and grok-4-1-fast-reasoning sit in the low 90s.
 7. **Budget test is still the hardest:** only 60% pass basic-02.
 8. **Text & financial tasks are solved problems** for top models after engine/test tweaks.
-9. **Local deployment viable:** ollama-gpt-oss-20b still passes 5/7 tests fully offline.
-10. **phi4-mini remains non-viable** (16.3 average, 0% pass).
+9. **Local deployment viable:** ollama-gpt-oss-20b passes 5/7 tests; mistral-small3.2-24b passes 3/7 (both fully offline).
+10. **Mistral shows promise for local deployment:** mistral-small3.2-24b achieves 67.9 average with proper formula usage, though struggles with complex calculations.
+11. **Gemma3-tools has JSON format issues:** gemma3-tools-27b fails to comply with required cell structure (missing "v"/"f" format).
+12. **phi4-mini and gemma3-tools non-viable** (16.3 and 39.0 averages, 0% pass).
 
 ## Model-Specific Notes
 
@@ -142,6 +148,8 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 - **grok-4-1-fast-reasoning:** 91.3 average, 120 s run; similar issues as gpt-5.1.
 - **gpt-4o-mini:** 84.6 average; passes 5/7 tests, budget-friendly cloud option.
 - **ollama-gpt-oss-20b:** 78.4 average; best on-prem choice once paired with verification.
+- **ollama-mistral-small3.2-24b:** 67.9 average; passes 3/7 tests (basic-01, statistical-01, logical-01 partial); viable for local deployment with verification but struggles with complex calculations and cell references.
+- **ollama-gemma3-tools-27b:** 39.0 average; fails all tests; major issues with JSON format compliance (missing "v"/"f" cell structure) and formula evaluation; not recommended for production.
 - **ollama-phi4-mini:** 16.3 average; fails all tests.
 
 ## Verification & Test Improvements
@@ -167,7 +175,8 @@ This benchmark evaluates AI model performance on structured spreadsheet generati
 3. **Best Google option:** gemini-3-pro-preview for perfect accuracy, gemini-2.5-flash for speed/cost (92.9 average).
 4. **Best OpenAI stack:** gpt-4o for reliability (92.9), gpt-4o-mini for budget workloads.
 5. **Fast reasoning:** grok-4-1-fast-reasoning balances speed and accuracy.
-6. **Privacy/offline:** ollama-gpt-oss-20b for local deployments.
+6. **Privacy/offline (best):** ollama-gpt-oss-20b for local deployments (78.4 avg, 71% pass).
+7. **Privacy/offline (budget):** ollama-mistral-small3.2-24b for resource-constrained environments (67.9 avg, 43% pass).
 
 ### Application Guidance
 - Keep the verifier in loop for every generated spreadsheet.
@@ -195,7 +204,8 @@ Modern LLMs can generate production-ready spreadsheets across the full difficult
 - **Tier 1 (100 avg, 100% pass):** gemini-3-pro-preview; claude-sonnet-4-5; claude-3.5-sonnet; claude-haiku-4-5.
 - **Tier 2 (90‑95 avg, ≥86% pass):** gpt-4o; gemini-2.5-flash; gpt-5.1; grok-4-1-fast-reasoning.
 - **Tier 3 (75‑89 avg, ≥71% pass):** gpt-4o-mini; ollama-gpt-oss-20b.
-- **Not ready:** ollama-phi4-mini.
+- **Tier 4 (60‑74 avg, 40‑70% pass):** ollama-mistral-small3.2-24b (viable for local deployment with verification).
+- **Not ready:** ollama-gemma3-tools-27b; ollama-phi4-mini.
 
 ### Next Steps
 1. Re-run the benchmark after any new engine/verifier changes.
