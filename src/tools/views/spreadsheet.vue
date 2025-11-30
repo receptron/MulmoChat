@@ -133,6 +133,49 @@ import {
 // Import all spreadsheet functions to populate the function registry
 import "../models/spreadsheet-engine/functions";
 
+/**
+ * Normalize malformed data structures
+ * Some models generate flat arrays instead of 2D arrays - fix them
+ */
+function normalizeSheetData(data: any): any[][] {
+  // Handle null/undefined
+  if (!data) {
+    return [];
+  }
+
+  // If not an array
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  // Empty array
+  if (data.length === 0) {
+    return [];
+  }
+
+  // If data is already a 2D array, return as-is
+  if (Array.isArray(data[0])) {
+    return data;
+  }
+
+  // If data is a flat array of cell objects, convert to 2D by pairing cells
+  // Pattern: [cell1, cell2, cell3, cell4] -> [[cell1, cell2], [cell3, cell4]]
+  if (typeof data[0] === "object" && data[0] !== null) {
+    const rows: any[][] = [];
+    for (let i = 0; i < data.length; i += 2) {
+      const row = [data[i]];
+      if (i + 1 < data.length) {
+        row.push(data[i + 1]);
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // Unknown structure - return empty
+  return [];
+}
+
 const props = defineProps<{
   selectedResult: ToolResult<SpreadsheetToolData>;
 }>();
@@ -339,16 +382,21 @@ function openMiniEditor(rowIndex: number, colIndex: number) {
     const sheets = JSON.parse(editableData.value);
     const currentSheet = sheets[activeSheetIndex.value];
 
+    if (!currentSheet || !currentSheet.data) {
+      return;
+    }
+
+    // Normalize the data in case it's malformed
+    const normalizedData = normalizeSheetData(currentSheet.data);
+
     if (
-      !currentSheet ||
-      !currentSheet.data ||
-      !currentSheet.data[rowIndex] ||
-      currentSheet.data[rowIndex][colIndex] === undefined
+      !normalizedData[rowIndex] ||
+      normalizedData[rowIndex][colIndex] === undefined
     ) {
       return;
     }
 
-    const cellValue = currentSheet.data[rowIndex][colIndex];
+    const cellValue = normalizedData[rowIndex][colIndex];
 
     // Determine cell type and extract values (new format: {v, f})
     if (
@@ -416,9 +464,17 @@ function saveMiniEditor() {
 
     const { row, col } = miniEditorCell.value;
 
+    // Normalize the data in case it's malformed
+    let normalizedData = normalizeSheetData(currentSheet.data);
+
     // Ensure the row exists
-    while (currentSheet.data.length <= row) {
-      currentSheet.data.push([]);
+    while (normalizedData.length <= row) {
+      normalizedData.push([]);
+    }
+
+    // Ensure the row is an array
+    if (!Array.isArray(normalizedData[row])) {
+      normalizedData[row] = [];
     }
 
     // Build the new cell value based on type (new format: {v, f})
@@ -455,8 +511,11 @@ function saveMiniEditor() {
       }
     }
 
-    // Update the cell
-    currentSheet.data[row][col] = newCellValue;
+    // Update the cell in normalized data
+    normalizedData[row][col] = newCellValue;
+
+    // Update the sheet with normalized data
+    currentSheet.data = normalizedData;
 
     // Update editableData
     editableData.value = JSON.stringify(sheets, null, 2);
@@ -516,13 +575,18 @@ function handleTableClick(event: MouseEvent) {
       const sheets = JSON.parse(editableData.value);
       const currentSheet = sheets[activeSheetIndex.value];
 
+      if (!currentSheet || !currentSheet.data) {
+        return;
+      }
+
+      // Normalize the data in case it's malformed
+      const normalizedData = normalizeSheetData(currentSheet.data);
+
       if (
-        currentSheet &&
-        currentSheet.data &&
-        currentSheet.data[rowIndex] &&
-        currentSheet.data[rowIndex][colIndex] !== undefined
+        normalizedData[rowIndex] &&
+        normalizedData[rowIndex][colIndex] !== undefined
       ) {
-        const cellValue = currentSheet.data[rowIndex][colIndex];
+        const cellValue = normalizedData[rowIndex][colIndex];
         const cellStr = JSON.stringify(cellValue);
 
         // Find the sheet's data section in the editor

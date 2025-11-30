@@ -18,6 +18,54 @@ import type {
 } from "./types";
 
 /**
+ * Normalize malformed data structures
+ * Some models generate flat arrays instead of 2D arrays - fix them
+ *
+ * @param data - Potentially malformed sheet data
+ * @returns Normalized 2D array
+ */
+function normalizeData(data: any): SpreadsheetCell[][] {
+  // Handle null/undefined
+  if (!data) {
+    return [];
+  }
+
+  // If not an array, wrap in array
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  // Empty array
+  if (data.length === 0) {
+    return [];
+  }
+
+  // If data is already a 2D array, return as-is
+  if (Array.isArray(data[0])) {
+    return data as SpreadsheetCell[][];
+  }
+
+  // If data is a flat array of cell objects, convert to 2D by pairing cells
+  // Pattern: [cell1, cell2, cell3, cell4] -> [[cell1, cell2], [cell3, cell4]]
+  // This handles the case where models output flat arrays instead of rows
+  if (typeof data[0] === "object" && data[0] !== null) {
+    const rows: SpreadsheetCell[][] = [];
+    for (let i = 0; i < data.length; i += 2) {
+      const row = [data[i]];
+      if (i + 1 < data.length) {
+        row.push(data[i + 1]);
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // Unknown structure - return empty
+  console.warn("Unknown data structure in spreadsheet, returning empty:", data);
+  return [];
+}
+
+/**
  * Pre-process sheet data to parse date strings into serial numbers
  *
  * @param data - Raw sheet data
@@ -63,13 +111,16 @@ export function calculateSheet(
   sheet: SheetData,
   allSheets?: SheetData[],
 ): CalculatedSheet {
+  // Normalize malformed data structures first
+  const normalizedData = normalizeData(sheet.data);
+
   // Pre-process dates before calculation
-  const processedData = preprocessDates(sheet.data);
+  const processedData = preprocessDates(normalizedData);
 
   // Also preprocess all sheets if provided
   const processedAllSheets = allSheets?.map((s) => ({
     ...s,
-    data: preprocessDates(s.data),
+    data: preprocessDates(normalizeData(s.data)),
   }));
 
   const data = processedData;
