@@ -260,6 +260,13 @@ export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
     maxTokens: 4000,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
   },
+  "ollama-gemma3-tools-27b": {
+    provider: "ollama",
+    model: "PetrosStav/gemma3-tools:27b",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
 
   // Grok/xAI Models
   "grok-4-1-fast-reasoning": {
