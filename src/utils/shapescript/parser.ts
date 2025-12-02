@@ -165,6 +165,7 @@ class Lexer {
       option: TokenType.OPTION,
       position: TokenType.POSITION,
       rotation: TokenType.ROTATION,
+      orientation: TokenType.ORIENTATION,
       size: TokenType.SIZE,
       color: TokenType.COLOR,
       opacity: TokenType.OPACITY,
@@ -785,11 +786,18 @@ export class Parser {
     // Check if there are more expressions following (space-separated values)
     // Look ahead to see if next token could be part of a vector
     const nextToken = this.current();
+
+    // Don't consume identifiers followed by LBRACE - they're custom shape invocations
+    const isCustomShapeInvocation =
+      nextToken.type === TokenType.IDENTIFIER &&
+      this.peek().type === TokenType.LBRACE;
+
     const canBeVectorComponent =
-      nextToken.type === TokenType.NUMBER ||
-      nextToken.type === TokenType.IDENTIFIER ||
-      nextToken.type === TokenType.MINUS ||
-      nextToken.type === TokenType.LPAREN;
+      (nextToken.type === TokenType.NUMBER ||
+       nextToken.type === TokenType.IDENTIFIER ||
+       nextToken.type === TokenType.MINUS ||
+       nextToken.type === TokenType.LPAREN) &&
+      !isCustomShapeInvocation;
 
     if (canBeVectorComponent && nextToken.type !== TokenType.COMMA) {
       // Parse space-separated values: x y z (or any number of values)
@@ -798,11 +806,18 @@ export class Parser {
       // Keep parsing as long as we see valid tuple component tokens
       while (true) {
         const token = this.current();
+
+        // Check again for custom shape invocation
+        const isCustomShape =
+          token.type === TokenType.IDENTIFIER &&
+          this.peek().type === TokenType.LBRACE;
+
         if (
-          token.type === TokenType.NUMBER ||
-          token.type === TokenType.IDENTIFIER ||
-          token.type === TokenType.MINUS ||
-          token.type === TokenType.LPAREN
+          (token.type === TokenType.NUMBER ||
+           token.type === TokenType.IDENTIFIER ||
+           token.type === TokenType.MINUS ||
+           token.type === TokenType.LPAREN) &&
+          !isCustomShape
         ) {
           elements.push(this.parseExpression());
         } else {
@@ -844,6 +859,11 @@ export class Parser {
         case TokenType.ROTATION:
           this.advance();
           properties.rotation = this.parseVectorOrExpression();
+          break;
+
+        case TokenType.ORIENTATION:
+          this.advance();
+          properties.orientation = this.parseVectorOrExpression();
           break;
 
         case TokenType.SIZE:
@@ -1349,7 +1369,8 @@ export class Parser {
           token.type === TokenType.COLOR ||
           token.type === TokenType.OPACITY ||
           token.type === TokenType.POSITION ||
-          token.type === TokenType.ROTATION
+          token.type === TokenType.ROTATION ||
+          token.type === TokenType.ORIENTATION
         ) {
           const props = this.parseProperties();
           Object.assign(properties, props);
@@ -1786,6 +1807,8 @@ export class Parser {
       [TokenType.ROTATE]: "rotate",
       [TokenType.TRANSLATE]: "translate",
       [TokenType.SCALE]: "scale",
+      [TokenType.POSITION]: "translate", // position is an alias for translate
+      [TokenType.ORIENTATION]: "rotate", // orientation is an alias for rotate
     };
 
     // Check mapped operations first

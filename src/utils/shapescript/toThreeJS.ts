@@ -660,6 +660,12 @@ export class Converter {
       const rot = this.evaluateVector3(properties.rotation);
       object.rotation.set(...rot);
     }
+
+    // orientation is an alias for rotation
+    if (properties.orientation) {
+      const rot = this.evaluateVector3(properties.orientation);
+      object.rotation.set(...rot);
+    }
   }
 
   private handleDetail(node: DetailNode): void {

@@ -102,6 +102,7 @@ export interface ShapeNode {
 export interface ShapeProperties {
   position?: Vector3 | Expression;
   rotation?: Vector3 | Expression;
+  orientation?: Vector3 | Expression; // Alias for rotation
   size?: Vector3 | Expression;
   color?: Color | Expression;
   opacity?: number | Expression;
@@ -349,6 +350,7 @@ export enum TokenType {
   // Properties
   POSITION = "POSITION",
   ROTATION = "ROTATION",
+  ORIENTATION = "ORIENTATION",
   SIZE = "SIZE",
   COLOR = "COLOR",
   OPACITY = "OPACITY",

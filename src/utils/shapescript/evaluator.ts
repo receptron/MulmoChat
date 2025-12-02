@@ -179,6 +179,11 @@ export class Evaluator {
         return expr.value;
 
       case "identifier": {
+        // Handle built-in random number generator
+        if (expr.name === "rnd") {
+          return Math.random();
+        }
+
         const value = this.symbols.get(expr.name);
         if (value === undefined) {
           throw new Error(`Undefined variable: ${expr.name}`);
