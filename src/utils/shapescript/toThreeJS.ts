@@ -111,6 +111,9 @@ export class Converter {
       case "rotate":
         this.handleRotateCommand(node);
         return null;
+      case "orientation":
+        this.handleOrientationCommand(node);
+        return null;
       case "translate":
         this.handleTranslateCommand(node);
         return null;
@@ -697,6 +700,31 @@ export class Converter {
 
     rotationMatrix.makeRotationFromEuler(euler);
     transform.matrix.multiply(rotationMatrix);
+  }
+
+  private handleOrientationCommand(node: any): void {
+    const orientation = this.evaluateVector3(node.value);
+    const transform = this.currentTransform();
+
+    // Orientation sets absolute rotation, not cumulative like rotate
+    // Decompose current matrix to preserve position and scale
+    const position = new THREE.Vector3();
+    const scale = new THREE.Vector3();
+    transform.matrix.decompose(position, new THREE.Quaternion(), scale);
+
+    const euler = new THREE.Euler(
+      orientation[0] * Math.PI * 2,
+      orientation[1] * Math.PI * 2,
+      orientation[2] * Math.PI * 2,
+      "XYZ",
+    );
+
+    // Rebuild matrix with new orientation but preserve position and scale
+    transform.matrix.compose(
+      position,
+      new THREE.Quaternion().setFromEuler(euler),
+      scale,
+    );
   }
 
   private handleTranslateCommand(node: TranslateNode): void {

@@ -18,6 +18,7 @@ import {
   Expression,
   Vector3,
   ParseError,
+  OrientationNode,
 } from "./types";
 
 // Lexer/Tokenizer
@@ -1808,7 +1809,7 @@ export class Parser {
       [TokenType.TRANSLATE]: "translate",
       [TokenType.SCALE]: "scale",
       [TokenType.POSITION]: "translate", // position is an alias for translate
-      [TokenType.ORIENTATION]: "rotate", // orientation is an alias for rotate
+      [TokenType.ORIENTATION]: "orientation", // orientation sets absolute rotation (not relative like rotate)
     };
 
     // Check mapped operations first

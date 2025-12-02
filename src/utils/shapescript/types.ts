@@ -80,6 +80,7 @@ export type SceneNode =
   | TextureNode
   | ColorNode
   | RotateNode
+  | OrientationNode
   | TranslateNode
   | ScaleNode
   | CustomShapeNode;
@@ -195,7 +196,12 @@ export interface ColorNode {
 
 export interface RotateNode {
   type: "rotate";
-  value: Expression; // Rotation value (half-turns) or tuple
+  value: Expression; // Rotation value (half-turns) or tuple - relative/cumulative
+}
+
+export interface OrientationNode {
+  type: "orientation";
+  value: Expression; // Absolute rotation (sets orientation directly)
 }
 
 export interface TranslateNode {
