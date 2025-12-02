@@ -876,8 +876,7 @@ export class Parser {
     return properties;
   }
 
-  private parseBlock(): SceneNode[] {
-    this.expect(TokenType.LBRACE);
+  private parseBlockContents(): SceneNode[] {
     this.skipNewlines();
 
     const nodes: SceneNode[] = [];
@@ -893,6 +892,12 @@ export class Parser {
       this.skipNewlines();
     }
 
+    return nodes;
+  }
+
+  private parseBlock(): SceneNode[] {
+    this.expect(TokenType.LBRACE);
+    const nodes = this.parseBlockContents();
     this.expect(TokenType.RBRACE);
     return nodes;
   }
@@ -1232,7 +1237,7 @@ export class Parser {
   private parseGroup(): GroupNode {
     this.advance(); // consume 'group'
     this.expect(TokenType.LBRACE);
-    const children = this.parseBlock();
+    const children = this.parseBlockContents();
     this.expect(TokenType.RBRACE);
     return {
       type: "group",
@@ -1274,7 +1279,16 @@ export class Parser {
         if (token.type === TokenType.POINT) {
           this.advance();
           const x = this.parsePathValue();
-          const y = this.parsePathValue();
+          // Y is optional - defaults to 0 if not provided
+          let y: Expression = { type: "number", value: 0 };
+          if (
+            this.current().type === TokenType.NUMBER ||
+            this.current().type === TokenType.MINUS ||
+            this.current().type === TokenType.IDENTIFIER ||
+            this.current().type === TokenType.LPAREN
+          ) {
+            y = this.parsePathValue();
+          }
           commands.push({ type: "point", x, y });
         } else if (token.type === TokenType.CURVE) {
           this.advance();
@@ -1290,14 +1304,15 @@ export class Parser {
             this.current().type === TokenType.IDENTIFIER ||
             this.current().type === TokenType.LPAREN
           ) {
-            const hasMoreValues =
-              this.peek().type === TokenType.NUMBER ||
-              this.peek().type === TokenType.MINUS ||
-              this.peek().type === TokenType.IDENTIFIER ||
-              this.peek().type === TokenType.LPAREN;
+            controlX = this.parsePathValue();
 
-            if (hasMoreValues) {
-              controlX = this.parsePathValue();
+            // Try to parse fourth value (control point y)
+            if (
+              this.current().type === TokenType.NUMBER ||
+              this.current().type === TokenType.MINUS ||
+              this.current().type === TokenType.IDENTIFIER ||
+              this.current().type === TokenType.LPAREN
+            ) {
               controlY = this.parsePathValue();
             }
           }
@@ -1531,7 +1546,16 @@ export class Parser {
         case TokenType.POINT: {
           this.advance();
           const x = this.parsePathValue();
-          const y = this.parsePathValue();
+          // Y is optional - defaults to 0 if not provided
+          let y: Expression = { type: "number", value: 0 };
+          if (
+            this.current().type === TokenType.NUMBER ||
+            this.current().type === TokenType.MINUS ||
+            this.current().type === TokenType.IDENTIFIER ||
+            this.current().type === TokenType.LPAREN
+          ) {
+            y = this.parsePathValue();
+          }
           commands.push({ type: "point", x, y });
           break;
         }
@@ -1540,7 +1564,7 @@ export class Parser {
           this.advance();
           const x = this.parsePathValue();
           const y = this.parsePathValue();
-          // Optional control points - must come as a pair
+          // Optional control points
           let controlX: Expression | undefined;
           let controlY: Expression | undefined;
 
@@ -1551,16 +1575,15 @@ export class Parser {
             this.current().type === TokenType.IDENTIFIER ||
             this.current().type === TokenType.LPAREN
           ) {
-            // Peek ahead to see if there's also a fourth value (control point y)
-            // Only parse control points if we have both
-            const hasMoreValues =
-              this.peek().type === TokenType.NUMBER ||
-              this.peek().type === TokenType.MINUS ||
-              this.peek().type === TokenType.IDENTIFIER ||
-              this.peek().type === TokenType.LPAREN;
+            controlX = this.parsePathValue();
 
-            if (hasMoreValues) {
-              controlX = this.parsePathValue();
+            // Try to parse fourth value (control point y)
+            if (
+              this.current().type === TokenType.NUMBER ||
+              this.current().type === TokenType.MINUS ||
+              this.current().type === TokenType.IDENTIFIER ||
+              this.current().type === TokenType.LPAREN
+            ) {
               controlY = this.parsePathValue();
             }
           }
@@ -1622,7 +1645,16 @@ export class Parser {
               case TokenType.POINT: {
                 this.advance();
                 const x = this.parsePathValue();
-                const y = this.parsePathValue();
+                // Y is optional - defaults to 0 if not provided
+                let y: Expression = { type: "number", value: 0 };
+                if (
+                  this.current().type === TokenType.NUMBER ||
+                  this.current().type === TokenType.MINUS ||
+                  this.current().type === TokenType.IDENTIFIER ||
+                  this.current().type === TokenType.LPAREN
+                ) {
+                  y = this.parsePathValue();
+                }
                 bodyCommands.push({ type: "point", x, y });
                 break;
               }
@@ -1630,7 +1662,7 @@ export class Parser {
                 this.advance();
                 const x = this.parsePathValue();
                 const y = this.parsePathValue();
-                // Optional control points - must come as a pair
+                // Optional control points
                 let controlX: Expression | undefined;
                 let controlY: Expression | undefined;
 
@@ -1641,16 +1673,15 @@ export class Parser {
                   this.current().type === TokenType.IDENTIFIER ||
                   this.current().type === TokenType.LPAREN
                 ) {
-                  // Peek ahead to see if there's also a fourth value (control point y)
-                  // Only parse control points if we have both
-                  const hasMoreValues =
-                    this.peek().type === TokenType.NUMBER ||
-                    this.peek().type === TokenType.MINUS ||
-                    this.peek().type === TokenType.IDENTIFIER ||
-                    this.peek().type === TokenType.LPAREN;
+                  controlX = this.parsePathValue();
 
-                  if (hasMoreValues) {
-                    controlX = this.parsePathValue();
+                  // Try to parse fourth value (control point y)
+                  if (
+                    this.current().type === TokenType.NUMBER ||
+                    this.current().type === TokenType.MINUS ||
+                    this.current().type === TokenType.IDENTIFIER ||
+                    this.current().type === TokenType.LPAREN
+                  ) {
                     controlY = this.parsePathValue();
                   }
                 }
