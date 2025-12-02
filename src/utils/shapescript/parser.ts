@@ -18,7 +18,6 @@ import {
   Expression,
   Vector3,
   ParseError,
-  OrientationNode,
 } from "./types";
 
 // Lexer/Tokenizer
@@ -620,12 +619,12 @@ export class Parser {
         if (canBeVectorComponent && nextToken.type !== TokenType.RPAREN) {
           // Parse space-separated values
           while (true) {
-            const token = this.current();
+            const currentToken = this.current();
             if (
-              token.type === TokenType.NUMBER ||
-              token.type === TokenType.IDENTIFIER ||
-              token.type === TokenType.MINUS ||
-              token.type === TokenType.LPAREN
+              currentToken.type === TokenType.NUMBER ||
+              currentToken.type === TokenType.IDENTIFIER ||
+              currentToken.type === TokenType.MINUS ||
+              currentToken.type === TokenType.LPAREN
             ) {
               elements.push(this.parseExpression());
             } else {
@@ -806,18 +805,18 @@ export class Parser {
 
       // Keep parsing as long as we see valid tuple component tokens
       while (true) {
-        const token = this.current();
+        const currentToken = this.current();
 
         // Check again for custom shape invocation
         const isCustomShape =
-          token.type === TokenType.IDENTIFIER &&
+          currentToken.type === TokenType.IDENTIFIER &&
           this.peek().type === TokenType.LBRACE;
 
         if (
-          (token.type === TokenType.NUMBER ||
-            token.type === TokenType.IDENTIFIER ||
-            token.type === TokenType.MINUS ||
-            token.type === TokenType.LPAREN) &&
+          (currentToken.type === TokenType.NUMBER ||
+            currentToken.type === TokenType.IDENTIFIER ||
+            currentToken.type === TokenType.MINUS ||
+            currentToken.type === TokenType.LPAREN) &&
           !isCustomShape
         ) {
           elements.push(this.parseExpression());
