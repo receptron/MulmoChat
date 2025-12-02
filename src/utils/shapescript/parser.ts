@@ -795,9 +795,9 @@ export class Parser {
 
     const canBeVectorComponent =
       (nextToken.type === TokenType.NUMBER ||
-       nextToken.type === TokenType.IDENTIFIER ||
-       nextToken.type === TokenType.MINUS ||
-       nextToken.type === TokenType.LPAREN) &&
+        nextToken.type === TokenType.IDENTIFIER ||
+        nextToken.type === TokenType.MINUS ||
+        nextToken.type === TokenType.LPAREN) &&
       !isCustomShapeInvocation;
 
     if (canBeVectorComponent && nextToken.type !== TokenType.COMMA) {
@@ -815,9 +815,9 @@ export class Parser {
 
         if (
           (token.type === TokenType.NUMBER ||
-           token.type === TokenType.IDENTIFIER ||
-           token.type === TokenType.MINUS ||
-           token.type === TokenType.LPAREN) &&
+            token.type === TokenType.IDENTIFIER ||
+            token.type === TokenType.MINUS ||
+            token.type === TokenType.LPAREN) &&
           !isCustomShape
         ) {
           elements.push(this.parseExpression());
