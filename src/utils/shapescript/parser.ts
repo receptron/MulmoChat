@@ -598,11 +598,39 @@ export class Parser {
       const elements: Expression[] = [];
       elements.push(this.parseExpression());
 
-      // Check if it's a tuple
-      while (this.current().type === TokenType.COMMA) {
-        this.advance();
-        if (this.current().type === TokenType.RPAREN) break;
-        elements.push(this.parseExpression());
+      // Check if it's a comma-separated tuple
+      if (this.current().type === TokenType.COMMA) {
+        while (this.current().type === TokenType.COMMA) {
+          this.advance();
+          if (this.current().type === TokenType.RPAREN) break;
+          elements.push(this.parseExpression());
+        }
+      }
+      // Check if it's a space-separated tuple (e.g., "(1 2 3)")
+      else {
+        const nextToken = this.current();
+        const canBeVectorComponent =
+          nextToken.type === TokenType.NUMBER ||
+          nextToken.type === TokenType.IDENTIFIER ||
+          nextToken.type === TokenType.MINUS ||
+          nextToken.type === TokenType.LPAREN;
+
+        if (canBeVectorComponent && nextToken.type !== TokenType.RPAREN) {
+          // Parse space-separated values
+          while (true) {
+            const token = this.current();
+            if (
+              token.type === TokenType.NUMBER ||
+              token.type === TokenType.IDENTIFIER ||
+              token.type === TokenType.MINUS ||
+              token.type === TokenType.LPAREN
+            ) {
+              elements.push(this.parseExpression());
+            } else {
+              break;
+            }
+          }
+        }
       }
 
       this.expect(TokenType.RPAREN);
