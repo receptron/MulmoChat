@@ -1,0 +1,135 @@
+// 4気筒エンジンの断面モデル (4-Cylinder Engine Cutaway)
+// 時間に基づいてアニメーション (Animation based on time)
+define t (time * 4)
+
+// エンジンブロック (Engine Block)
+// 内部が見えるように、手前半分を切り取ります (Cut front half to see inside)
+difference {
+    // メインのブロック (Main block body)
+    cube { 
+        position 0 0.5 0 
+        size 7 5 3 
+        color (0.2 0.3 0.4) // メタリックブルー
+    }
+
+    // 4つのシリンダー穴 (4 Cylinder bores)
+    for i in 0 to 3 {
+        define xPos (i * 1.6 - 2.4)
+        cylinder { 
+            position xPos 1 0 
+            size 0.7 3.5 0.7 
+        }
+    }
+    
+    // クランクケースの空洞 (Crankcase hollow)
+    cube {
+        position 0 -1.5 0
+        size 6.5 2 2
+    }
+
+    // 断面図にするためのカット (Cut for cross-section view)
+    cube {
+        position 0 0 2
+        size 8 6 2.5
+    }
+}
+
+// クランクシャフトの軸 (Crankshaft main axis)
+cylinder {
+    position 0 -2 0
+    size 7 0.2 0.2
+    orientation 0 0 90
+    color (0.4 0.4 0.4)
+}
+
+// ピストンとコンロッドのループ (Pistons and Connecting Rods Loop)
+for i in 0 to 3 {
+    define xPos (i * 1.6 - 2.4)
+    
+    // 位相の計算: 一般的な直列4気筒は外側(1,4)と内側(2,3)がペア
+    // Phase calculation: Outer(1,4) and Inner(2,3) move together
+    define phase 0
+    if i = 1 { define phase 3.14159 }
+    if i = 2 { define phase 3.14159 }
+    
+    define currentAngle (t + phase)
+    
+    // クランクの回転位置 (Crank position)
+    // 半径 0.8
+    define crankX (0)
+    define crankY (sin(currentAngle) * 0.8 - 2)
+    define crankZ (cos(currentAngle) * 0.8)
+    
+    // ピストンの高さ (Piston height)
+    // 簡易的な正弦波運動 (Simple harmonic motion approximation)
+    define pistonY (sin(currentAngle) * 0.8 + 1)
+    
+    // コンロッドの角度 (Connecting rod angle)
+    define rodAngle (cos(currentAngle) * 15)
+
+    // --- ピストン (Piston) ---
+    cylinder {
+        position xPos pistonY 0
+        size 0.68 0.8 0.68
+        color (0.8 0.8 0.8) // シルバー
+    }
+    
+    // ピストンリング (Piston Rings)
+    cylinder {
+        position xPos (pistonY + 0.2) 0
+        size 0.69 0.05 0.69
+        color (0.3 0.3 0.3)
+    }
+    cylinder {
+        position xPos (pistonY - 0.1) 0
+        size 0.69 0.05 0.69
+        color (0.3 0.3 0.3)
+    }
+
+    // --- コンロッド (Connecting Rod) ---
+    // ピストンとクランクをつなぐ棒
+    cube {
+        position xPos (pistonY - 1.5) (crankZ * 0.5)
+        size 0.15 3 0.15
+        // クランクの動きに合わせて少し傾ける
+        orientation rodAngle 0 0
+        color (0.5 0.4 0.3) // ブロンズ色
+    }
+
+    // --- クランクのアーム (Crank Arm/Throw) ---
+    // シャフトとロッドをつなぐ部分
+    cube {
+        position xPos -2 (crankZ * 0.5)
+        size 0.2 1.6 0.1
+        orientation (currentAngle * 57.29) 0 0 
+        color (0.3 0.3 0.3)
+    }
+    
+    // --- スパークプラグと燃焼 (Spark Plug & Combustion) ---
+    // 圧縮上死点(一番上)で発火色にする
+    define isFiring (sin(currentAngle) > 0.95)
+    
+    // プラグ本体
+    cylinder {
+        position xPos 2.6 0
+        size 0.15 0.5 0.15
+        color (0.9 0.9 0.9)
+    }
+    
+    // 燃焼室の光 (Combustion light)
+    if isFiring {
+        sphere {
+            position xPos 2.2 0
+            size 0.4
+            color (1 0.5 0) // オレンジ (爆発)
+            opacity 0.8
+        }
+    }
+}
+
+// ベース (Base)
+cube {
+    position 0 -3.5 0
+    size 8 0.5 4
+    color (0.1 0.1 0.1)
+}
