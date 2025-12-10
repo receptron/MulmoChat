@@ -48,6 +48,7 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       "phi4-mini:latest",
       "mistral-small3.2:24b",
       "PetrosStav/gemma3-tools:27b",
+      "ministral-3:14b",
       // "deepseek-r1:32b", no tools
       // "gemma3:27b", no tools
       // "deepseek-coder:33b", no tools
