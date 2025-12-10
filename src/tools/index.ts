@@ -191,7 +191,7 @@ export const getPluginSystemPrompts = (
     .map((plugin) => plugin.plugin.systemPrompt)
     .filter((prompt): prompt is string => !!prompt);
 
-  return prompts.length > 0 ? ` ${prompts.join(" ")}` : "";
+  return prompts.length > 0 ? ` ${prompts.join("\n")}` : "";
 };
 
 const plugins = pluginList.reduce(
