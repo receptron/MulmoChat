@@ -279,7 +279,7 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     const customInstructionsText = state.customInstructions.trim()
       ? ` ${state.customInstructions}`
       : "";
-    return `${role.prompt}${pluginPrompts}${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
+    return `${role.prompt}\n${pluginPrompts}\n${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
   };
 
   const buildTools = ({ startResponse }: BuildContext) =>
