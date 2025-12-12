@@ -23,6 +23,7 @@ import * as SwitchRolePlugin from "./models/switchRole";
 import * as TextResponsePlugin from "./models/textResponse";
 import * as SetImageStylePlugin from "./models/setImageStyle";
 import * as ScrollToAnchorPlugin from "./models/scrollToAnchor";
+import * as WeatherPlugin from "./models/weather";
 import type { StartApiResponse } from "../../server/types";
 import { v4 as uuidv4 } from "uuid";
 import { getRole } from "../config/roles";
@@ -61,6 +62,7 @@ const pluginList = [
   TextResponsePlugin,
   SetImageStylePlugin,
   ScrollToAnchorPlugin,
+  WeatherPlugin,
 ];
 
 export const getPluginList = () => pluginList;
