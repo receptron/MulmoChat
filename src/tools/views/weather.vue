@@ -1,5 +1,7 @@
 <template>
-  <div class="w-full h-full overflow-auto bg-gradient-to-br from-blue-50 to-indigo-50">
+  <div
+    class="w-full h-full overflow-auto bg-gradient-to-br from-blue-50 to-indigo-50"
+  >
     <div class="max-w-4xl mx-auto p-6">
       <!-- Header -->
       <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -60,15 +62,23 @@
                 </div>
 
                 <!-- Weather -->
-                <div v-if="area.weathers && area.weathers[timeIndex]" class="mb-2">
+                <div
+                  v-if="area.weathers && area.weathers[timeIndex]"
+                  class="mb-2"
+                >
                   <span class="text-2xl mr-2">{{
                     getWeatherEmoji(area.weathers[timeIndex])
                   }}</span>
-                  <span class="text-gray-800">{{ area.weathers[timeIndex] }}</span>
+                  <span class="text-gray-800">{{
+                    area.weathers[timeIndex]
+                  }}</span>
                 </div>
 
                 <!-- Temperature -->
-                <div v-if="area.temps && area.temps[timeIndex]" class="text-gray-700">
+                <div
+                  v-if="area.temps && area.temps[timeIndex]"
+                  class="text-gray-700"
+                >
                   <span class="font-semibold">Temperature:</span>
                   {{ area.temps[timeIndex] }}°C
                 </div>
@@ -90,19 +100,28 @@
                 </div>
 
                 <!-- Precipitation Probability -->
-                <div v-if="area.pops && area.pops[timeIndex]" class="text-gray-700">
+                <div
+                  v-if="area.pops && area.pops[timeIndex]"
+                  class="text-gray-700"
+                >
                   <span class="font-semibold">Rain:</span>
                   {{ area.pops[timeIndex] }}%
                 </div>
 
                 <!-- Wind -->
-                <div v-if="area.winds && area.winds[timeIndex]" class="text-gray-700">
+                <div
+                  v-if="area.winds && area.winds[timeIndex]"
+                  class="text-gray-700"
+                >
                   <span class="font-semibold">Wind:</span>
                   {{ area.winds[timeIndex] }}
                 </div>
 
                 <!-- Waves -->
-                <div v-if="area.waves && area.waves[timeIndex]" class="text-gray-700">
+                <div
+                  v-if="area.waves && area.waves[timeIndex]"
+                  class="text-gray-700"
+                >
                   <span class="font-semibold">Waves:</span>
                   {{ area.waves[timeIndex] }}
                 </div>
@@ -122,7 +141,10 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Temperature Average -->
-            <div v-if="weatherData.tempAverage" class="bg-gray-50 rounded-lg p-4">
+            <div
+              v-if="weatherData.tempAverage"
+              class="bg-gray-50 rounded-lg p-4"
+            >
               <h3 class="font-medium text-gray-700 mb-2">Temperature</h3>
               <div
                 v-for="(area, index) in weatherData.tempAverage.areas"
@@ -231,7 +253,8 @@ function getWeatherEmoji(weather: string): string {
   if (!weather) return "🌤️";
 
   const w = weather.toLowerCase();
-  if (w.includes("晴") || w.includes("sunny") || w.includes("clear")) return "☀️";
+  if (w.includes("晴") || w.includes("sunny") || w.includes("clear"))
+    return "☀️";
   if (w.includes("曇") || w.includes("cloudy")) return "☁️";
   if (w.includes("雨") || w.includes("rain")) return "🌧️";
   if (w.includes("雪") || w.includes("snow")) return "❄️";
