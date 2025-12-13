@@ -37,18 +37,23 @@
           :key="index"
           :class="[
             'rounded-2xl shadow-xl p-6',
-            index === 1 ? 'bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50' : 'bg-white'
+            index === 1 ? 'bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50' :
+            index === 2 ? 'bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50' :
+            'bg-white'
           ]"
         >
           <h2
             :class="[
               'text-2xl font-bold mb-6 flex items-center gap-2',
-              index === 1 ? 'text-purple-800' : 'text-gray-800'
+              index === 1 ? 'text-purple-800' :
+              index === 2 ? 'text-teal-800' :
+              'text-gray-800'
             ]"
           >
             <span v-if="index === 1" class="text-3xl">📅</span>
+            <span v-else-if="index === 2" class="text-3xl">📊</span>
             <span v-else-if="index === 0" class="text-3xl">🌤️</span>
-            <span v-else class="text-3xl">📊</span>
+            <span v-else class="text-3xl">📋</span>
             {{ getSeriesTitle(index) }}
           </h2>
 
@@ -65,19 +70,25 @@
               {{ area.area.name }}
             </h3>
 
-            <!-- Extended Forecast (index === 1) - Special TV-style design -->
-            <div v-if="index === 1">
+            <!-- Extended Forecast (index === 1 or 2) - Special TV-style design -->
+            <div v-if="index === 1 || index === 2">
               <!-- Daily forecast cards -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
                 <!-- Time periods -->
                 <div
                   v-for="(time, timeIndex) in series.timeDefines"
                   :key="timeIndex"
-                  class="relative bg-white rounded-xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-transparent hover:border-purple-300"
+                  :class="[
+                    'relative bg-white rounded-xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-transparent',
+                    index === 1 ? 'hover:border-purple-300' : 'hover:border-teal-300'
+                  ]"
                 >
                   <!-- Day of week badge -->
                   <div
-                    class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md"
+                    :class="[
+                      'absolute -top-3 left-1/2 transform -translate-x-1/2 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md',
+                      index === 1 ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gradient-to-r from-teal-500 to-cyan-500'
+                    ]"
                   >
                     {{ getDayOfWeek(time) }}
                   </div>
