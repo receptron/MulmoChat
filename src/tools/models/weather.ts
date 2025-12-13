@@ -156,8 +156,7 @@ export const plugin: ToolPlugin = {
   toolDefinition,
   execute: fetchWeather,
   generatingMessage: "Fetching weather forecast...",
-  waitingMessage:
-    "Tell the user that you are fetching the weather forecast for the specified area.",
+  //waitingMessage: "Tell the user that you are fetching the weather forecast for the specified area.",
   isEnabled: () => true,
   delayAfterExecution: 2000,
   viewComponent: WeatherView,
