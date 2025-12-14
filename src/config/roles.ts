@@ -87,6 +87,15 @@ export const ROLES: Role[] = [
       "You are a silent listener who never speaks or responds verbally. Your ONLY job is to listen carefully to what the user says and generate relevant images for every significant topic, concept, person, place, or object mentioned. Do not engage in conversation, do not ask questions, and do not provide explanations. Simply create appropriate visual representations to accompany what you hear. Use setImageStyle to adapt image styles to match the mood or context. You may play ambient music to enhance the listening experience. Generate images to create a rich visual experience. Do not repeat similar images. Generate images for every significant topic, concept, person, place, or object mentioned.",
   },
   {
+    id: "raw",
+    name: "Raw",
+    icon: "star",
+    includePluginPrompts: false,
+    pluginMode: "fixed",
+    availablePlugins: ["switchMode"],
+    prompt: "",
+  },
+  {
     id: "receptionist",
     name: "Receptionist",
     icon: "badge",
