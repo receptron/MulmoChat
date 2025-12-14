@@ -112,6 +112,7 @@ export function useGoogleLiveSession(
       }
 
       data = JSON.parse(jsonString);
+      console.log("[Google Live] Received message:", data);
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
       handlers.onError?.(error);
@@ -265,6 +266,8 @@ export function useGoogleLiveSession(
     tools: any[],
     modelId: string,
   ) => {
+    console.log("[Google Live] WebSocket opened, model:", modelId);
+
     // Convert tools to Google format
     const googleTools = convertToGoogleToolFormat(tools);
 
@@ -297,15 +300,26 @@ export function useGoogleLiveSession(
       setupMessage.setup.tools = [{ functionDeclarations: googleTools }];
     }
 
+    console.log("[Google Live] Sending setup message:", setupMessage);
     sendWebSocketMessage(setupMessage);
 
     // Now that WebSocket is open, start audio capture
     if (googleLive.localStream && googleLive.audioManager) {
+      console.log("[Google Live] Starting audio capture");
+      let audioChunkCount = 0;
       googleLive.audioManager.startCapture(
         googleLive.localStream,
         (pcmChunk) => {
           // Only send if WebSocket is still open
           if (googleLive.ws?.readyState === WebSocket.OPEN) {
+            audioChunkCount++;
+            if (audioChunkCount % 50 === 1) {
+              console.log(
+                "[Google Live] Sending audio chunks (count:",
+                audioChunkCount,
+                ")",
+              );
+            }
             sendWebSocketMessage({
               realtimeInput: {
                 mediaChunks: [
@@ -404,18 +418,8 @@ export function useGoogleLiveSession(
           startResponse: startResponse.value,
         }) ?? DEFAULT_GOOGLE_LIVE_MODEL_ID;
 
-      // Establish WebSocket connection
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${startResponse.value.googleApiKey}`;
-
-      googleLive.ws = new WebSocket(wsUrl);
-
-      googleLive.ws.onopen = () =>
-        handleWebSocketOpen(instructions, tools, modelId);
-      googleLive.ws.onmessage = handleWebSocketMessage;
-      googleLive.ws.onerror = handleWebSocketError;
-      googleLive.ws.onclose = handleWebSocketClose;
-
-      // Request microphone access (but don't start capture yet)
+      // Request microphone access FIRST (before WebSocket)
+      console.log("[Google Live] Requesting microphone access...");
       googleLive.localStream =
         await globalThis.navigator.mediaDevices.getUserMedia({
           audio: {
@@ -425,9 +429,21 @@ export function useGoogleLiveSession(
             noiseSuppression: true,
           },
         });
+      console.log("[Google Live] Microphone access granted");
 
-      // Initialize audio stream manager (capture will start when WebSocket opens)
+      // Initialize audio stream manager
       googleLive.audioManager = new AudioStreamManager();
+
+      // NOW establish WebSocket connection (after mic is ready)
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${startResponse.value.googleApiKey}`;
+
+      googleLive.ws = new WebSocket(wsUrl);
+
+      googleLive.ws.onopen = () =>
+        handleWebSocketOpen(instructions, tools, modelId);
+      googleLive.ws.onmessage = handleWebSocketMessage;
+      googleLive.ws.onerror = handleWebSocketError;
+      googleLive.ws.onclose = handleWebSocketClose;
 
       chatActive.value = true;
     } catch (err) {

@@ -37,17 +37,21 @@
           :key="index"
           :class="[
             'rounded-2xl shadow-xl p-6',
-            index === 1 ? 'bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50' :
-            index === 2 ? 'bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50' :
-            'bg-white'
+            index === 1
+              ? 'bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50'
+              : index === 2
+                ? 'bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50'
+                : 'bg-white',
           ]"
         >
           <h2
             :class="[
               'text-2xl font-bold mb-6 flex items-center gap-2',
-              index === 1 ? 'text-purple-800' :
-              index === 2 ? 'text-teal-800' :
-              'text-gray-800'
+              index === 1
+                ? 'text-purple-800'
+                : index === 2
+                  ? 'text-teal-800'
+                  : 'text-gray-800',
             ]"
           >
             <span v-if="index === 1" class="text-3xl">📅</span>
@@ -73,21 +77,27 @@
             <!-- Extended Forecast (index === 1 or 2) - Special TV-style design -->
             <div v-if="index === 1 || index === 2">
               <!-- Daily forecast cards -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8"
+              >
                 <!-- Time periods -->
                 <div
                   v-for="(time, timeIndex) in series.timeDefines"
                   :key="timeIndex"
                   :class="[
                     'relative bg-white rounded-xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-transparent',
-                    index === 1 ? 'hover:border-purple-300' : 'hover:border-teal-300'
+                    index === 1
+                      ? 'hover:border-purple-300'
+                      : 'hover:border-teal-300',
                   ]"
                 >
                   <!-- Day of week badge -->
                   <div
                     :class="[
                       'absolute -top-3 left-1/2 transform -translate-x-1/2 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md',
-                      index === 1 ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gradient-to-r from-teal-500 to-cyan-500'
+                      index === 1
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                        : 'bg-gradient-to-r from-teal-500 to-cyan-500',
                     ]"
                   >
                     {{ getDayOfWeek(time) }}
@@ -119,8 +129,12 @@
                     class="text-center mb-3"
                   >
                     <div class="flex items-center justify-center gap-2 mb-1">
-                      <span class="text-3xl">{{ getPrecipitationIcon(area.pops[timeIndex]) }}</span>
-                      <span class="text-2xl font-bold text-blue-600">{{ area.pops[timeIndex] }}%</span>
+                      <span class="text-3xl">{{
+                        getPrecipitationIcon(area.pops[timeIndex])
+                      }}</span>
+                      <span class="text-2xl font-bold text-blue-600"
+                        >{{ area.pops[timeIndex] }}%</span
+                      >
                     </div>
                   </div>
 
@@ -171,7 +185,9 @@
                 v-if="hasTemperatureData(area)"
                 class="bg-white rounded-xl p-6 shadow-lg"
               >
-                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <h3
+                  class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"
+                >
                   <span class="text-2xl">📈</span>
                   気温の推移
                 </h3>
@@ -218,7 +234,9 @@
                   class="text-gray-700 mb-2"
                 >
                   <span class="font-semibold text-orange-600">気温:</span>
-                  <span class="text-2xl font-bold ml-2">{{ area.temps[timeIndex] }}°C</span>
+                  <span class="text-2xl font-bold ml-2"
+                    >{{ area.temps[timeIndex] }}°C</span
+                  >
                 </div>
 
                 <!-- Min/Max Temperature -->
@@ -228,22 +246,23 @@
                     class="flex items-center gap-1"
                   >
                     <span class="text-red-500 font-bold text-sm">最高:</span>
-                    <span class="text-xl font-bold text-red-600">{{ area.tempsMax[timeIndex] }}°</span>
+                    <span class="text-xl font-bold text-red-600"
+                      >{{ area.tempsMax[timeIndex] }}°</span
+                    >
                   </div>
                   <div
                     v-if="area.tempsMin && area.tempsMin[timeIndex]"
                     class="flex items-center gap-1"
                   >
                     <span class="text-blue-500 font-bold text-sm">最低:</span>
-                    <span class="text-xl font-bold text-blue-600">{{ area.tempsMin[timeIndex] }}°</span>
+                    <span class="text-xl font-bold text-blue-600"
+                      >{{ area.tempsMin[timeIndex] }}°</span
+                    >
                   </div>
                 </div>
 
                 <!-- Precipitation Probability -->
-                <div
-                  v-if="area.pops && area.pops[timeIndex]"
-                  class="mb-2"
-                >
+                <div v-if="area.pops && area.pops[timeIndex]" class="mb-2">
                   <div class="flex items-center justify-between text-sm mb-1">
                     <span class="font-semibold text-blue-600">💧 降水確率</span>
                     <span class="font-bold">{{ area.pops[timeIndex] }}%</span>
@@ -284,7 +303,9 @@
           v-if="weatherData.tempAverage || weatherData.precipAverage"
           class="bg-white rounded-2xl shadow-xl p-6"
         >
-          <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          <h2
+            class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2"
+          >
             <span class="text-3xl">📊</span>
             Historical Averages
           </h2>
@@ -295,7 +316,9 @@
               v-if="weatherData.tempAverage"
               class="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-5 shadow-md border border-orange-200"
             >
-              <h3 class="font-bold text-orange-700 mb-3 text-lg flex items-center gap-2">
+              <h3
+                class="font-bold text-orange-700 mb-3 text-lg flex items-center gap-2"
+              >
                 <span class="text-2xl">🌡️</span>
                 Temperature
               </h3>
@@ -304,15 +327,21 @@
                 :key="index"
                 class="text-gray-700 mb-3 last:mb-0"
               >
-                <div class="font-semibold text-gray-800 mb-1">{{ area.area.name }}</div>
+                <div class="font-semibold text-gray-800 mb-1">
+                  {{ area.area.name }}
+                </div>
                 <div class="flex gap-3">
                   <div v-if="area.min" class="flex items-center gap-1">
                     <span class="text-blue-600 font-semibold">最低:</span>
-                    <span class="text-xl font-bold text-blue-700">{{ area.min }}°C</span>
+                    <span class="text-xl font-bold text-blue-700"
+                      >{{ area.min }}°C</span
+                    >
                   </div>
                   <div v-if="area.max" class="flex items-center gap-1">
                     <span class="text-red-600 font-semibold">最高:</span>
-                    <span class="text-xl font-bold text-red-700">{{ area.max }}°C</span>
+                    <span class="text-xl font-bold text-red-700"
+                      >{{ area.max }}°C</span
+                    >
                   </div>
                 </div>
               </div>
@@ -323,7 +352,9 @@
               v-if="weatherData.precipAverage"
               class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 shadow-md border border-blue-200"
             >
-              <h3 class="font-bold text-blue-700 mb-3 text-lg flex items-center gap-2">
+              <h3
+                class="font-bold text-blue-700 mb-3 text-lg flex items-center gap-2"
+              >
                 <span class="text-2xl">💧</span>
                 Precipitation
               </h3>
@@ -332,15 +363,21 @@
                 :key="index"
                 class="text-gray-700 mb-3 last:mb-0"
               >
-                <div class="font-semibold text-gray-800 mb-1">{{ area.area.name }}</div>
+                <div class="font-semibold text-gray-800 mb-1">
+                  {{ area.area.name }}
+                </div>
                 <div class="flex gap-3">
                   <div v-if="area.min" class="flex items-center gap-1">
                     <span class="text-cyan-600 font-semibold">最低:</span>
-                    <span class="text-xl font-bold text-cyan-700">{{ area.min }}mm</span>
+                    <span class="text-xl font-bold text-cyan-700"
+                      >{{ area.min }}mm</span
+                    >
                   </div>
                   <div v-if="area.max" class="flex items-center gap-1">
                     <span class="text-blue-600 font-semibold">最高:</span>
-                    <span class="text-xl font-bold text-blue-700">{{ area.max }}mm</span>
+                    <span class="text-xl font-bold text-blue-700"
+                      >{{ area.max }}mm</span
+                    >
                   </div>
                 </div>
               </div>
@@ -432,7 +469,8 @@ function getDayOfWeek(isoString: string): string {
 }
 
 function getPrecipitationColor(percentage: string | number): string {
-  const value = typeof percentage === "string" ? parseInt(percentage) : percentage;
+  const value =
+    typeof percentage === "string" ? parseInt(percentage) : percentage;
 
   if (value >= 70) return "bg-gradient-to-r from-blue-500 to-blue-600";
   if (value >= 50) return "bg-gradient-to-r from-blue-400 to-blue-500";
@@ -462,7 +500,8 @@ function getWeatherEmoji(weather: string): string {
 }
 
 function getPrecipitationIcon(percentage: string | number): string {
-  const value = typeof percentage === "string" ? parseInt(percentage) : percentage;
+  const value =
+    typeof percentage === "string" ? parseInt(percentage) : percentage;
 
   if (value >= 50) return "☔"; // 雨傘
   if (value >= 30) return "🌂"; // 傘

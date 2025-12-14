@@ -26,10 +26,15 @@ export interface GoogleLiveModelOption {
 
 export const GOOGLE_LIVE_MODELS: GoogleLiveModelOption[] = [
   {
-    id: "gemini-2.5-flash-native-audio-preview-09-2025",
-    label: "Gemini 2.5 Flash Native Audio (Sept 2025)",
+    id: "gemini-2.5-flash-native-audio-preview-12-2025",
+    label: "Gemini 2.5 Flash Native Audio (Dec 2025)",
     description:
       "Official Live API model with native audio and function calling",
+  },
+  {
+    id: "gemini-2.5-flash-native-audio-preview-09-2025",
+    label: "Gemini 2.5 Flash Native Audio (Sept 2025 - Deprecated)",
+    description: "Older version - use Dec 2025 version instead",
   },
   {
     id: "gemini-2.0-flash-exp",

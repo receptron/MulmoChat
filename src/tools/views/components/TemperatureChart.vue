@@ -7,9 +7,9 @@
           v-for="i in 5"
           :key="`grid-${i}`"
           :x1="padding.left"
-          :y1="padding.top + ((chartHeight / 4) * (i - 1))"
+          :y1="padding.top + (chartHeight / 4) * (i - 1)"
           :x2="width - padding.right"
-          :y2="padding.top + ((chartHeight / 4) * (i - 1))"
+          :y2="padding.top + (chartHeight / 4) * (i - 1)"
           stroke="#e5e7eb"
           stroke-width="1"
         />
@@ -21,7 +21,7 @@
           v-for="(temp, i) in yAxisLabels"
           :key="`y-label-${i}`"
           :x="padding.left - 10"
-          :y="padding.top + ((chartHeight / 4) * i) + 5"
+          :y="padding.top + (chartHeight / 4) * i + 5"
           text-anchor="end"
           class="text-xs fill-gray-600"
         >
@@ -153,9 +153,12 @@ const chartHeight = computed(() => height - padding.top - padding.bottom);
 // Get all temperature values
 const allTemps = computed(() => {
   const temps: number[] = [];
-  if (props.tempsMax) temps.push(...props.tempsMax.map(Number).filter((n) => !isNaN(n)));
-  if (props.tempsMin) temps.push(...props.tempsMin.map(Number).filter((n) => !isNaN(n)));
-  if (props.temps) temps.push(...props.temps.map(Number).filter((n) => !isNaN(n)));
+  if (props.tempsMax)
+    temps.push(...props.tempsMax.map(Number).filter((n) => !isNaN(n)));
+  if (props.tempsMin)
+    temps.push(...props.tempsMin.map(Number).filter((n) => !isNaN(n)));
+  if (props.temps)
+    temps.push(...props.temps.map(Number).filter((n) => !isNaN(n)));
   return temps;
 });
 
@@ -201,7 +204,11 @@ const maxPointsArray = computed(() => {
         value: temp,
       };
     })
-    .filter((p) => p !== null) as Array<{ x: number; y: number; value: string }>;
+    .filter((p) => p !== null) as Array<{
+    x: number;
+    y: number;
+    value: string;
+  }>;
 });
 
 const maxPoints = computed(() => {
@@ -220,7 +227,11 @@ const minPointsArray = computed(() => {
         value: temp,
       };
     })
-    .filter((p) => p !== null) as Array<{ x: number; y: number; value: string }>;
+    .filter((p) => p !== null) as Array<{
+    x: number;
+    y: number;
+    value: string;
+  }>;
 });
 
 const minPoints = computed(() => {
@@ -239,7 +250,11 @@ const currentPointsArray = computed(() => {
         value: temp,
       };
     })
-    .filter((p) => p !== null) as Array<{ x: number; y: number; value: string }>;
+    .filter((p) => p !== null) as Array<{
+    x: number;
+    y: number;
+    value: string;
+  }>;
 });
 
 const currentPoints = computed(() => {
