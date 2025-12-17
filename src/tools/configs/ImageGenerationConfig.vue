@@ -48,6 +48,8 @@
         class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option value="gpt-image-1">GPT Image 1</option>
+        <option value="gpt-image-1.5">GPT Image 1.5</option>
+        <option value="gpt-image-1-mini">GPT Image 1 Mini</option>
       </select>
       <p class="text-xs text-gray-500 mt-1">
         Select which OpenAI image model to use.
@@ -80,7 +82,7 @@ export interface ImageGenerationConfigValue {
   backend: "gemini" | "openai" | "comfyui";
   styleModifier?: string;
   geminiModel?: "gemini-2.5-flash-image" | "gemini-3-pro-image-preview";
-  openaiModel?: "gpt-image-1";
+  openaiModel?: "gpt-image-1" | "gpt-image-1.5" | "gpt-image-1-mini";
 }
 
 const props = defineProps<{
@@ -138,8 +140,10 @@ const handleGeminiModelChange = (event: Event) => {
 };
 
 const handleOpenAIModelChange = (event: Event) => {
-  const openaiModel = (event.target as HTMLSelectElement)
-    .value as "gpt-image-1";
+  const openaiModel = (event.target as HTMLSelectElement).value as
+    | "gpt-image-1"
+    | "gpt-image-1.5"
+    | "gpt-image-1-mini";
   emit("update:value", {
     ...currentValue.value,
     openaiModel,

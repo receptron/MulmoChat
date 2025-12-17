@@ -113,7 +113,7 @@ router.post(
 
     const modelName = (model as string) || "gpt-image-1";
     const shouldIncludeResponseFormat =
-      modelName !== "gpt-image-1" && modelName !== "gpt-image-latest";
+      !modelName.startsWith("gpt-image-1") && modelName !== "gpt-image-latest";
 
     try {
       const hasEditImage = Array.isArray(images) && images.length > 0;
