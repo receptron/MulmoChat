@@ -49,7 +49,7 @@ const setImageStyleExecute = async (
     let config: ImageGenerationConfigValue;
     if (typeof currentConfig === "string") {
       config = {
-        backend: currentConfig as "gemini" | "comfyui",
+        backend: currentConfig as "gemini" | "openai" | "comfyui",
         styleModifier: "",
       };
     } else {

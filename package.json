@@ -28,6 +28,7 @@
     "test:tools:google": "tsx server/tests/test-tools-google.ts",
     "test:tools:ollama": "tsx server/tests/test-tools-ollama.ts",
     "test:image:comfy": "tsx server/tests/test-comfyui.ts",
+    "test:image:openai": "tsx server/tests/test-image-openai.ts",
     "test:functions": "tsx src/tools/models/functions/test-functions.ts",
     "test:spreadsheet": "tsx src/tools/models/spreadsheet-engine/__tests__/run-all-fixtures.ts",
     "test:shapescript": "tsx test-shapescript.ts",

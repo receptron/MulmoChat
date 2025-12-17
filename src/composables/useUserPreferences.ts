@@ -63,7 +63,7 @@ export interface UserPreferencesState {
   modelId: string;
   modelKind: SessionTransportKind;
   textModelId: string;
-  imageGenerationBackend: "gemini" | "comfyui";
+  imageGenerationBackend: "gemini" | "openai" | "comfyui";
   comfyuiModel: string;
   htmlGenerationBackend: "claude" | "gemini";
   pluginConfigs: Record<string, any>;
@@ -141,8 +141,10 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     modelKind: storedModelKind,
     textModelId: getStoredValue(TEXT_MODEL_ID_KEY) || DEFAULT_TEXT_MODEL.rawId,
     imageGenerationBackend:
-      (getStoredValue(IMAGE_GENERATION_BACKEND_KEY) as "gemini" | "comfyui") ||
-      "gemini",
+      (getStoredValue(IMAGE_GENERATION_BACKEND_KEY) as
+        | "gemini"
+        | "openai"
+        | "comfyui") || "gemini",
     comfyuiModel:
       getStoredValue(COMFYUI_MODEL_KEY) || "flux1-schnell-fp8.safetensors",
     htmlGenerationBackend:

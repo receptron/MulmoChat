@@ -51,19 +51,19 @@ export async function generateImageWithBackend(
       "gemini";
 
     // Handle legacy string format vs new object format
-    let backend: "gemini" | "comfyui";
+    let backend: "gemini" | "openai" | "comfyui";
     let styleModifier = "";
     let geminiModel = "gemini-2.5-flash-image";
+    let openaiModel = "gpt-image-1";
 
     if (typeof config === "string") {
       backend = config;
     } else {
-      backend = (config as ImageGenerationConfigValue).backend || "gemini";
-      styleModifier =
-        (config as ImageGenerationConfigValue).styleModifier || "";
-      geminiModel =
-        (config as ImageGenerationConfigValue).geminiModel ||
-        "gemini-2.5-flash-image";
+      const typedConfig = config as ImageGenerationConfigValue;
+      backend = typedConfig.backend || "gemini";
+      styleModifier = typedConfig.styleModifier || "";
+      geminiModel = typedConfig.geminiModel || "gemini-2.5-flash-image";
+      openaiModel = typedConfig.openaiModel || "gpt-image-1";
     }
 
     // Append style modifier to prompt if provided
@@ -74,7 +74,9 @@ export async function generateImageWithBackend(
     const endpoint =
       backend === "comfyui"
         ? "/api/generate-image/comfy"
-        : "/api/generate-image";
+        : backend === "openai"
+          ? "/api/generate-image/openai"
+          : "/api/generate-image";
 
     // Get ComfyUI model if using ComfyUI backend
     const comfyuiModel =
@@ -96,6 +98,11 @@ export async function generateImageWithBackend(
     // Add model parameter for ComfyUI
     if (backend === "comfyui" && comfyuiModel) {
       requestBody.model = comfyuiModel;
+    }
+
+    // Add model parameter for OpenAI
+    if (backend === "openai") {
+      requestBody.model = openaiModel;
     }
 
     const response = await fetch(endpoint, {
@@ -124,7 +131,7 @@ export async function generateImageWithBackend(
         imageData: data.images[0],
       };
     }
-    // Handle Gemini response (single image)
+    // Handle Gemini/OpenAI response (single image)
     else if (data.success && data.imageData) {
       return {
         success: true,
@@ -229,6 +236,7 @@ export const plugin: ToolPlugin<ImageToolData> = {
       backend: "gemini",
       styleModifier: "",
       geminiModel: "gemini-2.5-flash-image",
+      openaiModel: "gpt-image-1",
     } as ImageGenerationConfigValue,
     component: ImageGenerationConfig,
   },

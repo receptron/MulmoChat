@@ -10,10 +10,12 @@
         class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option value="gemini">Google Gemini</option>
+        <option value="openai">OpenAI</option>
         <option value="comfyui">ComfyUI (Local)</option>
       </select>
       <p class="text-xs text-gray-500 mt-1">
-        Choose between cloud-based Gemini or local ComfyUI for image generation.
+        Choose between cloud-based Gemini or OpenAI, or a local ComfyUI workflow
+        for image generation.
       </p>
     </div>
 
@@ -33,6 +35,22 @@
       </select>
       <p class="text-xs text-gray-500 mt-1">
         Select which Gemini model to use for image generation.
+      </p>
+    </div>
+
+    <div v-if="currentValue.backend === 'openai'">
+      <label class="block text-sm font-medium text-gray-700 mb-2">
+        OpenAI Model
+      </label>
+      <select
+        :value="currentValue.openaiModel || 'gpt-image-1'"
+        @change="handleOpenAIModelChange"
+        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="gpt-image-1">GPT Image 1</option>
+      </select>
+      <p class="text-xs text-gray-500 mt-1">
+        Select which OpenAI image model to use.
       </p>
     </div>
 
@@ -59,13 +77,14 @@
 import { computed } from "vue";
 
 export interface ImageGenerationConfigValue {
-  backend: "gemini" | "comfyui";
+  backend: "gemini" | "openai" | "comfyui";
   styleModifier?: string;
   geminiModel?: "gemini-2.5-flash-image" | "gemini-3-pro-image-preview";
+  openaiModel?: "gpt-image-1";
 }
 
 const props = defineProps<{
-  value: "gemini" | "comfyui" | ImageGenerationConfigValue;
+  value: "gemini" | "openai" | "comfyui" | ImageGenerationConfigValue;
 }>();
 
 const emit = defineEmits<{
@@ -79,17 +98,20 @@ const currentValue = computed<ImageGenerationConfigValue>(() => {
       backend: props.value,
       styleModifier: "",
       geminiModel: "gemini-2.5-flash-image",
+      openaiModel: "gpt-image-1",
     };
   }
   return {
     ...props.value,
     geminiModel: props.value.geminiModel || "gemini-2.5-flash-image",
+    openaiModel: props.value.openaiModel || "gpt-image-1",
   };
 });
 
 const handleBackendChange = (event: Event) => {
   const backend = (event.target as HTMLSelectElement).value as
     | "gemini"
+    | "openai"
     | "comfyui";
   emit("update:value", {
     ...currentValue.value,
@@ -112,6 +134,15 @@ const handleGeminiModelChange = (event: Event) => {
   emit("update:value", {
     ...currentValue.value,
     geminiModel,
+  });
+};
+
+const handleOpenAIModelChange = (event: Event) => {
+  const openaiModel = (event.target as HTMLSelectElement)
+    .value as "gpt-image-1";
+  emit("update:value", {
+    ...currentValue.value,
+    openaiModel,
   });
 };
 </script>
