@@ -112,7 +112,6 @@ export function useGoogleLiveSession(
       }
 
       data = JSON.parse(jsonString);
-      console.log("[Google Live] Received message:", data);
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
       handlers.onError?.(error);
@@ -266,8 +265,6 @@ export function useGoogleLiveSession(
     tools: any[],
     modelId: string,
   ) => {
-    console.log("[Google Live] WebSocket opened, model:", modelId);
-
     // Convert tools to Google format
     const googleTools = convertToGoogleToolFormat(tools);
 
@@ -300,26 +297,15 @@ export function useGoogleLiveSession(
       setupMessage.setup.tools = [{ functionDeclarations: googleTools }];
     }
 
-    console.log("[Google Live] Sending setup message:", setupMessage);
     sendWebSocketMessage(setupMessage);
 
     // Now that WebSocket is open, start audio capture
     if (googleLive.localStream && googleLive.audioManager) {
-      console.log("[Google Live] Starting audio capture");
-      let audioChunkCount = 0;
       googleLive.audioManager.startCapture(
         googleLive.localStream,
         (pcmChunk) => {
           // Only send if WebSocket is still open
           if (googleLive.ws?.readyState === WebSocket.OPEN) {
-            audioChunkCount++;
-            if (audioChunkCount % 50 === 1) {
-              console.log(
-                "[Google Live] Sending audio chunks (count:",
-                audioChunkCount,
-                ")",
-              );
-            }
             sendWebSocketMessage({
               realtimeInput: {
                 mediaChunks: [
@@ -419,7 +405,6 @@ export function useGoogleLiveSession(
         }) ?? DEFAULT_GOOGLE_LIVE_MODEL_ID;
 
       // Request microphone access FIRST (before WebSocket)
-      console.log("[Google Live] Requesting microphone access...");
       googleLive.localStream =
         await globalThis.navigator.mediaDevices.getUserMedia({
           audio: {
@@ -429,7 +414,6 @@ export function useGoogleLiveSession(
             noiseSuppression: true,
           },
         });
-      console.log("[Google Live] Microphone access granted");
 
       // Initialize audio stream manager
       googleLive.audioManager = new AudioStreamManager();
