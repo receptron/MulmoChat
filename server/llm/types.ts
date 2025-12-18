@@ -44,6 +44,7 @@ export interface ToolCall {
   id: string;
   name: string;
   arguments: string;
+  thoughtSignature?: string; // Gemini 3 thought signature (required for Google provider)
 }
 
 export interface TextGenerationResult {

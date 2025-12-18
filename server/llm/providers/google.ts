@@ -11,8 +11,14 @@ type GeminiRole = "user" | "model";
 
 type GeminiPart =
   | { text: string }
-  | { functionCall: { name: string; args: Record<string, unknown> } }
-  | { functionResponse: { name: string; response: Record<string, unknown> } };
+  | {
+      functionCall: { name: string; args: Record<string, unknown> };
+      thoughtSignature?: string; // Gemini 3 thought signature
+    }
+  | {
+      functionResponse: { name: string; response: Record<string, unknown> };
+      thoughtSignature?: string; // Gemini 3 thought signature
+    };
 
 type GeminiContent = {
   role: GeminiRole;
@@ -24,20 +30,39 @@ function toGeminiRole(role: TextMessage["role"]): GeminiRole {
 }
 
 function toGeminiMessages(messages: TextMessage[]): GeminiContent[] {
-  return messages.map((message) => {
+  return messages.map((message, index) => {
     const role = toGeminiRole(message.role);
     const parts: GeminiPart[] = [];
 
     // Handle tool result messages
     if (message.role === "tool" && message.tool_call_id) {
-      // Extract function name from the assistant's tool call
-      // We need to find the corresponding tool call to get the function name
-      // For now, we'll include it in the response
+      // Find the corresponding tool call in previous assistant messages to get thought signature
+      let thoughtSignature: string | undefined;
+      let functionName = message.tool_call_id; // Default to tool_call_id
+
+      // Search backwards for the assistant message with matching tool call
+      for (let i = index - 1; i >= 0; i--) {
+        const prevMsg = messages[i];
+        if (prevMsg.role === "assistant" && prevMsg.tool_calls) {
+          const matchingToolCall = prevMsg.tool_calls.find(
+            (tc) => tc.id === message.tool_call_id,
+          );
+          if (matchingToolCall) {
+            functionName = matchingToolCall.name;
+            thoughtSignature = matchingToolCall.thoughtSignature;
+            break;
+          }
+        }
+      }
+
+      // Build function response with thought signature if present (required for Gemini 3)
       parts.push({
         functionResponse: {
-          name: message.tool_call_id, // This should be the function name
+          name: functionName,
           response: { result: message.content },
         },
+        // Include thought signature if found (critical for Gemini 3 function calling)
+        ...(thoughtSignature ? { thoughtSignature } : {}),
       });
     }
     // Handle assistant messages with tool calls
@@ -46,11 +71,15 @@ function toGeminiMessages(messages: TextMessage[]): GeminiContent[] {
         parts.push({ text: message.content });
       }
       for (const toolCall of message.tool_calls) {
+        // Include thought signature if present (for preserving in conversation history)
         parts.push({
           functionCall: {
             name: toolCall.name,
             args: JSON.parse(toolCall.arguments),
           },
+          ...(toolCall.thoughtSignature
+            ? { thoughtSignature: toolCall.thoughtSignature }
+            : {}),
         });
       }
     }
@@ -90,6 +119,7 @@ function extractToolCallsFromCandidates(candidates: unknown): ToolCall[] {
         content?: {
           parts?: Array<{
             functionCall?: { name: string; args: Record<string, unknown> };
+            thoughtSignature?: string;
           }>;
         };
       }
@@ -99,11 +129,18 @@ function extractToolCallsFromCandidates(candidates: unknown): ToolCall[] {
 
     for (const part of parts) {
       if (part?.functionCall) {
-        toolCalls.push({
+        const toolCall: ToolCall = {
           id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: part.functionCall.name,
           arguments: JSON.stringify(part.functionCall.args),
-        });
+        };
+
+        // Include thought signature if present (required for Gemini 3)
+        if (part.thoughtSignature) {
+          toolCall.thoughtSignature = part.thoughtSignature;
+        }
+
+        toolCalls.push(toolCall);
       }
     }
   }
@@ -188,6 +225,9 @@ export async function generateWithGoogle(
     requestBody.config = config;
   }
 
+  // generateContent automatically handles thought signatures when full conversation
+  // history is provided (SDK v1.33.0+). Thought signatures are preserved in the
+  // response and automatically validated on subsequent requests.
   const response = await ai.models.generateContent(requestBody as any);
 
   const text = extractTextFromCandidates(response.candidates) ?? "";
