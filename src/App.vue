@@ -290,20 +290,20 @@ const supportsAudioOutput = computed(
   () => capabilities.value.supportsAudioOutput,
 );
 
-// Status line showing Model / Mode / Language
+// Status line showing Model / Mode / Language / Image Model
 const statusLine = computed(() => {
   // Get model name
   let modelName = "Unknown";
   if (userPreferences.modelKind === "voice-realtime") {
     const model = REALTIME_MODELS.find((m) => m.id === userPreferences.modelId);
     const label = model?.label || "GPT Realtime";
-    modelName = `Voice / ${label}`;
+    modelName = label;
   } else if (userPreferences.modelKind === "voice-google-live") {
     const model = GOOGLE_LIVE_MODELS.find(
       (m) => m.id === userPreferences.modelId,
     );
     const label = model?.label || "Gemini Live";
-    modelName = `Voice / ${label}`;
+    modelName = label;
   } else if (userPreferences.modelKind === "text-rest") {
     // For text models, extract the model name from textModelId
     const textModelId = userPreferences.textModelId;
@@ -313,13 +313,49 @@ const statusLine = computed(() => {
         const provider = parts[0];
         const model = parts[1];
         const providerLabel = PROVIDER_LABELS[provider] || provider;
-        modelName = `Text / ${providerLabel} ${model}`;
+        modelName = `${providerLabel} ${model}`;
       } else {
         // Handle case where textModelId doesn't have the expected format
-        modelName = `Text / ${textModelId}`;
+        modelName = textModelId;
       }
     } else {
       modelName = "Text Mode";
+    }
+  }
+
+  // Get image model name
+  let imageModelName = "Unknown";
+  const imageConfig = userPreferences.pluginConfigs.imageGenerationBackend;
+  if (typeof imageConfig === "string") {
+    // Legacy format - just the backend name
+    if (imageConfig === "gemini") {
+      imageModelName = "Gemini 2.5 Flash Image";
+    } else if (imageConfig === "openai") {
+      imageModelName = "GPT Image 1";
+    } else if (imageConfig === "comfyui") {
+      imageModelName = "ComfyUI";
+    }
+  } else if (imageConfig && typeof imageConfig === "object") {
+    // New format with backend and model
+    const backend = imageConfig.backend;
+    if (backend === "gemini") {
+      const geminiModel = imageConfig.geminiModel || "gemini-2.5-flash-image";
+      if (geminiModel === "gemini-3-pro-image-preview") {
+        imageModelName = "Gemini 3 Pro Image";
+      } else {
+        imageModelName = "Gemini 2.5 Flash Image";
+      }
+    } else if (backend === "openai") {
+      const openaiModel = imageConfig.openaiModel || "gpt-image-1";
+      if (openaiModel === "gpt-image-1.5") {
+        imageModelName = "GPT Image 1.5";
+      } else if (openaiModel === "gpt-image-1-mini") {
+        imageModelName = "GPT Image 1 Mini";
+      } else {
+        imageModelName = "GPT Image 1";
+      }
+    } else if (backend === "comfyui") {
+      imageModelName = "ComfyUI";
     }
   }
 
@@ -330,7 +366,7 @@ const statusLine = computed(() => {
   // Get language name
   const languageName = getLanguageName(userPreferences.userLanguage);
 
-  return `${modelName} / ${roleName} / ${languageName}`;
+  return `${modelName} / ${imageModelName} / ${roleName} / ${languageName}`;
 });
 
 async function loadTextProviders(): Promise<void> {
