@@ -73,6 +73,13 @@ Respond ONLY with valid JSON. No additional text or explanation.`;
  */
 export const LLM_MODELS: Record<string, Omit<LLMConfig, "apiKey">> = {
   // OpenAI Models (Newest First)
+  "gpt-5.2": {
+    provider: "openai",
+    model: "gpt-5.2",
+    temperature: 0.0,
+    maxTokens: 4000,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  },
   "gpt-5.1": {
     provider: "openai",
     model: "gpt-5.1",
