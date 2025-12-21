@@ -62,7 +62,7 @@ const toolDefinition = {
             imagePrompt: {
               type: "string",
               description:
-                "The optional prompt to be used to generate an image. Typically 50 to 70 words.",
+                "Optional prompt to be used to generate an image. Typically 50 to 70 words. Do not specify the image style.",
             },
           },
           required: ["text"],
@@ -89,15 +89,20 @@ const mulmocast = async (
   const imageRefs: string[] = [blankImageBase64];
 
   // Generate beat objects with UUIDs first
-  const beatsWithIds = beats.map((beat: { text: string }) => ({
-    id: uuidv4(),
-    speaker: "Presenter",
-    text: beat.text,
-  }));
+  const beatsWithIds = beats.map(
+    (beat: { text: string; imagePrompt: string }) => ({
+      id: uuidv4(),
+      speaker: "Presenter",
+      text: beat.text,
+      imagePrompt: beat.imagePrompt,
+    }),
+  );
 
   // Generate images for each beat concurrently
   const imagePromises = beatsWithIds.map(async (beat) => {
-    const prompt = `generate image appropriate for the text. <text>${beat.text}</text>. Let the art convey the story and emotions without text. Use the last image for the aspect ratio.`;
+    const prompt =
+      beat.imagePrompt ||
+      `generate image appropriate for the text. <text>${beat.text}</text>. Let the art convey the story and emotions without text. Use the last image for the aspect ratio.`;
     if (dryRun) {
       await new Promise((resolve) => setTimeout(resolve, 5000));
       return {
