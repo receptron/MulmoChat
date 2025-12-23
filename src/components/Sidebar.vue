@@ -371,6 +371,25 @@
           </div>
 
           <div>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                :checked="autoGenerateMulmoMovies"
+                @change="
+                  $emit(
+                    'update:autoGenerateMulmoMovies',
+                    ($event.target as HTMLInputElement).checked,
+                  )
+                "
+                class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+              />
+              <span class="text-sm font-medium text-gray-700">
+                Auto-generate movies for presentations
+              </span>
+            </label>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Custom Instructions
             </label>
@@ -533,6 +552,7 @@ const props = defineProps<{
   supportsAudioInput: boolean;
   supportsAudioOutput: boolean;
   pluginConfigs: Record<string, any>;
+  autoGenerateMulmoMovies: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -552,6 +572,7 @@ const emit = defineEmits<{
   "update:modelKind": [value: SessionTransportKind];
   "update:textModelId": [value: string];
   "update:pluginConfigs": [value: Record<string, any>];
+  "update:autoGenerateMulmoMovies": [value: boolean];
   uploadFiles: [results: ToolResult[]];
 }>();
 

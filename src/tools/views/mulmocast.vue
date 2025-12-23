@@ -36,6 +36,26 @@
               Script
             </button>
             <button
+              v-if="!moviePath && !isGeneratingMovie && autoGenerateMovies === false"
+              @click="triggerMovieGeneration"
+              style="
+                padding: 0.5em 1em;
+                background-color: #ff9800;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.9em;
+                display: flex;
+                align-items: center;
+                gap: 0.5em;
+              "
+            >
+              <span class="material-icons" style="font-size: 1.2em">movie</span>
+              Generate Movie
+            </button>
+            <button
+              v-else
               @click="downloadMovie"
               :disabled="!moviePath"
               :style="{
@@ -133,6 +153,7 @@ import type { MulmocastToolData } from "../models/mulmocast";
 const props = defineProps<{
   selectedResult: ToolResult<MulmocastToolData> | null;
   setMute?: (muted: boolean) => void;
+  autoGenerateMovies?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -167,7 +188,56 @@ onUnmounted(() => {
   }
 });
 
-// Generate movie when component mounts with mulmoScript
+// Movie generation function (reusable for both auto and manual trigger)
+async function triggerMovieGeneration() {
+  const mulmoScript = props.selectedResult?.data?.mulmoScript;
+  if (!mulmoScript || isGeneratingMovie.value || !props.selectedResult) return;
+
+  isGeneratingMovie.value = true;
+  movieError.value = null;
+
+  try {
+    const uuid = uuidv4();
+    const movieResponse = await fetch("/api/generate-movie", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        mulmoScript,
+        uuid,
+        images: props.selectedResult?.data?.images || {},
+      }),
+    });
+
+    if (movieResponse.ok) {
+      const movieResult = await movieResponse.json();
+
+      // Update the result with moviePath and notify parent
+      const updatedResult: ToolResult = {
+        ...props.selectedResult,
+        data: {
+          ...props.selectedResult.data,
+          moviePath: movieResult.outputPath,
+        },
+      };
+      emit("updateResult", updatedResult);
+    } else {
+      const error = await movieResponse.json();
+      movieError.value =
+        error.details || error.error || "Failed to generate movie";
+      console.error("Movie generation failed:", movieError.value);
+    }
+  } catch (error) {
+    movieError.value =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("Movie generation exception:", error);
+  } finally {
+    isGeneratingMovie.value = false;
+  }
+}
+
+// Auto-generate movie when component mounts with mulmoScript (if enabled)
 watch(
   () => props.selectedResult?.data?.mulmoScript,
   async (mulmoScript) => {
@@ -175,52 +245,12 @@ watch(
       !mulmoScript ||
       props.selectedResult?.data?.moviePath ||
       isGeneratingMovie.value ||
-      !props.selectedResult
+      !props.selectedResult ||
+      props.autoGenerateMovies === false
     )
       return;
 
-    isGeneratingMovie.value = true;
-    movieError.value = null;
-
-    try {
-      const uuid = uuidv4();
-      const movieResponse = await fetch("/api/generate-movie", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mulmoScript,
-          uuid,
-          images: props.selectedResult?.data?.images || {},
-        }),
-      });
-
-      if (movieResponse.ok) {
-        const movieResult = await movieResponse.json();
-
-        // Update the result with moviePath and notify parent
-        const updatedResult: ToolResult = {
-          ...props.selectedResult,
-          data: {
-            ...props.selectedResult.data,
-            moviePath: movieResult.outputPath,
-          },
-        };
-        emit("updateResult", updatedResult);
-      } else {
-        const error = await movieResponse.json();
-        movieError.value =
-          error.details || error.error || "Failed to generate movie";
-        console.error("Movie generation failed:", movieError.value);
-      }
-    } catch (error) {
-      movieError.value =
-        error instanceof Error ? error.message : "Unknown error";
-      console.error("Movie generation exception:", error);
-    } finally {
-      isGeneratingMovie.value = false;
-    }
+    await triggerMovieGeneration();
   },
   { immediate: true },
 );
