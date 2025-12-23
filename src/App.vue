@@ -55,7 +55,6 @@
         :supports-audio-input="supportsAudioInput"
         :supports-audio-output="supportsAudioOutput"
         :plugin-configs="userPreferences.pluginConfigs"
-        :auto-generate-mulmo-movies="userPreferences.autoGenerateMulmoMovies"
         @start-chat="startChat"
         @stop-chat="stopChat"
         @set-mute="setMute"
@@ -76,9 +75,6 @@
         @update:model-kind="userPreferences.modelKind = $event"
         @update:text-model-id="userPreferences.textModelId = $event"
         @update:plugin-configs="userPreferences.pluginConfigs = $event"
-        @update:auto-generate-mulmo-movies="
-          userPreferences.autoGenerateMulmoMovies = $event
-        "
         @upload-files="handleUploadFiles"
       />
 
@@ -96,7 +92,7 @@
             :send-text-message="sendTextMessage"
             :google-map-key="startResponse?.googleMapKey || null"
             :set-mute="setMute"
-            :auto-generate-movies="userPreferences.autoGenerateMulmoMovies"
+            :plugin-configs="userPreferences.pluginConfigs"
             @update-result="handleUpdateResult"
           />
           <div

@@ -1,6 +1,7 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import MulmocastView from "../views/mulmocast.vue";
 import MulmocastPreview from "../previews/mulmocast.vue";
+import MulmocastConfig from "../configs/MulmocastConfig.vue";
 import type { MulmoScript } from "mulmocast";
 import { v4 as uuidv4 } from "uuid";
 import { generateImageWithBackend } from "./generateImage";
@@ -196,4 +197,9 @@ export const plugin: ToolPlugin = {
   viewComponent: MulmocastView,
   previewComponent: MulmocastPreview,
   systemPrompt: `Call the ${toolName} API to display presentations when the user is asking for a presentation.`,
+  config: {
+    key: "mulmocast",
+    defaultValue: true,
+    component: MulmocastConfig,
+  },
 };

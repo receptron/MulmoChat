@@ -36,7 +36,9 @@
               Script
             </button>
             <button
-              v-if="!moviePath && !isGeneratingMovie && autoGenerateMovies === false"
+              v-if="
+                !moviePath && !isGeneratingMovie && autoGenerateMovies === false
+              "
               @click="triggerMovieGeneration"
               style="
                 padding: 0.5em 1em;
@@ -153,8 +155,13 @@ import type { MulmocastToolData } from "../models/mulmocast";
 const props = defineProps<{
   selectedResult: ToolResult<MulmocastToolData> | null;
   setMute?: (muted: boolean) => void;
-  autoGenerateMovies?: boolean;
+  pluginConfigs?: Record<string, any>;
 }>();
+
+// Extract mulmocast-specific config
+const autoGenerateMovies = computed(
+  () => props.pluginConfigs?.mulmocast ?? true,
+);
 
 const emit = defineEmits<{
   updateResult: [result: ToolResult];
@@ -229,8 +236,7 @@ async function triggerMovieGeneration() {
       console.error("Movie generation failed:", movieError.value);
     }
   } catch (error) {
-    movieError.value =
-      error instanceof Error ? error.message : "Unknown error";
+    movieError.value = error instanceof Error ? error.message : "Unknown error";
     console.error("Movie generation exception:", error);
   } finally {
     isGeneratingMovie.value = false;
@@ -246,7 +252,7 @@ watch(
       props.selectedResult?.data?.moviePath ||
       isGeneratingMovie.value ||
       !props.selectedResult ||
-      props.autoGenerateMovies === false
+      autoGenerateMovies.value === false
     )
       return;
 

@@ -28,7 +28,6 @@ const IMAGE_GENERATION_BACKEND_KEY = "image_generation_backend_v1";
 const COMFYUI_MODEL_KEY = "comfyui_model_v1";
 const HTML_GENERATION_BACKEND_KEY = "html_generation_backend_v1";
 const PLUGIN_CONFIGS_KEY = "plugin_configs_v1";
-const AUTO_GENERATE_MULMO_MOVIES_KEY = "auto_generate_mulmo_movies_v1";
 
 interface StorageLike {
   getItem(key: string): string | null;
@@ -68,7 +67,6 @@ export interface UserPreferencesState {
   comfyuiModel: string;
   htmlGenerationBackend: "claude" | "gemini";
   pluginConfigs: Record<string, any>;
-  autoGenerateMulmoMovies: boolean;
 }
 
 export interface UseUserPreferencesReturn {
@@ -153,8 +151,6 @@ export function useUserPreferences(): UseUserPreferencesReturn {
       (getStoredValue(HTML_GENERATION_BACKEND_KEY) as "claude" | "gemini") ||
       "claude",
     pluginConfigs: migrateOldConfigs(),
-    autoGenerateMulmoMovies:
-      getStoredValue(AUTO_GENERATE_MULMO_MOVIES_KEY) !== "false",
   });
 
   watch(
@@ -271,13 +267,6 @@ export function useUserPreferences(): UseUserPreferencesReturn {
       setStoredObject(PLUGIN_CONFIGS_KEY, val);
     },
     { deep: true },
-  );
-
-  watch(
-    () => state.autoGenerateMulmoMovies,
-    (val) => {
-      setStoredValue(AUTO_GENERATE_MULMO_MOVIES_KEY, String(val));
-    },
   );
 
   const buildInstructions = ({ startResponse }: BuildContext) => {
