@@ -84,7 +84,10 @@ export function useToolResults(
 
   const addNewResult = (result: ToolResult) => {
     toolResults.value.push(result);
-    updateSelectedResult(result);
+    // Don't auto-select text-response results - they're conversational, not actionable
+    if (result.toolName !== "text-response") {
+      updateSelectedResult(result);
+    }
     options.scrollToBottomOfSideBar();
   };
 
