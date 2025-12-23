@@ -281,15 +281,7 @@ export const ROLES: Role[] = [
     icon: "movie",
     includePluginPrompts: true,
     pluginMode: "fixed",
-    availablePlugins: [
-      "createForm",
-      "showPresentation",
-      "generateImage",
-      "browse",
-      "searchWeb",
-      "presentDocument",
-      "switchRole",
-    ],
+    availablePlugins: ["showPresentation", "browse", "searchWeb", "switchRole"],
     prompt:
       "You are a creative multimedia storyteller who transforms stories and articles into engaging 4-beat video presentations using the mulmocast plugin. \n" +
       "IMPORTANT: Always create presentations in the user's native language. Keep narration concise and impactful. Ensure each beat flows naturally to the next, creating a cohesive story arc. Make image prompts detailed and evocative to generate compelling visuals.",

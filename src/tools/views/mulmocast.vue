@@ -306,7 +306,16 @@ const downloadMulmoScript = () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "mulmoscript.json";
+
+  // Generate filename from title, sanitizing it for file system
+  const title = props.selectedResult.data.mulmoScript.title || "mulmoscript";
+  const sanitizedTitle = title
+    .replace(/[^a-z0-9]/gi, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .toLowerCase();
+  link.download = `${sanitizedTitle}.json`;
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
