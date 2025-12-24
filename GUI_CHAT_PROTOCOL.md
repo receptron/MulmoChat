@@ -32,36 +32,93 @@ From the LLM's perspective, GUI Chat Protocol looks identical to standard functi
 
 ## How It Works
 
-### Tool Plugin Architecture
+### Enhanced Tool Calls
 
-The protocol centers around a **plugin system** where each plugin represents a capability that produces visual or interactive output:
+GUI Chat Protocol is **not a new architecture**—it's a simple enhancement to existing tool call mechanisms. The difference is subtle but powerful:
 
-1. **Tool Definition**: Each plugin exposes a standard function definition (compatible with OpenAI, Claude, Gemini, etc.)
-   - Name, description, parameters schema
-   - From LLM's view: just another callable function
+**Traditional Tool Call:**
+```
+Tool executes → Returns text/data to LLM → LLM incorporates it in response
+```
 
-2. **Execution Logic**: When the LLM calls the tool, the plugin executes its logic
-   - May call external APIs (image generation, search, maps)
-   - May perform computations (game logic, data processing)
-   - Returns structured data describing what to render
+**Enhanced Tool Call (GUI Chat Protocol):**
+```
+Tool executes → Returns data to LLM + additional typed data for GUI →
+  - LLM receives text response (continues conversation normally)
+  - UI receives typed data (renders appropriate visual component)
+```
 
-3. **GUI Component**: Each plugin has an associated UI component
-   - Receives the execution result data
-   - Renders interactive or visual content
-   - May support user interactions that feed back into the conversation
+### The Enhancement: Typed Return Data
 
-4. **Result Integration**: The tool result is integrated into the chat flow
-   - Displayed as a visual card or embedded component
-   - Can be referenced in subsequent conversation
-   - May update in place for iterative operations
+When a tool executes, it returns **two things**:
 
-### Example Plugins
+1. **Response to LLM**: Text or structured data that the LLM needs to continue the conversation
+2. **Additional typed data**: Structured data with a specific type identifier (e.g., "image", "map", "game")
 
-- **Image Generation**: LLM calls `generateImage(prompt)` → UI displays the generated image
-- **Web Browse**: LLM calls `browse(url)` → UI shows webpage content with screenshots
-- **Map**: LLM calls `map(location)` → UI renders interactive map centered on location
-- **Game**: LLM calls `othello(move)` → UI displays game board and accepts user moves
-- **Music**: LLM calls `music(query)` → UI shows music player with playback controls
+The **type** of the additional data determines which visual component renders it:
+
+- Type `"image"` → Image viewer component
+- Type `"map"` → Map component
+- Type `"browse"` → Web content viewer
+- Type `"game"` → Game board component
+- Type `"music"` → Music player component
+
+Each type is associated with:
+- **View component**: Full-size interactive display for the main canvas
+- **Preview component**: Compact thumbnail for the sidebar/chat history
+
+### Why This Makes Adoption Easy
+
+Because this is just an enhancement to existing tool calls, chat applications like ChatGPT can easily add GUI capabilities:
+
+1. **Keep existing tools unchanged**: Current text-based tools continue to work
+2. **Add typed return data**: Enhance specific tools to return additional GUI data
+3. **Register view/preview components**: Map each data type to a rendering component
+4. **No LLM changes needed**: The LLM still just calls functions and gets text responses
+
+The flow remains standard: tool results are always sent back to the LLM as function outputs (never displayed directly to the user). The enhancement is that when a tool result includes typed GUI data, the chat interface additionally renders the appropriate visual component alongside the conversation.
+
+### Examples
+
+**Image Generation Tool:**
+```javascript
+// Tool executes
+const result = await generateImage(prompt);
+
+// Returns to LLM
+return {
+  llmResponse: "I've generated an image based on your prompt.",
+
+  // Additional typed data for GUI
+  guiData: {
+    type: "image",
+    url: result.imageUrl,
+    prompt: prompt,
+    dimensions: { width: 1024, height: 1024 }
+  }
+};
+```
+
+**Map Tool:**
+```javascript
+// Tool executes
+const location = await geocode(address);
+
+// Returns to LLM
+return {
+  llmResponse: `Found location: ${location.name} at coordinates (${location.lat}, ${location.lng})`,
+
+  // Additional typed data for GUI
+  guiData: {
+    type: "map",
+    center: { lat: location.lat, lng: location.lng },
+    zoom: 15,
+    markers: [{ position: location, label: location.name }]
+  }
+};
+```
+
+The LLM sees only the text response. The UI receives the typed data and renders the map component.
 
 ## LLM Agnostic Design
 
