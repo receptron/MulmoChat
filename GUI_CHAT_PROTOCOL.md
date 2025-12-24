@@ -152,7 +152,28 @@ return {
 
   instructions: "Wait for the user to fill out and submit the form. They will send responses as JSON."
 };
+
+// User fills out the form in GUI and clicks submit
+// The form component sends the responses back as a text message:
 ```
+
+**When user submits the form, it's sent to the LLM as a text message:**
+```json
+{
+  "formSubmission": {
+    "formTitle": "Recipe Preferences",
+    "responses": {
+      "dish": "Spaghetti Carbonara",
+      "servings": 4,
+      "skillLevel": "Intermediate",
+      "time": "1 hour",
+      "dietary": "No dairy"
+    }
+  }
+}
+```
+
+The LLM receives this as regular user input and can parse the JSON to process the form data.
 
 **Document Presentation Tool:**
 ```javascript
