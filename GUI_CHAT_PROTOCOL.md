@@ -120,6 +120,85 @@ return {
 
 The LLM sees only the text response. The UI receives the typed data and renders the map component.
 
+### Bidirectional Interaction
+
+GUI Chat Protocol is not just about displaying output—it's also about collecting structured input from users. Tools can be designed to gather user input through GUI forms, which are then sent back to the LLM as structured data.
+
+**Form Input Tool:**
+```javascript
+// LLM calls createForm to collect recipe preferences
+createForm({
+  title: "Recipe Preferences",
+  fields: [
+    { id: "dish", type: "text", label: "What dish do you want to cook?", required: true },
+    { id: "servings", type: "number", label: "Number of servings", defaultValue: 4 },
+    { id: "skillLevel", type: "radio", label: "Your cooking experience",
+      choices: ["Beginner", "Intermediate", "Advanced"], required: true },
+    { id: "time", type: "dropdown", label: "Available time",
+      choices: ["15 min", "30 min", "1 hour", "2 hours"], required: true },
+    { id: "dietary", type: "textarea", label: "Dietary restrictions", required: false }
+  ]
+});
+
+// Returns to LLM
+return {
+  llmResponse: "Form created with 5 fields: Recipe Preferences",
+
+  guiData: {
+    type: "form",
+    title: "Recipe Preferences",
+    fields: [/* field definitions */]
+  },
+
+  instructions: "Wait for the user to fill out and submit the form. They will send responses as JSON."
+};
+```
+
+**Document Presentation Tool:**
+```javascript
+// After receiving form data, LLM creates a recipe document
+presentDocument({
+  title: "Spaghetti Carbonara Recipe",
+  markdown: `
+# Spaghetti Carbonara
+
+![A plate of creamy spaghetti carbonara](__too_be_replaced_image_path__)
+
+## Ingredients (4 servings)
+- 400g spaghetti
+- 200g pancetta
+- 4 eggs
+...
+
+## Instructions
+
+### Step 1: Boil the pasta
+![Pasta boiling in a large pot](__too_be_replaced_image_path__)
+
+Cook spaghetti in salted water...
+  `
+});
+
+// Returns to LLM
+return {
+  llmResponse: "Created markdown document: Spaghetti Carbonara Recipe",
+
+  guiData: {
+    type: "document",
+    markdown: "# Spaghetti Carbonara\n\n![...](generated-image-url.png)..." // with images generated
+  },
+
+  instructions: "Acknowledge that the document has been created and is displayed to the user."
+};
+```
+
+This bidirectional capability enables workflows like:
+1. **Guided tutorials**: Collect user skill level → present appropriate content
+2. **Form-based interactions**: Gather structured input → process and display results
+3. **Interactive applications**: User submits form → LLM analyzes → displays visualization
+
+The key insight: GUI components can both **present information to** and **collect information from** users, all through the same enhanced tool call mechanism.
+
 ## LLM Agnostic Design
 
 Because GUI Chat Protocol builds on standard tool calling, it works with any LLM that supports function calling:
