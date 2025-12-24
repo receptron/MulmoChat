@@ -157,7 +157,7 @@ return {
 // The form component sends the responses back as a text message:
 ```
 
-**When user submits the form, it's sent to the LLM as a text message:**
+**When user submits the form, it's sent to the LLM as a text JSON message:**
 ```json
 {
   "formSubmission": {
@@ -234,17 +234,6 @@ The protocol is **model-agnostic** because:
 2. Tool invocation follows standard patterns
 3. Results are returned as structured JSON
 4. No special model capabilities required beyond basic function calling
-
-## Relationship to MCP
-
-[Model Context Protocol (MCP)](https://modelcontextprotocol.io/) provides a standardized way to connect LLMs to external data sources and tools. GUI Chat Protocol extends this concept by:
-
-1. **Building on MCP foundations**: Uses similar tool definition and invocation patterns
-2. **Adding visual layer**: Tool results trigger GUI rendering, not just text
-3. **Enabling interactivity**: Components can accept user input and feed back to LLM
-4. **Multi-modal output**: Beyond text, supports images, audio, video, interactive elements
-
-You can think of GUI Chat Protocol as "MCP with a graphical user interface layer."
 
 ## Benefits
 
