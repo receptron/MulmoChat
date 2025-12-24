@@ -272,6 +272,113 @@ You can think of GUI Chat Protocol as "MCP with a graphical user interface layer
 4. **Content Creation**: AI helps create podcasts, videos, presentations with live previews
 5. **Productivity**: AI performs tasks with rich feedback (calendar views, document previews, etc.)
 
+## Composable Roles Without Code
+
+One of the most powerful aspects of GUI Chat Protocol is the ability to create specialized AI assistants—called **roles**—**without writing any custom code**. Roles are different behavioral modes of the same chat application, each defined purely by composing existing tools with a system prompt.
+
+### What is a Role?
+
+A **role** is a complete AI application defined by just two things:
+1. **Available tools**: Which tools the LLM can call
+2. **System prompt**: Instructions describing the role's behavior, personality, and workflow
+
+That's it. No custom code, components, or logic required. The same generic chat interface becomes a completely different application simply by changing its role.
+
+### Example: Recipe Guide Role
+
+The Recipe Guide role is defined purely through configuration:
+
+**Available Tools:**
+- `createForm` - Collect cooking preferences from user
+- `presentDocument` - Display recipe with embedded images
+- `generateImage` - Generate step-by-step cooking images
+- `browse` - Look up recipes online
+- `searchWeb` - Search for cooking techniques
+- `scrollToAnchor` - Navigate to specific recipe steps
+
+**System Prompt:**
+```
+You are an expert cooking instructor who guides users through recipes step-by-step.
+
+1. GREETING: Warmly welcome the user
+2. COLLECT REQUIREMENTS: Create a form asking for dish name, servings, skill level, time
+3. CREATE RECIPE: Use presentDocument to show ingredients, equipment, and numbered steps
+   with embedded images
+4. HANDS-FREE ASSISTANCE: When asked to read a step, call scrollToAnchor then speak it aloud
+```
+
+That's it! No custom code required. The same generic chat application operating in different roles:
+- **Trip Planner role**: `createForm` + `presentDocument` + `map` + `browse`
+- **Clinic Receptionist role**: `createForm` + `presentDocument` + `takePhoto`
+- **Tutor role**: `putQuestions` + `presentDocument` + `generateImage` + `createForm`
+- **Weather Reporter role**: `createForm` + `fetchWeather` + `showPresentation` + `generateImage`
+- **Game Companion role**: `playOthello` + `playGo` + `putQuestions` + `generateHtml`
+- **Office Assistant role**: `presentDocument` + `presentSpreadsheet` + `showPresentation`
+
+### The Power of Role Composition
+
+Each role is simply:
+1. **Tool Selection**: Choose which tools to enable from the available set
+2. **System Prompt**: Describe the behavior, workflow, and personality
+3. **No Code**: The generic GUI Chat Protocol infrastructure handles everything else
+
+This role-based architecture enables:
+- **Rapid prototyping**: Create new AI applications in minutes by defining a new role
+- **Easy customization**: Change behavior by editing text configuration, not code
+- **Modular tools**: Same tools work across different roles
+- **User empowerment**: Non-programmers can create specialized AI assistants
+- **Role switching**: LLM or user can switch between roles dynamically (see below)
+
+The chat application itself is **completely generic**—it just knows how to:
+- Execute tools and display their typed GUI data
+- Send user inputs (text, form submissions) to the LLM
+- Render view/preview components for each data type
+
+All application-specific logic lives in the **role definition** (system prompt + tool selection), not in custom application code. The role IS the application.
+
+### Dynamic Role Switching
+
+Because roles are just configuration data, the LLM can **switch between applications dynamically** via a function call:
+
+```javascript
+// The LLM can call switchRole to change its behavior
+switchRole({ role: "recipeGuide" })
+// → Reconnects with Recipe Guide's tools and system prompt
+
+switchRole({ role: "tutor" })
+// → Reconnects as an adaptive tutor
+
+switchRole({ role: "listener" })
+// → Becomes a silent listener that only generates images
+```
+
+This enables **meta-level capabilities**:
+- **Adaptive behavior**: LLM decides which role fits the user's needs
+- **Seamless transitions**: User asks for trip planning → LLM switches to Trip Planner role
+- **Multi-phase workflows**: Start as General assistant → switch to Tutor when teaching → switch to Game for practice
+- **User-driven**: User can explicitly request role changes ("switch to recipe guide mode")
+
+### Dynamic Role Creation (Potential)
+
+Since roles are defined by data (tool list + system prompt), it's theoretically possible to:
+
+1. **LLM generates new roles on-the-fly**:
+   ```javascript
+   createRole({
+     name: "Fitness Coach",
+     tools: ["createForm", "presentDocument", "generateImage", "browse"],
+     systemPrompt: "You are a fitness coach who creates personalized workout plans..."
+   })
+   ```
+
+2. **User-customized roles**: User describes what they need → LLM designs a custom role with appropriate tools and prompt
+
+3. **Role marketplace**: Share and download community-created roles
+
+4. **Self-evolving applications**: LLM refines its own role definition based on user feedback
+
+The key insight: **When application behavior is configuration rather than code, the application can modify itself programmatically**.
+
 ## Design Principles
 
 ### 1. Transparent to LLM
