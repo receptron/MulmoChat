@@ -126,8 +126,8 @@ GUI Chat Protocol is not just about displaying output—it's also about collecti
 
 **Form Input Tool:**
 ```javascript
-// LLM calls createForm to collect recipe preferences
-createForm({
+// LLM calls presentForm to collect recipe preferences
+presentForm({
   title: "Recipe Preferences",
   fields: [
     { id: "dish", type: "text", label: "What dish do you want to cook?", required: true },
@@ -278,7 +278,7 @@ That's it. No custom code, components, or logic required. The same generic chat 
 The Recipe Guide role is defined purely through configuration:
 
 **Available Tools:**
-- `createForm` - Collect cooking preferences from user
+- `presentForm` - Collect cooking preferences from user
 - `presentDocument` - Display recipe with embedded images
 - `generateImage` - Generate step-by-step cooking images
 - `browse` - Look up recipes online
@@ -297,10 +297,10 @@ You are an expert cooking instructor who guides users through recipes step-by-st
 ```
 
 That's it! No custom code required. The same generic chat application operating in different roles:
-- **Trip Planner role**: `createForm` + `presentDocument` + `map` + `browse`
-- **Clinic Receptionist role**: `createForm` + `presentDocument` + `takePhoto`
-- **Tutor role**: `putQuestions` + `presentDocument` + `generateImage` + `createForm`
-- **Weather Reporter role**: `createForm` + `fetchWeather` + `showPresentation` + `generateImage`
+- **Trip Planner role**: `presentForm` + `presentDocument` + `map` + `browse`
+- **Clinic Receptionist role**: `presentForm` + `presentDocument` + `takePhoto`
+- **Tutor role**: `putQuestions` + `presentDocument` + `generateImage` + `presentForm`
+- **Weather Reporter role**: `presentForm` + `fetchWeather` + `showPresentation` + `generateImage`
 - **Game Companion role**: `playOthello` + `playGo` + `putQuestions` + `generateHtml`
 - **Office Assistant role**: `presentDocument` + `presentSpreadsheet` + `showPresentation`
 
@@ -355,7 +355,7 @@ Since roles are defined by data (tool list + system prompt), it's theoretically 
    ```javascript
    createRole({
      name: "Fitness Coach",
-     tools: ["createForm", "presentDocument", "generateImage", "browse"],
+     tools: ["presentForm", "presentDocument", "generateImage", "browse"],
      systemPrompt: "You are a fitness coach who creates personalized workout plans..."
    })
    ```
@@ -432,7 +432,7 @@ No apps were launched. No interfaces were learned. Just natural conversation enh
 #### Tools as Operating System Capabilities
 
 Instead of **applications**, the OS provides **tools**:
-- `createForm` - Collect structured input from user
+- `presentForm` - Collect structured input from user
 - `presentDocument` - Display rich documents with embedded media
 - `map` - Show geographic information
 - `browse` - Access web content

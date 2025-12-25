@@ -2,7 +2,7 @@ import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import FormView from "../views/form.vue";
 import FormPreview from "../previews/form.vue";
 
-const toolName = "createForm";
+const toolName = "presentForm";
 
 // Field type discriminator
 export type FieldType =
@@ -236,7 +236,7 @@ const toolDefinition = {
   },
 };
 
-const createForm = async (
+const presentForm = async (
   context: ToolContext,
   args: Record<string, any>,
 ): Promise<FormResult> => {
@@ -511,7 +511,7 @@ const createForm = async (
 
 export const plugin: ToolPlugin = {
   toolDefinition,
-  execute: createForm,
+  execute: presentForm,
   generatingMessage: "Preparing form...",
   isEnabled: () => true,
   viewComponent: FormView,

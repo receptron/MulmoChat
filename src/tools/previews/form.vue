@@ -73,7 +73,7 @@ const props = defineProps<{
 }>();
 
 const formData = computed<FormData | null>(() => {
-  if (props.result?.toolName === "createForm") {
+  if (props.result?.toolName === "presentForm") {
     return props.result.jsonData as FormData;
   }
   return null;

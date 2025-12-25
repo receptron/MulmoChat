@@ -409,7 +409,7 @@ const isRestoring = ref<boolean>(false);
 watch(
   () => props.selectedResult,
   (newResult, oldResult) => {
-    if (newResult?.toolName === "createForm" && newResult.jsonData) {
+    if (newResult?.toolName === "presentForm" && newResult.jsonData) {
       // Only restore if this is a different result (uuid changed) or first load
       const isNewResult = !oldResult || oldResult.uuid !== newResult.uuid;
 
