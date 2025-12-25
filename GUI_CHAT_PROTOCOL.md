@@ -4,6 +4,10 @@
 
 GUI Chat Protocol is a natural extension of existing tool calling mechanisms (like function calling and MCP - Model Context Protocol) that enables GUI and multi-modal interactions in LLM chat interfaces. While traditional LLM chat has been constrained to text-based input and output, GUI Chat Protocol bridges the gap between conversational AI and rich graphical user interfaces.
 
+Watch this short demonstration of the GUI Chat protocol in action:
+
+https://www.youtube.com/watch?v=u6AjQYgRAL8
+
 ## Motivation
 
 Conversational AI has traditionally operated in a text-only paradigm:
