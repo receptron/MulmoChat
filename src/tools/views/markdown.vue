@@ -157,6 +157,17 @@ watch(
     )
       return;
 
+    try {
+      const pdfFeature = await fetch("/api/check-pdf", { method: "GET" });
+      const pdfResult = await pdfFeature.json();
+      if (!pdfResult.available) {
+        return;
+      }
+    } catch (error) {
+      console.error("PDF feature check exception:", error);
+      return;
+    }
+
     isGeneratingPdf.value = true;
     pdfError.value = null;
 

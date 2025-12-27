@@ -14,6 +14,24 @@ const router: Router = express.Router();
 const isCI = process.env.CI === "true";
 
 // PDF summarization endpoint using Claude
+router.get("/check-pdf", async (req: Request, res: Response): Promise<void> => {
+  let browser = null;
+  let available = true;
+  try {
+    browser = await puppeteer.launch({
+      args: isCI ? ["--no-sandbox"] : [],
+    });
+  } catch (error) {
+    console.error("PDF capability check failed:", error);
+    available = false;
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+  res.json({ available });
+});
+
 router.post(
   "/summarize-pdf",
   async (req: Request, res: Response): Promise<void> => {
