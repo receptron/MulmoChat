@@ -51,6 +51,7 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       "PetrosStav/gemma3-tools:27b",
       "ministral-3:14b",
       "nemotron-3-nano",
+      "qwen3-coder",
       // "functiongemma",
       // "deepseek-r1:32b", no tools
       // "gemma3:27b", no tools
