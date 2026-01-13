@@ -106,17 +106,17 @@
             >
               Movie generation failed: {{ movieError }}
             </div>
-            <MulmoViewer
-              v-else-if="index === 0 && viewerData"
-              v-model:audio-lang="audioLang"
-              v-model:text-lang="textLang"
-              :data-set="viewerData"
-              :base-path="basePath"
-              :init-page="currentPage"
-              :playback-speed="playbackSpeed"
-              @updated-page="(page) => (currentPage = page)"
-              style="margin: 1em 0"
-            />
+            <div v-else-if="index === 0 && viewerData" style="margin: 1em 0">
+              <MulmoViewer
+                v-model:audio-lang="audioLang"
+                v-model:text-lang="textLang"
+                :data-set="viewerData"
+                :base-path="basePath"
+                :init-page="currentPage"
+                :playback-speed="playbackSpeed"
+                @updated-page="(page) => (currentPage = page)"
+              />
+            </div>
             <video
               v-else-if="index === 0 && moviePath && movieUrl && !viewerData"
               ref="videoEl"
@@ -206,8 +206,12 @@ const basePath = computed(() => {
   if (outputIndex !== -1) {
     const relativePath = viewerJsonPath.value.substring(outputIndex);
     const lastSlash = relativePath.lastIndexOf("/");
-    return relativePath.substring(0, lastSlash);
+    const result = relativePath.substring(0, lastSlash);
+    console.log("viewerJsonPath:", viewerJsonPath.value);
+    console.log("basePath:", result);
+    return result;
   }
+  console.log("viewerJsonPath (no /output/ found):", viewerJsonPath.value);
   return "";
 });
 
@@ -319,6 +323,7 @@ watch(
       }
 
       viewerData.value = (await response.json()) as ViewerData;
+      console.log("Loaded viewerData:", viewerData.value);
     } catch (error) {
       console.error("Viewer JSON loading failed:", error);
       viewerData.value = null;
