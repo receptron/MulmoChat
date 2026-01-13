@@ -2,13 +2,15 @@ import express, { Request, Response, Router } from "express";
 import {
   movie,
   audio,
+  translate,
   images as imagesAction,
   captions,
   mulmoViewerBundle,
   movieFilePath,
   initializeContext,
+  bundleTargetLang,
 } from "mulmocast";
-import type { MulmoScript, MulmoStudioContext } from "mulmocast";
+import type { MulmoScript } from "mulmocast";
 import path from "path";
 import fs from "fs/promises";
 import { createReadStream } from "fs";
@@ -99,13 +101,12 @@ router.post(
       await audio(context)
         .then(imagesAction)
         .then(captions)
-        .then(async (ctx: MulmoStudioContext) => {
-          await movie(ctx);
-          return ctx;
+        .then(movie)
+        .then(async () => {
+          await translate(context, { targetLangs: bundleTargetLang });
         })
-        .then(async (ctx: MulmoStudioContext) => {
-          await mulmoViewerBundle(ctx);
-          return ctx;
+        .then(async () => {
+          await mulmoViewerBundle(context);
         })
         .then(async () => {
           const outputPath = movieFilePath(context);
