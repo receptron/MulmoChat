@@ -8,7 +8,7 @@ import {
   movieFilePath,
   initializeContext,
 } from "mulmocast";
-import type { MulmoScript } from "mulmocast";
+import type { MulmoScript, MulmoStudioContext } from "mulmocast";
 import path from "path";
 import fs from "fs/promises";
 import { createReadStream } from "fs";
@@ -99,18 +99,26 @@ router.post(
       await audio(context)
         .then(imagesAction)
         .then(captions)
-        .then(movie)
-        .then(async (ctx) => {
+        .then(async (ctx: MulmoStudioContext) => {
+          await movie(ctx);
+          return ctx;
+        })
+        .then(async (ctx: MulmoStudioContext) => {
           await mulmoViewerBundle(ctx);
           return ctx;
         })
         .then(async () => {
           const outputPath = movieFilePath(context);
+          const viewerJsonPath = path.join(
+            path.dirname(outputPath),
+            "mulmo_view.json"
+          );
 
           res.json({
             success: true,
             message: "Movie generated successfully",
             outputPath,
+            viewerJsonPath,
             imageUrls,
           });
         });
@@ -203,6 +211,37 @@ router.post(
         error instanceof Error ? error.message : "Unknown error";
       res.status(500).json({
         error: "Failed to download movie",
+        details: errorMessage,
+      });
+    }
+  },
+);
+
+// Viewer JSON endpoint
+router.post(
+  "/viewer-json",
+  async (req: Request, res: Response): Promise<void> => {
+    const { viewerJsonPath } = req.body as { viewerJsonPath: string };
+
+    if (!viewerJsonPath) {
+      res.status(400).json({ error: "Viewer JSON path is required" });
+      return;
+    }
+
+    try {
+      // Check if file exists
+      await fs.access(viewerJsonPath);
+
+      // Read and send JSON
+      const jsonData = await fs.readFile(viewerJsonPath, "utf-8");
+      res.setHeader("Content-Type", "application/json");
+      res.send(jsonData);
+    } catch (error: unknown) {
+      console.error("Viewer JSON fetch failed:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({
+        error: "Failed to fetch viewer JSON",
         details: errorMessage,
       });
     }

@@ -106,8 +106,19 @@
             >
               Movie generation failed: {{ movieError }}
             </div>
+            <MulmoViewer
+              v-else-if="index === 0 && viewerData"
+              v-model:audio-lang="audioLang"
+              v-model:text-lang="textLang"
+              :data-set="viewerData"
+              :base-path="basePath"
+              :init-page="currentPage"
+              :playback-speed="playbackSpeed"
+              @updated-page="(page) => (currentPage = page)"
+              style="margin: 1em 0"
+            />
             <video
-              v-else-if="index === 0 && moviePath && movieUrl"
+              v-else-if="index === 0 && moviePath && movieUrl && !viewerData"
               ref="videoEl"
               :src="movieUrl"
               controls
@@ -151,6 +162,7 @@ import { ref, computed, onUnmounted, watch } from "vue";
 import { v4 as uuidv4 } from "uuid";
 import type { ToolResult } from "../types";
 import type { MulmocastToolData } from "../models/mulmocast";
+import { MulmoViewer, type ViewerData } from "mulmocast-viewer";
 
 const props = defineProps<{
   selectedResult: ToolResult<MulmocastToolData> | null;
@@ -176,8 +188,28 @@ const editableScript = ref(
   JSON.stringify(props.selectedResult?.data?.mulmoScript, null, 2) || "",
 );
 
+// MulmoViewer state
+const viewerData = ref<ViewerData | null>(null);
+const audioLang = ref("en");
+const textLang = ref("en");
+const playbackSpeed = ref(1);
+const currentPage = ref(0);
+
 // moviePath comes from selectedResult now
 const moviePath = computed(() => props.selectedResult?.data?.moviePath || null);
+const viewerJsonPath = computed(() => props.selectedResult?.data?.viewerJsonPath || null);
+const basePath = computed(() => {
+  if (!viewerJsonPath.value) return "";
+  // Convert absolute file path to URL path
+  // Example: /absolute/path/to/output/uuid/mulmo_view.json -> /output/uuid
+  const outputIndex = viewerJsonPath.value.indexOf("/output/");
+  if (outputIndex !== -1) {
+    const relativePath = viewerJsonPath.value.substring(outputIndex);
+    const lastSlash = relativePath.lastIndexOf("/");
+    return relativePath.substring(0, lastSlash);
+  }
+  return "";
+});
 
 // Check if script has been modified
 const hasChanges = computed(() => {
@@ -220,12 +252,13 @@ async function triggerMovieGeneration() {
     if (movieResponse.ok) {
       const movieResult = await movieResponse.json();
 
-      // Update the result with moviePath and notify parent
+      // Update the result with moviePath and viewerJsonPath
       const updatedResult: ToolResult = {
         ...props.selectedResult,
         data: {
           ...props.selectedResult.data,
           moviePath: movieResult.outputPath,
+          viewerJsonPath: movieResult.viewerJsonPath,
         },
       };
       emit("updateResult", updatedResult);
@@ -261,7 +294,40 @@ watch(
   { immediate: true },
 );
 
-// Load movie automatically when moviePath exists
+// Load viewer JSON when viewerJsonPath exists
+watch(
+  viewerJsonPath,
+  async (path) => {
+    if (!path) {
+      viewerData.value = null;
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/viewer-json", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          viewerJsonPath: path,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load viewer JSON");
+      }
+
+      viewerData.value = (await response.json()) as ViewerData;
+    } catch (error) {
+      console.error("Viewer JSON loading failed:", error);
+      viewerData.value = null;
+    }
+  },
+  { immediate: true },
+);
+
+// Load movie automatically when moviePath exists (fallback if viewer not available)
 watch(
   moviePath,
   async (path) => {
@@ -386,13 +452,14 @@ function applyScript() {
 
     parseError.value = null;
 
-    // Update the result with new script (reset moviePath since script changed)
+    // Update the result with new script (reset moviePath and viewerJsonPath since script changed)
     const updatedResult: ToolResult<MulmocastToolData> = {
       ...props.selectedResult!,
       data: {
         ...props.selectedResult!.data,
         mulmoScript: parsedScript,
         moviePath: undefined, // Reset movie path so it regenerates
+        viewerJsonPath: undefined, // Reset viewer JSON path
       },
     };
 
