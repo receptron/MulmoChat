@@ -106,8 +106,21 @@
             >
               Movie generation failed: {{ movieError }}
             </div>
-            <div v-else-if="index === 0 && viewerData" style="margin: 1em 0">
+            <div
+              v-else-if="index === 0 && viewerData"
+              style="margin: 1em 0; position: relative"
+            >
+              <button
+                v-if="currentPage > 0"
+                @click="previousPage"
+                class="nav-button nav-button-prev"
+                aria-label="Previous page"
+              >
+                ‹
+              </button>
               <MulmoViewer
+                ref="viewerRef"
+                :key="`viewer-${currentPage}`"
                 v-model:audio-lang="audioLang"
                 v-model:text-lang="textLang"
                 :data-set="viewerData"
@@ -116,6 +129,14 @@
                 :playback-speed="playbackSpeed"
                 @updated-page="(page) => (currentPage = page)"
               />
+              <button
+                v-if="viewerData && currentPage < viewerData.beats.length - 1"
+                @click="nextPage"
+                class="nav-button nav-button-next"
+                aria-label="Next page"
+              >
+                ›
+              </button>
             </div>
             <video
               v-else-if="index === 0 && moviePath && movieUrl && !viewerData"
@@ -190,6 +211,7 @@ const editableScript = ref(
 
 // MulmoViewer state
 const viewerData = ref<ViewerData | null>(null);
+const viewerRef = ref<InstanceType<typeof MulmoViewer> | null>(null);
 const audioLang = ref("en");
 const textLang = ref("en");
 const playbackSpeed = ref(1);
@@ -485,6 +507,26 @@ watch(
     parseError.value = null;
   },
 );
+
+// Navigation functions
+function nextPage() {
+  console.log("nextPage clicked, currentPage:", currentPage.value);
+  if (
+    viewerData.value &&
+    currentPage.value < viewerData.value.beats.length - 1
+  ) {
+    currentPage.value++;
+    console.log("Updated to page:", currentPage.value);
+  }
+}
+
+function previousPage() {
+  console.log("previousPage clicked, currentPage:", currentPage.value);
+  if (currentPage.value > 0) {
+    currentPage.value--;
+    console.log("Updated to page:", currentPage.value);
+  }
+}
 </script>
 
 <style scoped>
@@ -597,5 +639,43 @@ watch(
   to {
     transform: rotate(360deg);
   }
+}
+
+.nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  user-select: none;
+}
+
+.nav-button:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.nav-button:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.nav-button-prev {
+  left: 0;
+}
+
+.nav-button-next {
+  right: 0;
 }
 </style>
