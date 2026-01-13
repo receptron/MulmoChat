@@ -110,7 +110,7 @@ router.post(
           return ctx;
         })
         .then(async (ctx:MulmoStudioContext) => {
-          await mulmoViewerBundle(ctx);
+          await mulmoViewerBundle(ctx, { skipZip: true });
         })
         .then(async () => {
           const outputPath = movieFilePath(context);
