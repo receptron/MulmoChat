@@ -112,7 +112,7 @@ router.post(
           const outputPath = movieFilePath(context);
           const viewerJsonPath = path.join(
             path.dirname(outputPath),
-            "mulmo_view.json"
+            `${uuid}.json`
           );
 
           res.json({
