@@ -101,22 +101,22 @@ router.post(
       await audio(context)
         .then(imagesAction)
         .then(captions)
-        .then(async (ctx:MulmoStudioContext) => {
+        .then(async (ctx: MulmoStudioContext) => {
           await movie(ctx);
           return ctx;
         })
-        .then(async (ctx:MulmoStudioContext) => {
+        .then(async (ctx: MulmoStudioContext) => {
           await translate(ctx, { targetLangs: bundleTargetLang });
           return ctx;
         })
-        .then(async (ctx:MulmoStudioContext) => {
+        .then(async (ctx: MulmoStudioContext) => {
           await mulmoViewerBundle(ctx, { skipZip: true });
         })
         .then(async () => {
           const outputPath = movieFilePath(context);
           const viewerJsonPath = path.join(
             path.dirname(outputPath),
-            `${uuid}/mulmo_view.json`
+            `${uuid}/mulmo_view.json`,
           );
 
           res.json({

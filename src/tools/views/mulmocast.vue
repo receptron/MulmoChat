@@ -197,7 +197,9 @@ const currentPage = ref(0);
 
 // moviePath comes from selectedResult now
 const moviePath = computed(() => props.selectedResult?.data?.moviePath || null);
-const viewerJsonPath = computed(() => props.selectedResult?.data?.viewerJsonPath || null);
+const viewerJsonPath = computed(
+  () => props.selectedResult?.data?.viewerJsonPath || null,
+);
 const basePath = computed(() => {
   if (!viewerJsonPath.value) return "";
   // Convert absolute file path to URL path
