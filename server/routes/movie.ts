@@ -10,7 +10,7 @@ import {
   initializeContext,
   bundleTargetLang,
 } from "mulmocast";
-import type { MulmoScript } from "mulmocast";
+import type { MulmoScript, MulmoStudioContext } from "mulmocast";
 import path from "path";
 import fs from "fs/promises";
 import { createReadStream } from "fs";
@@ -101,18 +101,22 @@ router.post(
       await audio(context)
         .then(imagesAction)
         .then(captions)
-        .then(movie)
-        .then(async () => {
-          await translate(context, { targetLangs: bundleTargetLang });
+        .then(async (ctx:MulmoStudioContext) => {
+          await movie(ctx);
+          return ctx;
         })
-        .then(async () => {
-          await mulmoViewerBundle(context);
+        .then(async (ctx:MulmoStudioContext) => {
+          await translate(ctx, { targetLangs: bundleTargetLang });
+          return ctx;
+        })
+        .then(async (ctx:MulmoStudioContext) => {
+          await mulmoViewerBundle(ctx);
         })
         .then(async () => {
           const outputPath = movieFilePath(context);
           const viewerJsonPath = path.join(
             path.dirname(outputPath),
-            `${uuid}.json`
+            `mulmo_view.json`
           );
 
           res.json({
