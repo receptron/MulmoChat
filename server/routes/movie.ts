@@ -4,6 +4,7 @@ import {
   audio,
   images as imagesAction,
   captions,
+  mulmoViewerBundle,
   movieFilePath,
   initializeContext,
 } from "mulmocast";
@@ -99,6 +100,10 @@ router.post(
         .then(imagesAction)
         .then(captions)
         .then(movie)
+        .then(async (ctx) => {
+          await mulmoViewerBundle(ctx);
+          return ctx;
+        })
         .then(async () => {
           const outputPath = movieFilePath(context);
 
