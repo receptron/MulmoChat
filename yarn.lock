@@ -1274,6 +1274,11 @@
     de-indent "^1.0.2"
     he "^1.2.0"
 
+"@vue/devtools-api@^6.6.4":
+  version "6.6.4"
+  resolved "https://registry.yarnpkg.com/@vue/devtools-api/-/devtools-api-6.6.4.tgz#cbe97fe0162b365edc1dba80e173f90492535343"
+  integrity sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==
+
 "@vue/language-core@3.0.8":
   version "3.0.8"
   resolved "https://registry.npmjs.org/@vue/language-core/-/language-core-3.0.8.tgz"
@@ -5711,6 +5716,13 @@ vue-drawing-canvas@^1.0.14:
   integrity sha512-afsG6bGXD1DDP7pKslJX3LNLi07R/S97e/9/LNXnPZQBlsNnrL3T68rmodBHeMHr83onhMfym+t3kLkDuApW1Q==
   dependencies:
     vue-demi latest
+
+vue-router@^4.6.4:
+  version "4.6.4"
+  resolved "https://registry.yarnpkg.com/vue-router/-/vue-router-4.6.4.tgz#a0a9cb9ef811a106d249e4bb9313d286718020d8"
+  integrity sha512-Hz9q5sa33Yhduglwz6g9skT8OBPii+4bFn88w6J+J4MfEo4KRRpmiNG/hHHkdbRFlLBOqxN8y8gf2Fb0MTUgVg==
+  dependencies:
+    "@vue/devtools-api" "^6.6.4"
 
 vue-tsc@^3.0.8:
   version "3.0.8"
