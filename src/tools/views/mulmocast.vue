@@ -515,16 +515,48 @@ function nextPage() {
     viewerData.value &&
     currentPage.value < viewerData.value.beats.length - 1
   ) {
+    // Check if currently playing
+    const mediaElement = document.querySelector("video, audio") as HTMLMediaElement;
+    const wasPlaying = mediaElement && !mediaElement.paused;
+
     currentPage.value++;
     console.log("Updated to page:", currentPage.value);
+
+    // Continue playing if it was playing before
+    if (wasPlaying) {
+      setTimeout(() => {
+        const newMediaElement = document.querySelector("video, audio") as HTMLMediaElement;
+        if (newMediaElement) {
+          newMediaElement.play().catch(() => {
+            console.log("Autoplay prevented");
+          });
+        }
+      }, 100);
+    }
   }
 }
 
 function previousPage() {
   console.log("previousPage clicked, currentPage:", currentPage.value);
   if (currentPage.value > 0) {
+    // Check if currently playing
+    const mediaElement = document.querySelector("video, audio") as HTMLMediaElement;
+    const wasPlaying = mediaElement && !mediaElement.paused;
+
     currentPage.value--;
     console.log("Updated to page:", currentPage.value);
+
+    // Continue playing if it was playing before
+    if (wasPlaying) {
+      setTimeout(() => {
+        const newMediaElement = document.querySelector("video, audio") as HTMLMediaElement;
+        if (newMediaElement) {
+          newMediaElement.play().catch(() => {
+            console.log("Autoplay prevented");
+          });
+        }
+      }, 100);
+    }
   }
 }
 </script>
