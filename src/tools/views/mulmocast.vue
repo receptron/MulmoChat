@@ -106,8 +106,40 @@
             >
               Movie generation failed: {{ movieError }}
             </div>
+            <div
+              v-else-if="index === 0 && viewerData"
+              style="margin: 1em 0; position: relative"
+            >
+              <button
+                v-if="currentPage > 0"
+                @click="previousPage"
+                class="nav-button nav-button-prev"
+                aria-label="Previous page"
+              >
+                ‹
+              </button>
+              <MulmoViewer
+                ref="viewerRef"
+                :key="`viewer-${currentPage}`"
+                v-model:audio-lang="audioLang"
+                v-model:text-lang="textLang"
+                :data-set="viewerData"
+                :base-path="basePath"
+                :init-page="currentPage"
+                :playback-speed="playbackSpeed"
+                @updated-page="(page) => (currentPage = page)"
+              />
+              <button
+                v-if="viewerData && currentPage < viewerData.beats.length - 1"
+                @click="nextPage"
+                class="nav-button nav-button-next"
+                aria-label="Next page"
+              >
+                ›
+              </button>
+            </div>
             <video
-              v-else-if="index === 0 && moviePath && movieUrl"
+              v-else-if="index === 0 && moviePath && movieUrl && !viewerData"
               ref="videoEl"
               :src="movieUrl"
               controls
@@ -151,6 +183,7 @@ import { ref, computed, onUnmounted, watch } from "vue";
 import { v4 as uuidv4 } from "uuid";
 import type { ToolResult } from "../types";
 import type { MulmocastToolData } from "../models/mulmocast";
+import { MulmoViewer, type ViewerData } from "mulmocast-viewer";
 
 const props = defineProps<{
   selectedResult: ToolResult<MulmocastToolData> | null;
@@ -176,8 +209,35 @@ const editableScript = ref(
   JSON.stringify(props.selectedResult?.data?.mulmoScript, null, 2) || "",
 );
 
+// MulmoViewer state
+const viewerData = ref<ViewerData | null>(null);
+const viewerRef = ref<InstanceType<typeof MulmoViewer> | null>(null);
+const audioLang = ref("en");
+const textLang = ref("en");
+const playbackSpeed = ref(1);
+const currentPage = ref(0);
+
 // moviePath comes from selectedResult now
 const moviePath = computed(() => props.selectedResult?.data?.moviePath || null);
+const viewerJsonPath = computed(
+  () => props.selectedResult?.data?.viewerJsonPath || null,
+);
+const basePath = computed(() => {
+  if (!viewerJsonPath.value) return "";
+  // Convert absolute file path to URL path
+  // Example: /absolute/path/to/output/uuid/mulmo_view.json -> /output/uuid
+  const outputIndex = viewerJsonPath.value.indexOf("/output/");
+  if (outputIndex !== -1) {
+    const relativePath = viewerJsonPath.value.substring(outputIndex);
+    const lastSlash = relativePath.lastIndexOf("/");
+    const result = relativePath.substring(0, lastSlash);
+    console.log("viewerJsonPath:", viewerJsonPath.value);
+    console.log("basePath:", result);
+    return result;
+  }
+  console.log("viewerJsonPath (no /output/ found):", viewerJsonPath.value);
+  return "";
+});
 
 // Check if script has been modified
 const hasChanges = computed(() => {
@@ -220,12 +280,13 @@ async function triggerMovieGeneration() {
     if (movieResponse.ok) {
       const movieResult = await movieResponse.json();
 
-      // Update the result with moviePath and notify parent
+      // Update the result with moviePath and viewerJsonPath
       const updatedResult: ToolResult = {
         ...props.selectedResult,
         data: {
           ...props.selectedResult.data,
           moviePath: movieResult.outputPath,
+          viewerJsonPath: movieResult.viewerJsonPath,
         },
       };
       emit("updateResult", updatedResult);
@@ -261,7 +322,41 @@ watch(
   { immediate: true },
 );
 
-// Load movie automatically when moviePath exists
+// Load viewer JSON when viewerJsonPath exists
+watch(
+  viewerJsonPath,
+  async (path) => {
+    if (!path) {
+      viewerData.value = null;
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/viewer-json", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          viewerJsonPath: path,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load viewer JSON");
+      }
+
+      viewerData.value = (await response.json()) as ViewerData;
+      console.log("Loaded viewerData:", viewerData.value);
+    } catch (error) {
+      console.error("Viewer JSON loading failed:", error);
+      viewerData.value = null;
+    }
+  },
+  { immediate: true },
+);
+
+// Load movie automatically when moviePath exists (fallback if viewer not available)
 watch(
   moviePath,
   async (path) => {
@@ -386,13 +481,14 @@ function applyScript() {
 
     parseError.value = null;
 
-    // Update the result with new script (reset moviePath since script changed)
+    // Update the result with new script (reset moviePath and viewerJsonPath since script changed)
     const updatedResult: ToolResult<MulmocastToolData> = {
       ...props.selectedResult!,
       data: {
         ...props.selectedResult!.data,
         mulmoScript: parsedScript,
         moviePath: undefined, // Reset movie path so it regenerates
+        viewerJsonPath: undefined, // Reset viewer JSON path
       },
     };
 
@@ -411,6 +507,58 @@ watch(
     parseError.value = null;
   },
 );
+
+// Navigation functions
+function nextPage() {
+  console.log("nextPage clicked, currentPage:", currentPage.value);
+  if (
+    viewerData.value &&
+    currentPage.value < viewerData.value.beats.length - 1
+  ) {
+    // Check if currently playing
+    const mediaElement = document.querySelector("video, audio") as HTMLMediaElement;
+    const wasPlaying = mediaElement && !mediaElement.paused;
+
+    currentPage.value++;
+    console.log("Updated to page:", currentPage.value);
+
+    // Continue playing if it was playing before
+    if (wasPlaying) {
+      setTimeout(() => {
+        const newMediaElement = document.querySelector("video, audio") as HTMLMediaElement;
+        if (newMediaElement) {
+          newMediaElement.play().catch(() => {
+            console.log("Autoplay prevented");
+          });
+        }
+      }, 100);
+    }
+  }
+}
+
+function previousPage() {
+  console.log("previousPage clicked, currentPage:", currentPage.value);
+  if (currentPage.value > 0) {
+    // Check if currently playing
+    const mediaElement = document.querySelector("video, audio") as HTMLMediaElement;
+    const wasPlaying = mediaElement && !mediaElement.paused;
+
+    currentPage.value--;
+    console.log("Updated to page:", currentPage.value);
+
+    // Continue playing if it was playing before
+    if (wasPlaying) {
+      setTimeout(() => {
+        const newMediaElement = document.querySelector("video, audio") as HTMLMediaElement;
+        if (newMediaElement) {
+          newMediaElement.play().catch(() => {
+            console.log("Autoplay prevented");
+          });
+        }
+      }, 100);
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -523,5 +671,43 @@ watch(
   to {
     transform: rotate(360deg);
   }
+}
+
+.nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  user-select: none;
+}
+
+.nav-button:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.nav-button:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.nav-button-prev {
+  left: 0;
+}
+
+.nav-button-next {
+  right: 0;
 }
 </style>

@@ -13,6 +13,7 @@ export interface MulmocastToolData {
   mulmoScript: MulmoScript;
   images: Record<string, string>;
   moviePath?: string;
+  viewerJsonPath?: string;
 }
 
 // Convert URL to base64 (without data URL prefix)
