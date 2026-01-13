@@ -47,6 +47,7 @@
     "express": "^5.1.0",
     "material-icons": "^1.13.14",
     "mulmocast": "^2.1.16",
+    "mulmocast-viewer": "^0.1.11",
     "opensheetmusicdisplay": "^1.9.2",
     "osmd-audio-player": "^0.7.0",
     "three": "^0.181.1",
