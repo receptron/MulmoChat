@@ -6,7 +6,7 @@
     <select
       :value="value"
       @change="handleChange"
-      class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       <option value="claude">Claude (Anthropic)</option>
       <option value="gemini">Google Gemini</option>

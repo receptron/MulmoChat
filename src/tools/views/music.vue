@@ -25,7 +25,7 @@
             type="number"
             min="30"
             max="300"
-            class="w-20 px-2 py-1 border rounded"
+            class="w-20 px-2 py-1 border border-gray-300 rounded"
           />
           bpm
         </label>

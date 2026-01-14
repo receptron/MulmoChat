@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-80 flex-shrink-0 bg-gray-50 border rounded p-4 flex flex-col space-y-4"
+    class="w-80 flex-shrink-0 bg-gray-50 border border-gray-300 rounded p-4 flex flex-col space-y-4"
   >
     <div class="flex-shrink-0">
       <h2 class="text-lg font-semibold text-gray-700">Tool Call History</h2>
@@ -19,7 +19,7 @@
       <div
         v-for="(call, index) in filteredToolCallHistory"
         :key="index"
-        class="border rounded p-3 bg-white text-xs space-y-1"
+        class="border border-gray-300 rounded p-3 bg-white text-xs space-y-1"
       >
         <div class="flex justify-between items-start">
           <span class="font-semibold text-blue-600">{{ call.toolName }}</span>

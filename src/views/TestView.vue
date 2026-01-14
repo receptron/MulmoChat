@@ -17,7 +17,7 @@
       </label>
       <select
         v-model="selectedPluginName"
-        class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       >
         <option value="">-- Select a plugin --</option>
         <option
@@ -32,7 +32,7 @@
 
     <!-- Tool Definition Display -->
     <div v-if="selectedPlugin" class="space-y-4">
-      <div class="bg-gray-50 p-4 rounded border">
+      <div class="bg-gray-50 p-4 rounded border border-gray-300">
         <h2 class="text-lg font-semibold mb-2">Tool Definition</h2>
         <div class="space-y-2 text-sm">
           <div>
@@ -46,7 +46,7 @@
           <div v-if="selectedPlugin.toolDefinition.parameters">
             <span class="font-medium">Parameters:</span>
             <pre
-              class="mt-1 p-2 bg-white rounded border text-xs overflow-auto"
+              class="mt-1 p-2 bg-white rounded border border-gray-300 text-xs overflow-auto"
               >{{
                 JSON.stringify(
                   selectedPlugin.toolDefinition.parameters,
@@ -66,7 +66,7 @@
         </label>
         <select
           v-model="selectedSampleIndex"
-          class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option :value="-1">-- Custom --</option>
           <option
@@ -86,7 +86,7 @@
         </label>
         <textarea
           v-model="argsJson"
-          class="w-full p-2 border rounded font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          class="w-full p-2 border border-gray-300 rounded font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           rows="6"
           placeholder='{"key": "value"}'
         ></textarea>
@@ -127,14 +127,14 @@
             <div v-if="result.data">
               <span class="font-medium">Data:</span>
               <pre
-                class="mt-1 p-2 bg-white rounded border text-xs overflow-auto max-h-60"
+                class="mt-1 p-2 bg-white rounded border border-gray-300 text-xs overflow-auto max-h-60"
                 >{{ JSON.stringify(result.data, null, 2) }}</pre
               >
             </div>
             <div v-if="result.jsonData">
               <span class="font-medium">JSON Data:</span>
               <pre
-                class="mt-1 p-2 bg-white rounded border text-xs overflow-auto max-h-60"
+                class="mt-1 p-2 bg-white rounded border border-gray-300 text-xs overflow-auto max-h-60"
                 >{{ JSON.stringify(result.jsonData, null, 2) }}</pre
               >
             </div>
@@ -144,7 +144,7 @@
         <!-- View Component -->
         <div
           v-if="selectedPlugin.viewComponent"
-          class="border rounded overflow-hidden"
+          class="border border-gray-300 rounded overflow-hidden"
           style="height: 500px"
         >
           <component
