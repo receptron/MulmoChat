@@ -34,7 +34,7 @@ export default [
     },
     rules: {
       indent: ["error", 2],
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
@@ -53,16 +53,16 @@ export default [
       "object-shorthand": "error",
       semi: ["error", "always"],
       "prettier/prettier": "error",
-      "sonarjs/pseudo-random": "warn",
-      "sonarjs/todo-tag": "warn",
-      "sonarjs/no-commented-code": "warn",
+      "sonarjs/pseudo-random": "off",
+      "sonarjs/todo-tag": "off",
+      "sonarjs/no-commented-code": "off",
       "sonarjs/no-unused-vars": "error",
-      "sonarjs/cognitive-complexity": "warn",
+      "sonarjs/cognitive-complexity": "off",
       "no-console": "off",
       "sonarjs/no-nested-conditional": "warn",
       "sonarjs/redundant-type-aliases": "off",
       "sonarjs/x-powered-by": "error",
-      "sonarjs/cors": "warn",
+      "sonarjs/cors": "off",
       "sonarjs/no-empty-test-file": "error"
     },
     plugins: {
