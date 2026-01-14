@@ -45,9 +45,16 @@
           </div>
           <div v-if="selectedPlugin.toolDefinition.parameters">
             <span class="font-medium">Parameters:</span>
-            <pre class="mt-1 p-2 bg-white rounded border text-xs overflow-auto">{{
-              JSON.stringify(selectedPlugin.toolDefinition.parameters, null, 2)
-            }}</pre>
+            <pre
+              class="mt-1 p-2 bg-white rounded border text-xs overflow-auto"
+              >{{
+                JSON.stringify(
+                  selectedPlugin.toolDefinition.parameters,
+                  null,
+                  2,
+                )
+              }}</pre
+            >
           </div>
         </div>
       </div>
