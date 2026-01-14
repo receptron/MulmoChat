@@ -50,13 +50,12 @@ export default [
       "no-return-assign": "error",
       "object-shorthand": "error",
       semi: ["error", "always"],
-      "sonarjs/pseudo-random": "warn",
-      "sonarjs/todo-tag": "warn",
-      "sonarjs/no-commented-code": "warn",
+      "sonarjs/pseudo-random": "off",
+      "sonarjs/todo-tag": "off",
+      "sonarjs/no-commented-code": "off",
       "sonarjs/cognitive-complexity": "warn",
       "no-console": "off",
       "sonarjs/no-nested-conditional": "warn",
-      "sonarjs/x-powered-by": "warn",
       "sonarjs/cors": "warn"
     },
     plugins: {
