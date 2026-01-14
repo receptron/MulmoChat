@@ -126,7 +126,7 @@ export function isRoleCustomizable(roleId: string): boolean {
 }
 
 export const pluginTools = (
-  startResponse?: StartApiResponse,
+  startResponse?: StartApiResponse | null,
   enabledPlugins?: Record<string, boolean>,
   roleId?: string,
 ) => {
@@ -162,7 +162,7 @@ export const pluginTools = (
 };
 
 export const getPluginSystemPrompts = (
-  startResponse?: StartApiResponse,
+  startResponse?: StartApiResponse | null,
   enabledPlugins?: Record<string, boolean>,
   roleId?: string,
 ): string => {
@@ -201,7 +201,7 @@ const plugins = pluginList.reduce(
     acc[plugin.plugin.toolDefinition.name] = plugin.plugin;
     return acc;
   },
-  {} as Record<string, ToolPlugin>,
+  {} as Record<string, ToolPlugin<any, any, any>>,
 );
 
 export const toolExecute = async (

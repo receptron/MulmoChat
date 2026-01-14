@@ -84,9 +84,10 @@
           <component
             v-if="
               selectedResult &&
+              selectedResult.toolName &&
               getToolPlugin(selectedResult.toolName)?.viewComponent
             "
-            :is="getToolPlugin(selectedResult.toolName).viewComponent"
+            :is="getToolPlugin(selectedResult.toolName!).viewComponent"
             :key="selectedResult.uuid"
             :selected-result="selectedResult"
             :send-text-message="sendTextMessage"
@@ -510,7 +511,7 @@ const lastSpeechStartedTime = ref<number | null>(null);
 registerEventHandlers({
   onToolCall: (msg, id, argStr) => {
     // Track tool call in history for debugging
-    const toolName = typeof msg === "string" ? msg : msg.name || msg;
+    const toolName = typeof msg === "string" ? msg : msg.name || "unknown";
     try {
       const args = JSON.parse(argStr);
       addToolCallToHistory(toolName, args);

@@ -34,6 +34,8 @@ const libraryLabel = computed(() => {
     tailwind: "Tailwind CSS",
     "d3.js": "D3.js",
     "three.js": "Three.js",
+    mermaid: "Mermaid",
+    "p5.js": "p5.js",
   };
   return labels[type];
 });
@@ -45,6 +47,8 @@ const libraryIcon = computed(() => {
     tailwind: "🎨",
     "d3.js": "📊",
     "three.js": "🎮",
+    mermaid: "📋",
+    "p5.js": "🎨",
   };
   return icons[type];
 });

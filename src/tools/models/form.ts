@@ -22,6 +22,7 @@ export interface BaseField {
   label: string;
   description?: string;
   required?: boolean;
+  maxLength?: number; // Available on text-like fields
 }
 
 // Specific field interfaces
@@ -30,6 +31,7 @@ export interface TextField extends BaseField {
   placeholder?: string;
   validation?: "email" | "url" | "phone" | string; // string for regex pattern
   defaultValue?: string;
+  maxLength?: number;
 }
 
 export interface TextareaField extends BaseField {

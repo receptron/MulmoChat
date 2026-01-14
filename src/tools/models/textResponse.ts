@@ -1,4 +1,4 @@
-import type { ToolPlugin } from "../types";
+import type { ToolPlugin, ToolContext } from "../types";
 import TextResponseView from "../views/TextResponseView.vue";
 import TextResponsePreview from "../previews/TextResponsePreview.vue";
 
@@ -10,7 +10,7 @@ export interface TextResponseData {
 
 type TextResponseArgs = TextResponseData;
 
-export const plugin: ToolPlugin<TextResponseData> = {
+export const plugin: ToolPlugin<TextResponseData, any, TextResponseArgs> = {
   toolDefinition: {
     type: "function",
     name: "text-response",
@@ -41,12 +41,12 @@ export const plugin: ToolPlugin<TextResponseData> = {
   isEnabled: () => false,
   viewComponent: TextResponseView,
   previewComponent: TextResponsePreview,
-  execute: (async (_context, args: TextResponseArgs) => ({
+  execute: async (_context: ToolContext, args: TextResponseArgs) => ({
     data: {
       text: args.text,
       role: args.role,
       transportKind: args.transportKind,
     },
     message: args.text,
-  })) as any,
+  }),
 };

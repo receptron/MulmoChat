@@ -223,7 +223,7 @@ export class AudioStreamManager {
       );
 
       // Copy data to buffer
-      audioBuffer.copyToChannel(mergedChunk, 0);
+      audioBuffer.copyToChannel(mergedChunk as Float32Array<ArrayBuffer>, 0);
 
       // Create source node
       const source = this.audioContext.createBufferSource();

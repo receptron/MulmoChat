@@ -1,6 +1,6 @@
 /* eslint-env browser */
 
-import { ref, shallowRef } from "vue";
+import { ref, shallowRef, type Ref } from "vue";
 import type { StartApiResponse } from "../../server/types";
 import type { BuildContext, ToolCallMessage } from "./types";
 import { isValidToolCallMessage } from "./types";
@@ -31,17 +31,17 @@ export interface RealtimeSessionOptions {
 }
 
 export interface UseRealtimeSessionReturn {
-  chatActive: ReturnType<typeof ref<boolean>>;
-  conversationActive: ReturnType<typeof ref<boolean>>;
-  connecting: ReturnType<typeof ref<boolean>>;
-  isMuted: ReturnType<typeof ref<boolean>>;
-  startResponse: ReturnType<typeof ref<StartApiResponse | null>>;
+  chatActive: Ref<boolean>;
+  conversationActive: Ref<boolean>;
+  connecting: Ref<boolean>;
+  isMuted: Ref<boolean>;
+  startResponse: Ref<StartApiResponse | null>;
   isDataChannelOpen: () => boolean;
   startChat: () => Promise<void>;
   stopChat: () => void;
   sendUserMessage: (text: string) => Promise<boolean>;
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
-  sendInstructions: (instructions: string) => boolean;
+  sendInstructions: (instructions: string) => boolean | Promise<boolean>;
   setMute: (muted: boolean) => void;
   setLocalAudioEnabled: (enabled: boolean) => void;
   attachRemoteAudioElement: (audio: BrowserHTMLAudioElement | null) => void;

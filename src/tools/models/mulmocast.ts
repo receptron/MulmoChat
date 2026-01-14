@@ -11,7 +11,7 @@ const dryRun = false;
 
 export interface MulmocastToolData {
   mulmoScript: MulmoScript;
-  images: Record<string, string>;
+  images?: Record<string, string>;
   moviePath?: string;
   viewerJsonPath?: string;
 }
@@ -101,34 +101,45 @@ const mulmocast = async (
   );
 
   // Generate images for each beat concurrently
-  const imagePromises = beatsWithIds.map(async (beat) => {
-    const prompt =
-      beat.imagePrompt ||
-      `generate image appropriate for the text. <text>${beat.text}</text>. Let the art convey the story and emotions without text. Use the last image for the aspect ratio.`;
-    if (dryRun) {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      return {
-        id: beat.id,
-        imageData: `data:image/png;base64,${blankImageBase64}`,
-      };
-    }
-    try {
-      // Generate the image using the shared backend-aware function
-      // The global style modifier will be automatically applied
-      const result = await generateImageWithBackend(prompt, imageRefs, context);
-
-      if (result.success && result.imageData) {
-        return { id: beat.id, imageData: result.imageData };
+  const imagePromises = beatsWithIds.map(
+    async (beat: {
+      id: string;
+      speaker: string;
+      text: string;
+      imagePrompt: string;
+    }) => {
+      const prompt =
+        beat.imagePrompt ||
+        `generate image appropriate for the text. <text>${beat.text}</text>. Let the art convey the story and emotions without text. Use the last image for the aspect ratio.`;
+      if (dryRun) {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return {
+          id: beat.id,
+          imageData: `data:image/png;base64,${blankImageBase64}`,
+        };
       }
-    } catch (error) {
-      // Notice that we just display the error and return null for the image data
-      console.error(
-        "EXC: exception\nFailed to generate image for beat:",
-        error,
-      );
-    }
-    return { id: beat.id, imageData: null };
-  });
+      try {
+        // Generate the image using the shared backend-aware function
+        // The global style modifier will be automatically applied
+        const result = await generateImageWithBackend(
+          prompt,
+          imageRefs,
+          context,
+        );
+
+        if (result.success && result.imageData) {
+          return { id: beat.id, imageData: result.imageData };
+        }
+      } catch (error) {
+        // Notice that we just display the error and return null for the image data
+        console.error(
+          "EXC: exception\nFailed to generate image for beat:",
+          error,
+        );
+      }
+      return { id: beat.id, imageData: null };
+    },
+  );
 
   const imageResults = await Promise.all(imagePromises);
 

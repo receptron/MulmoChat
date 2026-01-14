@@ -90,7 +90,7 @@ export async function resampleAudio(
     audioData.length,
     sourceSampleRate,
   );
-  sourceBuffer.copyToChannel(audioData, 0);
+  sourceBuffer.copyToChannel(audioData as Float32Array<ArrayBuffer>, 0);
 
   // Create source node and connect to destination
   const source = offlineContext.createBufferSource();

@@ -136,7 +136,9 @@ const formattedContent = computed(() => {
     : content.split("\n");
 
   // Filter out empty paragraphs and trim whitespace
-  return paragraphs.map((p) => p.trim()).filter((p) => p.length > 0);
+  return paragraphs
+    .map((p: string) => p.trim())
+    .filter((p: string) => p.length > 0);
 });
 
 function isTwitterUrl(url: string): boolean {
