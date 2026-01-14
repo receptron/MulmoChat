@@ -160,14 +160,12 @@ export async function generateImageCommon(
 ): Promise<ToolResult<ImageToolData>> {
   try {
     // Prepare images array for the shared function
+    const currentImageData = context.currentResult?.data as
+      | ImageToolData
+      | undefined;
     const images =
-      editImage && context.currentResult?.data?.imageData
-        ? [
-            context.currentResult.data.imageData.replace(
-              /^data:image\/[^;]+;base64,/,
-              "",
-            ),
-          ]
+      editImage && currentImageData?.imageData
+        ? [currentImageData.imageData.replace(/^data:image\/[^;]+;base64,/, "")]
         : [];
 
     const result = await generateImageWithBackend(prompt, images, context);

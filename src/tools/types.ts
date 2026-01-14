@@ -7,7 +7,7 @@ export interface ToolContext {
   getPluginConfig?: <T = unknown>(key: string) => T | undefined;
 }
 
-export interface ToolResult<T = Record<string, unknown>, J = unknown> {
+export interface ToolResult<T = unknown, J = unknown> {
   toolName?: string; // name of the tool that generated this result
   uuid?: string; // unique identifier for this result
   message: string; // status message sent back to the LLM about the tool execution result
@@ -23,7 +23,7 @@ export interface ToolResult<T = Record<string, unknown>, J = unknown> {
 }
 
 export interface ToolResultComplete<
-  T = Record<string, unknown>,
+  T = unknown,
   J = unknown,
 > extends ToolResult<T, J> {
   toolName: string;
@@ -40,7 +40,6 @@ export interface FileUploadConfig {
 }
 
 // Vue component types are complex generics - use any for simplicity
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, sonarjs/redundant-type-aliases
 type VueComponent = any;
 
 export interface ToolPluginConfig {
@@ -54,12 +53,12 @@ export interface ToolSample {
   args: Record<string, unknown>; // Sample arguments to pass to execute
 }
 
-// JSON Schema property definition
+// JSON Schema property definition - using recursive type with index signature for flexibility
 export interface JsonSchemaProperty {
-  type: string;
+  type?: string;
   description?: string;
   enum?: string[];
-  items?: JsonSchemaProperty | { type: string; properties?: Record<string, JsonSchemaProperty>; required?: string[] };
+  items?: JsonSchemaProperty;
   minimum?: number;
   maximum?: number;
   minItems?: number;
@@ -67,12 +66,14 @@ export interface JsonSchemaProperty {
   properties?: Record<string, JsonSchemaProperty>;
   required?: string[];
   additionalProperties?: boolean;
+  oneOf?: JsonSchemaProperty[];
+  [key: string]: unknown; // Allow additional JSON Schema properties
 }
 
 export interface ToolPlugin<
-  T = Record<string, unknown>,
+  T = unknown,
   J = unknown,
-  A extends Record<string, unknown> = Record<string, unknown>,
+  A extends object = object,
 > {
   toolDefinition: {
     type: "function";

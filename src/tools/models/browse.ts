@@ -14,6 +14,10 @@ export interface BrowseJsonData {
     title?: string;
     description?: string;
     content?: string;
+    textContent?: string;
+    text?: string;
+    byline?: string;
+    excerpt?: string;
     [key: string]: unknown;
   };
   [key: string]: unknown;
@@ -118,7 +122,9 @@ const browse = async (
     if (data.success && data.data) {
       const browseData: BrowseToolData = {
         url,
-        twitterEmbedHtml: isTwitterUrl(url) ? (twitterEmbedData[url] || null) : undefined,
+        twitterEmbedHtml: isTwitterUrl(url)
+          ? twitterEmbedData[url] || null
+          : undefined,
       };
 
       return {

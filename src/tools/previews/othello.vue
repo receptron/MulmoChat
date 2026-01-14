@@ -52,9 +52,10 @@
 
 <script setup lang="ts">
 import type { ToolResult } from "../types";
+import type { OthelloState } from "../logic/othelloLogic";
 
 defineProps<{
-  result: ToolResult;
+  result: ToolResult<unknown, OthelloState>;
 }>();
 
 function getGameResult(gameState: any): string {

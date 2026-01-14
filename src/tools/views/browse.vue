@@ -92,11 +92,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ToolResult } from "../types";
-import type { BrowseToolData } from "../models/browse";
+import type { BrowseToolData, BrowseJsonData } from "../models/browse";
 import TextSelectionMenu from "../../components/TextSelectionMenu.vue";
 
 const props = defineProps<{
-  selectedResult: ToolResult<BrowseToolData> | null;
+  selectedResult: ToolResult<BrowseToolData, BrowseJsonData> | null;
   sendTextMessage: (text?: string) => void;
 }>();
 

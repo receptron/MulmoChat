@@ -99,6 +99,14 @@ import VueDrawingCanvas from "vue-drawing-canvas";
 import type { ToolResult } from "../types";
 import type { ImageToolData } from "../models/generateImage";
 
+interface CanvasDrawingState {
+  brushSize?: number;
+  brushColor?: string;
+  canvasWidth?: number;
+  canvasHeight?: number;
+  strokes?: unknown[];
+}
+
 const props = defineProps<{
   selectedResult: ToolResult<ImageToolData> | null;
 }>();
@@ -118,7 +126,8 @@ const canvasRenderKey = ref(0);
 
 const restoreDrawingState = () => {
   if (props.selectedResult?.viewState?.drawingState) {
-    const state = props.selectedResult.viewState.drawingState;
+    const state = props.selectedResult.viewState
+      .drawingState as CanvasDrawingState;
 
     brushSize.value = state.brushSize || 5;
     brushColor.value = state.brushColor || "#000000";
@@ -126,7 +135,7 @@ const restoreDrawingState = () => {
     canvasHeight.value = state.canvasHeight || 600;
 
     if (state.strokes) {
-      initialStrokes.value = state.strokes;
+      initialStrokes.value = state.strokes as never[];
     } else {
       initialStrokes.value = [];
     }

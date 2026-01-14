@@ -41,7 +41,7 @@ onUnmounted(() => {
 
 // Watch for script changes and reload the scene
 watch(
-  () => props.result.data.script,
+  () => props.result.data?.script,
   () => {
     reloadScene();
   },
@@ -78,6 +78,7 @@ function initPreview() {
     scene.add(directionalLight);
 
     // Parse and add ShapeScript objects
+    if (!props.result.data?.script) return;
     const ast = parseShapeScript(props.result.data.script);
     sceneGroup = astToThreeJS(ast, { wireframe: false });
     scene.add(sceneGroup);
@@ -102,7 +103,7 @@ function animate() {
 }
 
 function reloadScene() {
-  if (!scene) return;
+  if (!scene || !props.result.data?.script) return;
 
   try {
     // Remove old objects

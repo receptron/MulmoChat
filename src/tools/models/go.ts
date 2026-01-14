@@ -119,10 +119,7 @@ const toolDefinition = {
   },
 };
 
-const go = async (
-  context: ToolContext,
-  args: GoArgs,
-): Promise<GoResult> => {
+const go = async (context: ToolContext, args: GoArgs): Promise<GoResult> => {
   try {
     let command: Command;
 

@@ -52,6 +52,11 @@ import type { Present3DToolData } from "../models/present3D";
 import { parseShapeScript } from "../../utils/shapescript/parser";
 import { astToThreeJS } from "../../utils/shapescript/toThreeJS";
 
+interface CameraState {
+  position?: { x: number; y: number; z: number };
+  target?: { x: number; y: number; z: number };
+}
+
 const props = defineProps<{
   selectedResult: ToolResult<Present3DToolData>;
 }>();
@@ -60,7 +65,7 @@ const emit = defineEmits<{
   updateResult: [result: ToolResult<Present3DToolData>];
 }>();
 
-const editableScript = ref(props.selectedResult.data.script);
+const editableScript = ref(props.selectedResult.data?.script ?? "");
 
 // State
 const viewport = ref<HTMLDivElement | null>(null);
@@ -70,7 +75,7 @@ const showGrid = ref(true);
 
 // Check if script has been modified
 const hasChanges = computed(() => {
-  return editableScript.value !== props.selectedResult.data.script;
+  return editableScript.value !== props.selectedResult.data?.script;
 });
 
 let scene: THREE.Scene;
@@ -100,7 +105,7 @@ onUnmounted(() => {
 
 // Watch for script changes
 watch(
-  () => props.selectedResult.data.script,
+  () => props.selectedResult.data?.script,
   () => {
     loadShapeScript();
   },
@@ -189,7 +194,8 @@ function loadShapeScript() {
     sceneObjects = [];
 
     // Parse ShapeScript into AST
-    const script = props.selectedResult.data.script;
+    const script = props.selectedResult.data?.script;
+    if (!script) return;
     const ast = parseShapeScript(script);
 
     // Convert AST to Three.js objects
@@ -227,7 +233,7 @@ function restoreCameraState() {
     return;
   }
 
-  const state = props.selectedResult.viewState.cameraState;
+  const state = props.selectedResult.viewState.cameraState as CameraState;
 
   if (state.position) {
     camera.position.set(state.position.x, state.position.y, state.position.z);
@@ -338,9 +344,9 @@ function applyScript() {
 
 // Watch for external changes to selectedResult (when user clicks different result)
 watch(
-  () => props.selectedResult.data.script,
+  () => props.selectedResult.data?.script,
   (newScript) => {
-    editableScript.value = newScript;
+    if (newScript) editableScript.value = newScript;
   },
 );
 

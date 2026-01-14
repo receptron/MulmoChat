@@ -214,7 +214,7 @@ watch(
 
 // Watch for scroll requests from viewState
 watch(
-  () => props.selectedResult?.viewState?.scrollToAnchor,
+  () => props.selectedResult?.viewState?.scrollToAnchor as string | undefined,
   (anchorId) => {
     if (!anchorId) return;
 

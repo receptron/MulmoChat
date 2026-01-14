@@ -51,7 +51,7 @@ const toolDefinition = {
       },
       type: {
         type: "string",
-        enum: HTML_LIBRARIES,
+        enum: [...HTML_LIBRARIES],
         description: (() => {
           const validValues = HTML_LIBRARIES.map(
             (lib) => `'${lib}' for ${LIBRARY_DESCRIPTIONS[lib]}`,

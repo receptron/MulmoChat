@@ -31,10 +31,18 @@ interface SetImageStyleData {
   previousStyleModifier: string;
 }
 
+export interface SetImageStyleJsonData {
+  success: boolean;
+  styleModifier?: string;
+  previousStyleModifier?: string;
+  backend?: string;
+  error?: string;
+}
+
 const setImageStyleExecute = async (
   context: ToolContext,
   args: SetImageStyleArgs,
-): Promise<ToolResult<SetImageStyleData>> => {
+): Promise<ToolResult<SetImageStyleData, SetImageStyleJsonData>> => {
   const { styleModifier } = args;
 
   try {
@@ -107,7 +115,11 @@ const setImageStyleExecute = async (
   }
 };
 
-export const plugin: ToolPlugin<SetImageStyleData, unknown, SetImageStyleArgs> = {
+export const plugin: ToolPlugin<
+  SetImageStyleData,
+  SetImageStyleJsonData,
+  SetImageStyleArgs
+> = {
   toolDefinition,
   execute: setImageStyleExecute,
   generatingMessage: "Setting image style...",

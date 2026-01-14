@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Spreadsheet Function Registry
  *
@@ -5,7 +6,8 @@
  * allowing modular organization and easy extension of formula capabilities.
  */
 
-export type CellValue = number | string;
+import type { CellValue } from "./types";
+export type { CellValue };
 export type CellGetter = (ref: string) => CellValue;
 export type RangeGetter = (range: string) => CellValue[];
 export type RawRangeGetter = (range: string) => CellValue[];

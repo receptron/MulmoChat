@@ -205,7 +205,8 @@
               @change="
                 $emit(
                   'update:modelKind',
-                  ($event.target as HTMLSelectElement).value,
+                  ($event.target as HTMLSelectElement)
+                    .value as SessionTransportKind,
                 )
               "
               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"

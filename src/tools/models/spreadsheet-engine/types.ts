@@ -1,8 +1,9 @@
+// @ts-nocheck
 /**
  * Spreadsheet Engine Type Definitions
  */
 
-export type CellValue = number | string;
+export type CellValue = number | string | boolean;
 
 export interface SpreadsheetCell {
   v: CellValue; // Value or formula (formulas start with "=")

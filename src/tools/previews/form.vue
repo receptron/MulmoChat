@@ -80,7 +80,7 @@ const formData = computed<FormData | null>(() => {
 });
 
 const viewState = computed<FormViewState | null>(() => {
-  return (props.result?.viewState as FormViewState) || null;
+  return (props.result?.viewState as unknown as FormViewState) || null;
 });
 
 const fieldCount = computed(() => {

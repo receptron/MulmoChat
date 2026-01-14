@@ -425,7 +425,7 @@ watch(
 
         // Restore from viewState if available
         if (newResult.viewState) {
-          const viewState = newResult.viewState as FormViewState;
+          const viewState = newResult.viewState as unknown as FormViewState;
 
           if (viewState.userResponses) {
             Object.assign(formValues.value, viewState.userResponses);
