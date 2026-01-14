@@ -96,7 +96,10 @@ watch(
       quizData.value = newResult.jsonData as QuizData;
       // Restore user answers from viewState or initialize new array
       if (newResult.viewState?.userAnswers) {
-        userAnswers.value = newResult.viewState.userAnswers as (number | null)[];
+        userAnswers.value = newResult.viewState.userAnswers as (
+          | number
+          | null
+        )[];
       } else {
         userAnswers.value = new Array(quizData.value.questions.length).fill(
           null,

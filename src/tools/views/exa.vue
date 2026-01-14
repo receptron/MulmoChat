@@ -14,8 +14,7 @@
           </h2>
           <div v-if="selectedResult.jsonData" class="space-y-6">
             <div
-              v-for="(result, index) in selectedResult.jsonData.results ||
-              []"
+              v-for="(result, index) in selectedResult.jsonData.results || []"
               :key="index"
               class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
             >

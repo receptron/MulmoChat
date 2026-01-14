@@ -120,9 +120,9 @@ export const plugin: ToolPlugin<
   SetImageStyleJsonData,
   SetImageStyleArgs
 > = {
-    toolDefinition,
-    execute: setImageStyleExecute,
-    generatingMessage: "Setting image style...",
-    isEnabled: () => true,
-    previewComponent: SetImageStylePreview,
-  };
+  toolDefinition,
+  execute: setImageStyleExecute,
+  generatingMessage: "Setting image style...",
+  isEnabled: () => true,
+  previewComponent: SetImageStylePreview,
+};
