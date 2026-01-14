@@ -2,7 +2,7 @@ import type { StartApiResponse } from "../../server/types";
 import type { UserPreferencesState } from "../composables/useUserPreferences";
 
 export interface ToolContext {
-  currentResult: ToolResult<any> | null;
+  currentResult?: ToolResult<any> | null;
   userPreferences?: UserPreferencesState;
   getPluginConfig?: <T = any>(key: string) => T | undefined;
 }
@@ -32,7 +32,11 @@ export interface ToolResultComplete<
 
 export interface FileUploadConfig {
   acceptedTypes: string[]; // MIME types like "image/png", "application/pdf"
-  handleUpload: (fileData: string, fileName: string) => ToolResult<any, any>;
+  handleUpload: (
+    fileData: string,
+    fileName: string,
+    ...args: any[]
+  ) => ToolResult<any, any>;
 }
 
 export interface ToolPluginConfig {
@@ -46,7 +50,11 @@ export interface ToolSample {
   args: Record<string, any>; // Sample arguments to pass to execute
 }
 
-export interface ToolPlugin<T = Record<string, any>, J = any> {
+export interface ToolPlugin<
+  T = Record<string, any>,
+  J = any,
+  A extends Record<string, any> = Record<string, any>,
+> {
   toolDefinition: {
     type: "function";
     name: string;
@@ -59,14 +67,11 @@ export interface ToolPlugin<T = Record<string, any>, J = any> {
       required: string[];
     };
   };
-  execute: (
-    context: ToolContext,
-    args: Record<string, any>,
-  ) => Promise<ToolResult<T, J>>;
+  execute: (context: ToolContext, args: A) => Promise<ToolResult<T, J>>;
   generatingMessage: string;
   waitingMessage?: string;
   uploadMessage?: string;
-  isEnabled: (startResponse?: StartApiResponse) => boolean;
+  isEnabled: (startResponse?: StartApiResponse | null) => boolean;
   delayAfterExecution?: number;
   viewComponent?: any; // Vue component for rendering results
   previewComponent?: any; // Vue component for sidebar preview

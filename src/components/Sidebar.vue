@@ -114,8 +114,11 @@
           @click="$emit('selectResult', result)"
         >
           <component
-            v-if="getToolPlugin(result.toolName)?.previewComponent"
-            :is="getToolPlugin(result.toolName).previewComponent"
+            v-if="
+              result.toolName &&
+              getToolPlugin(result.toolName)?.previewComponent
+            "
+            :is="getToolPlugin(result.toolName!).previewComponent"
             :result="result"
           />
         </div>
@@ -480,15 +483,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  nextTick,
-  defineProps,
-  defineEmits,
-  computed,
-  onMounted,
-  onUnmounted,
-} from "vue";
+import { ref, nextTick, computed, onMounted, onUnmounted } from "vue";
 import type { ToolResult } from "../tools";
 import {
   getToolPlugin,

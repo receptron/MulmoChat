@@ -19,19 +19,19 @@
               >
                 <!-- Grid lines -->
                 <div
-                  v-if="rowIndex < 8"
+                  v-if="Number(rowIndex) < 8"
                   class="absolute left-1/2 top-1/2 w-px bg-black"
                   style="height: 12px; transform: translateX(-50%)"
                 ></div>
                 <div
-                  v-if="colIndex < 8"
+                  v-if="Number(colIndex) < 8"
                   class="absolute left-1/2 top-1/2 h-px bg-black"
                   style="width: 12px; transform: translateY(-50%)"
                 ></div>
 
                 <!-- Star points -->
                 <div
-                  v-if="isStarPoint(rowIndex, colIndex)"
+                  v-if="isStarPoint(Number(rowIndex), Number(colIndex))"
                   class="absolute w-1 h-1 bg-black rounded-full"
                   style="z-index: 1"
                 ></div>

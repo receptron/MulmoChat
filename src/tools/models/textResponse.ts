@@ -1,4 +1,4 @@
-import type { ToolPlugin } from "../types";
+import type { ToolPlugin, ToolContext } from "../types";
 import TextResponseView from "../views/TextResponseView.vue";
 import TextResponsePreview from "../previews/TextResponsePreview.vue";
 
@@ -10,8 +10,9 @@ export interface TextResponseData {
 
 type TextResponseArgs = TextResponseData;
 
-export const plugin: ToolPlugin<TextResponseData> = {
+export const plugin: ToolPlugin<TextResponseData, any, TextResponseArgs> = {
   toolDefinition: {
+    type: "function",
     name: "text-response",
     description: "Render plain text content from the assistant.",
     parameters: {
@@ -33,14 +34,14 @@ export const plugin: ToolPlugin<TextResponseData> = {
         },
       },
       required: ["text"],
-      additionalProperties: false,
     },
   },
+  generatingMessage: "Processing...",
   // Never advertise this pseudo tool to the LLM; only the client uses it.
   isEnabled: () => false,
   viewComponent: TextResponseView,
   previewComponent: TextResponsePreview,
-  execute: async (_context, args: TextResponseArgs) => ({
+  execute: async (_context: ToolContext, args: TextResponseArgs) => ({
     data: {
       text: args.text,
       role: args.role,

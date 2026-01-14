@@ -85,7 +85,7 @@ export const plugin: ToolPlugin<HtmlToolData> = {
   execute: generateHtml,
   generatingMessage: "Generating HTML...",
   isEnabled: (startResponse) =>
-    !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGeminiApiKey,
+    !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGoogleApiKey,
   viewComponent: HtmlView,
   previewComponent: HtmlPreview,
   config: {

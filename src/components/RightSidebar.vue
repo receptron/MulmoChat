@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, defineProps, defineEmits, computed } from "vue";
+import { ref, nextTick, computed } from "vue";
 import type { ToolResult } from "../tools";
 
 interface ToolCallHistoryItem {

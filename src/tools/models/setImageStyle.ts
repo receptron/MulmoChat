@@ -109,7 +109,7 @@ const setImageStyleExecute = async (
 
 export const plugin: ToolPlugin<SetImageStyleData> = {
   toolDefinition,
-  execute: setImageStyleExecute,
+  execute: setImageStyleExecute as any,
   generatingMessage: "Setting image style...",
   isEnabled: () => true,
   previewComponent: SetImageStylePreview,

@@ -16,7 +16,7 @@ interface UseToolResultsOptions {
   userPreferences: Ref<UserPreferencesState>;
   getPluginConfig: <T = any>(key: string) => T | undefined;
   sleep: (milliseconds: number) => Promise<void>;
-  sendInstructions: (instructions: string) => boolean;
+  sendInstructions: (instructions: string) => boolean | Promise<boolean>;
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
   conversationActive: Ref<boolean>;
   isDataChannelOpen: () => boolean;
@@ -199,7 +199,7 @@ export function useToolResults(
     }
     if (selectedResult.value?.uuid === updatedResult.uuid) {
       // Update properties of selectedResult instead of replacing it
-      Object.assign(selectedResult.value, updatedResult);
+      Object.assign(selectedResult.value!, updatedResult);
       options.scrollCurrentResultToTop();
     }
   };
@@ -214,7 +214,7 @@ export function useToolResults(
       toolResults.value.push(completeResult);
       updateSelectedResult(completeResult);
 
-      const plugin = options.getToolPlugin(result.toolName);
+      const plugin = options.getToolPlugin(result.toolName!);
       if (plugin?.uploadMessage && options.isDataChannelOpen()) {
         for (
           let i = 0;

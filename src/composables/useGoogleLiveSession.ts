@@ -511,7 +511,7 @@ export function useGoogleLiveSession(
     stopChat,
     sendUserMessage,
     sendFunctionCallOutput,
-    sendInstructions,
+    sendInstructions: sendInstructions as any,
     setMute,
     setLocalAudioEnabled,
     attachRemoteAudioElement,

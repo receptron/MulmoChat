@@ -9,6 +9,7 @@ const toolName = "presentDocument";
 
 export interface MarkdownToolData {
   markdown: string;
+  pdfPath?: string;
 }
 
 const toolDefinition = {
