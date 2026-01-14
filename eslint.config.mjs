@@ -16,7 +16,7 @@ export default [
   sonarjs.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/utils/markdown.ts'],
+    files: ['**/utils/markdown.ts', '**/composables/*.ts'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -44,19 +44,26 @@ export default [
         },
       ],
       "linebreak-style": ["error", "unix"],
+      quotes: "error",
       "no-shadow": "error",
       "no-param-reassign": "error",
+      "no-undef": "error",
       "prefer-const": "error",
       "no-return-assign": "error",
       "object-shorthand": "error",
       semi: ["error", "always"],
-      "sonarjs/pseudo-random": "off",
-      "sonarjs/todo-tag": "off",
-      "sonarjs/no-commented-code": "off",
+      "prettier/prettier": "error",
+      "sonarjs/pseudo-random": "warn",
+      "sonarjs/todo-tag": "warn",
+      "sonarjs/no-commented-code": "warn",
+      "sonarjs/no-unused-vars": "error",
       "sonarjs/cognitive-complexity": "warn",
-      "no-console": "off",
+      "no-console": "warn",
       "sonarjs/no-nested-conditional": "warn",
-      "sonarjs/cors": "warn"
+      "sonarjs/redundant-type-aliases": "off",
+      "sonarjs/x-powered-by": "error",
+      "sonarjs/cors": "warn",
+      "sonarjs/no-empty-test-file": "error"
     },
     plugins: {
       prettier: prettierPlugin,

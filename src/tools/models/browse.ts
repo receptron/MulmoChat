@@ -118,7 +118,9 @@ const browse = async (
     if (data.success && data.data) {
       const browseData: BrowseToolData = {
         url,
-        twitterEmbedHtml: isTwitterUrl(url) ? (twitterEmbedData[url] || null) : undefined,
+        twitterEmbedHtml: isTwitterUrl(url)
+          ? twitterEmbedData[url] || null
+          : undefined,
       };
 
       return {

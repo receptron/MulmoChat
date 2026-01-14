@@ -40,7 +40,6 @@ export interface FileUploadConfig {
 }
 
 // Vue component types are complex generics - use any for simplicity
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, sonarjs/redundant-type-aliases
 type VueComponent = any;
 
 export interface ToolPluginConfig {
@@ -59,7 +58,13 @@ export interface JsonSchemaProperty {
   type: string;
   description?: string;
   enum?: string[];
-  items?: JsonSchemaProperty | { type: string; properties?: Record<string, JsonSchemaProperty>; required?: string[] };
+  items?:
+    | JsonSchemaProperty
+    | {
+        type: string;
+        properties?: Record<string, JsonSchemaProperty>;
+        required?: string[];
+      };
   minimum?: number;
   maximum?: number;
   minItems?: number;
