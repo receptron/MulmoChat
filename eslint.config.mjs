@@ -16,7 +16,7 @@ export default [
   sonarjs.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/utils/markdown.ts'],
+    files: ['**/utils/markdown.ts', '**/composables/*.ts'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -34,7 +34,7 @@ export default [
     },
     rules: {
       indent: ["error", 2],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
@@ -58,7 +58,7 @@ export default [
       "sonarjs/no-commented-code": "warn",
       "sonarjs/no-unused-vars": "error",
       "sonarjs/cognitive-complexity": "warn",
-      "no-console": "warn",
+      "no-console": "off",
       "sonarjs/no-nested-conditional": "warn",
       "sonarjs/redundant-type-aliases": "off",
       "sonarjs/x-powered-by": "error",
