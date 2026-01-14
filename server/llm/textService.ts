@@ -198,6 +198,23 @@ export async function generateText(
   }
 }
 
+function hasProviderCredentials(provider: TextLLMProviderId): boolean {
+  switch (provider) {
+    case "openai":
+      return Boolean(process.env.OPENAI_API_KEY);
+    case "anthropic":
+      return Boolean(process.env.ANTHROPIC_API_KEY);
+    case "google":
+      return Boolean(process.env.GEMINI_API_KEY);
+    case "grok":
+      return Boolean(process.env.XAI_API_KEY);
+    case "ollama":
+      return true;
+    default:
+      return true;
+  }
+}
+
 export function getProviderAvailability(): ProviderAvailability[] {
   const providers: TextLLMProviderId[] = [
     "openai",
@@ -210,16 +227,7 @@ export function getProviderAvailability(): ProviderAvailability[] {
   return providers.map((provider) => {
     const base: ProviderAvailability = {
       provider,
-      hasCredentials:
-        provider === "openai"
-          ? Boolean(process.env.OPENAI_API_KEY)
-          : provider === "anthropic"
-            ? Boolean(process.env.ANTHROPIC_API_KEY)
-            : provider === "google"
-              ? Boolean(process.env.GEMINI_API_KEY)
-              : provider === "grok"
-                ? Boolean(process.env.XAI_API_KEY)
-                : true,
+      hasCredentials: hasProviderCredentials(provider),
     };
 
     const defaultModel = DEFAULT_MODELS[provider];
