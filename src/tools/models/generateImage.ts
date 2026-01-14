@@ -57,7 +57,7 @@ export async function generateImageWithBackend(
     let openaiModel = "gpt-image-1";
 
     if (typeof config === "string") {
-      backend = config;
+      backend = config as typeof backend;
     } else {
       const typedConfig = config as ImageGenerationConfigValue;
       backend = typedConfig.backend || "gemini";
@@ -227,7 +227,7 @@ export const plugin: ToolPlugin<ImageToolData> = {
   previewComponent: ImagePreview,
   fileUpload: {
     acceptedTypes: ["image/png", "image/jpeg"],
-    handleUpload: createUploadedImageResult,
+    handleUpload: createUploadedImageResult as any,
   },
   systemPrompt: `When you are talking about places, objects, people, movies, books and other things, you MUST use the ${toolName} API to draw pictures to make the conversation more engaging.`,
   config: {

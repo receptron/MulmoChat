@@ -12,6 +12,7 @@ type TextResponseArgs = TextResponseData;
 
 export const plugin: ToolPlugin<TextResponseData> = {
   toolDefinition: {
+    type: "function",
     name: "text-response",
     description: "Render plain text content from the assistant.",
     parameters: {
@@ -33,19 +34,19 @@ export const plugin: ToolPlugin<TextResponseData> = {
         },
       },
       required: ["text"],
-      additionalProperties: false,
     },
   },
+  generatingMessage: "Processing...",
   // Never advertise this pseudo tool to the LLM; only the client uses it.
   isEnabled: () => false,
   viewComponent: TextResponseView,
   previewComponent: TextResponsePreview,
-  execute: async (_context, args: TextResponseArgs) => ({
+  execute: (async (_context, args: TextResponseArgs) => ({
     data: {
       text: args.text,
       role: args.role,
       transportKind: args.transportKind,
     },
     message: args.text,
-  }),
+  })) as any,
 };

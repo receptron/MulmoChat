@@ -480,15 +480,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  nextTick,
-  defineProps,
-  defineEmits,
-  computed,
-  onMounted,
-  onUnmounted,
-} from "vue";
+import { ref, nextTick, computed, onMounted, onUnmounted } from "vue";
 import type { ToolResult } from "../tools";
 import {
   getToolPlugin,

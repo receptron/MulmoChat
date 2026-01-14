@@ -101,7 +101,7 @@ export const plugin: ToolPlugin<HtmlToolData> = {
   execute: editHtml,
   generatingMessage: "Editing HTML...",
   isEnabled: (startResponse) =>
-    !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGeminiApiKey,
+    !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGoogleApiKey,
   viewComponent: HtmlView,
   previewComponent: HtmlPreview,
   config: {

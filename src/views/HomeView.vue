@@ -504,7 +504,7 @@ function updateToolCallError(msg: any, errorMessage: string): void {
   }
 }
 
-const isListenerMode = computed(() => userPreferences.modeId === "listener");
+const isListenerMode = computed(() => userPreferences.roleId === "listener");
 const lastSpeechStartedTime = ref<number | null>(null);
 
 registerEventHandlers({

@@ -141,7 +141,7 @@ const mulmocast = async (
   });
 
   // Construct MulmoScript object
-  const mulmoScript: MulmoScript = {
+  const mulmoScript = {
     $mulmocast: { version: "1.1" },
     canvasSize: {
       width: 1536,
@@ -171,7 +171,7 @@ const mulmocast = async (
     title,
     lang: args.lang,
     beats: beatsWithIds,
-  };
+  } as unknown as MulmoScript;
 
   const message = `Mulmocast has processed the MulmoScript for "${title}" with ${beats.length} beats. Movie generation will begin automatically.`;
 
