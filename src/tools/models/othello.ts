@@ -212,4 +212,20 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: OthelloView,
   previewComponent: OthelloPreview,
+  samples: [
+    {
+      name: "New Game (User First)",
+      args: {
+        action: "new_game",
+        firstPlayer: "user",
+      },
+    },
+    {
+      name: "New Game (Computer First)",
+      args: {
+        action: "new_game",
+        firstPlayer: "computer",
+      },
+    },
+  ],
 };

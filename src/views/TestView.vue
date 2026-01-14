@@ -52,6 +52,26 @@
         </div>
       </div>
 
+      <!-- Sample Selection -->
+      <div v-if="selectedPlugin.samples?.length" class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700">
+          Sample Data
+        </label>
+        <select
+          v-model="selectedSampleIndex"
+          class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option :value="-1">-- Custom --</option>
+          <option
+            v-for="(sample, index) in selectedPlugin.samples"
+            :key="index"
+            :value="index"
+          >
+            {{ sample.name }}
+          </option>
+        </select>
+      </div>
+
       <!-- Arguments Input -->
       <div class="space-y-2">
         <label class="block text-sm font-medium text-gray-700">
@@ -157,6 +177,7 @@ const plugins = computed(() => {
 });
 
 const selectedPluginName = ref("");
+const selectedSampleIndex = ref(-1);
 const argsJson = ref("{}");
 const argsError = ref("");
 const executing = ref(false);
@@ -169,14 +190,9 @@ const selectedPlugin = computed<ToolPlugin | null>(() => {
 });
 
 // Generate default args based on parameters
-watch(selectedPluginName, () => {
-  result.value = null;
-  errorMessage.value = "";
-  argsError.value = "";
-
+function generateDefaultArgs(): Record<string, any> {
   if (!selectedPlugin.value?.toolDefinition.parameters) {
-    argsJson.value = "{}";
-    return;
+    return {};
   }
 
   const params = selectedPlugin.value.toolDefinition.parameters;
@@ -202,7 +218,43 @@ watch(selectedPluginName, () => {
     }
   }
 
-  argsJson.value = JSON.stringify(defaultArgs, null, 2);
+  return defaultArgs;
+}
+
+watch(selectedPluginName, () => {
+  result.value = null;
+  errorMessage.value = "";
+  argsError.value = "";
+
+  // If plugin has samples, select the first one by default
+  if (selectedPlugin.value?.samples?.length) {
+    selectedSampleIndex.value = 0;
+    // Always update argsJson directly (watch may not fire if index was already 0)
+    argsJson.value = JSON.stringify(
+      selectedPlugin.value.samples[0].args,
+      null,
+      2,
+    );
+  } else {
+    selectedSampleIndex.value = -1;
+    argsJson.value = JSON.stringify(generateDefaultArgs(), null, 2);
+  }
+});
+
+// Update args when sample selection changes
+watch(selectedSampleIndex, () => {
+  if (
+    selectedSampleIndex.value >= 0 &&
+    selectedPlugin.value?.samples?.[selectedSampleIndex.value]
+  ) {
+    argsJson.value = JSON.stringify(
+      selectedPlugin.value.samples[selectedSampleIndex.value].args,
+      null,
+      2,
+    );
+  } else {
+    argsJson.value = JSON.stringify(generateDefaultArgs(), null, 2);
+  }
 });
 
 async function executePlugin() {
