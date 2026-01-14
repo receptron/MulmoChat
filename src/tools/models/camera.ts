@@ -1,3 +1,4 @@
+/* global document, navigator */
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import ImageView from "../views/image.vue";
 import ImagePreview from "../previews/image.vue";
@@ -7,6 +8,9 @@ import CameraCapture from "../../components/CameraCapture.vue";
 
 const toolName = "takePhoto";
 
+// Camera takes no arguments - empty interface
+export type CameraArgs = Record<string, never>;
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -14,7 +18,7 @@ const toolDefinition = {
   parameters: {
     type: "object" as const,
     properties: {},
-    required: [],
+    required: [] as string[],
   },
 };
 
@@ -23,7 +27,7 @@ const toolDefinition = {
  */
 const takePhoto = async (
   __context: ToolContext,
-  __args: Record<string, any>,
+  __args: CameraArgs,
 ): Promise<ToolResult<ImageToolData>> => {
   return new Promise((resolve) => {
     // Create container for the camera component
@@ -65,7 +69,7 @@ const takePhoto = async (
   });
 };
 
-export const plugin: ToolPlugin<ImageToolData> = {
+export const plugin: ToolPlugin<ImageToolData, unknown, CameraArgs> = {
   toolDefinition,
   execute: takePhoto,
   generatingMessage: "Opening camera...",

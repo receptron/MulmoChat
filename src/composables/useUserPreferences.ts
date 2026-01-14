@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { reactive, watch } from "vue";
 import { DEFAULT_LANGUAGE_CODE, getLanguageName } from "../config/languages";
 import { DEFAULT_ROLE_ID, getRole } from "../config/roles";

@@ -22,6 +22,17 @@ export interface ExaJsonData {
 
 export type ExaResult = ToolResult<never, ExaJsonData>;
 
+export interface ExaArgs {
+  query: string;
+  numResults?: number;
+  includeText?: boolean;
+  fetchHighlights?: boolean;
+  includeDomains?: string[];
+  excludeDomains?: string[];
+  startPublishedDate?: string;
+  endPublishedDate?: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -77,16 +88,18 @@ const toolDefinition = {
 
 const exaSearch = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: ExaArgs,
 ): Promise<ExaResult> => {
-  const query = args.query as string;
-  const numResults = (args.numResults as number) || 5;
-  const includeText = args.includeText !== false;
-  const fetchHighlights = args.fetchHighlights || false;
-  const includeDomains = args.includeDomains;
-  const excludeDomains = args.excludeDomains;
-  const startPublishedDate = args.startPublishedDate;
-  const endPublishedDate = args.endPublishedDate;
+  const {
+    query,
+    numResults = 5,
+    includeText = true,
+    fetchHighlights = false,
+    includeDomains,
+    excludeDomains,
+    startPublishedDate,
+    endPublishedDate,
+  } = args;
 
   try {
     const response = await fetch("/api/exa-search", {
@@ -137,7 +150,7 @@ const exaSearch = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<never, ExaJsonData, ExaArgs> = {
   toolDefinition,
   execute: exaSearch,
   generatingMessage: "Searching the web...",

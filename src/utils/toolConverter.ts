@@ -2,8 +2,6 @@
  * Tool format converter between OpenAI and Google formats
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Convert OpenAI tool definition to Google function declaration format
  * @param openAITools - Array of OpenAI tool definitions

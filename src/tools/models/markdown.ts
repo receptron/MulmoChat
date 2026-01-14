@@ -12,6 +12,11 @@ export interface MarkdownToolData {
   pdfPath?: string;
 }
 
+export interface MarkdownArgs {
+  title: string;
+  markdown: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -35,10 +40,10 @@ const toolDefinition = {
 
 const pushMarkdown = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: MarkdownArgs,
 ): Promise<ToolResult<MarkdownToolData>> => {
-  let markdown = args.markdown as string;
-  const title = args.title as string;
+  let { markdown } = args;
+  const { title } = args;
   let docUuid: string | undefined;
 
   // Validate that markdown is provided
@@ -125,7 +130,7 @@ const pushMarkdown = async (
   };
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<MarkdownToolData, unknown, MarkdownArgs> = {
   toolDefinition,
   execute: pushMarkdown,
   generatingMessage: "Creating document...",

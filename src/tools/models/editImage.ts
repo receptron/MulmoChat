@@ -5,6 +5,10 @@ import ImagePreview from "../previews/image.vue";
 
 const toolName = "editImage";
 
+export interface EditImageArgs {
+  prompt: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -24,13 +28,13 @@ const toolDefinition = {
 
 const editImage = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: EditImageArgs,
 ): Promise<ToolResult<ImageToolData>> => {
-  const prompt = args.prompt as string;
+  const { prompt } = args;
   return generateImageCommon(context, prompt, true);
 };
 
-export const plugin: ToolPlugin<ImageToolData> = {
+export const plugin: ToolPlugin<ImageToolData, unknown, EditImageArgs> = {
   toolDefinition,
   execute: editImage,
   generatingMessage: "Editing image...",

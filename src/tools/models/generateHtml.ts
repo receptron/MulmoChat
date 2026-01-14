@@ -6,6 +6,10 @@ import type { HtmlToolData } from "./html";
 
 const toolName = "generateHtml";
 
+export interface GenerateHtmlArgs {
+  prompt: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -26,9 +30,9 @@ const toolDefinition = {
 
 const generateHtml = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: GenerateHtmlArgs,
 ): Promise<ToolResult<HtmlToolData>> => {
-  const prompt = args.prompt as string;
+  const { prompt } = args;
 
   // Get backend model preference (default to claude)
   const backend =
@@ -80,7 +84,7 @@ const generateHtml = async (
   }
 };
 
-export const plugin: ToolPlugin<HtmlToolData> = {
+export const plugin: ToolPlugin<HtmlToolData, unknown, GenerateHtmlArgs> = {
   toolDefinition,
   execute: generateHtml,
   generatingMessage: "Generating HTML...",

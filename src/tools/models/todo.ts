@@ -1,3 +1,4 @@
+/* global localStorage */
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import TodoView from "../views/todo.vue";
 import TodoPreview from "../previews/todo.vue";
@@ -14,6 +15,12 @@ export interface TodoItem {
 
 export interface TodoToolData {
   items: TodoItem[];
+}
+
+export interface TodoArgs {
+  action: "show" | "add" | "delete" | "clear_completed" | "update" | "check" | "uncheck";
+  text?: string;
+  newText?: string;
 }
 
 const toolDefinition = {
@@ -77,7 +84,7 @@ function saveTodos(items: TodoItem[]): void {
 
 const manageTodoList = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: TodoArgs,
 ): Promise<ToolResult<TodoToolData>> => {
   const { action, text, newText } = args;
 
@@ -390,7 +397,7 @@ const manageTodoList = async (
   }
 };
 
-export const plugin: ToolPlugin<TodoToolData> = {
+export const plugin: ToolPlugin<TodoToolData, unknown, TodoArgs> = {
   toolDefinition,
   execute: manageTodoList,
   generatingMessage: "Managing todo list...",

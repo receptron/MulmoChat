@@ -1,4 +1,4 @@
-/* eslint-env browser */
+/* global WebSocket, CloseEvent */
 
 import { ref, shallowRef } from "vue";
 import type { StartApiResponse } from "../../server/types";
@@ -13,7 +13,6 @@ import { convertToGoogleToolFormat } from "../utils/toolConverter";
 import { DEFAULT_GOOGLE_LIVE_MODEL_ID } from "../config/models";
 
 type BrowserMediaStream = globalThis.MediaStream;
-/* eslint-disable-next-line no-undef */
 type BrowserHTMLAudioElement = HTMLAudioElement;
 
 export type UseGoogleLiveSessionOptions = RealtimeSessionOptions;
@@ -24,8 +23,6 @@ interface GoogleLiveState {
   localStream: BrowserMediaStream | null;
   audioManager: AudioStreamManager | null;
 }
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export function useGoogleLiveSession(
   options: UseGoogleLiveSessionOptions,

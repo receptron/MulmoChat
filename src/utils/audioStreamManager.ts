@@ -1,4 +1,4 @@
-/* eslint-env browser */
+/* global AudioContext, MediaStreamAudioSourceNode, ScriptProcessorNode, BiquadFilterNode, AudioBufferSourceNode, GainNode, MediaStream */
 
 import {
   encodeAudioToPCM16,

@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 /**
  * Audio codec utilities for Google Live API
  * Handles conversion between Float32Array (Web Audio API) and 16-bit PCM (Google format)

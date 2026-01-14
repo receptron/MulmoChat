@@ -1,3 +1,4 @@
+/* global FileReader */
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import MulmocastView from "../views/mulmocast.vue";
 import MulmocastPreview from "../previews/mulmocast.vue";
@@ -14,6 +15,17 @@ export interface MulmocastToolData {
   images?: Record<string, string>;
   moviePath?: string;
   viewerJsonPath?: string;
+}
+
+export interface MulmocastBeat {
+  text: string;
+  imagePrompt?: string;
+}
+
+export interface MulmocastArgs {
+  title: string;
+  lang: string;
+  beats: MulmocastBeat[];
 }
 
 // Convert URL to base64 (without data URL prefix)
@@ -80,7 +92,7 @@ const toolDefinition = {
 
 const mulmocast = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: MulmocastArgs,
 ): Promise<ToolResult<MulmocastToolData>> => {
   console.log("MULMOSCRIPT:\n", JSON.stringify(args, null, 2));
 
@@ -91,26 +103,18 @@ const mulmocast = async (
   const imageRefs: string[] = [blankImageBase64];
 
   // Generate beat objects with UUIDs first
-  const beatsWithIds = beats.map(
-    (beat: { text: string; imagePrompt: string }) => ({
-      id: uuidv4(),
-      speaker: "Presenter",
-      text: beat.text,
-      imagePrompt: beat.imagePrompt,
-    }),
-  );
+  const beatsWithIds = beats.map((beat) => ({
+    id: uuidv4(),
+    speaker: "Presenter",
+    text: beat.text,
+    imagePrompt: beat.imagePrompt,
+  }));
 
   // Generate images for each beat concurrently
-  const imagePromises = beatsWithIds.map(
-    async (beat: {
-      id: string;
-      speaker: string;
-      text: string;
-      imagePrompt: string;
-    }) => {
-      const prompt =
-        beat.imagePrompt ||
-        `generate image appropriate for the text. <text>${beat.text}</text>. Let the art convey the story and emotions without text. Use the last image for the aspect ratio.`;
+  const imagePromises = beatsWithIds.map(async (beat) => {
+    const prompt =
+      beat.imagePrompt ||
+      `generate image appropriate for the text. <text>${beat.text}</text>. Let the art convey the story and emotions without text. Use the last image for the aspect ratio.`;
       if (dryRun) {
         await new Promise((resolve) => setTimeout(resolve, 5000));
         return {
@@ -199,7 +203,7 @@ const mulmocast = async (
   };
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<MulmocastToolData, unknown, MulmocastArgs> = {
   toolDefinition,
   execute: mulmocast,
   generatingMessage: "Processing with Mulmocast...",

@@ -10,6 +10,15 @@ export interface PdfToolData {
   summary?: string;
 }
 
+export interface PdfArgs {
+  prompt: string;
+}
+
+export interface PdfJsonData {
+  fileName: string;
+  summary: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -30,9 +39,9 @@ const toolDefinition = {
 
 const summarizePDF = async (
   context: ToolContext,
-  args: Record<string, any>,
-): Promise<ToolResult<PdfToolData>> => {
-  const prompt = args.prompt as string;
+  args: PdfArgs,
+): Promise<ToolResult<PdfToolData, PdfJsonData>> => {
+  const { prompt } = args;
 
   // Get the current PDF data from context
   const currentPdfData = context.currentResult?.data as PdfToolData;
@@ -104,7 +113,7 @@ export function createUploadedPdfResult(
   };
 }
 
-export const plugin: ToolPlugin<PdfToolData> = {
+export const plugin: ToolPlugin<PdfToolData, PdfJsonData, PdfArgs> = {
   toolDefinition,
   execute: summarizePDF,
   generatingMessage: "Summarizing PDF...",

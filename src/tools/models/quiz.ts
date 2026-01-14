@@ -18,6 +18,11 @@ export interface QuizData {
 
 export type QuizResult = ToolResult<never, QuizData>;
 
+export interface QuizArgs {
+  title?: string;
+  questions: QuizQuestion[];
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -67,7 +72,7 @@ const toolDefinition = {
 
 const putQuestions = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: QuizArgs,
 ): Promise<QuizResult> => {
   try {
     const { title, questions } = args;
@@ -111,7 +116,7 @@ const putQuestions = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<never, QuizData, QuizArgs> = {
   toolDefinition,
   execute: putQuestions,
   generatingMessage: "Preparing quiz...",

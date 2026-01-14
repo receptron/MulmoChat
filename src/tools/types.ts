@@ -2,12 +2,12 @@ import type { StartApiResponse } from "../../server/types";
 import type { UserPreferencesState } from "../composables/useUserPreferences";
 
 export interface ToolContext {
-  currentResult?: ToolResult<any> | null;
+  currentResult?: ToolResult<unknown> | null;
   userPreferences?: UserPreferencesState;
-  getPluginConfig?: <T = any>(key: string) => T | undefined;
+  getPluginConfig?: <T = unknown>(key: string) => T | undefined;
 }
 
-export interface ToolResult<T = Record<string, any>, J = any> {
+export interface ToolResult<T = Record<string, unknown>, J = unknown> {
   toolName?: string; // name of the tool that generated this result
   uuid?: string; // unique identifier for this result
   message: string; // status message sent back to the LLM about the tool execution result
@@ -19,12 +19,12 @@ export interface ToolResult<T = Record<string, any>, J = any> {
   cancelled?: boolean; // if true, operation was cancelled by user and should not be added to UI
 
   data?: T; // tool specific data
-  viewState?: Record<string, any>; // tool specific view state
+  viewState?: Record<string, unknown>; // tool specific view state
 }
 
 export interface ToolResultComplete<
-  T = Record<string, any>,
-  J = any,
+  T = Record<string, unknown>,
+  J = unknown,
 > extends ToolResult<T, J> {
   toolName: string;
   uuid: string;
@@ -35,25 +35,44 @@ export interface FileUploadConfig {
   handleUpload: (
     fileData: string,
     fileName: string,
-    ...args: any[]
-  ) => ToolResult<any, any>;
+    ...args: unknown[]
+  ) => ToolResult<unknown, unknown>;
 }
+
+// Vue component types are complex generics - use any for simplicity
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, sonarjs/redundant-type-aliases
+type VueComponent = any;
 
 export interface ToolPluginConfig {
   key: string; // Storage key for this config (will be prefixed with "plugin_config_")
-  defaultValue: any; // Default value for this configuration
-  component: any; // Vue component for configuration UI (Props: { value: any }, Emits: { 'update:value': [newValue: any] })
+  defaultValue: unknown; // Default value for this configuration
+  component: VueComponent; // Vue component for configuration UI (Props: { value: unknown }, Emits: { 'update:value': [newValue: unknown] })
 }
 
 export interface ToolSample {
   name: string; // Display name for the sample
-  args: Record<string, any>; // Sample arguments to pass to execute
+  args: Record<string, unknown>; // Sample arguments to pass to execute
+}
+
+// JSON Schema property definition
+export interface JsonSchemaProperty {
+  type: string;
+  description?: string;
+  enum?: string[];
+  items?: JsonSchemaProperty | { type: string; properties?: Record<string, JsonSchemaProperty>; required?: string[] };
+  minimum?: number;
+  maximum?: number;
+  minItems?: number;
+  maxItems?: number;
+  properties?: Record<string, JsonSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean;
 }
 
 export interface ToolPlugin<
-  T = Record<string, any>,
-  J = any,
-  A extends Record<string, any> = Record<string, any>,
+  T = Record<string, unknown>,
+  J = unknown,
+  A extends Record<string, unknown> = Record<string, unknown>,
 > {
   toolDefinition: {
     type: "function";
@@ -61,10 +80,9 @@ export interface ToolPlugin<
     description: string;
     parameters?: {
       type: "object";
-      properties: {
-        [key: string]: any;
-      };
+      properties: Record<string, JsonSchemaProperty>;
       required: string[];
+      additionalProperties?: boolean;
     };
   };
   execute: (context: ToolContext, args: A) => Promise<ToolResult<T, J>>;
@@ -73,8 +91,8 @@ export interface ToolPlugin<
   uploadMessage?: string;
   isEnabled: (startResponse?: StartApiResponse | null) => boolean;
   delayAfterExecution?: number;
-  viewComponent?: any; // Vue component for rendering results
-  previewComponent?: any; // Vue component for sidebar preview
+  viewComponent?: VueComponent; // Vue component for rendering results
+  previewComponent?: VueComponent; // Vue component for sidebar preview
   fileUpload?: FileUploadConfig; // Optional file upload configuration
   systemPrompt?: string; // Optional tool-specific system prompt statement
   config?: ToolPluginConfig; // Optional plugin-specific configuration
