@@ -106,6 +106,12 @@ export interface FormData {
 
 export type FormResult = ToolResult<never, FormData>;
 
+export interface FormArgs {
+  title?: string;
+  description?: string;
+  fields: FormField[];
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -240,7 +246,7 @@ const toolDefinition = {
 
 const presentForm = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: FormArgs,
 ): Promise<FormResult> => {
   try {
     const { title, description, fields } = args;
@@ -511,7 +517,7 @@ const presentForm = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<never, FormData, FormArgs> = {
   toolDefinition,
   execute: presentForm,
   generatingMessage: "Preparing form...",

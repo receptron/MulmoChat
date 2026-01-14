@@ -10,7 +10,7 @@ export interface TextResponseData {
 
 type TextResponseArgs = TextResponseData;
 
-export const plugin: ToolPlugin<TextResponseData, any, TextResponseArgs> = {
+export const plugin: ToolPlugin<TextResponseData, unknown, TextResponseArgs> = {
   toolDefinition: {
     type: "function",
     name: "text-response",

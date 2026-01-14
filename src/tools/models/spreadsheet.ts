@@ -18,6 +18,11 @@ export interface SpreadsheetToolData {
   sheets: SpreadsheetSheet[];
 }
 
+export interface SpreadsheetArgs {
+  title: string;
+  sheets: SpreadsheetSheet[];
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -80,10 +85,10 @@ const toolDefinition = {
 
 const presentSpreadsheet = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: SpreadsheetArgs,
 ): Promise<ToolResult<SpreadsheetToolData>> => {
-  const title = args.title as string;
-  let sheets = args.sheets;
+  const { title } = args;
+  let { sheets } = args;
 
   // Handle case where LLM accidentally stringifies the sheets array
   if (typeof sheets === "string") {
@@ -124,7 +129,7 @@ const presentSpreadsheet = async (
   };
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<SpreadsheetToolData, unknown, SpreadsheetArgs> = {
   toolDefinition,
   execute: presentSpreadsheet,
   generatingMessage: "Creating spreadsheet...",

@@ -8,6 +8,11 @@ export interface Present3DToolData {
   script: string;
 }
 
+export interface Present3DArgs {
+  title: string;
+  script: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -153,10 +158,9 @@ for x in -5 to 5 {
 
 const present3D = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: Present3DArgs,
 ): Promise<ToolResult<Present3DToolData>> => {
-  const script = args.script as string;
-  const title = args.title as string;
+  const { script, title } = args;
 
   // Validate that script is provided
   if (!script || script.trim() === "") {
@@ -172,7 +176,7 @@ const present3D = async (
   };
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<Present3DToolData, unknown, Present3DArgs> = {
   toolDefinition,
   execute: present3D,
   generatingMessage: "Creating 3D visualization...",

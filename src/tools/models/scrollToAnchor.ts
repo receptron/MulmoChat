@@ -2,6 +2,10 @@ import { ToolPlugin, ToolContext, ToolResult } from "../types";
 
 const toolName = "scrollToAnchor";
 
+export interface ScrollToAnchorArgs {
+  anchorId: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -22,9 +26,9 @@ const toolDefinition = {
 
 const scrollToAnchor = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: ScrollToAnchorArgs,
 ): Promise<ToolResult> => {
-  const anchorId = args.anchorId as string;
+  const { anchorId } = args;
 
   // We need to update the current result's viewState to trigger scrolling
   if (!context.currentResult) {
@@ -48,7 +52,7 @@ const scrollToAnchor = async (
   };
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<unknown, unknown, ScrollToAnchorArgs> = {
   toolDefinition,
   execute: scrollToAnchor,
   generatingMessage: "Scrolling to section...",

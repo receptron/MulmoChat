@@ -113,9 +113,9 @@ const switchRoleExecute = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<unknown, unknown, SwitchRoleArgs> = {
   toolDefinition,
-  execute: switchRoleExecute as any,
+  execute: switchRoleExecute,
   generatingMessage: "Switching role...",
   isEnabled: () => true,
   previewComponent: SwitchRolePreview,

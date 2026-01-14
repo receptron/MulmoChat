@@ -6,6 +6,10 @@ import type { HtmlToolData } from "./html";
 
 const toolName = "editHtml";
 
+export interface EditHtmlArgs {
+  prompt: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -26,9 +30,9 @@ const toolDefinition = {
 
 const editHtml = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: EditHtmlArgs,
 ): Promise<ToolResult<HtmlToolData>> => {
-  const prompt = args.prompt as string;
+  const { prompt } = args;
 
   // Get the currently selected HTML from context
   const currentHtml = context.currentResult?.data?.html;
@@ -96,7 +100,7 @@ const editHtml = async (
   }
 };
 
-export const plugin: ToolPlugin<HtmlToolData> = {
+export const plugin: ToolPlugin<HtmlToolData, unknown, EditHtmlArgs> = {
   toolDefinition,
   execute: editHtml,
   generatingMessage: "Editing HTML...",

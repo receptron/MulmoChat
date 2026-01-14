@@ -8,6 +8,11 @@ export interface MusicToolData {
   musicXML: string;
 }
 
+export interface MusicArgs {
+  musicXML: string;
+  title?: string;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -30,7 +35,7 @@ const toolDefinition = {
 
 const pushMusic = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: MusicArgs,
 ): Promise<ToolResult<MusicToolData>> => {
   try {
     const { musicXML, title } = args;
@@ -55,7 +60,7 @@ const pushMusic = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<MusicToolData, unknown, MusicArgs> = {
   toolDefinition,
   execute: pushMusic,
   generatingMessage: "Rendering sheet music...",

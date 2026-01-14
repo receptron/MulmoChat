@@ -12,6 +12,19 @@ const toolName = "playOthello";
 
 export type OthelloResult = ToolResult<never, OthelloState>;
 
+export type OthelloCellValue = "." | "B" | "W";
+export type OthelloPlayerType = "user" | "computer";
+
+export interface OthelloArgs {
+  action: "new_game" | "move" | "pass";
+  col?: number;
+  row?: number;
+  board?: OthelloCellValue[][];
+  currentSide?: Side;
+  playerNames?: { B: OthelloPlayerType; W: OthelloPlayerType };
+  firstPlayer?: OthelloPlayerType;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -88,7 +101,7 @@ const toolDefinition = {
 
 const othello = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: OthelloArgs,
 ): Promise<OthelloResult> => {
   try {
     let command: Command;
@@ -205,7 +218,7 @@ const othello = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<never, OthelloState, OthelloArgs> = {
   toolDefinition,
   execute: othello,
   generatingMessage: "Processing Othello move...",

@@ -60,6 +60,10 @@ export interface WeatherJsonData {
 
 export type WeatherResult = ToolResult<WeatherToolData, WeatherJsonData>;
 
+export interface WeatherArgs {
+  areaCode: string;
+}
+
 // Area code mapping - built from offices.json
 const AREA_CODES: Record<string, string> = officesData.reduce(
   (acc, office) => {
@@ -89,9 +93,9 @@ const toolDefinition = {
 
 const fetchWeather = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: WeatherArgs,
 ): Promise<WeatherResult> => {
-  const areaCode = args.areaCode as string;
+  const { areaCode } = args;
   const areaName = AREA_CODES[areaCode] || "Unknown";
 
   try {
@@ -152,7 +156,7 @@ const fetchWeather = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<WeatherToolData, WeatherJsonData, WeatherArgs> = {
   toolDefinition,
   execute: fetchWeather,
   generatingMessage: "Fetching weather forecast...",

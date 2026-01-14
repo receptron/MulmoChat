@@ -7,6 +7,21 @@ const toolName = "playGo";
 
 export type GoResult = ToolResult<never, GoState>;
 
+export type GoCellValue = "." | "B" | "W";
+export type GoPlayerType = "user" | "computer";
+
+export interface GoArgs {
+  action: "new_game" | "move" | "pass";
+  col?: number;
+  row?: number;
+  board?: GoCellValue[][];
+  currentSide?: Side;
+  playerNames?: { B: GoPlayerType; W: GoPlayerType };
+  capturedStones?: { B: number; W: number };
+  consecutivePasses?: number;
+  firstPlayer?: GoPlayerType;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -106,7 +121,7 @@ const toolDefinition = {
 
 const go = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: GoArgs,
 ): Promise<GoResult> => {
   try {
     let command: Command;
@@ -237,7 +252,7 @@ const go = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<never, GoState, GoArgs> = {
   toolDefinition,
   execute: go,
   generatingMessage: "Processing Go move...",

@@ -8,7 +8,11 @@ export interface MapToolData {
   location: string | { lat: number; lng: number };
 }
 
-export const plugin: ToolPlugin = {
+export interface MapArgs {
+  location: string;
+}
+
+export const plugin: ToolPlugin<MapToolData, unknown, MapArgs> = {
   toolDefinition: {
     type: "function",
     name: toolName,
@@ -28,7 +32,7 @@ export const plugin: ToolPlugin = {
   },
   execute: async (
     context: ToolContext,
-    args: Record<string, any>,
+    args: MapArgs,
   ): Promise<ToolResult<MapToolData>> => {
     const { location } = args;
 

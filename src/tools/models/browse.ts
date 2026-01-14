@@ -14,9 +14,13 @@ export interface BrowseJsonData {
     title?: string;
     description?: string;
     content?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+export interface BrowseArgs {
+  url: string;
 }
 
 export type BrowseResult = ToolResult<BrowseToolData, BrowseJsonData>;
@@ -87,9 +91,9 @@ const toolDefinition = {
 
 const browse = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: BrowseArgs,
 ): Promise<BrowseResult> => {
-  const url = args.url as string;
+  const { url } = args;
 
   // Handle Twitter embeds
   if (isTwitterUrl(url)) {
@@ -112,23 +116,19 @@ const browse = async (
     const data = await response.json();
 
     if (data.success && data.data) {
-      const result: any = {
+      const browseData: BrowseToolData = {
+        url,
+        twitterEmbedHtml: isTwitterUrl(url) ? (twitterEmbedData[url] || null) : undefined,
+      };
+
+      return {
         message: "Successfully browsed the webpage",
         title: data.data.data.title || "Untitled",
         jsonData: data.data,
         instructions:
           "Acknowledge that the webpage was successfully browsed and give a ONE-SENTENCE summary of the content if it is available.",
-        data: {
-          url,
-        },
+        data: browseData,
       };
-
-      // Add Twitter embed data if it's a Twitter URL
-      if (isTwitterUrl(url)) {
-        result.data.twitterEmbedHtml = twitterEmbedData[url] || null;
-      }
-
-      return result;
     } else {
       console.log("*** Browse failed");
       return {
@@ -145,7 +145,7 @@ const browse = async (
   }
 };
 
-export const plugin: ToolPlugin = {
+export const plugin: ToolPlugin<BrowseToolData, BrowseJsonData, BrowseArgs> = {
   toolDefinition,
   execute: browse,
   generatingMessage: "Browsing webpage...",

@@ -26,6 +26,12 @@ export interface HtmlToolData {
   type: HtmlLibraryType;
 }
 
+export interface HtmlArgs {
+  title: string;
+  html: string;
+  type: HtmlLibraryType;
+}
+
 const toolDefinition = {
   type: "function" as const,
   name: toolName,
@@ -60,14 +66,12 @@ const toolDefinition = {
 
 const renderHtml = async (
   context: ToolContext,
-  args: Record<string, any>,
+  args: HtmlArgs,
 ): Promise<ToolResult<HtmlToolData>> => {
-  const html = args.html as string;
-  const type = args.type as HtmlLibraryType;
-  const title = args.title as string;
+  const { html, type, title } = args;
 
   // Validate type
-  if (!HTML_LIBRARIES.includes(type as any)) {
+  if (!HTML_LIBRARIES.includes(type)) {
     throw new Error(
       `Invalid library type: ${type}. Must be one of: ${HTML_LIBRARIES.join(", ")}`,
     );
@@ -82,7 +86,7 @@ const renderHtml = async (
   };
 };
 
-export const plugin: ToolPlugin<HtmlToolData> = {
+export const plugin: ToolPlugin<HtmlToolData, unknown, HtmlArgs> = {
   toolDefinition,
   execute: renderHtml,
   generatingMessage: "Rendering HTML page...",
