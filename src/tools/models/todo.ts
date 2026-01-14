@@ -1,3 +1,4 @@
+/* global localStorage */
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import TodoView from "../views/todo.vue";
 import TodoPreview from "../previews/todo.vue";

@@ -1,3 +1,4 @@
+/* global document, HTMLIFrameElement, HTMLElement */
 import { nextTick } from "vue";
 import type Sidebar from "../components/Sidebar.vue";
 

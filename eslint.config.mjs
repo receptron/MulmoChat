@@ -48,7 +48,6 @@ export default [
       "no-shadow": "error",
       "no-param-reassign": "error",
       // "no-plusplus": "warn",
-      "no-undef": "warn",
       "prefer-const": "error",
       "no-return-assign": "error",
       "object-shorthand": "error",

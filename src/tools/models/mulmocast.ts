@@ -1,3 +1,4 @@
+/* global FileReader */
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import MulmocastView from "../views/mulmocast.vue";
 import MulmocastPreview from "../previews/mulmocast.vue";

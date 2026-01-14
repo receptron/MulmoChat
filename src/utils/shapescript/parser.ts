@@ -18,6 +18,11 @@ import {
   Expression,
   Vector3,
   ParseError,
+  GroupNode,
+  LoftNode,
+  LatheNode,
+  FillNode,
+  HullNode,
 } from "./types";
 
 // Lexer/Tokenizer

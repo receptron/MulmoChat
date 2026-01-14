@@ -1,4 +1,4 @@
-/* eslint-env browser */
+/* global WebSocket, CloseEvent */
 
 import { ref, shallowRef } from "vue";
 import type { StartApiResponse } from "../../server/types";
