@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { ref, type Ref } from "vue";
 import type { ToolContext, ToolResult } from "../tools";
 import type { UserPreferencesState } from "./useUserPreferences";

@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { ref, shallowRef, type Ref } from "vue";
 import type { StartApiResponse } from "../../server/types";
 import type { BuildContext, ToolCallMessage } from "./types";
@@ -9,7 +7,6 @@ import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
 type BrowserRTCPeerConnection = globalThis.RTCPeerConnection;
 type BrowserRTCDataChannel = globalThis.RTCDataChannel;
 type BrowserMediaStream = globalThis.MediaStream;
-/* eslint-disable-next-line no-undef */
 type BrowserHTMLAudioElement = HTMLAudioElement;
 
 export interface RealtimeSessionEventHandlers {
