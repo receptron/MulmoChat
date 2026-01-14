@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Comprehensive Test Suite for Spreadsheet Functions
  * Run with: yarn test:functions

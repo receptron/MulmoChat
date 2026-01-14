@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Spreadsheet Function Registry
  *
@@ -56,7 +55,7 @@ class FunctionRegistry {
   getFunctionsByCategory(): Map<string, FunctionDefinition[]> {
     const categories = new Map<string, FunctionDefinition[]>();
 
-    for (const func of this.functions.values()) {
+    for (const func of Array.from(this.functions.values())) {
       const category = func.category || "Other";
       if (!categories.has(category)) {
         categories.set(category, []);
