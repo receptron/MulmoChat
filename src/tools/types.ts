@@ -39,6 +39,11 @@ export interface ToolPluginConfig {
   component: any; // Vue component for configuration UI (Props: { value: any }, Emits: { 'update:value': [newValue: any] })
 }
 
+export interface ToolSample {
+  name: string; // Display name for the sample
+  args: Record<string, any>; // Sample arguments to pass to execute
+}
+
 export interface ToolPlugin<T = Record<string, any>, J = any> {
   toolDefinition: {
     type: "function";
@@ -66,4 +71,5 @@ export interface ToolPlugin<T = Record<string, any>, J = any> {
   fileUpload?: FileUploadConfig; // Optional file upload configuration
   systemPrompt?: string; // Optional tool-specific system prompt statement
   config?: ToolPluginConfig; // Optional plugin-specific configuration
+  samples?: ToolSample[]; // Optional sample arguments for testing
 }

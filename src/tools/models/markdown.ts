@@ -133,6 +133,45 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: MarkdownView,
   previewComponent: MarkdownPreview,
+  samples: [
+    {
+      name: "Basic Markdown",
+      args: {
+        title: "Sample Document",
+        markdown: `# Hello World
+
+This is a **bold** text and this is *italic*.
+
+## Features
+- Item 1
+- Item 2
+- Item 3
+
+### Code Example
+\`\`\`javascript
+const greeting = "Hello!";
+console.log(greeting);
+\`\`\`
+`,
+      },
+    },
+    {
+      name: "Table Example",
+      args: {
+        title: "Data Table",
+        markdown: `# Product List
+
+| Name | Price | Stock |
+|------|-------|-------|
+| Apple | $1.00 | 50 |
+| Banana | $0.50 | 100 |
+| Orange | $0.75 | 30 |
+
+> Note: Prices are subject to change.
+`,
+      },
+    },
+  ],
   systemPrompt: `Use the ${toolName} tool to create structured documents with text and embedded images. This tool is ideal for:
 - Guides, tutorials, and how-to content ("create a guide about...", "explain how to...")
 - Educational content (lessons, explanations, timelines, concept visualizations)

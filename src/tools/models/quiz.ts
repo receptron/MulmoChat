@@ -118,4 +118,47 @@ export const plugin: ToolPlugin = {
   isEnabled: () => true,
   viewComponent: QuizView,
   previewComponent: QuizPreview,
+  samples: [
+    {
+      name: "Simple Quiz (2 questions)",
+      args: {
+        title: "Sample Quiz",
+        questions: [
+          {
+            question: "What is the capital of Japan?",
+            choices: ["Tokyo", "Osaka", "Kyoto", "Nagoya"],
+            correctAnswer: 0,
+          },
+          {
+            question: "Which planet is known as the Red Planet?",
+            choices: ["Venus", "Mars", "Jupiter", "Saturn"],
+            correctAnswer: 1,
+          },
+        ],
+      },
+    },
+    {
+      name: "Programming Quiz",
+      args: {
+        title: "JavaScript Basics",
+        questions: [
+          {
+            question: "What does 'typeof null' return in JavaScript?",
+            choices: ["null", "undefined", "object", "number"],
+            correctAnswer: 2,
+          },
+          {
+            question: "Which method adds an element to the end of an array?",
+            choices: ["push()", "pop()", "shift()", "unshift()"],
+            correctAnswer: 0,
+          },
+          {
+            question: "What is the result of '1' + 2 in JavaScript?",
+            choices: ["3", "12", "NaN", "undefined"],
+            correctAnswer: 1,
+          },
+        ],
+      },
+    },
+  ],
 };
