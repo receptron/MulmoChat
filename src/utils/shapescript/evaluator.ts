@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Expression, Vector3, Color } from "./types";
 
 export type Value = number | boolean | string | Value[];

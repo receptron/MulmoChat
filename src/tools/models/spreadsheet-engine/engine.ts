@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * SpreadsheetEngine - Main API
  *

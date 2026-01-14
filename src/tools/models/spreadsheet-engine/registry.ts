@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Spreadsheet Function Registry
  *

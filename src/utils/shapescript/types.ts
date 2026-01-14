@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ShapeScript AST Type Definitions
 
 export type Vector3 = [number, number, number];

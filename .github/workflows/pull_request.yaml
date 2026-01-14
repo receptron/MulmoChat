@@ -31,5 +31,6 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
     - run: yarn install
+    - run: yarn run typecheck
     - run: yarn run lint
     - run: yarn run build
