@@ -163,12 +163,9 @@ Return ONLY the HTML code, nothing else. Do not include markdown code blocks or 
 
         const response = await ai.models.generateContent({
           model: "models/gemini-3-pro-preview",
-          contents: [{ text: userContent }],
-          systemInstruction: systemPrompt,
+          contents: [{ text: `${systemPrompt}\n\n${userContent}` }],
           config: {
-            generationConfig: {
-              maxOutputTokens: 8192,
-            },
+            maxOutputTokens: 8192,
           },
         });
 
