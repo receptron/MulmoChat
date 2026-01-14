@@ -59,7 +59,7 @@ export default [
       "sonarjs/no-commented-code": "off",
       "sonarjs/no-unused-vars": "off",
       "sonarjs/cognitive-complexity": "warn",
-      "no-console": "warn",
+      "no-console": "off",
       "sonarjs/no-nested-conditional": "off",
       "sonarjs/redundant-type-aliases": "off",
       "sonarjs/x-powered-by": "warn",
