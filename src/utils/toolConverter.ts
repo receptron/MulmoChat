@@ -38,7 +38,9 @@ interface GoogleFunctionDeclaration {
  * @param openAITools - Array of OpenAI tool definitions
  * @returns Array of Google function declarations
  */
-export function convertToGoogleToolFormat(openAITools: OpenAITool[]): GoogleFunctionDeclaration[] {
+export function convertToGoogleToolFormat(
+  openAITools: OpenAITool[],
+): GoogleFunctionDeclaration[] {
   if (!openAITools || openAITools.length === 0) {
     return [];
   }
