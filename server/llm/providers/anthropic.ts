@@ -85,7 +85,9 @@ export async function generateWithAnthropic(
   const messageParams: MessageCreateParamsNonStreaming = {
     model: params.model,
     max_tokens: params.maxTokens ?? 8192,
-    messages: toAnthropicMessages(params.conversationMessages),
+    messages: toAnthropicMessages(
+      params.conversationMessages,
+    ) as MessageCreateParamsNonStreaming["messages"],
   };
 
   if (params.temperature !== undefined) {
@@ -101,7 +103,11 @@ export async function generateWithAnthropic(
     messageParams.tools = params.tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
-      input_schema: tool.parameters as Record<string, unknown>,
+      input_schema: tool.parameters as {
+        type: "object";
+        properties?: Record<string, unknown>;
+        required?: string[];
+      },
     }));
   }
 

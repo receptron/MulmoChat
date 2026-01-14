@@ -7,7 +7,7 @@
     "esModuleInterop": true,
     "allowJs": true,
     "sourceMap": true,
-    "outDir": "../build",
+    "outDir": "../dist/server",
     "rootDir": "./",
     "strict": true,
     "noImplicitAny": true,
@@ -16,8 +16,6 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "exactOptionalPropertyTypes": true,
-    "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
@@ -25,5 +23,5 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["**/*.ts", "**/*.js"],
-  "exclude": ["node_modules", "../build"]
+  "exclude": ["node_modules", "../dist", "tests/**"]
 }
