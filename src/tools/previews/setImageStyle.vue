@@ -51,9 +51,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ToolResult } from "../types";
+import type { SetImageStyleJsonData } from "../models/setImageStyle";
 
 const props = defineProps<{
-  result: ToolResult;
+  result: ToolResult<unknown, SetImageStyleJsonData>;
 }>();
 
 const success = computed(() => props.result.jsonData?.success || false);

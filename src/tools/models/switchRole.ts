@@ -39,6 +39,13 @@ type SwitchRoleArgs = {
   role: string;
 };
 
+export interface SwitchRoleJsonData {
+  success: boolean;
+  roleName?: string;
+  error?: string;
+  availableRoles?: { id: string; name: string }[];
+}
+
 const switchRoleExecute = async (
   _context: ToolContext,
   args: SwitchRoleArgs,

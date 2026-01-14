@@ -78,9 +78,10 @@
 
 <script setup lang="ts">
 import type { ToolResult } from "../types";
+import type { GoState } from "../logic/goLogic";
 
 defineProps<{
-  result: ToolResult;
+  result: ToolResult<unknown, GoState>;
 }>();
 
 function isStarPoint(row: number, col: number): boolean {

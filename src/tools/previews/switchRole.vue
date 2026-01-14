@@ -37,9 +37,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ToolResult } from "../types";
+import type { SwitchRoleJsonData } from "../models/switchRole";
 
 const props = defineProps<{
-  result: ToolResult;
+  result: ToolResult<unknown, SwitchRoleJsonData>;
 }>();
 
 const success = computed(() => props.result.jsonData?.success || false);

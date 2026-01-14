@@ -35,7 +35,8 @@ const editHtml = async (
   const { prompt } = args;
 
   // Get the currently selected HTML from context
-  const currentHtml = context.currentResult?.data?.html;
+  const currentData = context.currentResult?.data as HtmlToolData | undefined;
+  const currentHtml = currentData?.html;
 
   if (!currentHtml) {
     return {
@@ -75,7 +76,7 @@ const editHtml = async (
       return {
         data: {
           html: data.html,
-          type: context.currentResult?.data?.type || "tailwind",
+          type: currentData?.type || "tailwind",
         },
         title: prompt.slice(0, 50),
         message: "HTML editing succeeded",

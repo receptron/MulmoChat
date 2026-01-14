@@ -9,9 +9,10 @@
 
 <script setup lang="ts">
 import type { ToolResult } from "../types";
+import type { ExaJsonData } from "../models/exa";
 
 defineProps<{
-  result: ToolResult;
+  result: ToolResult<unknown, ExaJsonData>;
 }>();
 
 function extractQueryFromMessage(message: string): string {

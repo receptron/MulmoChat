@@ -31,6 +31,7 @@ export interface TextField extends BaseField {
   placeholder?: string;
   validation?: "email" | "url" | "phone" | string; // string for regex pattern
   defaultValue?: string;
+  minLength?: number;
   maxLength?: number;
 }
 
@@ -337,10 +338,12 @@ const presentForm = async (
           // Valid time field
           break;
 
-        default:
+        default: {
+          const unknownField = field as FormField;
           throw new Error(
-            `Field '${field.id}': unknown field type '${field.type}'`,
+            `Field '${unknownField.id}': unknown field type '${unknownField.type}'`,
           );
+        }
       }
 
       // Validate checkbox constraints
