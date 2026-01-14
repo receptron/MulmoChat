@@ -22,8 +22,10 @@ export interface ToolResult<T = Record<string, any>, J = any> {
   viewState?: Record<string, any>; // tool specific view state
 }
 
-export interface ToolResultComplete<T = Record<string, any>, J = any>
-  extends ToolResult<T, J> {
+export interface ToolResultComplete<
+  T = Record<string, any>,
+  J = any,
+> extends ToolResult<T, J> {
   toolName: string;
   uuid: string;
 }
