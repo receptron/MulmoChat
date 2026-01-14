@@ -8,8 +8,8 @@ declare const GoogleMap: DefineComponent<
     zoom?: number;
     markers?: Array<{ lat: number; lng: number; label?: string }>;
   },
-  {},
-  any
+  Record<string, never>,
+  unknown
 >;
 
 export default GoogleMap;
