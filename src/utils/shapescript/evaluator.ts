@@ -339,7 +339,7 @@ export class Evaluator {
         );
 
       default:
-        throw new Error(`Unknown expression type: ${(expr as any).type}`);
+        throw new Error(`Unknown expression type: ${(expr as { type: string }).type}`);
     }
   }
 

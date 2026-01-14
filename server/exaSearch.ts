@@ -57,15 +57,19 @@ export async function exaSearch(
         });
 
   // Normalize minimal shape for your app:
-  return res.results.map((r) => ({
-    id: r.id,
-    url: r.url,
-    title: r.title,
-    score: r.score,
-    publishedDate: r.publishedDate,
-    author: r.author,
-    // present only if you asked for them:
-    highlights: (r as any).highlights,
-    text: (r as any).text,
-  }));
+  return res.results.map((r) => {
+    // Extended result type for searchAndContents (highlights and text are optional)
+    const result = r as typeof r & { highlights?: string[]; text?: string };
+    return {
+      id: result.id,
+      url: result.url,
+      title: result.title,
+      score: result.score,
+      publishedDate: result.publishedDate,
+      author: result.author,
+      // present only if you asked for them:
+      highlights: result.highlights,
+      text: result.text,
+    };
+  });
 }
