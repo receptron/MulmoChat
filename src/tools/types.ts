@@ -22,8 +22,10 @@ export interface ToolResult<T = Record<string, any>, J = any> {
   viewState?: Record<string, any>; // tool specific view state
 }
 
-export interface ToolResultComplete<T = Record<string, any>, J = any>
-  extends ToolResult<T, J> {
+export interface ToolResultComplete<
+  T = Record<string, any>,
+  J = any,
+> extends ToolResult<T, J> {
   toolName: string;
   uuid: string;
 }
@@ -37,6 +39,11 @@ export interface ToolPluginConfig {
   key: string; // Storage key for this config (will be prefixed with "plugin_config_")
   defaultValue: any; // Default value for this configuration
   component: any; // Vue component for configuration UI (Props: { value: any }, Emits: { 'update:value': [newValue: any] })
+}
+
+export interface ToolSample {
+  name: string; // Display name for the sample
+  args: Record<string, any>; // Sample arguments to pass to execute
 }
 
 export interface ToolPlugin<T = Record<string, any>, J = any> {
@@ -66,4 +73,5 @@ export interface ToolPlugin<T = Record<string, any>, J = any> {
   fileUpload?: FileUploadConfig; // Optional file upload configuration
   systemPrompt?: string; // Optional tool-specific system prompt statement
   config?: ToolPluginConfig; // Optional plugin-specific configuration
+  samples?: ToolSample[]; // Optional sample arguments for testing
 }
