@@ -12,46 +12,47 @@
 | `blankImage.ts` | `loadBlankImageBase64` 関数 |
 | `index.ts` | 全エクスポートの集約 |
 
-## 1. 自己完結型（自身のmodel/view/preview/logic/configのみ + utils）
+## 1. 自己完結型（サーバAPI不要、クライアントのみで動作）
 
 | プラグイン | 備考 |
 |-----------|------|
-| browse | 完全自己完結 |
 | map | 完全自己完結 |
-| exa | 完全自己完結 |
 | othello | `../logic/othelloLogic`を使用 |
 | go | `../logic/goLogic`を使用 |
 | spreadsheet | 完全自己完結 |
 | present3D | 完全自己完結 |
 | form | 完全自己完結 |
 | music | 完全自己完結 |
-| pdf | 完全自己完結 |
 | todo | localStorageのみ使用 |
 | textResponse | 完全自己完結 |
 | scrollToAnchor | viewなし、完全自己完結 |
 | weather | `./weather/offices.json`を使用 |
 | setImageStyle | viewなし、完全自己完結 |
-| generateImage | utils使用、後方互換のため再エクスポート |
-| editImage | utils使用 |
-| camera | utils使用 |
-| canvas | utils使用 |
-| mulmocast | utils使用、後方互換のため再エクスポート |
-| markdown | utils使用 |
-| html | utils使用、後方互換のため再エクスポート |
-| generateHtml | utils使用 |
-| editHtml | utils使用 |
+| camera | ローカルカメラのみ |
+| canvas | ローカル描画のみ |
+| html | HTMLレンダリングのみ |
 
-## 2. src/tools/外の外部コードに依存
+## 2. サーバAPIに依存
+
+| プラグイン | APIエンドポイント | 用途 |
+|-----------|------------------|------|
+| generateImage | `/api/generate-image`, `/api/generate-image/openai`, `/api/generate-image/comfy` | 画像生成 |
+| editImage | (generateImageと同じ) | 画像編集 |
+| mulmocast | `/api/generate-movie`, `/api/viewer-json`, `/api/download-movie` | 動画生成・ダウンロード |
+| markdown | `/api/save-images`, `/api/check-pdf`, `/api/generate-pdf`, `/api/download-pdf` | 画像保存、PDF生成 |
+| browse | `/api/browse` | Webページ取得 |
+| exa | `/api/exa-search` | AI検索 |
+| generateHtml | `/api/generate-html` | HTML生成 |
+| editHtml | `/api/generate-html` | HTML編集 |
+| pdf | `/api/summarize-pdf`, `/api/save-pdf` | PDF要約・保存 |
+
+## 3. src/tools/外のレポジトリ内コードに依存
 
 | プラグイン | 外部依存 |
 |-----------|----------|
-| mulmocast | `mulmocast`(npm), `uuid`(npm) |
-| markdown | `../../utils/uuid` |
 | switchRole | `../../config/roles` |
-| camera | `vue` (createApp) |
-| QuizPlugin | `@mulmochat-plugin/quiz` (npm外部パッケージ) |
 
-## 依存関係図（リファクタリング後）
+## 依存関係図
 
 ```
 src/tools/utils/
@@ -61,12 +62,8 @@ src/tools/utils/
 ├── blankImage.ts      ← mulmocast, markdown
 └── index.ts           (集約エクスポート)
 
-外部依存:
-├── switchRole → ../../config/roles
-├── markdown   → ../../utils/uuid
-├── mulmocast  → npm: mulmocast, uuid
-├── camera     → npm: vue
-└── QuizPlugin → npm: @mulmochat-plugin/quiz
+レポジトリ内外部依存:
+└── switchRole → ../../config/roles
 ```
 
 ## インポート方針
