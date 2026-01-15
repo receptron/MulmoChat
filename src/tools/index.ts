@@ -15,7 +15,6 @@ import * as MusicPlugin from "./models/music";
 // import * as HtmlPlugin from "./models/html";
 import * as GenerateHtmlPlugin from "./models/generateHtml";
 import * as EditHtmlPlugin from "./models/editHtml";
-import * as PdfPlugin from "./models/pdf";
 import * as TodoPlugin from "./models/todo";
 import * as SwitchRolePlugin from "./models/switchRole";
 import * as TextResponsePlugin from "./models/textResponse";
@@ -35,6 +34,7 @@ import type {
 // External plugins from npm packages
 import QuizPlugin from "@mulmochat-plugin/quiz";
 import FormPlugin from "@mulmochat-plugin/form";
+import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf";
 
 export type { ToolContext, ToolResult, ToolResultComplete, ToolPlugin };
 
@@ -58,7 +58,7 @@ const pluginList = [
   // HtmlPlugin,
   GenerateHtmlPlugin,
   EditHtmlPlugin,
-  PdfPlugin,
+  SummarizePdfPlugin,
   TodoPlugin,
   SwitchRolePlugin,
   TextResponsePlugin,
