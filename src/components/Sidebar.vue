@@ -14,7 +14,7 @@
     <div class="space-y-2 flex-shrink-0">
       <div class="flex gap-2">
         <!-- Text mode controls -->
-        <template v-if="modelKind === 'text-rest'">
+        <template v-if="isTextRest">
           <div class="flex items-center justify-center px-2">
             <span
               class="material-icons text-2xl text-blue-600 transition-transform"
@@ -151,7 +151,7 @@
             $emit('update:userInput', ($event.target as HTMLInputElement).value)
           "
           @keydown.enter="handleEnterKey"
-          :disabled="!chatActive && modelKind === 'voice-realtime'"
+          :disabled="!chatActive && isOpenAIRealtime"
           type="text"
           placeholder="Type a message"
           class="flex-1 min-w-0 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
@@ -167,9 +167,7 @@
       />
       <button
         @click="handleSendClick"
-        :disabled="
-          (modelKind === 'voice-realtime' && !chatActive) || !userInput.trim()
-        "
+        :disabled="(isOpenAIRealtime && !chatActive) || !userInput.trim()"
         class="w-full px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
       >
         Send Message
@@ -275,7 +273,7 @@
             </p>
           </div>
 
-          <div v-if="modelKind === 'text-rest'">
+          <div v-if="isTextRest">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Text Model
             </label>
@@ -629,6 +627,7 @@ const isVoiceMode = computed(
 );
 const isOpenAIRealtime = computed(() => props.modelKind === "voice-realtime");
 const isGoogleLive = computed(() => props.modelKind === "voice-google-live");
+const isTextRest = computed(() => props.modelKind === "text-rest");
 const connectButtonLabel = computed(() =>
   isVoiceMode.value ? "Connect" : "Start Session",
 );
@@ -729,7 +728,7 @@ function handleEnterKey(event: KeyboardEvent): void {
   }
 
   // In voice mode, don't submit if chat is not active
-  if (props.modelKind === "voice-realtime" && !props.chatActive) {
+  if (isOpenAIRealtime.value && !props.chatActive) {
     event.preventDefault();
     return;
   }
