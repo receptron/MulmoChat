@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Statistical Functions
  */
@@ -66,14 +65,14 @@ const collectNumericValues = (
 const sumHandler: FunctionHandler = (args, context) => {
   if (args.length !== 1) throw new Error("SUM requires 1 argument");
   const values = context.getRangeValues(args[0]);
-  return values.reduce((sum, val) => sum + toNumber(val), 0);
+  return values.reduce((sum: number, val) => sum + toNumber(val), 0);
 };
 
 const averageHandler: FunctionHandler = (args, context) => {
   if (args.length !== 1) throw new Error("AVERAGE requires 1 argument");
   const values = context.getRangeValues(args[0]);
   if (values.length === 0) return 0;
-  const sum = values.reduce((acc, val) => acc + toNumber(val), 0);
+  const sum = values.reduce((acc: number, val) => acc + toNumber(val), 0);
   return sum / values.length;
 };
 

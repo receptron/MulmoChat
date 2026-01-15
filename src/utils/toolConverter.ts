@@ -2,12 +2,45 @@
  * Tool format converter between OpenAI and Google formats
  */
 
+// OpenAI tool definition types
+interface OpenAITool {
+  type?: "function";
+  function?: {
+    name: string;
+    description?: string;
+    parameters?: JsonSchema;
+  };
+  // Simplified format fallback
+  name?: string;
+  description?: string;
+  parameters?: JsonSchema;
+}
+
+// JSON Schema types (subset used for tool parameters)
+interface JsonSchema {
+  type?: string;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  description?: string;
+  enum?: string[];
+  items?: JsonSchema;
+}
+
+// Google function declaration types
+interface GoogleFunctionDeclaration {
+  name: string;
+  description: string;
+  parameters: JsonSchema;
+}
+
 /**
  * Convert OpenAI tool definition to Google function declaration format
  * @param openAITools - Array of OpenAI tool definitions
  * @returns Array of Google function declarations
  */
-export function convertToGoogleToolFormat(openAITools: any[]): any[] {
+export function convertToGoogleToolFormat(
+  openAITools: OpenAITool[],
+): GoogleFunctionDeclaration[] {
   if (!openAITools || openAITools.length === 0) {
     return [];
   }
@@ -25,7 +58,7 @@ export function convertToGoogleToolFormat(openAITools: any[]): any[] {
 
     // Fallback for tools that are already in the simplified format
     return {
-      name: tool.name,
+      name: tool.name || "",
       description: tool.description || "",
       parameters: convertJsonSchemaToGoogleFormat(tool.parameters || {}),
     };
@@ -36,12 +69,12 @@ export function convertToGoogleToolFormat(openAITools: any[]): any[] {
  * Convert JSON Schema (OpenAI format) to Google's parameter format
  * Google uses similar schema but with some differences
  */
-function convertJsonSchemaToGoogleFormat(schema: any): any {
+function convertJsonSchemaToGoogleFormat(schema: JsonSchema): JsonSchema {
   if (!schema) {
     return { type: "object", properties: {} };
   }
 
-  const converted: any = {
+  const converted: JsonSchema = {
     type: schema.type || "object",
   };
 
@@ -66,8 +99,8 @@ function convertJsonSchemaToGoogleFormat(schema: any): any {
 /**
  * Convert individual property schema
  */
-function convertPropertySchema(property: any): any {
-  const converted: any = {
+function convertPropertySchema(property: JsonSchema): JsonSchema {
+  const converted: JsonSchema = {
     type: property.type,
   };
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Cell and Range Reference Parsing
  *

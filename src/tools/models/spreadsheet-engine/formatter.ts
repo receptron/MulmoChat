@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Number Formatting Utilities
  *

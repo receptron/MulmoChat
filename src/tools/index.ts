@@ -210,7 +210,7 @@ const plugins = pluginList.reduce(
 export const toolExecute = async (
   context: ToolContext,
   name: string,
-  args: Record<string, any>,
+  args: Record<string, unknown>,
 ): Promise<ToolResultComplete> => {
   console.log(`EXE:${name}\n`, args);
   const plugin = plugins[name];
@@ -259,17 +259,17 @@ export const hasAnyPluginConfig = () => {
 };
 
 export const getPluginConfigValue = (
-  configs: Record<string, any>,
+  configs: Record<string, unknown>,
   toolName: string,
   configKey: string,
-): any => {
+): unknown => {
   const plugin = plugins[toolName];
   if (!plugin?.config || plugin.config.key !== configKey) return undefined;
   return configs[configKey] ?? plugin.config.defaultValue;
 };
 
-export const initializePluginConfigs = (): Record<string, any> => {
-  const configs: Record<string, any> = {};
+export const initializePluginConfigs = (): Record<string, unknown> => {
+  const configs: Record<string, unknown> = {};
   pluginList.forEach((plugin) => {
     if (plugin.plugin.config) {
       configs[plugin.plugin.config.key] = plugin.plugin.config.defaultValue;

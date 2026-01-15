@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Spreadsheet Calculator
  *
@@ -126,7 +125,8 @@ export function calculateSheet(
 
   const data = processedData;
   const sheetName = sheet.name;
-  const sheetsCache = new Map<string, CellValue[][]>();
+  // Cache stores either SpreadsheetCell[][] (before calculation) or CellValue[][] (after)
+  const sheetsCache = new Map<string, (SpreadsheetCell | CellValue)[][]>();
   const errors: CalculationError[] = [];
   const formulas: FormulaInfo[] = [];
 
@@ -140,7 +140,7 @@ export function calculateSheet(
   const calculating = new Set<string>();
 
   // Helper to extract raw value from cell with recursive formula evaluation
-  const getRawValue = (cell: any, row?: number, col?: number): number => {
+  const getRawValue = (cell: any, row?: number, col?: number): CellValue => {
     // Handle null/undefined cells - treat as 0
     if (cell === null || cell === undefined) return 0;
 

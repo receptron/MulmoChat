@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Financial Functions
  */
@@ -250,7 +249,7 @@ const ppmtHandler: FunctionHandler = (args, context) => {
   const ipmt = ipmtHandler(args, context);
 
   // Principal payment = Total payment - Interest payment
-  return pmt - ipmt;
+  return toNumber(pmt) - toNumber(ipmt);
 };
 
 /**

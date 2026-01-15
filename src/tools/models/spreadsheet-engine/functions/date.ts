@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Date and Time Functions
  * Excel stores dates as sequential serial numbers so they can be used in calculations.

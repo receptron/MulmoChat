@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Logical Functions
  */
@@ -70,7 +69,8 @@ const andHandler: FunctionHandler = (args, context) => {
   for (const arg of args) {
     const value = context.evaluateFormula(arg.trim());
     // Check if value is falsy (0, false, empty string, etc.)
-    if (!value || value === 0 || value === "0" || value === false) {
+    // Note: !value already covers false, so we check for 0 and "0" explicitly
+    if (!value || value === 0 || value === "0") {
       return false;
     }
   }
@@ -82,8 +82,8 @@ const orHandler: FunctionHandler = (args, context) => {
 
   for (const arg of args) {
     const value = context.evaluateFormula(arg.trim());
-    // Check if value is truthy
-    if (value && value !== 0 && value !== "0" && value !== false) {
+    // Check if value is truthy (non-zero, non-empty)
+    if (value && value !== 0 && value !== "0") {
       return true;
     }
   }
@@ -94,7 +94,8 @@ const notHandler: FunctionHandler = (args, context) => {
   if (args.length !== 1) throw new Error("NOT requires 1 argument");
 
   const value = context.evaluateFormula(args[0]);
-  return !value || value === 0 || value === "0" || value === false;
+  // Note: !value already covers false
+  return !value || value === 0 || value === "0";
 };
 
 const iferrorHandler: FunctionHandler = (args, context) => {

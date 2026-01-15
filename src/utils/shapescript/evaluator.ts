@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Expression, Vector3, Color } from "./types";
 
 export type Value = number | boolean | string | Value[];
@@ -106,7 +105,7 @@ const builtInFunctions: Record<string, (...args: Value[]) => Value> = {
 
   sum: (v: Value) => {
     const vec = toArray(v);
-    return vec.reduce((acc, val) => acc + toNumber(val), 0);
+    return vec.reduce((acc: number, val) => acc + toNumber(val), 0);
   },
 
   // String functions
@@ -340,7 +339,9 @@ export class Evaluator {
         );
 
       default:
-        throw new Error(`Unknown expression type: ${(expr as any).type}`);
+        throw new Error(
+          `Unknown expression type: ${(expr as { type: string }).type}`,
+        );
     }
   }
 

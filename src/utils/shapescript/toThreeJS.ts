@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as THREE from "three";
 import {
   Brush,
@@ -33,7 +32,7 @@ import {
   Color,
   ShapeProperties,
 } from "./types";
-import { Evaluator, SymbolTable } from "./evaluator";
+import { Evaluator, SymbolTable, Value } from "./evaluator";
 
 export interface ConversionOptions {
   wireframe?: boolean;
@@ -251,7 +250,9 @@ export class Converter {
     }
   }
 
-  private createMaterial(node: ShapeNode | ExtrudeNode): THREE.Material {
+  private createMaterial(node: {
+    properties: ShapeProperties;
+  }): THREE.Material {
     const color = node.properties.color
       ? this.evaluateColor(node.properties.color)
       : [0.8, 0.8, 0.8];
@@ -563,7 +564,8 @@ export class Converter {
     } else if (node.body !== undefined || node.options !== undefined) {
       // Custom shape definition: define shape { ... }
       // Store the entire node for later instantiation
-      this.symbols.set(node.name, node);
+      // Note: We cast to Value since SymbolTable expects Value, but we know it's a DefineNode
+      this.symbols.set(node.name, node as unknown as Value);
     }
   }
 
@@ -580,7 +582,7 @@ export class Converter {
       return null;
     }
 
-    const defineNode = definition as DefineNode;
+    const defineNode = definition as unknown as DefineNode;
 
     if (!defineNode.body) {
       console.warn(`Custom shape '${node.name}' has no body`);
@@ -1151,17 +1153,26 @@ export class Converter {
     // This helper is used for color commands which can accept a single number or a tuple
     const result = this.evaluator.evaluate(value);
 
+    // Helper to convert Value to number
+    const toNum = (v: Value): number => {
+      if (typeof v === "number") return v;
+      if (typeof v === "boolean") return v ? 1 : 0;
+      if (typeof v === "string") return parseFloat(v) || 0;
+      if (Array.isArray(v) && v.length > 0) return toNum(v[0]);
+      return 0;
+    };
+
     if (typeof result === "number") {
       // Single value - use as grayscale
       return [result, result, result];
     } else if (Array.isArray(result)) {
       // Tuple - ensure it's a 3-element vector
       if (result.length === 1) {
-        return [result[0], result[0], result[0]];
+        return [toNum(result[0]), toNum(result[0]), toNum(result[0])];
       } else if (result.length === 2) {
-        return [result[0], result[1], 0];
+        return [toNum(result[0]), toNum(result[1]), 0];
       } else if (result.length >= 3) {
-        return [result[0], result[1], result[2]];
+        return [toNum(result[0]), toNum(result[1]), toNum(result[2])];
       }
     }
 

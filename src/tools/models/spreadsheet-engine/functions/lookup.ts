@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Lookup and Reference Functions
  */
@@ -9,6 +8,7 @@ import {
   parseCriteria,
   type FunctionHandler,
 } from "../registry";
+import type { CellValue } from "../types";
 
 // Helper to convert Excel column letters to 0-based index (A=0, Z=25, AA=26, etc.)
 const colToIndex = (col: string): number => {
@@ -33,12 +33,12 @@ const indexToCol = (index: number): string => {
 
 // Helper to find match index
 const findMatchIndex = (
-  lookupValue: any,
-  lookupArray: any[],
+  lookupValue: CellValue,
+  lookupArray: CellValue[],
   matchType: number = 1, // 1 = less than (sorted asc), 0 = exact, -1 = greater than (sorted desc)
   searchMode: number = 1, // 1 = first to last, -1 = last to first (for XLOOKUP)
 ): number => {
-  const compare = (a: any, b: any) => {
+  const compare = (a: CellValue, b: CellValue) => {
     if (typeof a === "number" && typeof b === "number") return a - b;
     return String(a).localeCompare(String(b));
   };
@@ -167,7 +167,7 @@ const vlookupHandler: FunctionHandler = (args, context) => {
   const resultColStr = indexToCol(resultColIdx);
 
   // Build lookup array (first column)
-  const lookupArray: any[] = [];
+  const lookupArray: CellValue[] = [];
   for (let r = startRow; r <= endRow; r++) {
     const cellRef = `${sheetName}${startColStr}${r}`;
     lookupArray.push(context.getCellValue(cellRef));
@@ -219,7 +219,7 @@ const hlookupHandler: FunctionHandler = (args, context) => {
   const endColIdx = colToIndex(endColStr);
 
   // Build lookup array (first row)
-  const lookupArray: any[] = [];
+  const lookupArray: CellValue[] = [];
   for (let c = startColIdx; c <= endColIdx; c++) {
     const colStr = indexToCol(c);
     const cellRef = `${sheetName}${colStr}${startRow}`;

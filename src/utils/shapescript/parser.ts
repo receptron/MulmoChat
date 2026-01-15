@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Token,
   TokenType,
@@ -17,7 +16,6 @@ import {
   PathNode,
   PathCommand,
   Expression,
-  Vector3,
   ParseError,
   GroupNode,
   LoftNode,
@@ -786,7 +784,7 @@ export class Parser {
 
   // Parse vector or expression
   // Handles both: "x y z" (space-separated) and "(x, y, z)" (tuple)
-  private parseVectorOrExpression(): Vector3 | Expression {
+  private parseVectorOrExpression(): Expression {
     const first = this.parseExpression();
 
     // Check if there are more expressions following (space-separated values)
@@ -1459,7 +1457,7 @@ export class Parser {
 
     // If there's preceding whitespace and next is a number, it's likely a new value
     return (
-      token.precedingWhitespace &&
+      !!token.precedingWhitespace &&
       (this.peek().type === TokenType.NUMBER ||
         this.peek().type === TokenType.IDENTIFIER ||
         this.peek().type === TokenType.LPAREN)
@@ -1777,8 +1775,31 @@ export class Parser {
 
     const token = this.current();
 
+    type ShapePrimitive =
+      | "cube"
+      | "sphere"
+      | "cylinder"
+      | "cone"
+      | "torus"
+      | "circle"
+      | "square"
+      | "polygon";
+    type CSGOperation =
+      | "union"
+      | "difference"
+      | "intersection"
+      | "xor"
+      | "stencil";
+    type BuilderType = "extrude" | "loft" | "lathe" | "fill" | "hull";
+    type TransformType =
+      | "color"
+      | "rotate"
+      | "translate"
+      | "scale"
+      | "orientation";
+
     // Map token types to shape names
-    const shapeMap: Record<string, string> = {
+    const shapeMap: Record<string, ShapePrimitive> = {
       [TokenType.CUBE]: "cube",
       [TokenType.SPHERE]: "sphere",
       [TokenType.CYLINDER]: "cylinder",
@@ -1790,7 +1811,7 @@ export class Parser {
     };
 
     // Map token types to CSG operations
-    const csgMap: Record<string, string> = {
+    const csgMap: Record<string, CSGOperation> = {
       [TokenType.UNION]: "union",
       [TokenType.DIFFERENCE]: "difference",
       [TokenType.INTERSECTION]: "intersection",
@@ -1799,7 +1820,7 @@ export class Parser {
     };
 
     // Map token types to builder operations
-    const builderMap: Record<string, string> = {
+    const builderMap: Record<string, BuilderType> = {
       [TokenType.EXTRUDE]: "extrude",
       [TokenType.LOFT]: "loft",
       [TokenType.LATHE]: "lathe",
@@ -1808,7 +1829,7 @@ export class Parser {
     };
 
     // Map token types to transform types
-    const transformMap: Record<string, string> = {
+    const transformMap: Record<string, TransformType> = {
       [TokenType.COLOR]: "color",
       [TokenType.ROTATE]: "rotate",
       [TokenType.TRANSLATE]: "translate",
@@ -1832,7 +1853,7 @@ export class Parser {
       return {
         type: transformMap[token.type],
         value: this.parseVectorOrExpression(),
-      };
+      } as SceneNode;
     }
 
     switch (token.type) {
