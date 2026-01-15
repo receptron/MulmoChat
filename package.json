@@ -43,7 +43,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
     "@google/genai": "^1.34.0",
-    "@mulmochat-plugin/quiz": "^0.1.1",
+    "@mulmochat-plugin/quiz": "^0.1.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "exa-js": "^1.9.3",
