@@ -6,6 +6,18 @@ import type { ToolContext, ToolResult } from "../types";
 import type { ImageToolData } from "./imageTypes";
 import type { ImageGenerationConfigValue } from "../configs/ImageGenerationConfig.vue";
 
+type ImageBackend = "gemini" | "openai" | "comfyui";
+
+function getImageGenerationEndpoint(backend: ImageBackend): string {
+  if (backend === "comfyui") {
+    return "/api/generate-image/comfy";
+  }
+  if (backend === "openai") {
+    return "/api/generate-image/openai";
+  }
+  return "/api/generate-image";
+}
+
 /**
  * Shared function to generate images with backend selection support.
  * Can be used by any plugin that needs image generation.
@@ -29,7 +41,7 @@ export async function generateImageWithBackend(
       "gemini";
 
     // Handle legacy string format vs new object format
-    let backend: "gemini" | "openai" | "comfyui";
+    let backend: ImageBackend;
     let styleModifier = "";
     let geminiModel = "gemini-2.5-flash-image";
     let openaiModel = "gpt-image-1";
@@ -49,12 +61,7 @@ export async function generateImageWithBackend(
       ? `${prompt}, ${styleModifier}`
       : prompt;
 
-    const endpoint =
-      backend === "comfyui"
-        ? "/api/generate-image/comfy"
-        : backend === "openai"
-          ? "/api/generate-image/openai"
-          : "/api/generate-image";
+    const endpoint = getImageGenerationEndpoint(backend);
 
     // Get ComfyUI model if using ComfyUI backend
     const comfyuiModel =
