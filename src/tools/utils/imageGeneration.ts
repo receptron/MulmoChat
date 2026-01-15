@@ -8,6 +8,27 @@ import type { ImageGenerationConfigValue } from "../configs/ImageGenerationConfi
 
 type ImageBackend = "gemini" | "openai" | "comfyui";
 
+type NormalizedImageConfig = Required<ImageGenerationConfigValue>;
+
+function normalizeImageConfig(
+  config: string | ImageGenerationConfigValue | undefined,
+): NormalizedImageConfig {
+  if (typeof config === "string") {
+    return {
+      backend: config as ImageBackend,
+      styleModifier: "",
+      geminiModel: "gemini-2.5-flash-image",
+      openaiModel: "gpt-image-1",
+    };
+  }
+  return {
+    backend: config?.backend || "gemini",
+    styleModifier: config?.styleModifier || "",
+    geminiModel: config?.geminiModel || "gemini-2.5-flash-image",
+    openaiModel: config?.openaiModel || "gpt-image-1",
+  };
+}
+
 function getImageGenerationEndpoint(backend: ImageBackend): string {
   if (backend === "comfyui") {
     return "/api/generate-image/comfy";
@@ -33,61 +54,31 @@ export async function generateImageWithBackend(
   context?: ToolContext,
 ): Promise<{ success: boolean; imageData?: string; message?: string }> {
   try {
-    // Get config (can be legacy string or new object format)
-    const config =
+    const rawConfig =
       context?.getPluginConfig?.("imageGenerationBackend") ||
       context?.userPreferences?.pluginConfigs?.["imageGenerationBackend"] ||
-      context?.userPreferences?.imageGenerationBackend ||
-      "gemini";
+      context?.userPreferences?.imageGenerationBackend;
+    const config = normalizeImageConfig(rawConfig);
 
-    // Handle legacy string format vs new object format
-    let backend: ImageBackend;
-    let styleModifier = "";
-    let geminiModel = "gemini-2.5-flash-image";
-    let openaiModel = "gpt-image-1";
-
-    if (typeof config === "string") {
-      backend = config as typeof backend;
-    } else {
-      const typedConfig = config as ImageGenerationConfigValue;
-      backend = typedConfig.backend || "gemini";
-      styleModifier = typedConfig.styleModifier || "";
-      geminiModel = typedConfig.geminiModel || "gemini-2.5-flash-image";
-      openaiModel = typedConfig.openaiModel || "gpt-image-1";
-    }
-
-    // Append style modifier to prompt if provided
-    const finalPrompt = styleModifier.trim()
-      ? `${prompt}, ${styleModifier}`
+    const finalPrompt = config.styleModifier.trim()
+      ? `${prompt}, ${config.styleModifier}`
       : prompt;
 
-    const endpoint = getImageGenerationEndpoint(backend);
-
-    // Get ComfyUI model if using ComfyUI backend
-    const comfyuiModel =
-      backend === "comfyui"
-        ? context?.userPreferences?.comfyuiModel ||
-          "flux1-schnell-fp8.safetensors"
-        : undefined;
+    const endpoint = getImageGenerationEndpoint(config.backend);
 
     const requestBody: Record<string, unknown> = {
       prompt: finalPrompt,
       images,
     };
 
-    // Add model parameter for Gemini
-    if (backend === "gemini") {
-      requestBody.model = geminiModel;
-    }
-
-    // Add model parameter for ComfyUI
-    if (backend === "comfyui" && comfyuiModel) {
-      requestBody.model = comfyuiModel;
-    }
-
-    // Add model parameter for OpenAI
-    if (backend === "openai") {
-      requestBody.model = openaiModel;
+    if (config.backend === "gemini") {
+      requestBody.model = config.geminiModel;
+    } else if (config.backend === "openai") {
+      requestBody.model = config.openaiModel;
+    } else if (config.backend === "comfyui") {
+      requestBody.model =
+        context?.userPreferences?.comfyuiModel ||
+        "flux1-schnell-fp8.safetensors";
     }
 
     const response = await fetch(endpoint, {
@@ -106,7 +97,7 @@ export async function generateImageWithBackend(
 
     // Handle ComfyUI response (array of images)
     if (
-      backend === "comfyui" &&
+      config.backend === "comfyui" &&
       data.success &&
       data.images &&
       data.images.length > 0
