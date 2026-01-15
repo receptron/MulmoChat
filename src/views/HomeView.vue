@@ -80,7 +80,9 @@
 
       <!-- Main content -->
       <div class="flex-1 flex flex-col">
-        <div class="flex-1 border border-gray-300 rounded bg-gray-50 overflow-hidden">
+        <div
+          class="flex-1 border border-gray-300 rounded bg-gray-50 overflow-hidden"
+        >
           <component
             v-if="
               selectedResult &&
