@@ -1,9 +1,8 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import MarkdownView from "../views/markdown.vue";
 import MarkdownPreview from "../previews/markdown.vue";
-import { loadBlankImageBase64 } from "./mulmocast";
-import { generateImageWithBackend } from "./generateImage";
-import { generateUUID } from "../../utils/uuid";
+import { loadBlankImageBase64, generateImageWithBackend } from "../utils";
+import { v4 as uuidv4 } from "uuid";
 
 const toolName = "presentDocument";
 
@@ -58,7 +57,7 @@ const pushMarkdown = async (
 
   if (matches.length > 0) {
     // Generate a UUID for this markdown document
-    docUuid = generateUUID();
+    docUuid = uuidv4();
     const images: Record<string, string> = {};
 
     // Load blank image for image generation

@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import type { ToolResult } from "../types";
-import type { ImageToolData } from "../models/generateImage";
+import type { ImageToolData } from "../utils";
 
 defineProps<{
   selectedResult: ToolResult<ImageToolData>;

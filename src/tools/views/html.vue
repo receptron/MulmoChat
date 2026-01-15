@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { ToolResult } from "../types";
-import type { HtmlToolData } from "../models/html";
+import type { HtmlToolData } from "../utils";
 
 const props = defineProps<{
   selectedResult: ToolResult<HtmlToolData>;

@@ -2,7 +2,7 @@ import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
 import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
-import type { HtmlToolData } from "./html";
+import type { HtmlToolData } from "../utils";
 
 const toolName = "editHtml";
 

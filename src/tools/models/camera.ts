@@ -2,7 +2,7 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import ImageView from "../views/image.vue";
 import ImagePreview from "../previews/image.vue";
-import type { ImageToolData } from "./generateImage";
+import type { ImageToolData } from "../utils";
 import { createApp } from "vue";
 import CameraCapture from "../../components/CameraCapture.vue";
 

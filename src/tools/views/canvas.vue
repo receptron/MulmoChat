@@ -97,7 +97,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue";
 import VueDrawingCanvas from "vue-drawing-canvas";
 import type { ToolResult } from "../types";
-import type { ImageToolData } from "../models/generateImage";
+import type { ImageToolData } from "../utils";
 
 interface CanvasDrawingState {
   brushSize?: number;
