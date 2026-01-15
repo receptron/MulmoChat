@@ -4,10 +4,6 @@
 
 // Image utilities
 export type { ImageToolData } from "./imageTypes";
-export {
-  generateImageWithBackend,
-  generateImageCommon,
-} from "./imageGeneration";
 export { loadBlankImageBase64 } from "./blankImage";
 
 // HTML utilities

@@ -1,19 +1,11 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import ExaView from "../views/exa.vue";
 import ExaPreview from "../previews/exa.vue";
+import { fetchExaSearch, type ExaSearchResult } from "../backend";
 
 const toolName = "searchWeb";
 
-export interface ExaSearchResult {
-  id: string;
-  url: string;
-  title: string;
-  score: number;
-  publishedDate?: string;
-  author?: string;
-  highlights?: string[];
-  text?: string;
-}
+export type { ExaSearchResult };
 
 export interface ExaJsonData {
   query: string;
@@ -90,40 +82,10 @@ const exaSearch = async (
   context: ToolContext,
   args: ExaArgs,
 ): Promise<ExaResult> => {
-  const {
-    query,
-    numResults = 5,
-    includeText = true,
-    fetchHighlights = false,
-    includeDomains,
-    excludeDomains,
-    startPublishedDate,
-    endPublishedDate,
-  } = args;
+  const { query } = args;
 
   try {
-    const response = await fetch("/api/exa-search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query,
-        numResults: Math.min(numResults, 10),
-        includeText,
-        fetchHighlights,
-        includeDomains,
-        excludeDomains,
-        startPublishedDate,
-        endPublishedDate,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await fetchExaSearch(args);
 
     if (data.success && data.results) {
       return {

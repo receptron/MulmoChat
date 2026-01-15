@@ -4,7 +4,7 @@ import type { UserPreferencesState } from "./useUserPreferences";
 import { SESSION_CONFIG } from "../config/session";
 import { v4 as uuidv4 } from "uuid";
 
-import { editImage, generateImage } from "../tools/utils/imageGeneration";
+import { editImage, generateImage } from "../tools/backend";
 
 type ToolExecuteFn = typeof import("../tools").toolExecute;
 type GetToolPluginFn = typeof import("../tools").getToolPlugin;

@@ -1,6 +1,7 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import PdfView from "../views/pdf.vue";
 import PdfPreview from "../previews/pdf.vue";
+import { fetchSummarizePdf } from "../backend";
 
 const toolName = "summarizePDF";
 
@@ -56,25 +57,11 @@ const summarizePDF = async (
   }
 
   try {
-    // Call the server API to summarize the PDF
-    const response = await fetch("/api/summarize-pdf", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        pdfData: currentPdfData.pdfData,
-      }),
+    const data = await fetchSummarizePdf({
+      prompt,
+      pdfData: currentPdfData.pdfData,
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to summarize PDF");
-    }
-
-    const data = await response.json();
-    const summary = data.summary;
+    const summary = data.summary || "";
 
     return {
       data: {

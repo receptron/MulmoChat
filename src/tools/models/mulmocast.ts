@@ -4,7 +4,8 @@ import MulmocastPreview from "../previews/mulmocast.vue";
 import MulmocastConfig from "../configs/MulmocastConfig.vue";
 import type { MulmoScript } from "mulmocast";
 import { v4 as uuidv4 } from "uuid";
-import { generateImageWithBackend, loadBlankImageBase64 } from "../utils";
+import { loadBlankImageBase64 } from "../utils";
+import { generateImageWithBackend } from "../backend";
 
 const toolName = "showPresentation";
 const dryRun = false;

@@ -1,7 +1,8 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import MarkdownView from "../views/markdown.vue";
 import MarkdownPreview from "../previews/markdown.vue";
-import { loadBlankImageBase64, generateImageWithBackend } from "../utils";
+import { loadBlankImageBase64 } from "../utils";
+import { generateImageWithBackend, fetchSaveImages } from "../backend";
 import { v4 as uuidv4 } from "uuid";
 
 const toolName = "presentDocument";
@@ -89,20 +90,10 @@ const pushMarkdown = async (
     // Save images to server and get URLs
     if (Object.keys(images).length > 0) {
       try {
-        const response = await fetch("/api/save-images", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            uuid: docUuid,
-            images,
-          }),
-        });
+        const data = await fetchSaveImages({ uuid: docUuid, images });
 
-        if (response.ok) {
-          const data = await response.json();
-          const imageUrls = data.imageUrls as Record<string, string>;
+        if (data.imageUrls) {
+          const imageUrls = data.imageUrls;
 
           // Replace placeholders with actual image URLs
           let imageIndex = 0;
