@@ -680,10 +680,10 @@
   resolved "https://registry.npmjs.org/@mozilla/readability/-/readability-0.6.0.tgz"
   integrity sha512-juG5VWh4qAivzTAeMzvY9xs9HY5rAcr2E4I7tiSSCokRFi7XIZCAu92ZkSTsIj1OPceCifL3cpfteP3pDT9/QQ==
 
-"@mulmochat-plugin/quiz@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.npmjs.org/@mulmochat-plugin/quiz/-/quiz-0.1.0.tgz"
-  integrity sha512-xFx/86MxjCSDYuFVibEX5MV4/7Ki1C1fkRZ8gCuIc+9l5uXQJ6d0Dciqu4KTpHhz5ENRsKPQJe8dOB4Zqavshw==
+"@mulmochat-plugin/quiz@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.1.2.tgz#0957b49a879ee10e31af5f04ec1d487e7c0f6a17"
+  integrity sha512-1RHFfbrznTpkSiphwHZCsLbfku/R+hZ65ALr2Cjllp5aAY7ye8W4U79mTZyO213Uf95ChYKXhhwCVp3mpgcVqw==
 
 "@napi-rs/wasm-runtime@^1.1.0":
   version "1.1.1"
@@ -4545,10 +4545,10 @@ prettier-linter-helpers@^1.0.1:
   dependencies:
     fast-diff "^1.1.2"
 
-prettier@^3.7.4:
-  version "3.7.4"
-  resolved "https://registry.npmjs.org/prettier/-/prettier-3.7.4.tgz"
-  integrity sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA==
+prettier@^3.8.0:
+  version "3.8.0"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.8.0.tgz#f72cf71505133f40cfa2ef77a2668cdc558fcd69"
+  integrity sha512-yEPsovQfpxYfgWNhCfECjG5AQaO+K3dp6XERmOepyPDVqcJm+bjyCVO3pmU+nAPe0N5dDvekfGezt/EIiRe1TA==
 
 pretty-ms@^9.2.0:
   version "9.3.0"

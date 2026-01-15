@@ -398,7 +398,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Enabled Plugins
             </label>
-            <div class="max-h-60 overflow-y-auto border border-gray-300 rounded p-2 space-y-1">
+            <div
+              class="max-h-60 overflow-y-auto border border-gray-300 rounded p-2 space-y-1"
+            >
               <label
                 v-for="pluginModule in getPluginList()"
                 :key="pluginModule.plugin.toolDefinition.name"
