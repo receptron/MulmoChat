@@ -89,6 +89,8 @@ src/tools/utils/
 
 ## インポート方針
 
-- バックエンドAPIへのアクセスは `../backend` からインポート
-- 型定義やユーティリティは `../utils` からインポート
-- 再エクスポートは行わず、シンプルな依存関係を維持
+- バックエンドAPIへのアクセスは `context.app` 経由で行う
+- `useToolResults.ts` でbackend関数をimportし、`context.app` に設定
+- プラグインは `context.app?.fetchXxx()` の形式で呼び出す
+- 型定義のみ `../backend` からインポート可能
+- ユーティリティは `../utils` からインポート

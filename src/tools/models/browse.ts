@@ -1,7 +1,6 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import BrowseView from "../views/browse.vue";
 import BrowsePreview from "../previews/browse.vue";
-import { fetchBrowse, fetchTwitterEmbed } from "../backend";
 
 const toolName = "browse";
 
@@ -46,12 +45,15 @@ function isTwitterUrl(url: string): boolean {
   }
 }
 
-async function handleTwitterEmbed(url: string): Promise<void> {
+async function handleTwitterEmbed(
+  url: string,
+  context: ToolContext,
+): Promise<void> {
   if (!isTwitterUrl(url) || url in twitterEmbedData) {
     return;
   }
 
-  const embedHtml = await fetchTwitterEmbed(url);
+  const embedHtml = await context.app?.fetchTwitterEmbed?.(url);
   console.log("*** Twitter embed", url, embedHtml);
   if (embedHtml) {
     twitterEmbedData[url] = embedHtml;
@@ -84,11 +86,18 @@ const browse = async (
 
   // Handle Twitter embeds
   if (isTwitterUrl(url)) {
-    await handleTwitterEmbed(url);
+    await handleTwitterEmbed(url, context);
+  }
+
+  if (!context.app?.fetchBrowse) {
+    return {
+      message: "fetchBrowse function not available",
+      instructions: "Acknowledge that the webpage browsing failed.",
+    };
   }
 
   try {
-    const data = await fetchBrowse(url);
+    const data = await context.app.fetchBrowse(url);
 
     if (data.success && data.data) {
       const browseData: BrowseToolData = {

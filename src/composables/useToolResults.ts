@@ -4,7 +4,17 @@ import type { UserPreferencesState } from "./useUserPreferences";
 import { SESSION_CONFIG } from "../config/session";
 import { v4 as uuidv4 } from "uuid";
 
-import { editImage, generateImage } from "../tools/backend";
+import {
+  editImage,
+  generateImage,
+  generateImageWithBackend,
+  fetchBrowse,
+  fetchTwitterEmbed,
+  fetchExaSearch,
+  fetchGenerateHtml,
+  fetchSummarizePdf,
+  fetchSaveImages,
+} from "../tools/backend";
 
 type ToolExecuteFn = typeof import("../tools").toolExecute;
 type GetToolPluginFn = typeof import("../tools").getToolPlugin;
@@ -135,6 +145,13 @@ export function useToolResults(
         app: {
           editImage,
           generateImage,
+          generateImageWithBackend,
+          fetchBrowse,
+          fetchTwitterEmbed,
+          fetchExaSearch,
+          fetchGenerateHtml,
+          fetchSummarizePdf,
+          fetchSaveImages,
         },
       };
 

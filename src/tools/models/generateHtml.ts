@@ -3,7 +3,6 @@ import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
 import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
 import type { HtmlToolData } from "../utils";
-import { fetchGenerateHtml } from "../backend";
 
 const toolName = "generateHtml";
 
@@ -35,6 +34,13 @@ const generateHtml = async (
 ): Promise<ToolResult<HtmlToolData>> => {
   const { prompt } = args;
 
+  if (!context.app?.fetchGenerateHtml) {
+    return {
+      message: "fetchGenerateHtml function not available",
+      instructions: "Acknowledge that the HTML generation failed.",
+    };
+  }
+
   // Get backend model preference (default to claude)
   const backend = (context?.getPluginConfig?.("htmlGenerationBackend") ||
     context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
@@ -42,7 +48,7 @@ const generateHtml = async (
     "claude") as "claude" | "gemini";
 
   try {
-    const data = await fetchGenerateHtml({ prompt, backend });
+    const data = await context.app.fetchGenerateHtml({ prompt, backend });
 
     if (data.success && data.html) {
       return {

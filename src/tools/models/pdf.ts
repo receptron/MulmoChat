@@ -1,7 +1,6 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import PdfView from "../views/pdf.vue";
 import PdfPreview from "../previews/pdf.vue";
-import { fetchSummarizePdf } from "../backend";
 
 const toolName = "summarizePDF";
 
@@ -56,8 +55,15 @@ const summarizePDF = async (
     };
   }
 
+  if (!context.app?.fetchSummarizePdf) {
+    return {
+      message: "fetchSummarizePdf function not available",
+      instructions: "Tell the user that the PDF summarization failed.",
+    };
+  }
+
   try {
-    const data = await fetchSummarizePdf({
+    const data = await context.app.fetchSummarizePdf({
       prompt,
       pdfData: currentPdfData.pdfData,
     });

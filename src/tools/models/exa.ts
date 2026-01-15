@@ -1,7 +1,7 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import ExaView from "../views/exa.vue";
 import ExaPreview from "../previews/exa.vue";
-import { fetchExaSearch, type ExaSearchResult } from "../backend";
+import type { ExaSearchResult } from "../backend";
 
 const toolName = "searchWeb";
 
@@ -84,8 +84,15 @@ const exaSearch = async (
 ): Promise<ExaResult> => {
   const { query } = args;
 
+  if (!context.app?.fetchExaSearch) {
+    return {
+      message: "fetchExaSearch function not available",
+      instructions: "Acknowledge that the search failed due to a technical error.",
+    };
+  }
+
   try {
-    const data = await fetchExaSearch(args);
+    const data = await context.app.fetchExaSearch(args);
 
     if (data.success && data.results) {
       return {

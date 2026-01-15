@@ -5,7 +5,6 @@ import MulmocastConfig from "../configs/MulmocastConfig.vue";
 import type { MulmoScript } from "mulmocast";
 import { v4 as uuidv4 } from "uuid";
 import { loadBlankImageBase64 } from "../utils";
-import { generateImageWithBackend } from "../backend";
 
 const toolName = "showPresentation";
 const dryRun = false;
@@ -100,10 +99,13 @@ const mulmocast = async (
         imageData: `data:image/png;base64,${blankImageBase64}`,
       };
     }
+    if (!context.app?.generateImageWithBackend) {
+      return { id: beat.id, imageData: null };
+    }
     try {
       // Generate the image using the shared backend-aware function
       // The global style modifier will be automatically applied
-      const result = await generateImageWithBackend(prompt, imageRefs, context);
+      const result = await context.app.generateImageWithBackend(prompt, imageRefs, context);
 
       if (result.success && result.imageData) {
         return { id: beat.id, imageData: result.imageData };

@@ -3,7 +3,6 @@ import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
 import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
 import type { HtmlToolData } from "../utils";
-import { fetchGenerateHtml } from "../backend";
 
 const toolName = "editHtml";
 
@@ -47,6 +46,13 @@ const editHtml = async (
     };
   }
 
+  if (!context.app?.fetchGenerateHtml) {
+    return {
+      message: "fetchGenerateHtml function not available",
+      instructions: "Acknowledge that the HTML editing failed.",
+    };
+  }
+
   // Get backend model preference (default to claude)
   const backend = (context?.getPluginConfig?.("htmlGenerationBackend") ||
     context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
@@ -54,7 +60,7 @@ const editHtml = async (
     "claude") as "claude" | "gemini";
 
   try {
-    const data = await fetchGenerateHtml({ prompt, html: currentHtml, backend });
+    const data = await context.app.fetchGenerateHtml({ prompt, html: currentHtml, backend });
 
     if (data.success && data.html) {
       return {
