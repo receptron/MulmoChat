@@ -1,7 +1,7 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import CanvasView from "../views/canvas.vue";
 import ImagePreview from "../previews/image.vue";
-import type { ImageToolData } from "./generateImage";
+import type { ImageToolData } from "../utils";
 
 const toolName = "openCanvas";
 

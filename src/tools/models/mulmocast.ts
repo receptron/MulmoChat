@@ -1,11 +1,10 @@
-/* global FileReader */
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import MulmocastView from "../views/mulmocast.vue";
 import MulmocastPreview from "../previews/mulmocast.vue";
 import MulmocastConfig from "../configs/MulmocastConfig.vue";
 import type { MulmoScript } from "mulmocast";
 import { v4 as uuidv4 } from "uuid";
-import { generateImageWithBackend } from "./generateImage";
+import { generateImageWithBackend, loadBlankImageBase64 } from "../utils";
 
 const toolName = "showPresentation";
 const dryRun = false;
@@ -26,28 +25,6 @@ export interface MulmocastArgs {
   title: string;
   lang: string;
   beats: MulmocastBeat[];
-}
-
-// Convert URL to base64 (without data URL prefix)
-async function urlToBase64(url: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      // Remove "data:image/png;base64," prefix
-      const base64Data = base64.split(",")[1];
-      resolve(base64Data);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-// Load blank.png and convert to base64 (without data URL prefix)
-export async function loadBlankImageBase64(): Promise<string> {
-  return urlToBase64("/blank.png");
 }
 
 const toolDefinition = {

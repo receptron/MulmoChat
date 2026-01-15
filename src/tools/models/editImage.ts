@@ -1,5 +1,5 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
-import { generateImageCommon, ImageToolData } from "./generateImage";
+import { type ImageToolData, generateImageCommon } from "../utils";
 import ImageView from "../views/image.vue";
 import ImagePreview from "../previews/image.vue";
 
