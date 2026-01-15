@@ -680,10 +680,15 @@
   resolved "https://registry.npmjs.org/@mozilla/readability/-/readability-0.6.0.tgz"
   integrity sha512-juG5VWh4qAivzTAeMzvY9xs9HY5rAcr2E4I7tiSSCokRFi7XIZCAu92ZkSTsIj1OPceCifL3cpfteP3pDT9/QQ==
 
-"@mulmochat-plugin/quiz@^0.1.2":
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.1.2.tgz#0957b49a879ee10e31af5f04ec1d487e7c0f6a17"
-  integrity sha512-1RHFfbrznTpkSiphwHZCsLbfku/R+hZ65ALr2Cjllp5aAY7ye8W4U79mTZyO213Uf95ChYKXhhwCVp3mpgcVqw==
+"@mulmochat-plugin/form@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/form/-/form-0.1.0.tgz#9b277c465f99ebd5d2ebbeb92cb2ce1146c2b914"
+  integrity sha512-PLCXPqwDEaCVvqEfZ+bBCDOEJHg2NYwFBZPBxNz2T1t0ZzIgdx2s4hsc79UGOtuP5sn4QzkreTXMfKnN7xEmSg==
+
+"@mulmochat-plugin/quiz@^0.1.3":
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.1.3.tgz#4739125dc52aeb8f3c07853b09903b4b81d26548"
+  integrity sha512-fcM6XO97pvmIe+3KNv1y2BlfsLYT592ypqRRs6bOhmxTDR1o2RjQdrcyZ36Kq4dz/hwCLosS1yqx3XIkjTKcFQ==
 
 "@napi-rs/wasm-runtime@^1.1.0":
   version "1.1.1"

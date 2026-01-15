@@ -52,7 +52,7 @@ const setStoredObject = (key: string, value: Record<string, boolean>) => {
   storage?.setItem(key, JSON.stringify(value));
 };
 
-export interface UserPreferencesState {
+export interface UserPreferencesState extends Record<string, unknown> {
   userLanguage: string;
   suppressInstructions: boolean;
   roleId: string;
@@ -64,6 +64,7 @@ export interface UserPreferencesState {
   imageGenerationBackend: "gemini" | "openai" | "comfyui";
   comfyuiModel: string;
   htmlGenerationBackend: "claude" | "gemini";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pluginConfigs: Record<string, any>;
 }
 

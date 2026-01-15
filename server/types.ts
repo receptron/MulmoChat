@@ -7,6 +7,7 @@ export interface StartApiResponse {
   hasAnthropicApiKey: boolean;
   googleApiKey: string | undefined;
   hasGoogleApiKey: boolean;
+  [key: string]: unknown;
 }
 
 export interface TextProvidersResponse {
