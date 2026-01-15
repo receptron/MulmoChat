@@ -34,27 +34,21 @@ const generateHtml = async (
 ): Promise<ToolResult<HtmlToolData>> => {
   const { prompt } = args;
 
+  if (!context.app?.generateHtml) {
+    return {
+      message: "generateHtml function not available",
+      instructions: "Acknowledge that the HTML generation failed.",
+    };
+  }
+
   // Get backend model preference (default to claude)
-  const backend =
-    context?.getPluginConfig?.("htmlGenerationBackend") ||
+  const backend = (context?.getPluginConfig?.("htmlGenerationBackend") ||
     context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
     context?.userPreferences?.htmlGenerationBackend ||
-    "claude";
+    "claude") as "claude" | "gemini";
 
   try {
-    const response = await fetch("/api/generate-html", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt, backend }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await context.app.generateHtml({ prompt, backend });
 
     if (data.success && data.html) {
       return {

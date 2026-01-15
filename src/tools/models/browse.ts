@@ -45,30 +45,15 @@ function isTwitterUrl(url: string): boolean {
   }
 }
 
-async function fetchTwitterEmbed(url: string): Promise<string | null> {
-  try {
-    const response = await fetch(
-      `/api/twitter-embed?url=${encodeURIComponent(url)}`,
-    );
-
-    if (!response.ok) {
-      throw new Error(`Twitter embed API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.success ? data.html : null;
-  } catch (error) {
-    console.error("Failed to fetch Twitter embed:", error);
-    return null;
-  }
-}
-
-async function handleTwitterEmbed(url: string): Promise<void> {
+async function handleTwitterEmbed(
+  url: string,
+  context: ToolContext,
+): Promise<void> {
   if (!isTwitterUrl(url) || url in twitterEmbedData) {
     return;
   }
 
-  const embedHtml = await fetchTwitterEmbed(url);
+  const embedHtml = await context.app?.getTwitterEmbed?.(url);
   console.log("*** Twitter embed", url, embedHtml);
   if (embedHtml) {
     twitterEmbedData[url] = embedHtml;
@@ -101,23 +86,18 @@ const browse = async (
 
   // Handle Twitter embeds
   if (isTwitterUrl(url)) {
-    await handleTwitterEmbed(url);
+    await handleTwitterEmbed(url, context);
+  }
+
+  if (!context.app?.browseUrl) {
+    return {
+      message: "browseUrl function not available",
+      instructions: "Acknowledge that the webpage browsing failed.",
+    };
   }
 
   try {
-    const response = await fetch("/api/browse", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ url }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await context.app.browseUrl(url);
 
     if (data.success && data.data) {
       const browseData: BrowseToolData = {
@@ -129,8 +109,8 @@ const browse = async (
 
       return {
         message: "Successfully browsed the webpage",
-        title: data.data.data.title || "Untitled",
-        jsonData: data.data,
+        title: data.data.title || "Untitled",
+        jsonData: { data: data.data },
         instructions:
           "Acknowledge that the webpage was successfully browsed and give a ONE-SENTENCE summary of the content if it is available.",
         data: browseData,

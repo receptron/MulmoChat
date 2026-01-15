@@ -3,7 +3,7 @@
  */
 
 import type { ToolContext, ToolResult } from "../types";
-import type { ImageToolData } from "./imageTypes";
+import type { ImageToolData } from "../utils/imageTypes";
 import type { ImageGenerationConfigValue } from "../configs/ImageGenerationConfig.vue";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";

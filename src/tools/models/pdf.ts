@@ -55,26 +55,19 @@ const summarizePDF = async (
     };
   }
 
+  if (!context.app?.summarizePdf) {
+    return {
+      message: "summarizePdf function not available",
+      instructions: "Tell the user that the PDF summarization failed.",
+    };
+  }
+
   try {
-    // Call the server API to summarize the PDF
-    const response = await fetch("/api/summarize-pdf", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        pdfData: currentPdfData.pdfData,
-      }),
+    const data = await context.app.summarizePdf({
+      prompt,
+      pdfData: currentPdfData.pdfData,
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to summarize PDF");
-    }
-
-    const data = await response.json();
-    const summary = data.summary;
+    const summary = data.summary || "";
 
     return {
       data: {

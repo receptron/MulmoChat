@@ -46,31 +46,25 @@ const editHtml = async (
     };
   }
 
+  if (!context.app?.generateHtml) {
+    return {
+      message: "generateHtml function not available",
+      instructions: "Acknowledge that the HTML editing failed.",
+    };
+  }
+
   // Get backend model preference (default to claude)
-  const backend =
-    context?.getPluginConfig?.("htmlGenerationBackend") ||
+  const backend = (context?.getPluginConfig?.("htmlGenerationBackend") ||
     context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
     context?.userPreferences?.htmlGenerationBackend ||
-    "claude";
+    "claude") as "claude" | "gemini";
 
   try {
-    const response = await fetch("/api/generate-html", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        html: currentHtml,
-        backend,
-      }),
+    const data = await context.app.generateHtml({
+      prompt,
+      html: currentHtml,
+      backend,
     });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
 
     if (data.success && data.html) {
       return {

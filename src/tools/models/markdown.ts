@@ -1,7 +1,7 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import MarkdownView from "../views/markdown.vue";
 import MarkdownPreview from "../previews/markdown.vue";
-import { loadBlankImageBase64, generateImageWithBackend } from "../utils";
+import { loadBlankImageBase64 } from "../utils";
 import { v4 as uuidv4 } from "uuid";
 
 const toolName = "presentDocument";
@@ -64,45 +64,39 @@ const pushMarkdown = async (
     const blankImageBase64 = await loadBlankImageBase64();
 
     // Generate images for each placeholder in parallel
-    const imagePromises = matches.map(async (match, i) => {
-      const prompt = `${match[1]}. Use the last image as the output dimension.`;
-      const imageId = `image_${i}`;
+    if (context.app?.generateImageWithBackend) {
+      const imagePromises = matches.map(async (match, i) => {
+        const prompt = `${match[1]}. Use the last image as the output dimension.`;
+        const imageId = `image_${i}`;
 
-      try {
-        // Generate the image using the shared backend-aware function
-        const result = await generateImageWithBackend(
-          prompt,
-          [blankImageBase64],
-          context,
-        );
+        try {
+          const result = await context.app!.generateImageWithBackend(
+            prompt,
+            [blankImageBase64],
+            context,
+          );
 
-        if (result.success && result.imageData) {
-          images[imageId] = `data:image/png;base64,${result.imageData}`;
+          if (result.success && result.imageData) {
+            images[imageId] = `data:image/png;base64,${result.imageData}`;
+          }
+        } catch (error) {
+          console.error(
+            `Failed to generate image for prompt: ${prompt}`,
+            error,
+          );
         }
-      } catch (error) {
-        console.error(`Failed to generate image for prompt: ${prompt}`, error);
-      }
-    });
+      });
 
-    await Promise.all(imagePromises);
+      await Promise.all(imagePromises);
+    }
 
     // Save images to server and get URLs
-    if (Object.keys(images).length > 0) {
+    if (Object.keys(images).length > 0 && context.app?.saveImages) {
       try {
-        const response = await fetch("/api/save-images", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            uuid: docUuid,
-            images,
-          }),
-        });
+        const data = await context.app.saveImages({ uuid: docUuid, images });
 
-        if (response.ok) {
-          const data = await response.json();
-          const imageUrls = data.imageUrls as Record<string, string>;
+        if (data.imageUrls) {
+          const imageUrls = data.imageUrls;
 
           // Replace placeholders with actual image URLs
           let imageIndex = 0;

@@ -1,13 +1,26 @@
 # プラグイン依存関係メモ
 
+## バックエンドAPI (src/tools/backend/)
+
+サーバーAPIへのアクセスは `src/tools/backend/` に配置されています：
+
+| ファイル | 内容 |
+|---------|------|
+| `imageGeneration.ts` | `generateImageWithBackend`, `generateImageCommon`, `generateImage`, `editImage` |
+| `browse.ts` | `fetchBrowse`, `fetchTwitterEmbed` |
+| `exa.ts` | `fetchExaSearch` |
+| `html.ts` | `fetchGenerateHtml` |
+| `pdf.ts` | `fetchSummarizePdf` |
+| `markdown.ts` | `fetchSaveImages` |
+| `index.ts` | 全エクスポートの集約 |
+
 ## 共有ユーティリティ (src/tools/utils/)
 
-プラグイン間で共有されるコードは `src/tools/utils/` に配置されています：
+プラグイン間で共有されるユーティリティコードは `src/tools/utils/` に配置されています：
 
 | ファイル | 内容 |
 |---------|------|
 | `imageTypes.ts` | `ImageToolData` 型定義 |
-| `imageGeneration.ts` | `generateImageWithBackend`, `generateImageCommon` 関数 |
 | `htmlTypes.ts` | `HtmlToolData`, `HtmlLibraryType`, `HtmlArgs` 型定義、`HTML_LIBRARIES`, `LIBRARY_DESCRIPTIONS` |
 | `blankImage.ts` | `loadBlankImageBase64` 関数 |
 | `index.ts` | 全エクスポートの集約 |
@@ -55,9 +68,17 @@
 ## 依存関係図
 
 ```
+src/tools/backend/
+├── imageGeneration.ts ← generateImage, editImage, mulmocast, markdown
+├── browse.ts          ← browse
+├── exa.ts             ← exa
+├── html.ts            ← generateHtml, editHtml
+├── pdf.ts             ← pdf
+├── markdown.ts        ← markdown
+└── index.ts           (集約エクスポート)
+
 src/tools/utils/
 ├── imageTypes.ts      ← generateImage, editImage, camera, canvas
-├── imageGeneration.ts ← generateImage, editImage, mulmocast, markdown
 ├── htmlTypes.ts       ← html, generateHtml, editHtml
 ├── blankImage.ts      ← mulmocast, markdown
 └── index.ts           (集約エクスポート)
@@ -68,5 +89,8 @@ src/tools/utils/
 
 ## インポート方針
 
-すべてのプラグインは共有コードを `../utils` から直接インポートします。
-再エクスポートは行わず、シンプルな依存関係を維持しています。
+- バックエンドAPIへのアクセスは `context.app` 経由で行う
+- `useToolResults.ts` でbackend関数をimportし、`context.app` に設定
+- プラグインは `context.app?.fetchXxx()` の形式で呼び出す
+- 型定義のみ `../backend` からインポート可能
+- ユーティリティは `../utils` からインポート
