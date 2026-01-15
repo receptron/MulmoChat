@@ -31,6 +31,9 @@ const editImage = async (
   args: EditImageArgs,
 ): Promise<ToolResult<ImageToolData>> => {
   const { prompt } = args;
+  if (!context.app?.editImage) {
+    return { message: "editImage function not available" };
+  }
   return context.app.editImage(context, prompt);
 };
 

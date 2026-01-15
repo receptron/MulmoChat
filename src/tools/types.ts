@@ -5,6 +5,8 @@ export interface ToolContext {
   currentResult?: ToolResult<unknown> | null;
   userPreferences?: UserPreferencesState;
   getPluginConfig?: <T = unknown>(key: string) => T | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app?: Record<string, (...args: any[]) => any>;
 }
 
 export interface ToolResult<T = unknown, J = unknown> {

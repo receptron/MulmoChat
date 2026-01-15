@@ -29,7 +29,10 @@ const generateImage = async (
   args: Record<string, any>,
 ): Promise<ToolResult<ImageToolData>> => {
   const prompt = args.prompt as string;
-  return context?.app?.generateImage(context, prompt);
+  if (!context.app?.generateImage) {
+    return { message: "generateImage function not available" };
+  }
+  return context.app.generateImage(context, prompt);
 };
 
 export function createUploadedImageResult(
