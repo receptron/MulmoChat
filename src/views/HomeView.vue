@@ -135,7 +135,7 @@ import {
 import { getRole } from "../config/roles";
 import { getLanguageName } from "../config/languages";
 import type { TextProvidersResponse } from "../../server/types";
-import { generateUUID } from "../utils/uuid";
+import { v4 as uuidv4 } from "uuid";
 
 const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
 const rightSidebarRef = ref<InstanceType<typeof RightSidebar> | null>(null);
@@ -591,7 +591,7 @@ async function sendTextMessage(providedText?: string): Promise<void> {
 
   // Add user message as a tool result for conversation history
   const userMessageResult: ToolResult = {
-    uuid: generateUUID(),
+    uuid: uuidv4(),
     toolName: "text-response",
     message: text,
     title: "You",
