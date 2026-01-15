@@ -4,7 +4,7 @@
       <div class="p-6">
         <div class="max-w-3xl mx-auto space-y-4">
           <div
-            class="rounded-lg border bg-white shadow-sm p-5"
+            class="rounded-lg border border-gray-300 bg-white shadow-sm p-5"
             :class="roleTheme"
           >
             <div

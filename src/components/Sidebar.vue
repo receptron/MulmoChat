@@ -2,7 +2,7 @@
   <div
     ref="sidebarEl"
     :style="{ width: sidebarWidth + 'px' }"
-    class="flex-shrink-0 bg-gray-50 border rounded pb-4 px-4 flex flex-col space-y-4 relative"
+    class="flex-shrink-0 bg-gray-50 border border-gray-300 rounded pb-4 px-4 flex flex-col space-y-4 relative"
   >
     <!-- Resize handle -->
     <div
@@ -68,7 +68,7 @@
             <button
               v-if="supportsAudioInput"
               @click="$emit('setMute', !isMuted)"
-              class="px-3 py-2 rounded border flex items-center justify-center"
+              class="px-3 py-2 rounded border border-gray-300 flex items-center justify-center"
               :class="
                 isMuted
                   ? 'bg-red-100 text-red-600 border-red-300'
@@ -98,7 +98,7 @@
     <div class="flex-1 flex flex-col min-h-0">
       <div
         ref="imageContainer"
-        class="border rounded p-2 overflow-y-auto space-y-2 flex-1"
+        class="border border-gray-300 rounded p-2 overflow-y-auto space-y-2 flex-1"
       >
         <div
           v-if="!pluginResults.length && !isGeneratingImage"
@@ -109,7 +109,7 @@
         <div
           v-for="(result, index) in pluginResults"
           :key="index"
-          class="cursor-pointer hover:opacity-75 transition-opacity border rounded p-2"
+          class="cursor-pointer hover:opacity-75 transition-opacity border border-gray-300 rounded p-2"
           :class="{ 'ring-2 ring-blue-500': selectedResult === result }"
           @click="$emit('selectResult', result)"
         >
@@ -154,7 +154,7 @@
           :disabled="!chatActive && modelKind === 'voice-realtime'"
           type="text"
           placeholder="Type a message"
-          class="flex-1 min-w-0 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          class="flex-1 min-w-0 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
         />
       </div>
       <input
@@ -209,7 +209,7 @@
                     .value as SessionTransportKind,
                 )
               "
-              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="voice-realtime">Voice (OpenAI Realtime)</option>
               <option value="voice-google-live">Voice (Google Live)</option>
@@ -233,7 +233,7 @@
                   ($event.target as HTMLSelectElement).value,
                 )
               "
-              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option
                 v-for="model in REALTIME_MODELS"
@@ -260,7 +260,7 @@
                   ($event.target as HTMLSelectElement).value,
                 )
               "
-              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option
                 v-for="model in GOOGLE_LIVE_MODELS"
@@ -287,7 +287,7 @@
                   ($event.target as HTMLSelectElement).value,
                 )
               "
-              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option
                 v-for="option in textModelOptions"
@@ -322,7 +322,7 @@
                     ($event.target as HTMLSelectElement).value,
                   )
                 "
-                class="w-full border rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border border-gray-300 rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option v-for="role in ROLES" :key="role.id" :value="role.id">
                   {{ role.name }}
@@ -343,7 +343,7 @@
                   ($event.target as HTMLSelectElement).value,
                 )
               "
-              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option
                 v-for="language in LANGUAGES"
@@ -387,7 +387,7 @@
                 )
               "
               placeholder="Add additional instructions for the AI..."
-              class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-20"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-20"
             ></textarea>
             <p class="text-xs text-gray-500 mt-1">
               These instructions will be added to the system prompt.
@@ -398,7 +398,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Enabled Plugins
             </label>
-            <div class="max-h-60 overflow-y-auto border rounded p-2 space-y-1">
+            <div class="max-h-60 overflow-y-auto border border-gray-300 rounded p-2 space-y-1">
               <label
                 v-for="pluginModule in getPluginList()"
                 :key="pluginModule.plugin.toolDefinition.name"
@@ -434,7 +434,7 @@
               Switch to General role to customize plugins.
             </p>
             <div
-              class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border rounded p-2 bg-gray-50"
+              class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50"
             >
               <span
                 v-for="pluginName in availablePluginsForCurrentRole"

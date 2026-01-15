@@ -31,7 +31,7 @@
             <input
               v-model="brushColor"
               type="color"
-              class="w-12 h-8 rounded border"
+              class="w-12 h-8 rounded border border-gray-300"
             />
           </div>
         </div>

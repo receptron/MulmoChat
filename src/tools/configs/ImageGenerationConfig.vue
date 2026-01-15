@@ -7,7 +7,7 @@
       <select
         :value="currentValue.backend"
         @change="handleBackendChange"
-        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option value="gemini">Google Gemini</option>
         <option value="openai">OpenAI</option>
@@ -26,7 +26,7 @@
       <select
         :value="currentValue.geminiModel || 'gemini-2.5-flash-image'"
         @change="handleGeminiModelChange"
-        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image</option>
         <option value="gemini-3-pro-image-preview">
@@ -45,7 +45,7 @@
       <select
         :value="currentValue.openaiModel || 'gpt-image-1'"
         @change="handleOpenAIModelChange"
-        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option value="gpt-image-1">GPT Image 1</option>
         <option value="gpt-image-1.5">GPT Image 1.5</option>
@@ -65,7 +65,7 @@
         :value="currentValue.styleModifier || ''"
         @input="handleStyleModifierChange"
         placeholder="e.g., ghibli-style anime, oil painting, cyberpunk"
-        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <p class="text-xs text-gray-500 mt-1">
         This style will be automatically appended to all image generation
