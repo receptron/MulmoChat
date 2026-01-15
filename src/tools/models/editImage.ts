@@ -1,5 +1,5 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
-import { type ImageToolData, generateImageCommon } from "../utils";
+import { type ImageToolData } from "../utils";
 import ImageView from "../views/image.vue";
 import ImagePreview from "../previews/image.vue";
 
@@ -31,7 +31,10 @@ const editImage = async (
   args: EditImageArgs,
 ): Promise<ToolResult<ImageToolData>> => {
   const { prompt } = args;
-  return generateImageCommon(context, prompt, true);
+  if (!context.app?.editImage) {
+    return { message: "editImage function not available" };
+  }
+  return context.app.editImage(context, prompt);
 };
 
 export const plugin: ToolPlugin<ImageToolData, unknown, EditImageArgs> = {

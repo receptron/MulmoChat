@@ -4,7 +4,7 @@ import ImagePreview from "../previews/image.vue";
 import ImageGenerationConfig, {
   type ImageGenerationConfigValue,
 } from "../configs/ImageGenerationConfig.vue";
-import { type ImageToolData, generateImageCommon } from "../utils";
+import { type ImageToolData } from "../utils";
 
 const toolName = "generateImage";
 
@@ -29,7 +29,10 @@ const generateImage = async (
   args: Record<string, any>,
 ): Promise<ToolResult<ImageToolData>> => {
   const prompt = args.prompt as string;
-  return generateImageCommon(context, prompt, false);
+  if (!context.app?.generateImage) {
+    return { message: "generateImage function not available" };
+  }
+  return context.app.generateImage(context, prompt);
 };
 
 export function createUploadedImageResult(

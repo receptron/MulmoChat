@@ -134,7 +134,7 @@ export async function generateImageWithBackend(
 export async function generateImageCommon(
   context: ToolContext,
   prompt: string,
-  editImage: boolean,
+  isEditImage: boolean,
 ): Promise<ToolResult<ImageToolData>> {
   try {
     // Prepare images array for the shared function
@@ -142,7 +142,7 @@ export async function generateImageCommon(
       | ImageToolData
       | undefined;
     const images =
-      editImage && currentImageData?.imageData
+      isEditImage && currentImageData?.imageData
         ? [currentImageData.imageData.replace(/^data:image\/[^;]+;base64,/, "")]
         : [];
 
@@ -171,4 +171,18 @@ export async function generateImageCommon(
       instructions: "Acknowledge that the image generation failed.",
     };
   }
+}
+
+export async function generateImage(
+  context: ToolContext,
+  prompt: string,
+): Promise<ToolResult<ImageToolData>> {
+  return generateImageCommon(context, prompt, false);
+}
+
+export async function editImage(
+  context: ToolContext,
+  prompt: string,
+): Promise<ToolResult<ImageToolData>> {
+  return generateImageCommon(context, prompt, true);
 }

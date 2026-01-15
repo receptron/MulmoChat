@@ -4,6 +4,8 @@ import type { UserPreferencesState } from "./useUserPreferences";
 import { SESSION_CONFIG } from "../config/session";
 import { v4 as uuidv4 } from "uuid";
 
+import { editImage, generateImage } from "../tools/utils/imageGeneration";
+
 type ToolExecuteFn = typeof import("../tools").toolExecute;
 type GetToolPluginFn = typeof import("../tools").getToolPlugin;
 
@@ -130,6 +132,10 @@ export function useToolResults(
         currentResult: selectedResult.value ?? undefined,
         userPreferences: options.userPreferences.value,
         getPluginConfig: options.getPluginConfig,
+        app: {
+          editImage,
+          generateImage,
+        },
       };
 
       // Note: waitingMessage is only sent for realtime sessions
