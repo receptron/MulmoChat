@@ -11,11 +11,11 @@ export {
 } from "./imageGeneration";
 
 // Browse
-export { fetchBrowse, fetchTwitterEmbed } from "./browse";
+export { browseUrl, getTwitterEmbed } from "./browse";
 export type { BrowseResponse } from "./browse";
 
 // Exa search
-export { fetchExaSearch } from "./exa";
+export { searchExa } from "./exa";
 export type {
   ExaSearchResult,
   ExaSearchParams,
@@ -23,13 +23,13 @@ export type {
 } from "./exa";
 
 // HTML generation
-export { fetchGenerateHtml } from "./html";
+export { generateHtml } from "./html";
 export type { HtmlGenerationParams, HtmlGenerationResponse } from "./html";
 
 // PDF
-export { fetchSummarizePdf } from "./pdf";
+export { summarizePdf } from "./pdf";
 export type { PdfSummarizeParams, PdfSummarizeResponse } from "./pdf";
 
 // Markdown
-export { fetchSaveImages } from "./markdown";
+export { saveImages } from "./markdown";
 export type { SaveImagesParams, SaveImagesResponse } from "./markdown";

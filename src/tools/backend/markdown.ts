@@ -13,7 +13,7 @@ export interface SaveImagesResponse {
   error?: string;
 }
 
-export async function fetchSaveImages(
+export async function saveImages(
   params: SaveImagesParams,
 ): Promise<SaveImagesResponse> {
   const response = await fetch("/api/save-images", {

@@ -8,12 +8,12 @@ import {
   editImage,
   generateImage,
   generateImageWithBackend,
-  fetchBrowse,
-  fetchTwitterEmbed,
-  fetchExaSearch,
-  fetchGenerateHtml,
-  fetchSummarizePdf,
-  fetchSaveImages,
+  browseUrl,
+  getTwitterEmbed,
+  searchExa,
+  generateHtml,
+  summarizePdf,
+  saveImages,
 } from "../tools/backend";
 
 type ToolExecuteFn = typeof import("../tools").toolExecute;
@@ -146,12 +146,12 @@ export function useToolResults(
           editImage,
           generateImage,
           generateImageWithBackend,
-          fetchBrowse,
-          fetchTwitterEmbed,
-          fetchExaSearch,
-          fetchGenerateHtml,
-          fetchSummarizePdf,
-          fetchSaveImages,
+          browseUrl,
+          getTwitterEmbed,
+          searchExa,
+          generateHtml,
+          summarizePdf,
+          saveImages,
         },
       };
 

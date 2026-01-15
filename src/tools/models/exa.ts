@@ -84,15 +84,16 @@ const exaSearch = async (
 ): Promise<ExaResult> => {
   const { query } = args;
 
-  if (!context.app?.fetchExaSearch) {
+  if (!context.app?.searchExa) {
     return {
-      message: "fetchExaSearch function not available",
-      instructions: "Acknowledge that the search failed due to a technical error.",
+      message: "searchExa function not available",
+      instructions:
+        "Acknowledge that the search failed due to a technical error.",
     };
   }
 
   try {
-    const data = await context.app.fetchExaSearch(args);
+    const data = await context.app.searchExa(args);
 
     if (data.success && data.results) {
       return {

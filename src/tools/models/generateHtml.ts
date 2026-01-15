@@ -34,9 +34,9 @@ const generateHtml = async (
 ): Promise<ToolResult<HtmlToolData>> => {
   const { prompt } = args;
 
-  if (!context.app?.fetchGenerateHtml) {
+  if (!context.app?.generateHtml) {
     return {
-      message: "fetchGenerateHtml function not available",
+      message: "generateHtml function not available",
       instructions: "Acknowledge that the HTML generation failed.",
     };
   }
@@ -48,7 +48,7 @@ const generateHtml = async (
     "claude") as "claude" | "gemini";
 
   try {
-    const data = await context.app.fetchGenerateHtml({ prompt, backend });
+    const data = await context.app.generateHtml({ prompt, backend });
 
     if (data.success && data.html) {
       return {

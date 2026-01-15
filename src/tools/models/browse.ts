@@ -53,7 +53,7 @@ async function handleTwitterEmbed(
     return;
   }
 
-  const embedHtml = await context.app?.fetchTwitterEmbed?.(url);
+  const embedHtml = await context.app?.getTwitterEmbed?.(url);
   console.log("*** Twitter embed", url, embedHtml);
   if (embedHtml) {
     twitterEmbedData[url] = embedHtml;
@@ -89,15 +89,15 @@ const browse = async (
     await handleTwitterEmbed(url, context);
   }
 
-  if (!context.app?.fetchBrowse) {
+  if (!context.app?.browseUrl) {
     return {
-      message: "fetchBrowse function not available",
+      message: "browseUrl function not available",
       instructions: "Acknowledge that the webpage browsing failed.",
     };
   }
 
   try {
-    const data = await context.app.fetchBrowse(url);
+    const data = await context.app.browseUrl(url);
 
     if (data.success && data.data) {
       const browseData: BrowseToolData = {

@@ -105,7 +105,11 @@ const mulmocast = async (
     try {
       // Generate the image using the shared backend-aware function
       // The global style modifier will be automatically applied
-      const result = await context.app.generateImageWithBackend(prompt, imageRefs, context);
+      const result = await context.app.generateImageWithBackend(
+        prompt,
+        imageRefs,
+        context,
+      );
 
       if (result.success && result.imageData) {
         return { id: beat.id, imageData: result.imageData };

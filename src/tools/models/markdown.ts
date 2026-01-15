@@ -80,7 +80,10 @@ const pushMarkdown = async (
             images[imageId] = `data:image/png;base64,${result.imageData}`;
           }
         } catch (error) {
-          console.error(`Failed to generate image for prompt: ${prompt}`, error);
+          console.error(
+            `Failed to generate image for prompt: ${prompt}`,
+            error,
+          );
         }
       });
 
@@ -88,9 +91,9 @@ const pushMarkdown = async (
     }
 
     // Save images to server and get URLs
-    if (Object.keys(images).length > 0 && context.app?.fetchSaveImages) {
+    if (Object.keys(images).length > 0 && context.app?.saveImages) {
       try {
-        const data = await context.app.fetchSaveImages({ uuid: docUuid, images });
+        const data = await context.app.saveImages({ uuid: docUuid, images });
 
         if (data.imageUrls) {
           const imageUrls = data.imageUrls;

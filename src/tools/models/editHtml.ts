@@ -46,9 +46,9 @@ const editHtml = async (
     };
   }
 
-  if (!context.app?.fetchGenerateHtml) {
+  if (!context.app?.generateHtml) {
     return {
-      message: "fetchGenerateHtml function not available",
+      message: "generateHtml function not available",
       instructions: "Acknowledge that the HTML editing failed.",
     };
   }
@@ -60,7 +60,11 @@ const editHtml = async (
     "claude") as "claude" | "gemini";
 
   try {
-    const data = await context.app.fetchGenerateHtml({ prompt, html: currentHtml, backend });
+    const data = await context.app.generateHtml({
+      prompt,
+      html: currentHtml,
+      backend,
+    });
 
     if (data.success && data.html) {
       return {

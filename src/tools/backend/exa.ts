@@ -30,7 +30,7 @@ export interface ExaSearchResponse {
   error?: string;
 }
 
-export async function fetchExaSearch(
+export async function searchExa(
   params: ExaSearchParams,
 ): Promise<ExaSearchResponse> {
   const response = await fetch("/api/exa-search", {

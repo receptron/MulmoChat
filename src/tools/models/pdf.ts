@@ -55,15 +55,15 @@ const summarizePDF = async (
     };
   }
 
-  if (!context.app?.fetchSummarizePdf) {
+  if (!context.app?.summarizePdf) {
     return {
-      message: "fetchSummarizePdf function not available",
+      message: "summarizePdf function not available",
       instructions: "Tell the user that the PDF summarization failed.",
     };
   }
 
   try {
-    const data = await context.app.fetchSummarizePdf({
+    const data = await context.app.summarizePdf({
       prompt,
       pdfData: currentPdfData.pdfData,
     });

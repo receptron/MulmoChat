@@ -14,7 +14,7 @@ export interface HtmlGenerationResponse {
   error?: string;
 }
 
-export async function fetchGenerateHtml(
+export async function generateHtml(
   params: HtmlGenerationParams,
 ): Promise<HtmlGenerationResponse> {
   const response = await fetch("/api/generate-html", {

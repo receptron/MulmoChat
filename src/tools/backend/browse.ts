@@ -17,7 +17,7 @@ export interface BrowseResponse {
   error?: string;
 }
 
-export async function fetchBrowse(url: string): Promise<BrowseResponse> {
+export async function browseUrl(url: string): Promise<BrowseResponse> {
   const response = await fetch("/api/browse", {
     method: "POST",
     headers: {
@@ -33,7 +33,7 @@ export async function fetchBrowse(url: string): Promise<BrowseResponse> {
   return response.json();
 }
 
-export async function fetchTwitterEmbed(url: string): Promise<string | null> {
+export async function getTwitterEmbed(url: string): Promise<string | null> {
   try {
     const response = await fetch(
       `/api/twitter-embed?url=${encodeURIComponent(url)}`,

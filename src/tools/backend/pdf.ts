@@ -13,7 +13,7 @@ export interface PdfSummarizeResponse {
   error?: string;
 }
 
-export async function fetchSummarizePdf(
+export async function summarizePdf(
   params: PdfSummarizeParams,
 ): Promise<PdfSummarizeResponse> {
   const response = await fetch("/api/summarize-pdf", {
