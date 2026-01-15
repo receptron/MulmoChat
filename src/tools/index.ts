@@ -11,7 +11,6 @@ import * as CanvasPlugin from "./models/canvas";
 import * as MarkdownPlugin from "./models/markdown";
 import * as SpreadsheetPlugin from "./models/spreadsheet";
 import * as Present3DPlugin from "./models/present3D";
-import * as FormPlugin from "./models/form";
 import * as MusicPlugin from "./models/music";
 // import * as HtmlPlugin from "./models/html";
 import * as GenerateHtmlPlugin from "./models/generateHtml";
@@ -33,9 +32,9 @@ import type {
   ToolPlugin,
 } from "./types";
 
-// Quiz plugin from npm package
-import { QuizPlugin as QuizPluginImport } from "@mulmochat-plugin/quiz";
-const QuizPlugin = QuizPluginImport as { plugin: ToolPlugin };
+// External plugins from npm packages
+import QuizPlugin from "@mulmochat-plugin/quiz";
+import FormPlugin from "@mulmochat-plugin/form";
 
 export type { ToolContext, ToolResult, ToolResultComplete, ToolPlugin };
 
