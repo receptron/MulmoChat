@@ -180,7 +180,7 @@ Return ONLY the HTML code, nothing else. Do not include markdown code blocks or 
           throw new Error("Unexpected response structure from Gemini");
         }
 
-        const textPart = parts.find((part: any) => part.text);
+        const textPart = parts.find((part: { text?: string }) => part.text);
         if (!textPart || !textPart.text) {
           throw new Error("No text content in Gemini response");
         }
