@@ -24,7 +24,7 @@ interface UseToolResultsOptions {
   getToolPlugin: GetToolPluginFn;
   suppressInstructions: Ref<boolean>;
   userPreferences: Ref<UserPreferencesState>;
-  getPluginConfig: <T = any>(key: string) => T | undefined;
+  getPluginConfig: <T = unknown>(key: string) => T | undefined;
   sleep: (milliseconds: number) => Promise<void>;
   sendInstructions: (instructions: string) => boolean | Promise<boolean>;
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
