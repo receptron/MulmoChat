@@ -2,6 +2,27 @@
  * Backend API calls for HTML generation plugins
  */
 
+import type { ToolContext } from "../types";
+
+export type HtmlBackend = "claude" | "gemini";
+
+export function getRawHtmlConfig(context?: ToolContext) {
+  return (
+    context?.getPluginConfig?.("htmlGenerationBackend") ||
+    context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
+    context?.userPreferences?.htmlGenerationBackend
+  );
+}
+
+export function normalizeHtmlConfig(
+  config: string | undefined,
+): HtmlBackend {
+  if (config === "gemini") {
+    return "gemini";
+  }
+  return "claude"; // default
+}
+
 export interface HtmlGenerationParams {
   prompt: string;
   html?: string; // Existing HTML for editing
