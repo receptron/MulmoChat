@@ -15,7 +15,9 @@ useToolResults (composables)
     ↓
 ToolContext (plugins receive)
     ↓
-Plugin execute()
+backend/ (config utilities)
+    ↓
+models/ (plugin execute)
 ```
 
 ## 1. Storage Layer (localStorage)
@@ -24,7 +26,7 @@ Plugin execute()
 
 ```typescript
 // Key: "plugin_configs_v1"
-// Value: { "imageGenerationBackend": {...}, "otherConfig": {...} }
+// Value: { "imageGenerationBackend": {...}, "htmlGenerationBackend": "claude" }
 ```
 
 関連コード: `src/composables/useUserPreferences.ts`
@@ -136,49 +138,116 @@ export interface ToolContext {
 }
 ```
 
-## 6. Plugin Usage (現状の問題)
+## 6. Backend Config Utilities
 
-現在、プラグイン内では複数の方法で config を取得しようとしている:
+アプリ内部構造を知る config 取得ロジックは `backend/` に配置。
+
+### Image Generation Config
 
 ```typescript
 // src/tools/backend/imageGeneration.ts
 
 export function getRawImageConfig(context?: ToolContext) {
   return (
-    context?.getPluginConfig?.("imageGenerationBackend") ||  // 方法1: 関数経由
-    context?.userPreferences?.pluginConfigs?.["imageGenerationBackend"] ||  // 方法2: pluginConfigs
-    context?.userPreferences?.imageGenerationBackend  // 方法3: legacy (直接プロパティ)
+    context?.getPluginConfig?.("imageGenerationBackend") ||
+    context?.userPreferences?.pluginConfigs?.["imageGenerationBackend"] ||
+    context?.userPreferences?.imageGenerationBackend  // legacy
   );
+}
+
+export function normalizeImageConfig(
+  config: string | ImageGenerationConfigValue | undefined,
+): NormalizedImageConfig {
+  if (typeof config === "string") {
+    return {
+      backend: config as ImageBackend,
+      styleModifier: "",
+      geminiModel: "gemini-2.5-flash-image",
+      openaiModel: "gpt-image-1",
+    };
+  }
+  return {
+    backend: config?.backend || "gemini",
+    styleModifier: config?.styleModifier || "",
+    geminiModel: config?.geminiModel || "gemini-2.5-flash-image",
+    openaiModel: config?.openaiModel || "gpt-image-1",
+  };
 }
 ```
 
-### 問題点
-
-1. **プラグインがアプリ内部構造を知っている**
-   - `userPreferences.pluginConfigs` という構造を知っている
-   - `userPreferences.imageGenerationBackend` という legacy プロパティを知っている
-   - これは npm パッケージ化したプラグインには不適切
-
-2. **責務の混在**
-   - config の取得はアプリ側の責務
-   - プラグインは `getPluginConfig(key)` のみを使うべき
-
-3. **Fallback の複雑さ**
-   - 3つのフォールバックがあり、理解しにくい
-
-### 理想的な設計
+### HTML Generation Config
 
 ```typescript
-// プラグイン側（シンプル）
-export function getConfig(context?: ToolContext) {
-  return context?.getPluginConfig?.("imageGenerationBackend");
+// src/tools/backend/html.ts
+
+export type HtmlBackend = "claude" | "gemini";
+
+export function getRawHtmlConfig(context?: ToolContext) {
+  return (
+    context?.getPluginConfig?.("htmlGenerationBackend") ||
+    context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
+    context?.userPreferences?.htmlGenerationBackend  // legacy
+  );
 }
 
-// アプリ側（HomeView.vue）が責任を持つ
-const getPluginConfig = <T = any,>(key: string): T | undefined => {
-  // legacy migration, fallbacks などはここで行う
-  return userPreferences.pluginConfigs[key] as T | undefined;
+export function normalizeHtmlConfig(
+  config: string | undefined,
+): HtmlBackend {
+  if (config === "gemini") {
+    return "gemini";
+  }
+  return "claude"; // default
+}
+```
+
+## 7. Plugin Usage (models/)
+
+プラグインは backend から config utilities を import して使用。
+
+```typescript
+// src/tools/models/setImageStyle.ts
+
+import {
+  getRawImageConfig,
+  normalizeImageConfig,
+} from "../backend/imageGeneration";
+
+const setImageStyleExecute = async (context: ToolContext, args) => {
+  const config = normalizeImageConfig(getRawImageConfig(context));
+  const previousStyleModifier = config.styleModifier;
+  // ...
 };
+```
+
+```typescript
+// src/tools/models/generateHtml.ts
+
+import { getRawHtmlConfig, normalizeHtmlConfig } from "../backend/html";
+
+const generateHtml = async (context: ToolContext, args) => {
+  const backend = normalizeHtmlConfig(getRawHtmlConfig(context));
+  // ...
+};
+```
+
+## Architecture: tools/ Directory Structure
+
+```
+src/tools/
+├── backend/           # アプリ内部を知る層（API calls, config utilities）
+│   ├── imageGeneration.ts   # getRawImageConfig, normalizeImageConfig, generateImageWithBackend
+│   ├── html.ts              # getRawHtmlConfig, normalizeHtmlConfig, generateHtml
+│   └── index.ts             # re-exports
+├── models/            # プラグイン本体（backend に依存）
+│   ├── setImageStyle.ts     # uses backend/imageGeneration
+│   ├── generateHtml.ts      # uses backend/html
+│   ├── editHtml.ts          # uses backend/html
+│   └── ...
+├── views/             # Full view components
+├── previews/          # Sidebar preview components
+├── configs/           # Config UI components
+├── types.ts           # ToolPlugin, ToolContext, etc.
+└── index.ts           # Plugin registration
 ```
 
 ## Configuration UI
@@ -203,7 +272,7 @@ export interface ToolPluginConfig {
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              localStorage                                    │
 │                         "plugin_configs_v1"                                  │
-│                    { "imageGenerationBackend": {...} }                       │
+│            { "imageGenerationBackend": {...}, "htmlGenerationBackend": ... }│
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↑ save
                                     ↓ load
@@ -240,27 +309,57 @@ export interface ToolPluginConfig {
                                     │
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              Plugin                                          │
+│                        backend/ (config utilities)                           │
 │                                                                              │
-│  execute(context: ToolContext, args) {                                       │
-│    const config = context.getPluginConfig("myConfig");  // ← 理想                                                     │
-│    // or                                                                     │
-│    const config = context.userPreferences?.pluginConfigs?.myConfig;  // ← 現状                                         │
-│  }                                                                           │
+│  getRawImageConfig(context)  - アプリ内部構造を知る                          │
+│  normalizeImageConfig(raw)   - デフォルト値、legacy 対応                     │
+│  getRawHtmlConfig(context)                                                   │
+│  normalizeHtmlConfig(raw)                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         models/ (plugin execute)                             │
+│                                                                              │
+│  const config = normalizeImageConfig(getRawImageConfig(context));           │
+│  // config.backend, config.styleModifier, etc.                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## TODO: Design Decisions
+## 設計方針
 
-1. **プラグインは `getPluginConfig` のみを使うべきか？**
-   - Yes: プラグインがアプリ内部を知らなくて良い
-   - migration や fallback はアプリ側の責務
+### 現状のアーキテクチャ
 
-2. **`userPreferences` 全体を渡す必要があるか？**
-   - 現状: 渡している（`context.userPreferences`）
+1. **backend/** - アプリ内部構造を知る層
+   - `getRawXxxConfig()`: 複数の fallback で config を取得
+   - `normalizeXxxConfig()`: デフォルト値を適用
+   - API 呼び出し関数
+
+2. **models/** - プラグイン本体
+   - backend から config utilities を import
+   - アプリ内部構造を直接参照しない
+
+### 残る課題
+
+1. **npm パッケージ化したプラグイン**
+   - `@mulmochat-plugin/generate-image` には独自の `configUtils.ts` がある
+   - これもアプリ内部構造を知っている
+   - 解決策: npm パッケージは `getPluginConfig` のみを使い、app 側で config を渡す
+
+2. **`userPreferences` 全体を渡す必要性**
+   - 現状: `context.userPreferences` で全体を渡している
    - 検討: 必要な情報だけを渡す方が良いかもしれない
+   - 利点: legacy fallback が可能、柔軟性がある
+   - 欠点: プラグインがアプリ内部を知る可能性
 
-3. **npm パッケージ化したプラグインの config 責務**
-   - `@mulmochat-plugin/generate-image` の `configUtils.ts` が `getRawImageConfig` を持つ
-   - これはアプリ内部構造を知ってしまっている
-   - 解決策: config 取得は app 側 (`src/tools/backend/`) に残す
+3. **理想的な設計（将来）**
+   ```typescript
+   // プラグイン側（シンプル）
+   const config = context.getPluginConfig<ImageConfig>("imageGenerationBackend");
+
+   // アプリ側（HomeView.vue）が legacy migration, fallbacks の責任を持つ
+   const getPluginConfig = <T>(key: string): T | undefined => {
+     // migration logic here
+     return userPreferences.pluginConfigs[key];
+   };
+   ```
