@@ -1,5 +1,5 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
-import type { ImageGenerationConfigValue } from "../configs/ImageGenerationConfig.vue";
+import type { ImageGenerationConfigValue } from "@mulmochat-plugin/generate-image";
 import SetImageStylePreview from "../previews/setImageStyle.vue";
 
 const toolName = "setImageStyle";

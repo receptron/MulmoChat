@@ -1,4 +1,3 @@
-import * as GenerateImagePlugin from "./models/generateImage";
 import * as EditImagePlugin from "./models/editImage";
 import * as CameraPlugin from "./models/camera";
 import * as BrowsePlugin from "./models/browse";
@@ -32,6 +31,7 @@ import type {
 } from "./types";
 
 // External plugins from npm packages
+import GenerateImagePlugin from "@mulmochat-plugin/generate-image";
 import QuizPlugin from "@mulmochat-plugin/quiz";
 import FormPlugin from "@mulmochat-plugin/form";
 import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf";
