@@ -10,7 +10,15 @@ type ImageBackend = "gemini" | "openai" | "comfyui";
 
 type NormalizedImageConfig = Required<ImageGenerationConfigValue>;
 
-function normalizeImageConfig(
+export function getRawImageConfig(context?: ToolContext) {
+  return (
+    context?.getPluginConfig?.("imageGenerationBackend") ||
+    context?.userPreferences?.pluginConfigs?.["imageGenerationBackend"] ||
+    context?.userPreferences?.imageGenerationBackend
+  );
+}
+
+export function normalizeImageConfig(
   config: string | ImageGenerationConfigValue | undefined,
 ): NormalizedImageConfig {
   if (typeof config === "string") {
@@ -54,11 +62,7 @@ export async function generateImageWithBackend(
   context?: ToolContext,
 ): Promise<{ success: boolean; imageData?: string; message?: string }> {
   try {
-    const rawConfig =
-      context?.getPluginConfig?.("imageGenerationBackend") ||
-      context?.userPreferences?.pluginConfigs?.["imageGenerationBackend"] ||
-      context?.userPreferences?.imageGenerationBackend;
-    const config = normalizeImageConfig(rawConfig);
+    const config = normalizeImageConfig(getRawImageConfig(context));
 
     const finalPrompt = config.styleModifier.trim()
       ? `${prompt}, ${config.styleModifier}`

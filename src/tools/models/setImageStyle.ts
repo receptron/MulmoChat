@@ -1,5 +1,9 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import type { ImageGenerationConfigValue } from "@mulmochat-plugin/generate-image";
+import {
+  getRawImageConfig,
+  normalizeImageConfig,
+} from "../backend/imageGeneration";
 import SetImageStylePreview from "../previews/setImageStyle.vue";
 
 const toolName = "setImageStyle";
@@ -46,25 +50,8 @@ const setImageStyleExecute = async (
   const { styleModifier } = args;
 
   try {
-    // Get current config
-    const currentConfig = context.getPluginConfig?.("imageGenerationBackend") ||
-      context.userPreferences?.pluginConfigs?.["imageGenerationBackend"] || {
-        backend: "gemini" as const,
-        styleModifier: "",
-      };
-
-    // Handle legacy string format
-    let config: ImageGenerationConfigValue;
-    if (typeof currentConfig === "string") {
-      config = {
-        backend: currentConfig as "gemini" | "openai" | "comfyui",
-        styleModifier: "",
-      };
-    } else {
-      config = currentConfig as ImageGenerationConfigValue;
-    }
-
-    const previousStyleModifier = config.styleModifier || "";
+    const config = normalizeImageConfig(getRawImageConfig(context));
+    const previousStyleModifier = config.styleModifier;
 
     // Update the config with new style modifier
     const newConfig: ImageGenerationConfigValue = {
