@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, type GenerateContentParameters } from "@google/genai";
 import {
   TextGenerationError,
   type ProviderGenerateParams,
@@ -181,18 +181,18 @@ export async function generateWithGoogle(
     generationConfigEntries.push(["topP", params.topP]);
   }
 
-  const requestBody: Record<string, unknown> = {
+  const requestBody: GenerateContentParameters = {
     model: normalizeModelId(params.model),
     contents,
   };
 
-  // Use systemInstruction parameter for system prompts (Gemini-specific)
-  if (params.systemPrompt) {
-    requestBody.systemInstruction = params.systemPrompt;
-  }
-
   // Build config object for generation settings, tools, and toolConfig
   const config: Record<string, unknown> = {};
+
+  // Use systemInstruction parameter for system prompts (Gemini-specific)
+  if (params.systemPrompt) {
+    config.systemInstruction = params.systemPrompt;
+  }
 
   if (generationConfigEntries.length > 0) {
     config.generationConfig = Object.fromEntries(generationConfigEntries);
@@ -222,13 +222,13 @@ export async function generateWithGoogle(
 
   // Add config to request body if it has any settings
   if (Object.keys(config).length > 0) {
-    requestBody.config = config;
+    requestBody.config = config as GenerateContentParameters["config"];
   }
 
   // generateContent automatically handles thought signatures when full conversation
   // history is provided (SDK v1.33.0+). Thought signatures are preserved in the
   // response and automatically validated on subsequent requests.
-  const response = await ai.models.generateContent(requestBody as any);
+  const response = await ai.models.generateContent(requestBody);
 
   const text = extractTextFromCandidates(response.candidates) ?? "";
   const toolCalls = extractToolCallsFromCandidates(response.candidates);
