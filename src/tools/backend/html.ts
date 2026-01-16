@@ -13,9 +13,7 @@ export function getRawHtmlConfig(context?: ToolContext) {
   return getRawPluginConfig(context, HTML_CONFIG_KEY);
 }
 
-export function normalizeHtmlConfig(
-  config: string | undefined,
-): HtmlBackend {
+export function normalizeHtmlConfig(config: string | undefined): HtmlBackend {
   if (config === "gemini") {
     return "gemini";
   }
