@@ -180,7 +180,9 @@ import { getPluginList, toolExecute, getToolPlugin } from "../tools";
 import type { ToolResultComplete, ToolPlugin } from "../tools";
 
 const plugins = computed(() => {
-  return getPluginList().map((p) => p.plugin);
+  return getPluginList()
+    .map((p) => p.plugin)
+    .sort((a, b) => a.toolDefinition.name.localeCompare(b.toolDefinition.name));
 });
 
 const selectedPluginName = ref("");
