@@ -142,17 +142,36 @@ export interface ToolContext {
 
 アプリ内部構造を知る config 取得ロジックは `backend/` に配置。
 
+### 共通 Config 取得関数
+
+```typescript
+// src/tools/backend/config.ts
+
+/**
+ * Get raw plugin config from context with fallback chain:
+ * 1. getPluginConfig(key) - preferred method
+ * 2. userPreferences.pluginConfigs[key] - direct access
+ * 3. userPreferences[key] - legacy format
+ */
+export function getRawPluginConfig(context?: ToolContext, key?: string) {
+  if (!key) return undefined;
+  return (
+    context?.getPluginConfig?.(key) ||
+    context?.userPreferences?.pluginConfigs?.[key] ||
+    context?.userPreferences?.[key]
+  );
+}
+```
+
 ### Image Generation Config
 
 ```typescript
 // src/tools/backend/imageGeneration.ts
 
+const IMAGE_CONFIG_KEY = "imageGenerationBackend";
+
 export function getRawImageConfig(context?: ToolContext) {
-  return (
-    context?.getPluginConfig?.("imageGenerationBackend") ||
-    context?.userPreferences?.pluginConfigs?.["imageGenerationBackend"] ||
-    context?.userPreferences?.imageGenerationBackend  // legacy
-  );
+  return getRawPluginConfig(context, IMAGE_CONFIG_KEY);
 }
 
 export function normalizeImageConfig(
@@ -180,14 +199,10 @@ export function normalizeImageConfig(
 ```typescript
 // src/tools/backend/html.ts
 
-export type HtmlBackend = "claude" | "gemini";
+const HTML_CONFIG_KEY = "htmlGenerationBackend";
 
 export function getRawHtmlConfig(context?: ToolContext) {
-  return (
-    context?.getPluginConfig?.("htmlGenerationBackend") ||
-    context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
-    context?.userPreferences?.htmlGenerationBackend  // legacy
-  );
+  return getRawPluginConfig(context, HTML_CONFIG_KEY);
 }
 
 export function normalizeHtmlConfig(
@@ -235,6 +250,7 @@ const generateHtml = async (context: ToolContext, args) => {
 ```
 src/tools/
 ├── backend/           # アプリ内部を知る層（API calls, config utilities）
+│   ├── config.ts            # getRawPluginConfig (共通)
 │   ├── imageGeneration.ts   # getRawImageConfig, normalizeImageConfig, generateImageWithBackend
 │   ├── html.ts              # getRawHtmlConfig, normalizeHtmlConfig, generateHtml
 │   └── index.ts             # re-exports
@@ -311,9 +327,10 @@ export interface ToolPluginConfig {
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        backend/ (config utilities)                           │
 │                                                                              │
-│  getRawImageConfig(context)  - アプリ内部構造を知る                          │
-│  normalizeImageConfig(raw)   - デフォルト値、legacy 対応                     │
-│  getRawHtmlConfig(context)                                                   │
+│  getRawPluginConfig(context, key)  - 共通の config 取得（fallback chain）   │
+│  getRawImageConfig(context)        - IMAGE_CONFIG_KEY で呼び出し             │
+│  getRawHtmlConfig(context)         - HTML_CONFIG_KEY で呼び出し              │
+│  normalizeImageConfig(raw)         - デフォルト値、legacy 対応               │
 │  normalizeHtmlConfig(raw)                                                    │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │

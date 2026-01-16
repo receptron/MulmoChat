@@ -5,17 +5,16 @@
 import type { ToolContext, ToolResult } from "../types";
 import type { ImageToolData } from "../utils/imageTypes";
 import type { ImageGenerationConfigValue } from "@mulmochat-plugin/generate-image";
+import { getRawPluginConfig } from "./config";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";
 
 type NormalizedImageConfig = Required<ImageGenerationConfigValue>;
 
+const IMAGE_CONFIG_KEY = "imageGenerationBackend";
+
 export function getRawImageConfig(context?: ToolContext) {
-  return (
-    context?.getPluginConfig?.("imageGenerationBackend") ||
-    context?.userPreferences?.pluginConfigs?.["imageGenerationBackend"] ||
-    context?.userPreferences?.imageGenerationBackend
-  );
+  return getRawPluginConfig(context, IMAGE_CONFIG_KEY);
 }
 
 export function normalizeImageConfig(
