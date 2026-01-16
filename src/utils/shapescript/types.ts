@@ -217,7 +217,7 @@ export interface ScaleNode {
 export interface CustomShapeNode {
   type: "customShape";
   name: string; // Name of the custom shape defined elsewhere
-  properties: Record<string, any>; // Option overrides (e.g., { teeth: 8 })
+  properties: Record<string, unknown>; // Option overrides (e.g., { teeth: 8 })
 }
 
 export interface ExtrudeNode {
