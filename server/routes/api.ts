@@ -1,6 +1,7 @@
 import express, { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 import { puppeteerCrawlerAgent } from "mulmocast";
+import { defaultTestContext } from "graphai";
 import { StartApiResponse } from "../types";
 import { exaSearch, hasExaApiKey } from "../exaSearch";
 import movieRouter from "./movie";
@@ -108,8 +109,9 @@ router.post("/browse", async (req: Request, res: Response): Promise<void> => {
 
   try {
     const result = await puppeteerCrawlerAgent.agent({
+      ...defaultTestContext,
       namedInputs: { url },
-    } as any);
+    });
     res.json({
       success: true,
       data: result,
