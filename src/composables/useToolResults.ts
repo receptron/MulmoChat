@@ -5,16 +5,22 @@ import { SESSION_CONFIG } from "../config/session";
 import { v4 as uuidv4 } from "uuid";
 
 import {
-  editImage,
-  generateImage,
+  editImage as backendEditImage,
+  generateImage as backendGenerateImage,
   generateImageWithBackend,
+  getRawImageConfig,
+  normalizeImageConfig,
   browseUrl,
   getTwitterEmbed,
   searchExa,
-  generateHtml,
+  generateHtml as backendGenerateHtml,
+  getRawHtmlConfig,
+  normalizeHtmlConfig,
   summarizePdf,
   saveImages,
 } from "../tools/backend";
+import type { HtmlGenerationParams } from "../tools/backend";
+import type { ImageToolData } from "../tools/utils/imageTypes";
 
 type ToolExecuteFn = typeof import("../tools").toolExecute;
 type GetToolPluginFn = typeof import("../tools").getToolPlugin;
@@ -138,20 +144,61 @@ export function useToolResults(
         options.getToolPlugin(msg.name)?.generatingMessage || "Processing...";
       options.scrollToBottomOfSideBar();
       const plugin = options.getToolPlugin(msg.name);
+
+      // Resolve image config from user preferences
+      const imageConfig = normalizeImageConfig(
+        getRawImageConfig({
+          getPluginConfig: options.getPluginConfig,
+          userPreferences: options.userPreferences.value,
+        }),
+      );
+      const comfyuiModel =
+        options.userPreferences.value?.comfyuiModel ||
+        "flux1-schnell-fp8.safetensors";
+
+      // Create wrapped functions with config already bound
+      const currentImageData = (
+        selectedResult.value?.data as ImageToolData | undefined
+      )?.imageData;
+      const imageGenerationContext = {
+        currentImageData,
+        options: { config: imageConfig, comfyuiModel },
+      };
+
+      // Resolve HTML config from user preferences
+      const htmlBackend = normalizeHtmlConfig(
+        getRawHtmlConfig({
+          getPluginConfig: options.getPluginConfig,
+          userPreferences: options.userPreferences.value,
+        }),
+      );
+
       const context: ToolContext = {
         currentResult: selectedResult.value ?? undefined,
         userPreferences: options.userPreferences.value,
         getPluginConfig: options.getPluginConfig,
         app: {
-          editImage,
-          generateImage,
-          generateImageWithBackend,
+          // Wrapped image functions with config bound
+          editImage: (prompt: string) =>
+            backendEditImage(imageGenerationContext, prompt),
+          generateImage: (prompt: string) =>
+            backendGenerateImage(imageGenerationContext, prompt),
+          generateImageWithBackend: (prompt: string, images: string[]) =>
+            generateImageWithBackend(prompt, images, {
+              config: imageConfig,
+              comfyuiModel,
+            }),
+          // Wrapped HTML function with backend resolved
+          generateHtml: (params: Omit<HtmlGenerationParams, "backend">) =>
+            backendGenerateHtml({ ...params, backend: htmlBackend }),
+          // Other backend functions (no config needed)
           browseUrl,
           getTwitterEmbed,
           searchExa,
-          generateHtml,
           summarizePdf,
           saveImages,
+          // Config accessors for plugins that need to read/modify config
+          getImageConfig: () => imageConfig,
         },
       };
 

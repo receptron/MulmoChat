@@ -8,6 +8,13 @@ export {
   generateImageCommon,
   generateImage,
   editImage,
+  getRawImageConfig,
+  normalizeImageConfig,
+} from "./imageGeneration";
+export type {
+  NormalizedImageConfig,
+  ImageGenerationOptions,
+  ImageGenerationContext,
 } from "./imageGeneration";
 
 // Browse
@@ -23,8 +30,12 @@ export type {
 } from "./exa";
 
 // HTML generation
-export { generateHtml } from "./html";
-export type { HtmlGenerationParams, HtmlGenerationResponse } from "./html";
+export { generateHtml, getRawHtmlConfig, normalizeHtmlConfig } from "./html";
+export type {
+  HtmlBackend,
+  HtmlGenerationParams,
+  HtmlGenerationResponse,
+} from "./html";
 
 // PDF
 export { summarizePdf } from "./pdf";

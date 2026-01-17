@@ -34,7 +34,7 @@ const editImage = async (
   if (!context.app?.editImage) {
     return { message: "editImage function not available" };
   }
-  return context.app.editImage(context, prompt);
+  return context.app.editImage(prompt);
 };
 
 export const plugin: ToolPlugin<ImageToolData, unknown, EditImageArgs> = {
