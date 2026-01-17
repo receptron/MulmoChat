@@ -4,7 +4,7 @@
 
 import type { ToolContext, ToolResult } from "../types";
 import type { ImageToolData } from "../utils/imageTypes";
-import type { ImageGenerationConfigValue } from "@mulmochat-plugin/generate-image";
+import type { ImageGenerationConfigValue } from "../backendTypes";
 import { getRawPluginConfig } from "./config";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";

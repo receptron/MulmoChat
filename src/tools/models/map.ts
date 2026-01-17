@@ -49,4 +49,5 @@ export const plugin: ToolPlugin<MapToolData, unknown, MapArgs> = {
   isEnabled: (startResponse) => !!startResponse?.googleMapKey,
   viewComponent: MapView,
   previewComponent: MapPreview,
+  backends: ["map"],
 };

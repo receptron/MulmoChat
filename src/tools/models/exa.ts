@@ -130,4 +130,5 @@ export const plugin: ToolPlugin<never, ExaJsonData, ExaArgs> = {
   delayAfterExecution: 3000,
   viewComponent: ExaView,
   previewComponent: ExaPreview,
+  backends: ["search"],
 };

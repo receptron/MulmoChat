@@ -1,5 +1,15 @@
 import type { StartApiResponse } from "../../server/types";
 import type { UserPreferencesState } from "../composables/useUserPreferences";
+import type { BackendType } from "./backendTypes";
+
+// Re-export backend types from dedicated file
+export type {
+  BackendType,
+  BackendSettings,
+  TextLLMBackendSettings,
+  ImageGenBackendSettings,
+  ImageGenerationConfigValue,
+} from "./backendTypes";
 
 export interface ToolContext {
   currentResult?: ToolResult<unknown> | null;
@@ -99,4 +109,5 @@ export interface ToolPlugin<
   systemPrompt?: string; // Optional tool-specific system prompt statement
   config?: ToolPluginConfig; // Optional plugin-specific configuration
   samples?: ToolSample[]; // Optional sample arguments for testing
+  backends?: BackendType[]; // Backend types this plugin uses (e.g., ["textLLM", "imageGen"])
 }
