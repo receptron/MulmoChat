@@ -4,6 +4,7 @@ import { puppeteerCrawlerAgent } from "mulmocast";
 import { defaultTestContext } from "graphai";
 import { StartApiResponse } from "../types";
 import { exaSearch, hasExaApiKey } from "../exaSearch";
+import { sendApiError } from "../utils/logger";
 import movieRouter from "./movie";
 import pdfRouter from "./pdf";
 import htmlRouter from "./html";
@@ -42,9 +43,7 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
   const hasGoogleApiKey = !!geminiApiKey;
 
   if (!openaiKey) {
-    res
-      .status(500)
-      .json({ error: "OPENAI_API_KEY environment variable not set" });
+    sendApiError(res, req, 500, "OPENAI_API_KEY environment variable not set");
     return;
   }
 
@@ -91,10 +90,13 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
     console.error("Failed to generate ephemeral key:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    res.status(500).json({
-      error: "Failed to generate ephemeral key",
-      details: errorMessage,
-    });
+    sendApiError(
+      res,
+      req,
+      500,
+      "Failed to generate ephemeral key",
+      errorMessage,
+    );
   }
 });
 
@@ -103,7 +105,7 @@ router.post("/browse", async (req: Request, res: Response): Promise<void> => {
   const { url } = req.body;
 
   if (!url) {
-    res.status(400).json({ error: "URL is required" });
+    sendApiError(res, req, 400, "URL is required");
     return;
   }
 
@@ -120,10 +122,7 @@ router.post("/browse", async (req: Request, res: Response): Promise<void> => {
     console.error("Browse failed:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    res.status(500).json({
-      error: "Failed to browse URL",
-      details: errorMessage,
-    });
+    sendApiError(res, req, 500, "Failed to browse URL", errorMessage);
   }
 });
 
@@ -143,7 +142,7 @@ router.post(
     } = req.body;
 
     if (!query) {
-      res.status(400).json({ error: "Query is required" });
+      sendApiError(res, req, 400, "Query is required");
       return;
     }
 
@@ -168,10 +167,7 @@ router.post(
       console.error("Exa search failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to search with Exa",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to search with Exa", errorMessage);
     }
   },
 );
@@ -183,7 +179,7 @@ router.get(
     const { url } = req.query;
 
     if (!url || typeof url !== "string") {
-      res.status(400).json({ error: "URL query parameter is required" });
+      sendApiError(res, req, 400, "URL query parameter is required");
       return;
     }
 
@@ -198,7 +194,7 @@ router.get(
       ].includes(urlObj.hostname);
 
       if (!isValidTwitterUrl) {
-        res.status(400).json({ error: "URL must be a Twitter/X URL" });
+        sendApiError(res, req, 400, "URL must be a Twitter/X URL");
         return;
       }
 
@@ -224,10 +220,13 @@ router.get(
       console.error("Twitter embed failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to fetch Twitter embed",
-        details: errorMessage,
-      });
+      sendApiError(
+        res,
+        req,
+        500,
+        "Failed to fetch Twitter embed",
+        errorMessage,
+      );
     }
   },
 );

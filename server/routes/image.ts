@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { Buffer } from "node:buffer";
+import { sendApiError } from "../utils/logger";
 dotenv.config();
 
 const router: Router = express.Router();
@@ -13,16 +14,19 @@ router.post(
     const { prompt, images, model } = req.body;
 
     if (!prompt) {
-      res.status(400).json({ error: "Prompt is required" });
+      sendApiError(res, req, 400, "Prompt is required");
       return;
     }
 
     const geminiKey = process.env.GEMINI_API_KEY;
 
     if (!geminiKey) {
-      res
-        .status(500)
-        .json({ error: "GEMINI_API_KEY environment variable not set" });
+      sendApiError(
+        res,
+        req,
+        500,
+        "GEMINI_API_KEY environment variable not set",
+      );
       return;
     }
 
@@ -84,10 +88,7 @@ router.post(
       console.error("*** Image generation failed", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to generate image",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to generate image", errorMessage);
     }
   },
 );
@@ -99,15 +100,18 @@ router.post(
     const { prompt, images = [], model, size = "1024x1024" } = req.body;
 
     if (!prompt) {
-      res.status(400).json({ error: "Prompt is required" });
+      sendApiError(res, req, 400, "Prompt is required");
       return;
     }
 
     const openaiKey = process.env.OPENAI_API_KEY;
     if (!openaiKey) {
-      res
-        .status(500)
-        .json({ error: "OPENAI_API_KEY environment variable not set" });
+      sendApiError(
+        res,
+        req,
+        500,
+        "OPENAI_API_KEY environment variable not set",
+      );
       return;
     }
 
@@ -164,10 +168,13 @@ router.post(
       if (!fetchResponse.ok) {
         const errorText = await fetchResponse.text();
         console.error("*** OpenAI image generation failed", errorText);
-        res.status(fetchResponse.status).json({
-          error: "Failed to generate image with OpenAI",
-          details: errorText,
-        });
+        sendApiError(
+          res,
+          req,
+          fetchResponse.status,
+          "Failed to generate image with OpenAI",
+          errorText,
+        );
         return;
       }
 
@@ -195,22 +202,27 @@ router.post(
           imageData = Buffer.from(arrayBuffer).toString("base64");
         } catch (fetchError) {
           console.error("*** Failed to download image URL", fetchError);
-          res.status(500).json({
-            error: "Failed to download image provided by OpenAI",
-            details:
-              fetchError instanceof Error
-                ? fetchError.message
-                : "Unknown error",
-          });
+          const fetchErrorMessage =
+            fetchError instanceof Error ? fetchError.message : "Unknown error";
+          sendApiError(
+            res,
+            req,
+            500,
+            "Failed to download image provided by OpenAI",
+            fetchErrorMessage,
+          );
           return;
         }
       }
 
       if (!imageData) {
-        res.status(500).json({
-          error: "No image data returned from OpenAI",
-          details: data.error?.message,
-        });
+        sendApiError(
+          res,
+          req,
+          500,
+          "No image data returned from OpenAI",
+          data.error?.message,
+        );
         return;
       }
 
@@ -223,10 +235,13 @@ router.post(
       console.error("*** OpenAI image generation encountered an error", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to generate image with OpenAI",
-        details: errorMessage,
-      });
+      sendApiError(
+        res,
+        req,
+        500,
+        "Failed to generate image with OpenAI",
+        errorMessage,
+      );
     }
   },
 );

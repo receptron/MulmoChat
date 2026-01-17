@@ -64,6 +64,8 @@
     "vue": "^3.5.26",
     "vue-drawing-canvas": "^1.0.14",
     "vue-router": "^4.6.4",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

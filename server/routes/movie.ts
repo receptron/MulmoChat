@@ -14,6 +14,7 @@ import type { MulmoScript, MulmoStudioContext } from "mulmocast";
 import path from "path";
 import fs from "fs/promises";
 import { createReadStream } from "fs";
+import { sendApiError } from "../utils/logger";
 
 const router: Router = express.Router();
 
@@ -60,12 +61,12 @@ router.post(
     };
 
     if (!mulmoScript) {
-      res.status(400).json({ error: "MulmoScript is required" });
+      sendApiError(res, req, 400, "MulmoScript is required");
       return;
     }
 
     if (!uuid) {
-      res.status(400).json({ error: "UUID is required" });
+      sendApiError(res, req, 400, "UUID is required");
       return;
     }
 
@@ -131,10 +132,7 @@ router.post(
       console.error("Movie generation failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to generate movie",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to generate movie", errorMessage);
     }
   },
 );
@@ -149,12 +147,12 @@ router.post(
     };
 
     if (!uuid) {
-      res.status(400).json({ error: "UUID is required" });
+      sendApiError(res, req, 400, "UUID is required");
       return;
     }
 
     if (!images) {
-      res.status(400).json({ error: "Images are required" });
+      sendApiError(res, req, 400, "Images are required");
       return;
     }
 
@@ -174,10 +172,7 @@ router.post(
       console.error("Image saving failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to save images",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to save images", errorMessage);
     }
   },
 );
@@ -189,7 +184,7 @@ router.post(
     const { moviePath } = req.body as { moviePath: string };
 
     if (!moviePath) {
-      res.status(400).json({ error: "Movie path is required" });
+      sendApiError(res, req, 400, "Movie path is required");
       return;
     }
 
@@ -214,10 +209,7 @@ router.post(
       console.error("Movie download failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to download movie",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to download movie", errorMessage);
     }
   },
 );
@@ -229,7 +221,7 @@ router.post(
     const { viewerJsonPath } = req.body as { viewerJsonPath: string };
 
     if (!viewerJsonPath) {
-      res.status(400).json({ error: "Viewer JSON path is required" });
+      sendApiError(res, req, 400, "Viewer JSON path is required");
       return;
     }
 
@@ -245,10 +237,7 @@ router.post(
       console.error("Viewer JSON fetch failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to fetch viewer JSON",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to fetch viewer JSON", errorMessage);
     }
   },
 );

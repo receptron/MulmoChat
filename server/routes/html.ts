@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { sendApiError } from "../utils/logger";
 
 dotenv.config();
 
@@ -70,15 +71,18 @@ router.post(
     const { prompt, html: existingHtml, backend = "claude" } = req.body;
 
     if (!prompt) {
-      res.status(400).json({ error: "Prompt is required" });
+      sendApiError(res, req, 400, "Prompt is required");
       return;
     }
 
     // Validate backend parameter
     if (backend !== "claude" && backend !== "gemini") {
-      res
-        .status(400)
-        .json({ error: "Invalid backend. Must be 'claude' or 'gemini'" });
+      sendApiError(
+        res,
+        req,
+        400,
+        "Invalid backend. Must be 'claude' or 'gemini'",
+      );
       return;
     }
 
@@ -87,16 +91,22 @@ router.post(
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (backend === "claude" && !anthropicApiKey) {
-      res
-        .status(500)
-        .json({ error: "ANTHROPIC_API_KEY environment variable not set" });
+      sendApiError(
+        res,
+        req,
+        500,
+        "ANTHROPIC_API_KEY environment variable not set",
+      );
       return;
     }
 
     if (backend === "gemini" && !geminiApiKey) {
-      res
-        .status(500)
-        .json({ error: "GEMINI_API_KEY environment variable not set" });
+      sendApiError(
+        res,
+        req,
+        500,
+        "GEMINI_API_KEY environment variable not set",
+      );
       return;
     }
 
@@ -197,10 +207,9 @@ Return ONLY the HTML code, nothing else. Do not include markdown code blocks or 
       });
     } catch (error: unknown) {
       console.error("HTML generation failed:", error);
-      res.status(500).json({
-        error: "Failed to generate HTML",
-        details: error,
-      });
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      sendApiError(res, req, 500, "Failed to generate HTML", errorMessage);
     }
   },
 );
