@@ -79,7 +79,7 @@ Server (既存API)    ← 変更しない
 アプリ層でバックエンド種別を定義し、それぞれに設定画面を持つ。
 
 ```typescript
-type BackendType = "textLLM" | "imageGen" | "audio" | "search" | "browse" | "map";
+type BackendType = "textLLM" | "imageGen" | "audio" | "search" | "browse" | "map" | "mulmocast";
 ```
 
 ### プラグインはバックエンド種別のみを宣言
@@ -135,7 +135,8 @@ export type BackendType =
   | "audio"
   | "search"
   | "browse"
-  | "map";
+  | "map"
+  | "mulmocast";
 
 export interface ToolPlugin<T, J, A extends object> {
   // ...existing fields
@@ -153,13 +154,14 @@ export interface ToolPlugin<T, J, A extends object> {
 | exa | `["search"]` | |
 | editImage | `["imageGen"]` | |
 | setImageStyle | `["imageGen"]` | |
-| mulmocast | `["imageGen"]` | |
+| mulmocast | `["imageGen", "mulmocast"]` | |
 | map | `["map"]` | |
 | @mulmochat-plugin/generate-image | `["imageGen"]` | 外部プラグイン |
 
 ### 削除されたファイル
 
 - `src/tools/configs/HtmlGenerationConfig.vue` (バックエンド設定 → アプリ層へ移行)
+- `src/tools/configs/MulmocastConfig.vue` (バックエンド設定 → アプリ層へ移行)
 - `@mulmochat-plugin/generate-image` の `ImageGenerationConfig.vue` (バックエンド設定 → アプリ層へ移行)
 
 ### 新規追加ファイル
@@ -169,6 +171,7 @@ export interface ToolPlugin<T, J, A extends object> {
   - `BackendSettings.vue` - メインコンポーネント (有効なバックエンドのみ表示)
   - `TextLLMSettings.vue` - テキスト生成バックエンド設定
   - `ImageGenSettings.vue` - 画像生成バックエンド設定
+  - `MulmocastSettings.vue` - Mulmocast バックエンド設定
   - `index.ts` - エクスポート
 
 ### 追加された関数
@@ -176,10 +179,6 @@ export interface ToolPlugin<T, J, A extends object> {
 - `src/tools/index.ts` - `getEnabledBackends()` 関数
   - 有効なプラグインが使用するバックエンド種別の Set を返す
   - BackendSettings.vue で表示制御に使用
-
-### 残っている設定コンポーネント
-
-- `src/tools/configs/MulmocastConfig.vue` (プラグイン固有設定 → 残す)
 
 ---
 

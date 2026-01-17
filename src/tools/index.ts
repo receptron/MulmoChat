@@ -287,9 +287,10 @@ export const initializePluginConfigs = (): Record<string, unknown> => {
 /**
  * Gets the set of backend types used by enabled plugins
  * Used to show only relevant backend settings in the UI
+ * Note: Unlike pluginTools, this does NOT check isEnabled() because we want to show
+ * backend settings even when API keys are not configured yet.
  */
 export const getEnabledBackends = (
-  startResponse?: StartApiResponse | null,
   enabledPlugins?: Record<string, boolean>,
   roleId?: string,
 ): Set<BackendType> => {
@@ -297,11 +298,6 @@ export const getEnabledBackends = (
 
   pluginList.forEach((plugin) => {
     const toolName = plugin.plugin.toolDefinition.name;
-
-    // Same filtering logic as pluginTools
-    if (!plugin.plugin.isEnabled(startResponse)) {
-      return;
-    }
 
     if (roleId) {
       const availableInRole = isPluginAvailableInRole(toolName, roleId);
@@ -321,8 +317,9 @@ export const getEnabledBackends = (
     }
 
     // Add backends from this plugin
-    if (plugin.plugin.backends) {
-      plugin.plugin.backends.forEach((backend) => backends.add(backend));
+    const pluginBackends = (plugin.plugin as ToolPlugin).backends;
+    if (pluginBackends) {
+      pluginBackends.forEach((backend: BackendType) => backends.add(backend));
     }
   });
 
