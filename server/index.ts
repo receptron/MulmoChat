@@ -1,8 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import apiRoutes from "./routes/api.js";
+import { logger, logApiError } from "./utils/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +45,16 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+// Global error handler - must be after all routes
+app.use((err: Error, req: Request, res: Response, __next: NextFunction) => {
+  logApiError(err, {
+    path: req.path,
+    method: req.method,
+    statusCode: 500,
+  });
+  res.status(500).json({ error: "Internal Server Error" });
+});
+
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info("Server started", { port: PORT });
 });

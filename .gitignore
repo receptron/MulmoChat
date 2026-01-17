@@ -4,5 +4,6 @@ build
 .env
 .DS_Store
 output
+logs
 benchmark/results
 *~

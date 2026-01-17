@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from "express";
 import { randomUUID } from "crypto";
+import { sendApiError } from "../utils/logger";
 
 const router: Router = express.Router();
 
@@ -235,10 +236,13 @@ router.post(
     const denoiseValue = toNumber(body.denoise, 1);
 
     if (!modelValue || modelValue.trim().length === 0) {
-      res.status(400).json({
-        error: "Model is required",
-        details: "Set COMFYUI_DEFAULT_MODEL or pass model in the request body.",
-      });
+      sendApiError(
+        res,
+        req,
+        400,
+        "Model is required",
+        "Set COMFYUI_DEFAULT_MODEL or pass model in the request body.",
+      );
       return;
     }
     modelValue = modelValue.trim();
@@ -249,7 +253,7 @@ router.post(
         : "ComfyUI";
 
     if (!prompt) {
-      res.status(400).json({ error: "Prompt is required" });
+      sendApiError(res, req, 400, "Prompt is required");
       return;
     }
 
@@ -316,10 +320,13 @@ router.post(
       }
 
       if (images.length === 0) {
-        res.status(502).json({
-          error: "No images returned by ComfyUI",
-          details: "Workflow completed without producing images",
-        });
+        sendApiError(
+          res,
+          req,
+          502,
+          "No images returned by ComfyUI",
+          "Workflow completed without producing images",
+        );
         return;
       }
 
@@ -344,10 +351,13 @@ router.post(
       console.error("ComfyUI image generation failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to generate image with ComfyUI",
-        details: errorMessage,
-      });
+      sendApiError(
+        res,
+        req,
+        500,
+        "Failed to generate image with ComfyUI",
+        errorMessage,
+      );
     }
   },
 );

@@ -15,6 +15,7 @@ import {
   serializeSession,
   updateSessionDefaults,
 } from "../llm/textSessionStore";
+import { sendApiError } from "../utils/logger";
 
 const router = Router();
 
@@ -242,20 +243,13 @@ router.post("/text/generate", async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     if (error instanceof TextGenerationError) {
-      res.status(error.statusCode ?? 400).json({
-        success: false,
-        error: error.message,
-      });
+      sendApiError(res, req, error.statusCode ?? 400, error.message);
       return;
     }
 
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    res.status(500).json({
-      success: false,
-      error: "Failed to generate text",
-      details: errorMessage,
-    });
+    sendApiError(res, req, 500, "Failed to generate text", errorMessage);
   }
 });
 
@@ -311,20 +305,13 @@ router.post("/text/session", (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     if (error instanceof TextGenerationError) {
-      res.status(error.statusCode ?? 400).json({
-        success: false,
-        error: error.message,
-      });
+      sendApiError(res, req, error.statusCode ?? 400, error.message);
       return;
     }
 
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    res.status(500).json({
-      success: false,
-      error: "Failed to create text session",
-      details: errorMessage,
-    });
+    sendApiError(res, req, 500, "Failed to create text session", errorMessage);
   }
 });
 
@@ -433,20 +420,19 @@ router.post(
       });
     } catch (error: unknown) {
       if (error instanceof TextGenerationError) {
-        res.status(error.statusCode ?? 400).json({
-          success: false,
-          error: error.message,
-        });
+        sendApiError(res, req, error.statusCode ?? 400, error.message);
         return;
       }
 
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        success: false,
-        error: "Failed to process instructions",
-        details: errorMessage,
-      });
+      sendApiError(
+        res,
+        req,
+        500,
+        "Failed to process instructions",
+        errorMessage,
+      );
     }
   },
 );
@@ -485,20 +471,13 @@ router.post(
       });
     } catch (error: unknown) {
       if (error instanceof TextGenerationError) {
-        res.status(error.statusCode ?? 400).json({
-          success: false,
-          error: error.message,
-        });
+        sendApiError(res, req, error.statusCode ?? 400, error.message);
         return;
       }
 
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        success: false,
-        error: "Failed to append tool output",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to append tool output", errorMessage);
     }
   },
 );
@@ -631,20 +610,13 @@ router.post(
       });
     } catch (error: unknown) {
       if (error instanceof TextGenerationError) {
-        res.status(error.statusCode ?? 400).json({
-          success: false,
-          error: error.message,
-        });
+        sendApiError(res, req, error.statusCode ?? 400, error.message);
         return;
       }
 
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        success: false,
-        error: "Failed to process message",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to process message", errorMessage);
     }
   },
 );

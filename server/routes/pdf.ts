@@ -6,6 +6,7 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
+import { sendApiError } from "../utils/logger";
 
 dotenv.config();
 
@@ -41,21 +42,24 @@ router.post(
     };
 
     if (!prompt) {
-      res.status(400).json({ error: "Prompt is required" });
+      sendApiError(res, req, 400, "Prompt is required");
       return;
     }
 
     if (!pdfData) {
-      res.status(400).json({ error: "PDF data is required" });
+      sendApiError(res, req, 400, "PDF data is required");
       return;
     }
 
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!anthropicApiKey) {
-      res.status(500).json({
-        error: "ANTHROPIC_API_KEY environment variable not set",
-      });
+      sendApiError(
+        res,
+        req,
+        500,
+        "ANTHROPIC_API_KEY environment variable not set",
+      );
       return;
     }
 
@@ -112,10 +116,7 @@ router.post(
       console.error("PDF summarization failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to summarize PDF",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to summarize PDF", errorMessage);
     }
   },
 );
@@ -131,12 +132,12 @@ router.post(
     };
 
     if (!markdown) {
-      res.status(400).json({ error: "Markdown content is required" });
+      sendApiError(res, req, 400, "Markdown content is required");
       return;
     }
 
     if (!uuid) {
-      res.status(400).json({ error: "UUID is required" });
+      sendApiError(res, req, 400, "UUID is required");
       return;
     }
 
@@ -312,10 +313,7 @@ ${htmlContent}
       console.error("PDF generation failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to generate PDF",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to generate PDF", errorMessage);
     }
   },
 );
@@ -329,12 +327,12 @@ router.post("/save-pdf", async (req: Request, res: Response): Promise<void> => {
   };
 
   if (!pdfData) {
-    res.status(400).json({ error: "PDF data is required" });
+    sendApiError(res, req, 400, "PDF data is required");
     return;
   }
 
   if (!uuid) {
-    res.status(400).json({ error: "UUID is required" });
+    sendApiError(res, req, 400, "UUID is required");
     return;
   }
 
@@ -372,10 +370,7 @@ router.post("/save-pdf", async (req: Request, res: Response): Promise<void> => {
     console.error("PDF save failed:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    res.status(500).json({
-      error: "Failed to save PDF",
-      details: errorMessage,
-    });
+    sendApiError(res, req, 500, "Failed to save PDF", errorMessage);
   }
 });
 
@@ -386,7 +381,7 @@ router.post(
     const { pdfPath } = req.body as { pdfPath: string };
 
     if (!pdfPath) {
-      res.status(400).json({ error: "PDF path is required" });
+      sendApiError(res, req, 400, "PDF path is required");
       return;
     }
 
@@ -411,10 +406,7 @@ router.post(
       console.error("PDF download failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to download PDF",
-        details: errorMessage,
-      });
+      sendApiError(res, req, 500, "Failed to download PDF", errorMessage);
     }
   },
 );
