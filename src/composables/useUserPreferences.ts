@@ -24,7 +24,6 @@ const MODEL_KIND_KEY = "model_kind_v2";
 const TEXT_MODEL_ID_KEY = "text_model_id_v1";
 const IMAGE_GENERATION_BACKEND_KEY = "image_generation_backend_v1";
 const COMFYUI_MODEL_KEY = "comfyui_model_v1";
-const HTML_GENERATION_BACKEND_KEY = "html_generation_backend_v1";
 const PLUGIN_CONFIGS_KEY = "plugin_configs_v1";
 
 interface StorageLike {
@@ -63,7 +62,6 @@ export interface UserPreferencesState extends Record<string, unknown> {
   textModelId: string;
   imageGenerationBackend: "gemini" | "openai" | "comfyui";
   comfyuiModel: string;
-  htmlGenerationBackend: "claude" | "gemini";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pluginConfigs: Record<string, any>;
 }
@@ -102,26 +100,6 @@ const resolveStoredModelKind = (
   return "voice-realtime";
 };
 
-// Migrate old imageGenerationBackend to new pluginConfigs
-const migrateOldConfigs = (): Record<string, any> => {
-  const configs = initPluginConfigs();
-
-  // If we already have the new config, no migration needed
-  if (configs.imageGenerationBackend) {
-    return configs;
-  }
-
-  // Check for old imageGenerationBackend setting
-  const oldBackend = getStoredValue(IMAGE_GENERATION_BACKEND_KEY);
-  if (oldBackend) {
-    configs.imageGenerationBackend = oldBackend;
-    // Save the migrated config
-    setStoredObject(PLUGIN_CONFIGS_KEY, configs);
-  }
-
-  return configs;
-};
-
 export function useUserPreferences(): UseUserPreferencesReturn {
   const storedModelKind = resolveStoredModelKind(
     getStoredValue(MODEL_KIND_KEY),
@@ -146,10 +124,7 @@ export function useUserPreferences(): UseUserPreferencesReturn {
         | "comfyui") || "gemini",
     comfyuiModel:
       getStoredValue(COMFYUI_MODEL_KEY) || "flux1-schnell-fp8.safetensors",
-    htmlGenerationBackend:
-      (getStoredValue(HTML_GENERATION_BACKEND_KEY) as "claude" | "gemini") ||
-      "claude",
-    pluginConfigs: migrateOldConfigs(),
+    pluginConfigs: initPluginConfigs(),
   });
 
   watch(
@@ -242,13 +217,6 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     () => state.comfyuiModel,
     (val) => {
       setStoredValue(COMFYUI_MODEL_KEY, val);
-    },
-  );
-
-  watch(
-    () => state.htmlGenerationBackend,
-    (val) => {
-      setStoredValue(HTML_GENERATION_BACKEND_KEY, val);
     },
   );
 

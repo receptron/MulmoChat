@@ -117,7 +117,9 @@ backends: {
 - [x] バックエンド種別の型定義 (`src/tools/backendTypes.ts`)
 - [x] プラグインに `backends` フィールド追加
 - [x] `src/tools/configs/HtmlGenerationConfig.vue` 削除
-- [x] アプリ層のバックエンド設定UI (`src/components/BackendSettings.vue`)
+- [x] アプリ層のバックエンド設定UI (`src/components/settings/`)
+- [x] バックエンド設定を `pluginConfigs` に統合
+- [x] 有効なプラグインに基づくバックエンド設定の表示制御 (`getEnabledBackends`)
 
 ---
 
@@ -164,10 +166,16 @@ export interface ToolPlugin<T, J, A extends object> {
 
 - `src/tools/backendTypes.ts` - バックエンド種別と設定の型定義
 - `src/components/settings/` - バックエンド設定UIコンポーネント
-  - `BackendSettings.vue` - メインコンポーネント
+  - `BackendSettings.vue` - メインコンポーネント (有効なバックエンドのみ表示)
   - `TextLLMSettings.vue` - テキスト生成バックエンド設定
   - `ImageGenSettings.vue` - 画像生成バックエンド設定
   - `index.ts` - エクスポート
+
+### 追加された関数
+
+- `src/tools/index.ts` - `getEnabledBackends()` 関数
+  - 有効なプラグインが使用するバックエンド種別の Set を返す
+  - BackendSettings.vue で表示制御に使用
 
 ### 残っている設定コンポーネント
 
@@ -238,25 +246,38 @@ export { default as AudioSettings } from "./AudioSettings.vue";
 ```vue
 <template>
   <div class="space-y-6">
-    <TextLLMSettings ... />
-    <ImageGenSettings ... />
+    <TextLLMSettings v-if="showTextLLM" ... />
+    <ImageGenSettings v-if="showImageGen" ... />
     <AudioSettings
+      v-if="showAudio"
       :model-value="audioBackend"
       @update:model-value="$emit('update:audioBackend', $event)"
     />
   </div>
 </template>
+
+<script setup lang="ts">
+// enabledBackends に基づいて表示を制御
+const showAudio = computed(
+  () => !props.enabledBackends || props.enabledBackends.has("audio"),
+);
+</script>
 ```
 
-### 5. Sidebar.vue で props/emits を追加
+### 5. Sidebar.vue で pluginConfigs を使用
 
-必要に応じて Sidebar.vue と HomeView.vue で新しい設定を接続。
+`src/components/Sidebar.vue`:
 
-### 6. useUserPreferences.ts に設定を追加
+```vue
+<BackendSettings
+  :audio-backend="pluginConfigs.audioBackend || defaultValue"
+  @update:audio-backend="handlePluginConfigUpdate('audioBackend', $event)"
+/>
+```
 
-`src/composables/useUserPreferences.ts` に新しい設定項目を追加し、localStorage への保存を設定。
+バックエンド設定は全て `pluginConfigs` に保存される。
 
-### 7. プラグインで使用
+### 6. プラグインで使用
 
 プラグインで新しいバックエンド種別を宣言:
 
@@ -266,3 +287,5 @@ export const plugin: ToolPlugin<...> = {
   backends: ["audio"],
 };
 ```
+
+これにより、`audio` バックエンドを使用するプラグインが有効な場合のみ、Audio 設定UIが表示される。

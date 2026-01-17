@@ -55,7 +55,6 @@
         :supports-audio-input="supportsAudioInput"
         :supports-audio-output="supportsAudioOutput"
         :plugin-configs="userPreferences.pluginConfigs"
-        :html-generation-backend="userPreferences.htmlGenerationBackend"
         @start-chat="startChat"
         @stop-chat="stopChat"
         @set-mute="setMute"
@@ -76,9 +75,6 @@
         @update:model-kind="userPreferences.modelKind = $event"
         @update:text-model-id="userPreferences.textModelId = $event"
         @update:plugin-configs="userPreferences.pluginConfigs = $event"
-        @update:html-generation-backend="
-          userPreferences.htmlGenerationBackend = $event
-        "
         @upload-files="handleUploadFiles"
       />
 

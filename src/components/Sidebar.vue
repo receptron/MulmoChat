@@ -474,12 +474,15 @@
               Backend Settings
             </label>
             <BackendSettings
-              :text-l-l-m-backend="htmlGenerationBackend"
+              :text-l-l-m-backend="
+                pluginConfigs.htmlGenerationBackend || 'claude'
+              "
               :image-gen-backend="
                 pluginConfigs.imageGenerationBackend || 'gemini'
               "
+              :enabled-backends="enabledBackendsForRole"
               @update:text-l-l-m-backend="
-                $emit('update:htmlGenerationBackend', $event)
+                handlePluginConfigUpdate('htmlGenerationBackend', $event)
               "
               @update:image-gen-backend="
                 handlePluginConfigUpdate('imageGenerationBackend', $event)
@@ -514,6 +517,7 @@ import {
   hasAnyPluginConfig,
   isRoleCustomizable,
   getAvailablePluginsForRole,
+  getEnabledBackends,
 } from "../tools";
 import { LANGUAGES } from "../config/languages";
 import { ROLES } from "../config/roles";
@@ -548,7 +552,6 @@ const props = defineProps<{
   supportsAudioInput: boolean;
   supportsAudioOutput: boolean;
   pluginConfigs: Record<string, any>;
-  htmlGenerationBackend: "claude" | "gemini";
 }>();
 
 const emit = defineEmits<{
@@ -568,7 +571,6 @@ const emit = defineEmits<{
   "update:modelKind": [value: SessionTransportKind];
   "update:textModelId": [value: string];
   "update:pluginConfigs": [value: Record<string, any>];
-  "update:htmlGenerationBackend": [value: "claude" | "gemini"];
   uploadFiles: [results: ToolResult[]];
 }>();
 
@@ -668,6 +670,10 @@ const availablePluginsForCurrentRole = computed(() => {
       return pluginModule ? pluginModule.plugin.toolDefinition.name : null;
     })
     .filter((name): name is string => name !== null);
+});
+
+const enabledBackendsForRole = computed(() => {
+  return getEnabledBackends(undefined, props.enabledPlugins, props.roleId);
 });
 
 function scrollToBottom(): void {
