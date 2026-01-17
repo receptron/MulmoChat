@@ -3,7 +3,6 @@ import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
 import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
 import type { HtmlToolData } from "../utils";
-import { getRawHtmlConfig, normalizeHtmlConfig } from "../backend/html";
 
 const toolName = "generateHtml";
 
@@ -42,10 +41,8 @@ const generateHtml = async (
     };
   }
 
-  const backend = normalizeHtmlConfig(getRawHtmlConfig(context));
-
   try {
-    const data = await context.app.generateHtml({ prompt, backend });
+    const data = await context.app.generateHtml({ prompt });
 
     if (data.success && data.html) {
       return {

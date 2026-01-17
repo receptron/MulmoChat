@@ -1,9 +1,5 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import type { ImageGenerationConfigValue } from "@mulmochat-plugin/generate-image";
-import {
-  getRawImageConfig,
-  normalizeImageConfig,
-} from "../backend/imageGeneration";
 import SetImageStylePreview from "../previews/setImageStyle.vue";
 
 const toolName = "setImageStyle";
@@ -49,8 +45,18 @@ const setImageStyleExecute = async (
 ): Promise<ToolResult<SetImageStyleData, SetImageStyleJsonData>> => {
   const { styleModifier } = args;
 
+  if (!context.app?.getImageConfig) {
+    return {
+      message: "getImageConfig function not available",
+      jsonData: {
+        success: false,
+        error: "getImageConfig function not available",
+      },
+    };
+  }
+
   try {
-    const config = normalizeImageConfig(getRawImageConfig(context));
+    const config = context.app.getImageConfig();
     const previousStyleModifier = config.styleModifier;
 
     // Update the config with new style modifier

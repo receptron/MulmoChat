@@ -9,7 +9,7 @@ import { getRawPluginConfig } from "./config";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";
 
-type NormalizedImageConfig = Required<ImageGenerationConfigValue>;
+export type NormalizedImageConfig = Required<ImageGenerationConfigValue>;
 
 const IMAGE_CONFIG_KEY = "imageGenerationBackend";
 
@@ -46,22 +46,27 @@ function getImageGenerationEndpoint(backend: ImageBackend): string {
   return "/api/generate-image";
 }
 
+export interface ImageGenerationOptions {
+  config: NormalizedImageConfig;
+  comfyuiModel?: string;
+}
+
 /**
  * Shared function to generate images with backend selection support.
  * Can be used by any plugin that needs image generation.
  *
  * @param prompt - The image generation prompt
  * @param images - Array of base64 image strings (without data URL prefix)
- * @param context - Optional ToolContext for backend configuration
+ * @param options - Config and optional settings
  * @returns Normalized response with success status and imageData
  */
 export async function generateImageWithBackend(
   prompt: string,
   images: string[],
-  context?: ToolContext,
+  options: ImageGenerationOptions,
 ): Promise<{ success: boolean; imageData?: string; message?: string }> {
   try {
-    const config = normalizeImageConfig(getRawImageConfig(context));
+    const { config, comfyuiModel } = options;
 
     const finalPrompt = config.styleModifier.trim()
       ? `${prompt}, ${config.styleModifier}`
@@ -79,9 +84,7 @@ export async function generateImageWithBackend(
     } else if (config.backend === "openai") {
       requestBody.model = config.openaiModel;
     } else if (config.backend === "comfyui") {
-      requestBody.model =
-        context?.userPreferences?.comfyuiModel ||
-        "flux1-schnell-fp8.safetensors";
+      requestBody.model = comfyuiModel || "flux1-schnell-fp8.safetensors";
     }
 
     const response = await fetch(endpoint, {
@@ -132,22 +135,33 @@ export async function generateImageWithBackend(
   }
 }
 
+export interface ImageGenerationContext {
+  currentImageData?: string; // base64 with data URL prefix
+  options: ImageGenerationOptions;
+}
+
 export async function generateImageCommon(
-  context: ToolContext,
+  imageContext: ImageGenerationContext,
   prompt: string,
   isEditImage: boolean,
 ): Promise<ToolResult<ImageToolData>> {
   try {
     // Prepare images array for the shared function
-    const currentImageData = context.currentResult?.data as
-      | ImageToolData
-      | undefined;
     const images =
-      isEditImage && currentImageData?.imageData
-        ? [currentImageData.imageData.replace(/^data:image\/[^;]+;base64,/, "")]
+      isEditImage && imageContext.currentImageData
+        ? [
+            imageContext.currentImageData.replace(
+              /^data:image\/[^;]+;base64,/,
+              "",
+            ),
+          ]
         : [];
 
-    const result = await generateImageWithBackend(prompt, images, context);
+    const result = await generateImageWithBackend(
+      prompt,
+      images,
+      imageContext.options,
+    );
 
     if (result.success && result.imageData) {
       return {
@@ -175,15 +189,15 @@ export async function generateImageCommon(
 }
 
 export async function generateImage(
-  context: ToolContext,
+  imageContext: ImageGenerationContext,
   prompt: string,
 ): Promise<ToolResult<ImageToolData>> {
-  return generateImageCommon(context, prompt, false);
+  return generateImageCommon(imageContext, prompt, false);
 }
 
 export async function editImage(
-  context: ToolContext,
+  imageContext: ImageGenerationContext,
   prompt: string,
 ): Promise<ToolResult<ImageToolData>> {
-  return generateImageCommon(context, prompt, true);
+  return generateImageCommon(imageContext, prompt, true);
 }
