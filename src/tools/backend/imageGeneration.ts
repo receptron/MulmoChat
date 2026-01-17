@@ -5,12 +5,19 @@
 import type { ToolContext, ToolResult } from "../types";
 import type { ImageToolData } from "../utils/imageTypes";
 import type { ImageGenerationConfigValue } from "@mulmochat-plugin/generate-image";
+import { getRawPluginConfig } from "./config";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";
 
 type NormalizedImageConfig = Required<ImageGenerationConfigValue>;
 
-function normalizeImageConfig(
+const IMAGE_CONFIG_KEY = "imageGenerationBackend";
+
+export function getRawImageConfig(context?: ToolContext) {
+  return getRawPluginConfig(context, IMAGE_CONFIG_KEY);
+}
+
+export function normalizeImageConfig(
   config: string | ImageGenerationConfigValue | undefined,
 ): NormalizedImageConfig {
   if (typeof config === "string") {
@@ -54,11 +61,7 @@ export async function generateImageWithBackend(
   context?: ToolContext,
 ): Promise<{ success: boolean; imageData?: string; message?: string }> {
   try {
-    const rawConfig =
-      context?.getPluginConfig?.("imageGenerationBackend") ||
-      context?.userPreferences?.pluginConfigs?.["imageGenerationBackend"] ||
-      context?.userPreferences?.imageGenerationBackend;
-    const config = normalizeImageConfig(rawConfig);
+    const config = normalizeImageConfig(getRawImageConfig(context));
 
     const finalPrompt = config.styleModifier.trim()
       ? `${prompt}, ${config.styleModifier}`

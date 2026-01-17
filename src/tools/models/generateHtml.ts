@@ -3,6 +3,7 @@ import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
 import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
 import type { HtmlToolData } from "../utils";
+import { getRawHtmlConfig, normalizeHtmlConfig } from "../backend/html";
 
 const toolName = "generateHtml";
 
@@ -41,11 +42,7 @@ const generateHtml = async (
     };
   }
 
-  // Get backend model preference (default to claude)
-  const backend = (context?.getPluginConfig?.("htmlGenerationBackend") ||
-    context?.userPreferences?.pluginConfigs?.["htmlGenerationBackend"] ||
-    context?.userPreferences?.htmlGenerationBackend ||
-    "claude") as "claude" | "gemini";
+  const backend = normalizeHtmlConfig(getRawHtmlConfig(context));
 
   try {
     const data = await context.app.generateHtml({ prompt, backend });
