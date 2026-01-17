@@ -321,8 +321,9 @@ export const getEnabledBackends = (
     }
 
     // Add backends from this plugin
-    if (plugin.plugin.backends) {
-      plugin.plugin.backends.forEach((backend) => backends.add(backend));
+    const pluginBackends = (plugin.plugin as ToolPlugin).backends;
+    if (pluginBackends) {
+      pluginBackends.forEach((backend: BackendType) => backends.add(backend));
     }
   });
 

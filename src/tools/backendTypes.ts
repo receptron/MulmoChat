@@ -10,7 +10,8 @@ export type BackendType =
   | "audio"
   | "search"
   | "browse"
-  | "map";
+  | "map"
+  | "mulmocast";
 
 // Backend settings for each type (managed by app layer)
 // Provider names match current codebase conventions

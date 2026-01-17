@@ -480,12 +480,16 @@
               :image-gen-backend="
                 pluginConfigs.imageGenerationBackend || 'gemini'
               "
+              :mulmocast-auto-generate="pluginConfigs.mulmocast ?? true"
               :enabled-backends="enabledBackendsForRole"
               @update:text-l-l-m-backend="
                 handlePluginConfigUpdate('htmlGenerationBackend', $event)
               "
               @update:image-gen-backend="
                 handlePluginConfigUpdate('imageGenerationBackend', $event)
+              "
+              @update:mulmocast-auto-generate="
+                handlePluginConfigUpdate('mulmocast', $event)
               "
             />
           </div>

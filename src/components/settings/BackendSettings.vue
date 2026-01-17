@@ -10,7 +10,12 @@
       :model-value="imageGenBackend"
       @update:model-value="$emit('update:imageGenBackend', $event)"
     />
-    <div v-if="!showTextLLM && !showImageGen" class="text-sm text-gray-500">
+    <MulmocastSettings
+      v-if="showMulmocast"
+      :model-value="mulmocastAutoGenerate"
+      @update:model-value="$emit('update:mulmocastAutoGenerate', $event)"
+    />
+    <div v-if="!showTextLLM && !showImageGen && !showMulmocast" class="text-sm text-gray-500">
       No backend settings required for currently enabled plugins.
     </div>
   </div>
@@ -22,17 +27,20 @@ import TextLLMSettings from "./TextLLMSettings.vue";
 import ImageGenSettings, {
   type ImageGenerationConfigValue,
 } from "./ImageGenSettings.vue";
+import MulmocastSettings from "./MulmocastSettings.vue";
 import type { BackendType } from "../../tools/types";
 
 const props = defineProps<{
   textLLMBackend: "claude" | "gemini";
   imageGenBackend: string | ImageGenerationConfigValue;
+  mulmocastAutoGenerate: boolean;
   enabledBackends?: Set<BackendType>;
 }>();
 
 defineEmits<{
   "update:textLLMBackend": [value: "claude" | "gemini"];
   "update:imageGenBackend": [value: ImageGenerationConfigValue];
+  "update:mulmocastAutoGenerate": [value: boolean];
 }>();
 
 // Show settings based on enabled backends (show all if not specified)
@@ -41,5 +49,8 @@ const showTextLLM = computed(
 );
 const showImageGen = computed(
   () => !props.enabledBackends || props.enabledBackends.has("imageGen"),
+);
+const showMulmocast = computed(
+  () => !props.enabledBackends || props.enabledBackends.has("mulmocast"),
 );
 </script>
