@@ -3,7 +3,6 @@ import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
 import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
 import type { HtmlToolData } from "../utils";
-import { getRawHtmlConfig, normalizeHtmlConfig } from "../backend/html";
 
 const toolName = "editHtml";
 
@@ -54,13 +53,10 @@ const editHtml = async (
     };
   }
 
-  const backend = normalizeHtmlConfig(getRawHtmlConfig(context));
-
   try {
     const data = await context.app.generateHtml({
       prompt,
       html: currentHtml,
-      backend,
     });
 
     if (data.success && data.html) {
