@@ -197,4 +197,5 @@ export const plugin: ToolPlugin<MulmocastToolData, unknown, MulmocastArgs> = {
     defaultValue: true,
     component: MulmocastConfig,
   },
+  backends: ["imageGen"],
 };

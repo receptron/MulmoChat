@@ -468,6 +468,24 @@
               />
             </div>
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Backend Settings
+            </label>
+            <BackendSettings
+              :text-l-l-m-backend="htmlGenerationBackend"
+              :image-gen-backend="
+                pluginConfigs.imageGenerationBackend || 'gemini'
+              "
+              @update:text-l-l-m-backend="
+                $emit('update:htmlGenerationBackend', $event)
+              "
+              @update:image-gen-backend="
+                handlePluginConfigUpdate('imageGenerationBackend', $event)
+              "
+            />
+          </div>
         </div>
 
         <div class="flex justify-end mt-4 pt-4 border-t flex-shrink-0">
@@ -486,6 +504,7 @@
 <script setup lang="ts">
 import { ref, nextTick, computed, onMounted, onUnmounted } from "vue";
 import type { ToolResult } from "../tools";
+import { BackendSettings } from "./settings";
 import {
   getToolPlugin,
   getAcceptedFileTypes,
@@ -529,6 +548,7 @@ const props = defineProps<{
   supportsAudioInput: boolean;
   supportsAudioOutput: boolean;
   pluginConfigs: Record<string, any>;
+  htmlGenerationBackend: "claude" | "gemini";
 }>();
 
 const emit = defineEmits<{
@@ -548,6 +568,7 @@ const emit = defineEmits<{
   "update:modelKind": [value: SessionTransportKind];
   "update:textModelId": [value: string];
   "update:pluginConfigs": [value: Record<string, any>];
+  "update:htmlGenerationBackend": [value: "claude" | "gemini"];
   uploadFiles: [results: ToolResult[]];
 }>();
 
