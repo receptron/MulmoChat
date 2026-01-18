@@ -1474,14 +1474,297 @@ export function PluginConfigField({ schema, value, onChange }: Props) {
 
 ---
 
+## 外部入力ハンドラー: InputHandler仕様
+
+ファイルアップロード以外にも、様々な「外部入力 → ToolResult」パターンがある。
+これを汎用的に設計する。
+
+### 現状（fileUploadのみ）
+
+```typescript
+// 現状: ファイル専用
+interface FileUploadConfig {
+  acceptedTypes: string[];
+  handleUpload: (fileData: string, fileName: string) => ToolResult;
+}
+```
+
+### 提案: 汎用InputHandler
+
+```typescript
+/**
+ * 外部入力ハンドラーの基底型
+ */
+interface InputHandlerBase {
+  /** 入力タイプ識別子 */
+  type: string;
+}
+
+/**
+ * ファイル入力ハンドラー
+ */
+export interface FileInputHandler extends InputHandlerBase {
+  type: "file";
+
+  /** 受け付けるMIMEタイプ */
+  acceptedTypes: string[];
+
+  /** ファイルデータをToolResultに変換 */
+  handleInput: (fileData: string, fileName: string) => ToolResult;
+}
+
+/**
+ * クリップボード画像入力ハンドラー
+ */
+export interface ClipboardImageInputHandler extends InputHandlerBase {
+  type: "clipboard-image";
+
+  /** 画像データをToolResultに変換 */
+  handleInput: (imageData: string) => ToolResult;
+}
+
+/**
+ * URL入力ハンドラー
+ */
+export interface UrlInputHandler extends InputHandlerBase {
+  type: "url";
+
+  /** 受け付けるURLパターン（正規表現） */
+  patterns?: string[];
+
+  /** URLをToolResultに変換 */
+  handleInput: (url: string) => ToolResult;
+}
+
+/**
+ * テキスト入力ハンドラー
+ */
+export interface TextInputHandler extends InputHandlerBase {
+  type: "text";
+
+  /** 受け付けるテキストパターン（正規表現） */
+  patterns?: string[];
+
+  /** テキストをToolResultに変換 */
+  handleInput: (text: string) => ToolResult;
+}
+
+/**
+ * カメラキャプチャ入力ハンドラー
+ */
+export interface CameraInputHandler extends InputHandlerBase {
+  type: "camera";
+
+  /** キャプチャモード */
+  mode: "photo" | "video";
+
+  /** キャプチャデータをToolResultに変換 */
+  handleInput: (data: string, metadata?: { duration?: number }) => ToolResult;
+}
+
+/**
+ * 音声入力ハンドラー
+ */
+export interface AudioInputHandler extends InputHandlerBase {
+  type: "audio";
+
+  /** 音声データをToolResultに変換 */
+  handleInput: (audioData: string, duration: number) => ToolResult;
+}
+
+/**
+ * 全InputHandler型のユニオン
+ */
+export type InputHandler =
+  | FileInputHandler
+  | ClipboardImageInputHandler
+  | UrlInputHandler
+  | TextInputHandler
+  | CameraInputHandler
+  | AudioInputHandler;
+```
+
+### プラグインでの使用
+
+```typescript
+// ToolPluginCore に追加
+export interface ToolPluginCore<T, J, A extends object> {
+  // ... 既存フィールド
+
+  /** 外部入力ハンドラー（複数可） */
+  inputHandlers?: InputHandler[];
+}
+```
+
+#### 例1: PDFプラグイン（現行のfileUploadを置き換え）
+
+```typescript
+export const plugin: ToolPluginCore = {
+  // ...
+  inputHandlers: [
+    {
+      type: "file",
+      acceptedTypes: ["application/pdf"],
+      handleInput: (fileData, fileName) => ({
+        toolName: "summarizePDF",
+        data: { pdfData: fileData, fileName },
+        message: "",
+        title: fileName,
+      }),
+    },
+  ],
+};
+```
+
+#### 例2: 画像編集プラグイン（複数入力対応）
+
+```typescript
+export const plugin: ToolPluginCore = {
+  // ...
+  inputHandlers: [
+    {
+      type: "file",
+      acceptedTypes: ["image/png", "image/jpeg", "image/webp"],
+      handleInput: (fileData, fileName) => ({
+        toolName: "editImage",
+        data: { imageData: fileData, fileName },
+        message: "Image loaded",
+      }),
+    },
+    {
+      type: "clipboard-image",
+      handleInput: (imageData) => ({
+        toolName: "editImage",
+        data: { imageData, fileName: "clipboard-image.png" },
+        message: "Image pasted from clipboard",
+      }),
+    },
+    {
+      type: "camera",
+      mode: "photo",
+      handleInput: (data) => ({
+        toolName: "editImage",
+        data: { imageData: data, fileName: "camera-capture.png" },
+        message: "Photo captured",
+      }),
+    },
+  ],
+};
+```
+
+#### 例3: Browseプラグイン（URL入力）
+
+```typescript
+export const plugin: ToolPluginCore = {
+  // ...
+  inputHandlers: [
+    {
+      type: "url",
+      patterns: ["^https?://"],
+      handleInput: (url) => ({
+        toolName: "browse",
+        data: { url },
+        message: `Ready to browse: ${url}`,
+      }),
+    },
+  ],
+};
+```
+
+### ホストアプリ実装
+
+ホストアプリはプラグインの`inputHandlers`を収集し、適切なUIと入力処理を提供する。
+
+```typescript
+// ホストアプリのユーティリティ関数
+function getAllInputHandlers(plugins: ToolPluginCore[]): Map<string, InputHandler[]> {
+  const handlers = new Map<string, InputHandler[]>();
+
+  for (const plugin of plugins) {
+    for (const handler of plugin.inputHandlers ?? []) {
+      const existing = handlers.get(handler.type) ?? [];
+      existing.push(handler);
+      handlers.set(handler.type, existing);
+    }
+  }
+
+  return handlers;
+}
+
+// ファイル入力の処理例
+function handleFileInput(file: File, handlers: FileInputHandler[]): ToolResult | null {
+  const handler = handlers.find(h => h.acceptedTypes.includes(file.type));
+  if (!handler) return null;
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const fileData = e.target?.result as string;
+      resolve(handler.handleInput(fileData, file.name));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// クリップボードペーストの処理例
+async function handlePaste(event: ClipboardEvent, handlers: Map<string, InputHandler[]>) {
+  const items = event.clipboardData?.items;
+  if (!items) return null;
+
+  for (const item of items) {
+    // 画像
+    if (item.type.startsWith("image/")) {
+      const imageHandlers = handlers.get("clipboard-image") as ClipboardImageInputHandler[];
+      if (imageHandlers?.length) {
+        const blob = item.getAsFile();
+        const imageData = await blobToDataURL(blob);
+        return imageHandlers[0].handleInput(imageData);
+      }
+    }
+
+    // URL
+    if (item.type === "text/plain") {
+      const text = await new Promise<string>(r => item.getAsString(r));
+      const urlHandlers = handlers.get("url") as UrlInputHandler[];
+      const urlHandler = urlHandlers?.find(h =>
+        !h.patterns || h.patterns.some(p => new RegExp(p).test(text))
+      );
+      if (urlHandler) {
+        return urlHandler.handleInput(text);
+      }
+    }
+  }
+
+  return null;
+}
+```
+
+### マイグレーション
+
+既存の`fileUpload`から`inputHandlers`への移行：
+
+```typescript
+// Before
+fileUpload: {
+  acceptedTypes: ["application/pdf"],
+  handleUpload: createUploadedPdfResult,
+}
+
+// After
+inputHandlers: [
+  {
+    type: "file",
+    acceptedTypes: ["application/pdf"],
+    handleInput: createUploadedPdfResult,
+  },
+]
+```
+
+---
+
 ## 課題と検討事項
 
-### 1. fileUpload の扱い
-
-`FileUploadConfig.handleUpload` は同期的にUIを更新する必要がある場合がある。
-フレームワーク非依存にするには、コールバックベースの設計が必要。
-
-### 2. テスト戦略
+### テスト戦略
 
 - コアロジック: フレームワーク非依存のユニットテスト
 - Vueコンポーネント: Vue Test Utils
