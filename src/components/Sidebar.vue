@@ -468,6 +468,31 @@
               />
             </div>
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Backend Settings
+            </label>
+            <BackendSettings
+              :text-l-l-m-backend="
+                pluginConfigs.htmlGenerationBackend || 'claude'
+              "
+              :image-gen-backend="
+                pluginConfigs.imageGenerationBackend || 'gemini'
+              "
+              :mulmocast-auto-generate="pluginConfigs.mulmocast ?? true"
+              :enabled-backends="enabledBackendsForRole"
+              @update:text-l-l-m-backend="
+                handlePluginConfigUpdate('htmlGenerationBackend', $event)
+              "
+              @update:image-gen-backend="
+                handlePluginConfigUpdate('imageGenerationBackend', $event)
+              "
+              @update:mulmocast-auto-generate="
+                handlePluginConfigUpdate('mulmocast', $event)
+              "
+            />
+          </div>
         </div>
 
         <div class="flex justify-end mt-4 pt-4 border-t flex-shrink-0">
@@ -486,6 +511,7 @@
 <script setup lang="ts">
 import { ref, nextTick, computed, onMounted, onUnmounted } from "vue";
 import type { ToolResult } from "../tools";
+import { BackendSettings } from "./settings";
 import {
   getToolPlugin,
   getAcceptedFileTypes,
@@ -495,6 +521,7 @@ import {
   hasAnyPluginConfig,
   isRoleCustomizable,
   getAvailablePluginsForRole,
+  getEnabledBackends,
 } from "../tools";
 import { LANGUAGES } from "../config/languages";
 import { ROLES } from "../config/roles";
@@ -647,6 +674,10 @@ const availablePluginsForCurrentRole = computed(() => {
       return pluginModule ? pluginModule.plugin.toolDefinition.name : null;
     })
     .filter((name): name is string => name !== null);
+});
+
+const enabledBackendsForRole = computed(() => {
+  return getEnabledBackends(props.enabledPlugins, props.roleId);
 });
 
 function scrollToBottom(): void {

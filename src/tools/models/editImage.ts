@@ -45,4 +45,5 @@ export const plugin: ToolPlugin<ImageToolData, unknown, EditImageArgs> = {
   viewComponent: ImageView,
   previewComponent: ImagePreview,
   systemPrompt: `When the user asks 'turn this image into ...', call ${toolName} API to generate a new image.`,
+  backends: ["imageGen"],
 };
