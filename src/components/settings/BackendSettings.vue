@@ -28,7 +28,7 @@ import ImageGenSettings, {
   type ImageGenerationConfigValue,
 } from "./ImageGenSettings.vue";
 import MulmocastSettings from "./MulmocastSettings.vue";
-import type { BackendType } from "../../tools/types";
+import type { BackendType } from "../../tools/backendTypes";
 
 const props = defineProps<{
   textLLMBackend: "claude" | "gemini";
