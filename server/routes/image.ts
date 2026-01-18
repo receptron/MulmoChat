@@ -33,6 +33,11 @@ router.post(
     try {
       const ai = new GoogleGenAI({ apiKey: geminiKey });
       const modelName = model || "gemini-2.5-flash-image";
+
+      // Log API call with backend settings
+      console.log(
+        `[${new Date().toISOString()}] /api/generate-image: backend=gemini, model=${modelName}`,
+      );
       const contents: {
         text?: string;
         inlineData?: { mimeType: string; data: string };
@@ -118,6 +123,11 @@ router.post(
     const modelName = (model as string) || "gpt-image-1";
     const shouldIncludeResponseFormat =
       !modelName.startsWith("gpt-image-1") && modelName !== "gpt-image-latest";
+
+    // Log API call with backend settings
+    console.log(
+      `[${new Date().toISOString()}] /api/generate-image/openai: backend=openai, model=${modelName}`,
+    );
 
     try {
       const hasEditImage = Array.isArray(images) && images.length > 0;

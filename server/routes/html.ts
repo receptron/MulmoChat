@@ -86,6 +86,15 @@ router.post(
       return;
     }
 
+    // Log API call with backend settings
+    const model =
+      backend === "claude"
+        ? "claude-sonnet-4-20250514"
+        : "models/gemini-3-pro-preview";
+    console.log(
+      `[${new Date().toISOString()}] /api/generate-html: backend=${backend}, model=${model}`,
+    );
+
     // Check for appropriate API key based on backend
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
     const geminiApiKey = process.env.GEMINI_API_KEY;

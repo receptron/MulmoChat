@@ -207,6 +207,11 @@ router.post(
         ? body.model
         : DEFAULT_COMFY_MODEL;
 
+    // Log API call with backend settings
+    console.log(
+      `[${new Date().toISOString()}] /api/generate-image/comfy: backend=comfyui, model=${modelValue}`,
+    );
+
     // Set optimal defaults based on model type
     const isFlux = isFluxModel(modelValue);
     const isTurbo = isTurboModel(modelValue);
