@@ -15,7 +15,10 @@
       :model-value="mulmocastAutoGenerate"
       @update:model-value="$emit('update:mulmocastAutoGenerate', $event)"
     />
-    <div v-if="!showTextLLM && !showImageGen && !showMulmocast" class="text-sm text-gray-500">
+    <div
+      v-if="!showTextLLM && !showImageGen && !showMulmocast"
+      class="text-sm text-gray-500"
+    >
       No backend settings required for currently enabled plugins.
     </div>
   </div>
