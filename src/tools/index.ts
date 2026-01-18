@@ -34,7 +34,7 @@ import type { BackendType } from "./backendTypes";
 
 // External plugins from npm packages
 import GenerateImagePlugin from "@mulmochat-plugin/generate-image";
-import QuizPlugin from "@mulmochat-plugin/quiz";
+import QuizPlugin from "@mulmochat-plugin/quiz/vue";
 import FormPlugin from "@mulmochat-plugin/form";
 import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf";
 

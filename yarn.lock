@@ -705,10 +705,10 @@
   resolved "https://registry.yarnpkg.com/@mulmochat-plugin/generate-image/-/generate-image-0.1.4.tgz#c89fb7ee47711cb06b84e47d320434133dd78ca8"
   integrity sha512-DCseCcUNI5X3XWfWBWAnYGsE3DubpdPYvjKVwPfIxiizjC9xiJ7fHghGV7w59AVaqP//HNh/0n47N5U7MdG8SQ==
 
-"@mulmochat-plugin/quiz@^0.1.4":
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.1.4.tgz#cd2f11948028e0dd73306abb9433f620f3453d2e"
-  integrity sha512-RHezAP9n/3huTmzTq9+Mr59WPH7s+Em6AiD2dVBvtM6wa2eIqgb6hsgzzRGwZc8684bMqU99/lfOCtIMyhvE5Q==
+"@mulmochat-plugin/quiz@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.2.0.tgz#52c0903f24122458923512e4869a2651abda2565"
+  integrity sha512-b2d11x8kHV59ntEOuAzcUmjCo2jRH1gFzh8YvRfLKtrrNqdTABqkTM9htbamhccB5v+rGkmIJKAJGptn5LMhuw==
 
 "@mulmochat-plugin/summarize-pdf@^0.1.2":
   version "0.1.2"
