@@ -65,10 +65,8 @@ const setImageStyleExecute = async (
       styleModifier: styleModifier.trim(),
     };
 
-    // Update via userPreferences if available
-    if (context.userPreferences?.pluginConfigs) {
-      context.userPreferences.pluginConfigs.imageGenerationBackend = newConfig;
-    }
+    // Update config via setConfig
+    context.app.setConfig("imageGenerationBackend", newConfig);
 
     const isClearing = styleModifier.trim() === "";
     const message = isClearing

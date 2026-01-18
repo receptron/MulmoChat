@@ -442,11 +442,6 @@ onMounted(() => {
   void loadTextProviders();
 });
 
-// Helper function to get plugin config values
-const getPluginConfig = <T = any,>(key: string): T | undefined => {
-  return userPreferences.pluginConfigs[key] as T | undefined;
-};
-
 const {
   toolResults,
   selectedResult,
@@ -461,7 +456,6 @@ const {
   getToolPlugin,
   suppressInstructions: computed(() => userPreferences.suppressInstructions),
   userPreferences: computed(() => userPreferences),
-  getPluginConfig,
   sleep,
   sendInstructions,
   sendFunctionCallOutput,
