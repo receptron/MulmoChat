@@ -1,4 +1,14 @@
 import type { StartApiResponse } from "../../server/types";
+import type { BackendType } from "./backendTypes";
+
+// Re-export backend types from dedicated file
+export type {
+  BackendType,
+  BackendSettings,
+  TextLLMBackendSettings,
+  ImageGenBackendSettings,
+  ImageGenerationConfigValue,
+} from "./backendTypes";
 
 /**
  * App interface provided to plugins via context.app
@@ -109,4 +119,5 @@ export interface ToolPlugin<
   systemPrompt?: string; // Optional tool-specific system prompt statement
   config?: ToolPluginConfig; // Optional plugin-specific configuration
   samples?: ToolSample[]; // Optional sample arguments for testing
+  backends?: BackendType[]; // Backend types this plugin uses (e.g., ["textLLM", "imageGen"])
 }

@@ -2,7 +2,7 @@ import express, { Request, Response, Router } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
-import { sendApiError } from "../utils/logger";
+import { sendApiError, logApiRequest } from "../utils/logger";
 
 dotenv.config();
 
@@ -85,6 +85,17 @@ router.post(
       );
       return;
     }
+
+    // Log API call with backend settings
+    const model =
+      backend === "claude"
+        ? "claude-sonnet-4-20250514"
+        : "models/gemini-3-pro-preview";
+    logApiRequest("generate-html", {
+      path: "/api/generate-html",
+      backend,
+      model,
+    });
 
     // Check for appropriate API key based on backend
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;

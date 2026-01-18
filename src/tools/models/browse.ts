@@ -141,4 +141,5 @@ export const plugin: ToolPlugin<BrowseToolData, BrowseJsonData, BrowseArgs> = {
   delayAfterExecution: 3000,
   viewComponent: BrowseView,
   previewComponent: BrowsePreview,
+  backends: ["browse"],
 };

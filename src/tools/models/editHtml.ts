@@ -1,7 +1,6 @@
 import { ToolPlugin, ToolContext, ToolResult } from "../types";
 import HtmlView from "../views/html.vue";
 import HtmlPreview from "../previews/html.vue";
-import HtmlGenerationConfig from "../configs/HtmlGenerationConfig.vue";
 import type { HtmlToolData } from "../utils";
 
 const toolName = "editHtml";
@@ -96,9 +95,5 @@ export const plugin: ToolPlugin<HtmlToolData, unknown, EditHtmlArgs> = {
     !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGoogleApiKey,
   viewComponent: HtmlView,
   previewComponent: HtmlPreview,
-  config: {
-    key: "htmlGenerationBackend",
-    defaultValue: "claude" as "claude" | "gemini",
-    component: HtmlGenerationConfig,
-  },
+  backends: ["textLLM"],
 };

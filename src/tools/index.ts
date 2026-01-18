@@ -29,6 +29,7 @@ import type {
   ToolResult,
   ToolResultComplete,
   ToolPlugin,
+  BackendType,
 } from "./types";
 
 // External plugins from npm packages
@@ -43,6 +44,7 @@ export type {
   ToolResult,
   ToolResultComplete,
   ToolPlugin,
+  BackendType,
 };
 
 const pluginList = [
@@ -254,14 +256,14 @@ export const getAcceptedFileTypes = () => {
 
 export const getPluginsWithConfig = (roleId?: string) => {
   return pluginList.filter((plugin) => {
-    if (!plugin.plugin.config) return false;
+    if (!plugin.plugin?.config?.component) return false;
     if (!roleId) return true;
     return isPluginAvailableInRole(plugin.plugin.toolDefinition.name, roleId);
   });
 };
 
 export const hasAnyPluginConfig = () => {
-  return pluginList.some((plugin) => plugin.plugin.config);
+  return pluginList.some((plugin) => plugin.plugin.config?.component);
 };
 
 export const getPluginConfigValue = (
@@ -282,4 +284,46 @@ export const initializePluginConfigs = (): Record<string, unknown> => {
     }
   });
   return configs;
+};
+
+/**
+ * Gets the set of backend types used by enabled plugins
+ * Used to show only relevant backend settings in the UI
+ * Note: Unlike pluginTools, this does NOT check isEnabled() because we want to show
+ * backend settings even when API keys are not configured yet.
+ */
+export const getEnabledBackends = (
+  enabledPlugins?: Record<string, boolean>,
+  roleId?: string,
+): Set<BackendType> => {
+  const backends = new Set<BackendType>();
+
+  pluginList.forEach((plugin) => {
+    const toolName = plugin.plugin.toolDefinition.name;
+
+    if (roleId) {
+      const availableInRole = isPluginAvailableInRole(toolName, roleId);
+      if (!availableInRole) {
+        return;
+      }
+
+      if (isRoleCustomizable(roleId)) {
+        if (!(enabledPlugins?.[toolName] ?? true)) {
+          return;
+        }
+      }
+    } else {
+      if (!(enabledPlugins?.[toolName] ?? true)) {
+        return;
+      }
+    }
+
+    // Add backends from this plugin
+    const pluginBackends = (plugin.plugin as ToolPlugin).backends;
+    if (pluginBackends) {
+      pluginBackends.forEach((backend: BackendType) => backends.add(backend));
+    }
+  });
+
+  return backends;
 };
