@@ -33,10 +33,10 @@ import type {
 import type { BackendType } from "./backendTypes";
 
 // External plugins from npm packages
-import GenerateImagePlugin from "@mulmochat-plugin/generate-image";
+import GenerateImagePlugin from "@mulmochat-plugin/generate-image/vue";
 import QuizPlugin from "@mulmochat-plugin/quiz/vue";
-import FormPlugin from "@mulmochat-plugin/form";
-import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf";
+import FormPlugin from "@mulmochat-plugin/form/vue";
+import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf/vue";
 
 export type {
   ToolContext,
