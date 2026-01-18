@@ -2,7 +2,7 @@ import express, { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { Buffer } from "node:buffer";
-import { sendApiError } from "../utils/logger";
+import { sendApiError, logApiRequest } from "../utils/logger";
 dotenv.config();
 
 const router: Router = express.Router();
@@ -35,9 +35,11 @@ router.post(
       const modelName = model || "gemini-2.5-flash-image";
 
       // Log API call with backend settings
-      console.log(
-        `[${new Date().toISOString()}] /api/generate-image: backend=gemini, model=${modelName}`,
-      );
+      logApiRequest("generate-image", {
+        path: "/api/generate-image",
+        backend: "gemini",
+        model: modelName,
+      });
       const contents: {
         text?: string;
         inlineData?: { mimeType: string; data: string };
@@ -125,9 +127,11 @@ router.post(
       !modelName.startsWith("gpt-image-1") && modelName !== "gpt-image-latest";
 
     // Log API call with backend settings
-    console.log(
-      `[${new Date().toISOString()}] /api/generate-image/openai: backend=openai, model=${modelName}`,
-    );
+    logApiRequest("generate-image/openai", {
+      path: "/api/generate-image/openai",
+      backend: "openai",
+      model: modelName,
+    });
 
     try {
       const hasEditImage = Array.isArray(images) && images.length > 0;
