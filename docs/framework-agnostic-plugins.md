@@ -96,14 +96,500 @@ Viewコンポーネントが受け取るpropsが明示的に定義されてい�
 
 ---
 
+## GUI-Chat-Protocol パッケージ
+
+プラグインの共通型定義を独立したnpmパッケージとして切り出す。
+
+### パッケージ構成
+
+```
+gui-chat-protocol/
+├── src/
+│   ├── index.ts           # Core exports (フレームワーク非依存)
+│   ├── vue.ts             # Vue固有の型定義
+│   └── react.ts           # React固有の型定義
+│
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+### package.json exports
+
+```json
+{
+  "name": "gui-chat-protocol",
+  "version": "1.0.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js",
+      "require": "./dist/vue.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    }
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": { "optional": true },
+    "react": { "optional": true }
+  }
+}
+```
+
+### Core exports (index.ts)
+
+フレームワークに依存しない型のみをエクスポート。
+
+```typescript
+// gui-chat-protocol/src/index.ts
+
+/**
+ * バックエンド種別
+ */
+export type BackendType =
+  | "textLLM"
+  | "imageGen"
+  | "audio"
+  | "search"
+  | "browse"
+  | "map"
+  | "mulmocast";
+
+/**
+ * アプリ層が提供するインターフェース
+ */
+export interface ToolContextApp extends Record<string, (...args: any[]) => any> {
+  getConfig: <T = unknown>(key: string) => T | undefined;
+  setConfig: (key: string, value: unknown) => void;
+}
+
+/**
+ * ツール実行時のコンテキスト
+ */
+export interface ToolContext {
+  currentResult?: ToolResult<unknown> | null;
+  app?: ToolContextApp;
+}
+
+/**
+ * ツール実行結果
+ */
+export interface ToolResult<T = unknown, J = unknown> {
+  toolName?: string;
+  uuid?: string;
+  message: string;
+  title?: string;
+  jsonData?: J;
+  instructions?: string;
+  instructionsRequired?: boolean;
+  updating?: boolean;
+  cancelled?: boolean;
+  data?: T;
+  viewState?: Record<string, unknown>;
+}
+
+/**
+ * 完全なツール結果（必須フィールド付き）
+ */
+export interface ToolResultComplete<T = unknown, J = unknown>
+  extends ToolResult<T, J> {
+  toolName: string;
+  uuid: string;
+}
+
+/**
+ * JSON Schemaプロパティ定義
+ */
+export interface JsonSchemaProperty {
+  type?: string;
+  description?: string;
+  enum?: string[];
+  items?: JsonSchemaProperty;
+  minimum?: number;
+  maximum?: number;
+  minItems?: number;
+  maxItems?: number;
+  properties?: Record<string, JsonSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean;
+  oneOf?: JsonSchemaProperty[];
+  [key: string]: unknown;
+}
+
+/**
+ * ツール定義（OpenAI Function Calling互換）
+ */
+export interface ToolDefinition {
+  type: "function";
+  name: string;
+  description: string;
+  parameters?: {
+    type: "object";
+    properties: Record<string, JsonSchemaProperty>;
+    required: string[];
+    additionalProperties?: boolean;
+  };
+}
+
+/**
+ * サーバーAPI応答
+ */
+export interface StartApiResponse {
+  hasOpenAIApiKey?: boolean;
+  hasAnthropicApiKey?: boolean;
+  hasGoogleApiKey?: boolean;
+  [key: string]: unknown;
+}
+
+/**
+ * サンプル引数（テスト用）
+ */
+export interface ToolSample {
+  name: string;
+  args: Record<string, unknown>;
+}
+
+/**
+ * 外部入力ハンドラー
+ */
+export type InputHandler =
+  | FileInputHandler
+  | ClipboardImageInputHandler
+  | UrlInputHandler
+  | TextInputHandler
+  | CameraInputHandler
+  | AudioInputHandler;
+
+export interface FileInputHandler {
+  type: "file";
+  acceptedTypes: string[];
+  handleInput: (fileData: string, fileName: string) => ToolResult;
+}
+
+export interface ClipboardImageInputHandler {
+  type: "clipboard-image";
+  handleInput: (imageData: string) => ToolResult;
+}
+
+export interface UrlInputHandler {
+  type: "url";
+  patterns?: string[];
+  handleInput: (url: string) => ToolResult;
+}
+
+export interface TextInputHandler {
+  type: "text";
+  patterns?: string[];
+  handleInput: (text: string) => ToolResult;
+}
+
+export interface CameraInputHandler {
+  type: "camera";
+  mode: "photo" | "video";
+  handleInput: (data: string, metadata?: { duration?: number }) => ToolResult;
+}
+
+export interface AudioInputHandler {
+  type: "audio";
+  handleInput: (audioData: string, duration: number) => ToolResult;
+}
+
+/**
+ * プラグイン設定スキーマ（JSON Schema ベース）
+ */
+export interface PluginConfigSchema {
+  key: string;
+  defaultValue: ConfigValue;
+  schema: ConfigFieldSchema;
+}
+
+export type ConfigValue = string | number | boolean | string[];
+
+export type ConfigFieldSchema =
+  | StringFieldSchema
+  | NumberFieldSchema
+  | BooleanFieldSchema
+  | SelectFieldSchema
+  | MultiSelectFieldSchema;
+
+interface BaseFieldSchema {
+  label: string;
+  description?: string;
+  required?: boolean;
+}
+
+export interface StringFieldSchema extends BaseFieldSchema {
+  type: "string";
+  placeholder?: string;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+}
+
+export interface NumberFieldSchema extends BaseFieldSchema {
+  type: "number";
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+export interface BooleanFieldSchema extends BaseFieldSchema {
+  type: "boolean";
+}
+
+export interface SelectFieldSchema extends BaseFieldSchema {
+  type: "select";
+  options: SelectOption[];
+}
+
+export interface MultiSelectFieldSchema extends BaseFieldSchema {
+  type: "multiselect";
+  options: SelectOption[];
+  minItems?: number;
+  maxItems?: number;
+}
+
+export interface SelectOption {
+  value: string;
+  label: string;
+  description?: string;
+  disabled?: boolean;
+}
+
+/**
+ * Viewコンポーネントの標準props（フレームワーク非依存の定義）
+ */
+export interface ViewComponentProps<T = unknown, J = unknown> {
+  selectedResult: ToolResultComplete<T, J>;
+  sendTextMessage: (text?: string) => void;
+  onUpdateResult?: (result: Partial<ToolResult<T, J>>) => void;
+  pluginConfigs?: Record<string, unknown>;
+}
+
+/**
+ * Previewコンポーネントの標準props
+ */
+export interface PreviewComponentProps<T = unknown, J = unknown> {
+  result: ToolResultComplete<T, J>;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}
+
+/**
+ * コアプラグインインターフェース（フレームワーク非依存）
+ */
+export interface ToolPluginCore<
+  T = unknown,
+  J = unknown,
+  A extends object = object,
+> {
+  toolDefinition: ToolDefinition;
+  execute: (context: ToolContext, args: A) => Promise<ToolResult<T, J>>;
+  generatingMessage: string;
+  waitingMessage?: string;
+  uploadMessage?: string;
+  isEnabled: (startResponse?: StartApiResponse | null) => boolean;
+  delayAfterExecution?: number;
+  systemPrompt?: string;
+  inputHandlers?: InputHandler[];
+  config?: PluginConfigSchema;
+  samples?: ToolSample[];
+  backends?: BackendType[];
+}
+```
+
+### Vue exports (vue.ts)
+
+Vue固有の型をエクスポート。Vueを使うプラグイン/アプリはこちらをインポート。
+
+```typescript
+// gui-chat-protocol/src/vue.ts
+import type { Component } from "vue";
+import type {
+  ToolPluginCore,
+  ToolResult,
+  StartApiResponse,
+  ToolContext,
+  ToolDefinition,
+  InputHandler,
+  PluginConfigSchema,
+  ToolSample,
+  BackendType,
+} from "./index";
+
+// Core型を再エクスポート
+export * from "./index";
+
+/**
+ * Vue用プラグイン設定（Vueコンポーネントベース）
+ * @deprecated JSON Schema (PluginConfigSchema) を使用してください
+ */
+export interface ToolPluginConfigVue {
+  key: string;
+  defaultValue: unknown;
+  component: Component;
+}
+
+/**
+ * Vue用プラグインインターフェース
+ */
+export interface ToolPluginVue<
+  T = unknown,
+  J = unknown,
+  A extends object = object,
+> extends ToolPluginCore<T, J, A> {
+  /** メインビューコンポーネント */
+  viewComponent?: Component;
+
+  /** プレビュー/サムネイルコンポーネント */
+  previewComponent?: Component;
+
+  /**
+   * Vue コンポーネントベースの設定
+   * @deprecated config (PluginConfigSchema) を使用してください
+   */
+  legacyConfig?: ToolPluginConfigVue;
+}
+
+/**
+ * ToolPlugin の後方互換エイリアス
+ */
+export type ToolPlugin<
+  T = unknown,
+  J = unknown,
+  A extends object = object,
+> = ToolPluginVue<T, J, A>;
+```
+
+### React exports (react.ts)
+
+React固有の型をエクスポート。Reactを使うプラグイン/アプリはこちらをインポート。
+
+```typescript
+// gui-chat-protocol/src/react.ts
+import type { ComponentType } from "react";
+import type {
+  ToolPluginCore,
+  ViewComponentProps,
+  PreviewComponentProps,
+} from "./index";
+
+// Core型を再エクスポート
+export * from "./index";
+
+/**
+ * React用プラグインインターフェース
+ */
+export interface ToolPluginReact<
+  T = unknown,
+  J = unknown,
+  A extends object = object,
+> extends ToolPluginCore<T, J, A> {
+  /** メインビューコンポーネント */
+  ViewComponent?: ComponentType<ViewComponentProps<T, J>>;
+
+  /** プレビュー/サムネイルコンポーネント */
+  PreviewComponent?: ComponentType<PreviewComponentProps<T, J>>;
+}
+```
+
+### 型の分類
+
+| 型 | エクスポート元 | 依存 |
+|---|---|---|
+| `BackendType` | `.` (core) | なし |
+| `ToolContext` | `.` (core) | なし |
+| `ToolContextApp` | `.` (core) | なし |
+| `ToolResult` | `.` (core) | なし |
+| `ToolResultComplete` | `.` (core) | なし |
+| `JsonSchemaProperty` | `.` (core) | なし |
+| `ToolDefinition` | `.` (core) | なし |
+| `StartApiResponse` | `.` (core) | なし |
+| `ToolSample` | `.` (core) | なし |
+| `InputHandler` | `.` (core) | なし |
+| `PluginConfigSchema` | `.` (core) | なし |
+| `ViewComponentProps` | `.` (core) | なし |
+| `PreviewComponentProps` | `.` (core) | なし |
+| `ToolPluginCore` | `.` (core) | なし |
+| `ToolPluginVue` | `./vue` | Vue |
+| `ToolPlugin` (alias) | `./vue` | Vue |
+| `ToolPluginReact` | `./react` | React |
+
+### 使用例
+
+```typescript
+// コアロジックのみ（UIなし）
+import type { ToolPluginCore, ToolContext, ToolResult } from "gui-chat-protocol";
+
+// Vueアプリケーション
+import type { ToolPluginVue, ToolPlugin } from "gui-chat-protocol/vue";
+
+// Reactアプリケーション
+import type { ToolPluginReact } from "gui-chat-protocol/react";
+```
+
+### プラグインでの使用
+
+```typescript
+// プラグインのsrc/core/index.ts
+import type { ToolPluginCore } from "gui-chat-protocol";
+import { executeQuiz } from "./execute";
+import { TOOL_DEFINITION } from "./tools";
+
+export const corePlugin: ToolPluginCore<never, QuizData, QuizArgs> = {
+  toolDefinition: TOOL_DEFINITION,
+  execute: executeQuiz,
+  generatingMessage: "Preparing quiz...",
+  isEnabled: () => true,
+};
+
+// プラグインのsrc/vue/index.ts
+import type { ToolPluginVue } from "gui-chat-protocol/vue";
+import { corePlugin } from "../core";
+import View from "./View.vue";
+import Preview from "./Preview.vue";
+
+export const plugin: ToolPluginVue<never, QuizData, QuizArgs> = {
+  ...corePlugin,
+  viewComponent: View,
+  previewComponent: Preview,
+};
+
+// プラグインのsrc/react/index.tsx
+import type { ToolPluginReact } from "gui-chat-protocol/react";
+import { corePlugin } from "../core";
+import { View } from "./View";
+import { Preview } from "./Preview";
+
+export const plugin: ToolPluginReact<never, QuizData, QuizArgs> = {
+  ...corePlugin,
+  ViewComponent: View,
+  PreviewComponent: Preview,
+};
+```
+
+---
+
 ## 外部プラグインの現状構造
 
-### 現在のディレクトリ構成
+### 現在のディレクトリ構成（移行前）
 
 ```
 @mulmochat-plugin/quiz/
 ├── src/
-│   ├── common/              ← 共通型定義（MulmoChatからコピー）
+│   ├── common/              ← 共通型定義（MulmoChatからコピー）※廃止予定
 │   │   ├── index.ts
 │   │   └── types.ts         ← ToolPlugin, ToolContext, ToolResult 等
 │   │
@@ -128,11 +614,11 @@ Viewコンポーネントが受け取るpropsが明示的に定義されてい�
 └── tsconfig.build.json
 ```
 
-### 現在の plugin/index.ts
+### 現在の plugin/index.ts（移行前）
 
 ```typescript
 // src/plugin/index.ts - 現状
-import type { ToolPlugin, ToolContext, ToolResult } from "../common";
+import type { ToolPlugin, ToolContext, ToolResult } from "../common"; // ← gui-chat-protocol に移行
 import { TOOL_DEFINITION } from "./tools";
 import type { QuizData, QuizArgs } from "./types";
 import { SAMPLES } from "./samples";
@@ -164,7 +650,7 @@ export const plugin: ToolPlugin<never, QuizData, QuizArgs> = {
 };
 ```
 
-### 現在の package.json exports
+### 現在の package.json exports（移行前）
 
 ```json
 {
@@ -175,6 +661,9 @@ export const plugin: ToolPlugin<never, QuizData, QuizArgs> = {
       "require": "./dist/index.cjs"
     },
     "./style.css": "./dist/style.css"
+  },
+  "dependencies": {
+    "gui-chat-protocol": "^1.0.0"  // ← NEW: 型定義パッケージ
   },
   "peerDependencies": {
     "vue": "^3.5.0"  // ← Vue必須
@@ -188,26 +677,24 @@ export const plugin: ToolPlugin<never, QuizData, QuizArgs> = {
 
 ### core/vue/react 分離構造
 
+`src/common`を廃止し、`gui-chat-protocol`パッケージから型をインポート。
+
 ```
 @mulmochat-plugin/quiz/
 ├── src/
-│   ├── common/              ← 共通型定義
-│   │   ├── index.ts
-│   │   └── types.ts
-│   │
-│   ├── core/                ← フレームワーク非依存（NEW）
+│   ├── core/                ← フレームワーク非依存
 │   │   ├── index.ts         ← コアプラグインエクスポート
 │   │   ├── execute.ts       ← execute関数
 │   │   ├── tools.ts         ← TOOL_DEFINITION
-│   │   ├── types.ts         ← QuizData, QuizArgs
+│   │   ├── types.ts         ← QuizData, QuizArgs（プラグイン固有の型）
 │   │   └── samples.ts       ← テスト用サンプル
 │   │
-│   ├── vue/                 ← Vueアダプター（NEW）
+│   ├── vue/                 ← Vueアダプター
 │   │   ├── index.ts         ← Vueプラグインエクスポート
 │   │   ├── View.vue
 │   │   └── Preview.vue
 │   │
-│   ├── react/               ← Reactアダプター（NEW）
+│   ├── react/               ← Reactアダプター
 │   │   ├── index.tsx        ← Reactプラグインエクスポート
 │   │   ├── View.tsx
 │   │   └── Preview.tsx
@@ -218,7 +705,7 @@ export const plugin: ToolPlugin<never, QuizData, QuizArgs> = {
 │   ├── vue/                 ← Vueデモ
 │   │   ├── App.vue
 │   │   └── main.ts
-│   └── react/               ← Reactデモ（NEW）
+│   └── react/               ← Reactデモ
 │       ├── App.tsx
 │       └── main.tsx
 │
@@ -231,7 +718,7 @@ export const plugin: ToolPlugin<never, QuizData, QuizArgs> = {
 
 ```typescript
 // src/core/index.ts - フレームワーク非依存
-import type { ToolPluginCore } from "../common";
+import type { ToolPluginCore } from "gui-chat-protocol";  // ← パッケージからインポート
 import { TOOL_DEFINITION } from "./tools";
 import { executeQuiz } from "./execute";
 import type { QuizData, QuizArgs } from "./types";
@@ -254,7 +741,7 @@ export const corePlugin: ToolPluginCore<never, QuizData, QuizArgs> = {
 
 ```typescript
 // src/vue/index.ts - Vueアダプター
-import type { ToolPluginVue } from "../common";
+import type { ToolPluginVue } from "gui-chat-protocol/vue";  // ← Vue用エクスポート
 import { corePlugin } from "../core";
 import type { QuizData, QuizArgs } from "../core";
 import View from "./View.vue";
@@ -278,7 +765,7 @@ export default { plugin };
 
 ```tsx
 // src/react/index.tsx - Reactアダプター
-import type { ToolPluginReact } from "../common";
+import type { ToolPluginReact } from "gui-chat-protocol/react";  // ← React用エクスポート
 import { corePlugin } from "../core";
 import type { QuizData, QuizArgs } from "../core";
 import { View } from "./View";
@@ -320,6 +807,9 @@ export default { plugin };
       "require": "./dist/react/index.cjs"
     },
     "./style.css": "./dist/style.css"
+  },
+  "dependencies": {
+    "gui-chat-protocol": "^1.0.0"  // ← 型定義パッケージを依存に追加
   },
   "peerDependencies": {
     "vue": "^3.5.0",
@@ -483,7 +973,7 @@ useEffect(() => {
 ```tsx
 // src/react/View.tsx
 import { useState, useEffect, useMemo } from "react";
-import type { ViewComponentProps } from "../common";
+import type { ViewComponentProps } from "gui-chat-protocol";
 import type { QuizData } from "../core";
 
 export function View({
@@ -626,7 +1116,7 @@ export function View({
 
 ```tsx
 // src/react/Preview.tsx
-import type { PreviewComponentProps } from "../common";
+import type { PreviewComponentProps } from "gui-chat-protocol";
 import type { QuizData } from "../core";
 
 export function Preview({
@@ -666,155 +1156,30 @@ export function Preview({
 
 ### 1. インターフェースの分離
 
+`gui-chat-protocol`パッケージで型を定義（詳細は上記「GUI-Chat-Protocol パッケージ」セクション参照）。
+
 ```typescript
-// 新しい型定義
-
-/**
- * コアプラグイン - フレームワーク非依存
- */
-export interface ToolPluginCore<
-  T = unknown,
-  J = unknown,
-  A extends object = object,
-> {
-  toolDefinition: ToolDefinition;
-  execute: (context: ToolContext, args: A) => Promise<ToolResult<T, J>>;
-  generatingMessage: string;
-  waitingMessage?: string;
-  uploadMessage?: string;
-  isEnabled: (startResponse?: StartApiResponse | null) => boolean;
-  delayAfterExecution?: number;
-  systemPrompt?: string;
-  fileUpload?: FileUploadConfig;
-  config?: ToolPluginConfig;
-  samples?: ToolSample[];
-  backends?: BackendType[];
-}
-
-/**
- * Vueプラグイン - Vue用アダプター
- */
-export interface ToolPluginVue<
-  T = unknown,
-  J = unknown,
-  A extends object = object,
-> extends ToolPluginCore<T, J, A> {
-  viewComponent?: VueComponent;
-  previewComponent?: VueComponent;
-}
-
-/**
- * Reactプラグイン - React用アダプター
- */
-export interface ToolPluginReact<
-  T = unknown,
-  J = unknown,
-  A extends object = object,
-> extends ToolPluginCore<T, J, A> {
-  ViewComponent?: React.ComponentType<ViewComponentProps<T, J>>;
-  PreviewComponent?: React.ComponentType<PreviewComponentProps<T, J>>;
-}
+// gui-chat-protocol からインポート
+import type { ToolPluginCore } from "gui-chat-protocol";
+import type { ToolPluginVue } from "gui-chat-protocol/vue";
+import type { ToolPluginReact } from "gui-chat-protocol/react";
 ```
 
 ### 2. コンポーネントpropsの標準化
 
-フレームワーク間で共通のpropsインターフェースを定義。
+フレームワーク間で共通のpropsインターフェースは`gui-chat-protocol`で定義（詳細は上記セクション参照）。
 
 ```typescript
-/**
- * Viewコンポーネントのprops - フレームワーク非依存の定義
- */
-export interface ViewComponentProps<T = unknown, J = unknown> {
-  /** 選択されたツール結果 */
-  selectedResult: ToolResultComplete<T, J>;
-
-  /** テキストメッセージを送信する関数 */
-  sendTextMessage: (text?: string) => void;
-
-  /** 結果を更新するコールバック */
-  onUpdateResult?: (result: Partial<ToolResult<T, J>>) => void;
-
-  /** プラグイン設定値 */
-  pluginConfigs?: Record<string, unknown>;
-}
-
-/**
- * Previewコンポーネントのprops
- */
-export interface PreviewComponentProps<T = unknown, J = unknown> {
-  /** ツール結果 */
-  result: ToolResultComplete<T, J>;
-
-  /** 選択されているかどうか */
-  isSelected?: boolean;
-
-  /** 選択時のコールバック */
-  onSelect?: () => void;
-}
+// gui-chat-protocol からインポート
+import type { ViewComponentProps, PreviewComponentProps } from "gui-chat-protocol";
 ```
 
 ### 3. パッケージ構造の変更
 
-外部プラグインを以下の構造に変更。
+外部プラグインの新構造（詳細は上記「提案: 新しいディレクトリ構成」セクション参照）。
 
-```
-@mulmochat-plugin/quiz/
-├── src/
-│   ├── core/                    ← フレームワーク非依存
-│   │   ├── index.ts             ← コアプラグインエクスポート
-│   │   ├── types.ts             ← プラグイン固有の型
-│   │   ├── execute.ts           ← execute関数
-│   │   └── toolDefinition.ts    ← ツール定義
-│   │
-│   ├── vue/                     ← Vueアダプター
-│   │   ├── index.ts             ← Vueプラグインエクスポート
-│   │   ├── View.vue
-│   │   └── Preview.vue
-│   │
-│   └── react/                   ← Reactアダプター
-│       ├── index.tsx            ← Reactプラグインエクスポート
-│       ├── View.tsx
-│       └── Preview.tsx
-│
-├── package.json
-└── vite.config.ts
-```
-
-#### package.json exports
-
-```json
-{
-  "name": "@mulmochat-plugin/quiz",
-  "exports": {
-    ".": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.js",
-      "require": "./dist/core/index.cjs"
-    },
-    "./vue": {
-      "types": "./dist/vue/index.d.ts",
-      "import": "./dist/vue/index.js",
-      "require": "./dist/vue/index.cjs"
-    },
-    "./react": {
-      "types": "./dist/react/index.d.ts",
-      "import": "./dist/react/index.js",
-      "require": "./dist/react/index.cjs"
-    }
-  },
-  "peerDependencies": {
-    "vue": "^3.5.0"
-  },
-  "peerDependenciesMeta": {
-    "vue": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    }
-  }
-}
-```
+- `src/common/`を削除し、`gui-chat-protocol`パッケージを依存に追加
+- `core/`, `vue/`, `react/`の3エントリポイントでエクスポート
 
 #### 使用例
 
@@ -826,23 +1191,33 @@ import QuizPlugin from "@mulmochat-plugin/quiz/vue";
 import QuizPlugin from "@mulmochat-plugin/quiz/react";
 
 // コアロジックのみ（UIなし）
-import { plugin as quizCore } from "@mulmochat-plugin/quiz";
+import { corePlugin } from "@mulmochat-plugin/quiz";
 ```
 
 ---
 
 ## 実装計画
 
-### Phase 1: 型定義の整理
+### Phase 0: GUI-Chat-Protocol パッケージ作成
 
-1. `ToolPluginCore` インターフェースを定義
-2. `ToolPluginVue`, `ToolPluginReact` を定義
-3. `ViewComponentProps`, `PreviewComponentProps` を定義
-4. `PluginConfigSchema` を定義
+1. `gui-chat-protocol` npm パッケージを作成
+2. コア型定義（`index.ts`）を実装
+3. Vue型定義（`vue.ts`）を実装
+4. React型定義（`react.ts`）を実装
+5. npmに公開
+
+**成果物:**
+- `gui-chat-protocol/` リポジトリ
+- npm: `gui-chat-protocol`
+
+### Phase 1: MulmoChat本体の型定義更新
+
+1. `src/tools/types.ts` を `gui-chat-protocol/vue` からインポートに変更
+2. 不要になった型定義を削除
+3. `src/tools/backendTypes.ts` は維持（アプリ固有設定）
 
 **対象ファイル:**
 - `src/tools/types.ts`
-- `src/common/types.ts`（外部プラグイン用）
 
 ### Phase 2: 内蔵プラグインのリファクタリング
 
@@ -854,19 +1229,20 @@ import { plugin as quizCore } from "@mulmochat-plugin/quiz";
 - `src/tools/previews/*.vue`
 - `src/views/HomeView.vue`（props渡し部分）
 
-### Phase 3: Quizプラグインの分離
+### Phase 3: 外部プラグインの移行（Quiz）
 
-1. core/ ディレクトリにロジックを移動
-2. vue/ ディレクトリにVueコンポーネントを移動
-3. ビルド設定を更新
-4. package.json の exports を設定
+1. `src/common/` を削除し `gui-chat-protocol` を依存に追加
+2. `core/` ディレクトリにロジックを移動
+3. `vue/` ディレクトリにVueコンポーネントを移動
+4. ビルド設定を更新
+5. package.json の exports を設定
 
 **対象リポジトリ:**
 - `MulmoChatPluginQuiz/`
 
 ### Phase 4: Reactデモの実装
 
-1. react/ ディレクトリを作成
+1. `react/` ディレクトリを作成
 2. View.tsx, Preview.tsx を実装
 3. Reactデモアプリを作成
 
@@ -1325,7 +1701,7 @@ config: {
 </template>
 
 <script setup lang="ts">
-import type { ConfigFieldSchema, ConfigValue } from "@mulmochat/plugin-types";
+import type { ConfigFieldSchema, ConfigValue } from "gui-chat-protocol";
 
 const props = defineProps<{
   schema: ConfigFieldSchema;
@@ -1350,7 +1726,7 @@ function handleMultiSelectChange(value: string, checked: boolean) {
 
 ```tsx
 // components/PluginConfigField.tsx
-import type { ConfigFieldSchema, ConfigValue } from "@mulmochat/plugin-types";
+import type { ConfigFieldSchema, ConfigValue } from "gui-chat-protocol";
 
 interface Props {
   schema: ConfigFieldSchema;
@@ -2188,9 +2564,10 @@ export const plugin: ToolPluginCore = {
 
 | Phase | 内容 | 成果物 |
 |-------|------|--------|
-| 1 | 型定義の整理 | `ToolPluginCore`, `ViewComponentProps` |
+| 0 | GUI-Chat-Protocol パッケージ作成 | `gui-chat-protocol` npm パッケージ |
+| 1 | MulmoChat本体の型定義更新 | `gui-chat-protocol/vue` を使用 |
 | 2 | 内蔵プラグイン統一 | 標準化されたprops |
-| 3 | Quizプラグイン分離 | `@mulmochat-plugin/quiz` のcore/vue分離 |
+| 3 | 外部プラグイン移行（Quiz） | `@mulmochat-plugin/quiz` のcore/vue分離 |
 | 4 | Reactデモ | `@mulmochat-plugin/quiz/react` + デモアプリ |
 | 5 | 他プラグインへの展開 | 全外部プラグインの対応 |
 
