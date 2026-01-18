@@ -34,15 +34,24 @@ gui-chat-protocol
 
 ### TODO
 
-- [ ] **Phase 0**: `gui-chat-protocol` パッケージ作成・公開
+- [ ] **Phase 1**: 型の整理・プラグイン構造の確定
+  - [ ] MulmoChat本体の `src/tools/types.ts` を整理（ToolPluginCore分離）
+  - [ ] ViewComponentProps / PreviewComponentProps を標準化
+  - [ ] PluginConfigSchema（JSON Schema版）を確定
+  - [ ] InputHandler 型を確定
+- [ ] **Phase 2**: 外部プラグイン (Quiz) を core/vue 構造に移行
+  - [ ] `src/core/` にロジック移動
+  - [ ] `src/vue/` にVueコンポーネント移動
+  - [ ] `src/common/` の型を整理
+- [ ] **Phase 3**: `gui-chat-protocol` パッケージ作成・公開
   - [ ] コア型定義 (`index.ts`) - ToolPluginCore, ToolContext, ToolResult, InputHandler, PluginConfigSchema
   - [ ] Vue型定義 (`vue.ts`) - ToolPluginVue, ToolPlugin
   - [ ] React型定義 (`react.ts`) - ToolPluginReact
-- [ ] **Phase 1**: MulmoChat本体の型定義を `gui-chat-protocol/vue` に移行
-- [ ] **Phase 2**: 内蔵プラグインのViewComponentProps/PreviewComponentPropsを標準化
-- [ ] **Phase 3**: 外部プラグイン (Quiz) の `src/common` を削除し `gui-chat-protocol` に移行
-- [ ] **Phase 4**: Quiz プラグインの React 実装（View.tsx, Preview.tsx）
-- [ ] **Phase 5**: 他の外部プラグイン (GenerateImage, Form, SummarizePdf) に展開
+- [ ] **Phase 4**: 各プラグイン/アプリを `gui-chat-protocol` に移行
+  - [ ] MulmoChat本体
+  - [ ] Quiz, GenerateImage, Form, SummarizePdf プラグイン
+- [ ] **Phase 5**: React実装（オプション）
+  - [ ] Quiz プラグインの React 実装（View.tsx, Preview.tsx）
 
 ### 将来の拡張提案（実装未定）
 
@@ -1254,7 +1263,36 @@ import { corePlugin } from "@mulmochat-plugin/quiz";
 
 ## 実装計画
 
-### Phase 0: GUI-Chat-Protocol パッケージ作成
+### Phase 1: 型の整理・プラグイン構造の確定
+
+まずMulmoChat本体とプラグインの型を整理し、パッケージ化する型を確定する。
+
+1. `src/tools/types.ts` から `ToolPluginCore` を分離定義
+2. `ViewComponentProps` / `PreviewComponentProps` を標準化
+3. `PluginConfigSchema`（JSON Schema版）を確定
+4. `InputHandler` 型を確定（fileUploadの汎用化）
+
+**対象ファイル:**
+- `src/tools/types.ts`
+- `src/tools/views/*.vue`（props確認）
+- `src/tools/previews/*.vue`（props確認）
+
+### Phase 2: 外部プラグインを core/vue 構造に移行
+
+Quizプラグインを先行して新構造に移行し、型の妥当性を検証。
+
+1. `src/core/` ディレクトリにロジックを移動
+2. `src/vue/` ディレクトリにVueコンポーネントを移動
+3. `src/common/` の型を整理・確定
+4. ビルド設定を更新
+5. package.json の exports を設定
+
+**対象リポジトリ:**
+- `MulmoChatPluginQuiz/`
+
+### Phase 3: GUI-Chat-Protocol パッケージ作成
+
+整理された型を独立パッケージとして公開。
 
 1. `gui-chat-protocol` npm パッケージを作成
 2. コア型定義（`index.ts`）を実装
@@ -1266,37 +1304,17 @@ import { corePlugin } from "@mulmochat-plugin/quiz";
 - `gui-chat-protocol/` リポジトリ
 - npm: `gui-chat-protocol`
 
-### Phase 1: MulmoChat本体の型定義更新
+### Phase 4: 各プラグイン/アプリを gui-chat-protocol に移行
 
-1. `src/tools/types.ts` を `gui-chat-protocol/vue` からインポートに変更
-2. 不要になった型定義を削除
-3. `src/tools/backendTypes.ts` は維持（アプリ固有設定）
-
-**対象ファイル:**
-- `src/tools/types.ts`
-
-### Phase 2: 内蔵プラグインのリファクタリング
-
-1. 内蔵プラグインのViewコンポーネントを標準propsに統一
-2. Previewコンポーネントを標準propsに統一
+1. MulmoChat本体: `src/tools/types.ts` を `gui-chat-protocol/vue` からインポートに変更
+2. Quiz: `src/common/` を削除し `gui-chat-protocol` を依存に追加
+3. GenerateImage, Form, SummarizePdf: 同様に移行
 
 **対象ファイル:**
-- `src/tools/views/*.vue`
-- `src/tools/previews/*.vue`
-- `src/views/HomeView.vue`（props渡し部分）
+- MulmoChat: `src/tools/types.ts`
+- 各プラグイン: `src/common/`, `package.json`
 
-### Phase 3: 外部プラグインの移行（Quiz）
-
-1. `src/common/` を削除し `gui-chat-protocol` を依存に追加
-2. `core/` ディレクトリにロジックを移動
-3. `vue/` ディレクトリにVueコンポーネントを移動
-4. ビルド設定を更新
-5. package.json の exports を設定
-
-**対象リポジトリ:**
-- `MulmoChatPluginQuiz/`
-
-### Phase 4: Reactデモの実装
+### Phase 5: React実装（オプション）
 
 1. `react/` ディレクトリを作成
 2. View.tsx, Preview.tsx を実装
@@ -1305,11 +1323,6 @@ import { corePlugin } from "@mulmochat-plugin/quiz";
 **成果物:**
 - `MulmoChatPluginQuiz/src/react/`
 - `MulmoChatPluginQuiz/demo/react/`
-
-### Phase 5: 他のプラグインへの展開
-
-1. GenerateImage, Form, SummarizePdf プラグインに同様の変更を適用
-2. 内蔵プラグインの外部化を検討
 
 ---
 
@@ -2620,12 +2633,11 @@ export const plugin: ToolPluginCore = {
 
 | Phase | 内容 | 成果物 |
 |-------|------|--------|
-| 0 | GUI-Chat-Protocol パッケージ作成 | `gui-chat-protocol` npm パッケージ |
-| 1 | MulmoChat本体の型定義更新 | `gui-chat-protocol/vue` を使用 |
-| 2 | 内蔵プラグイン統一 | 標準化されたprops |
-| 3 | 外部プラグイン移行（Quiz） | `@mulmochat-plugin/quiz` のcore/vue分離 |
-| 4 | Reactデモ | `@mulmochat-plugin/quiz/react` + デモアプリ |
-| 5 | 他プラグインへの展開 | 全外部プラグインの対応 |
+| 1 | 型の整理・プラグイン構造の確定 | ToolPluginCore, ViewComponentProps 等の型確定 |
+| 2 | 外部プラグインを core/vue 構造に移行 | `@mulmochat-plugin/quiz` のcore/vue分離 |
+| 3 | GUI-Chat-Protocol パッケージ作成 | `gui-chat-protocol` npm パッケージ |
+| 4 | 各プラグイン/アプリを移行 | `gui-chat-protocol` を使用 |
+| 5 | React実装（オプション） | `@mulmochat-plugin/quiz/react` + デモアプリ |
 
 ---
 
