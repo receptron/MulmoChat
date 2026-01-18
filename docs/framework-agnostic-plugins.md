@@ -96,6 +96,572 @@ Viewコンポーネントが受け取るpropsが明示的に定義されてい�
 
 ---
 
+## 外部プラグインの現状構造
+
+### 現在のディレクトリ構成
+
+```
+@mulmochat-plugin/quiz/
+├── src/
+│   ├── common/              ← 共通型定義（MulmoChatからコピー）
+│   │   ├── index.ts
+│   │   └── types.ts         ← ToolPlugin, ToolContext, ToolResult 等
+│   │
+│   ├── plugin/              ← プラグイン本体
+│   │   ├── index.ts         ← plugin エクスポート（Vue込み）
+│   │   ├── tools.ts         ← TOOL_DEFINITION（フレームワーク非依存）
+│   │   ├── types.ts         ← QuizData, QuizArgs（フレームワーク非依存）
+│   │   ├── samples.ts       ← テスト用サンプル（フレームワーク非依存）
+│   │   ├── View.vue         ← メインビュー（Vue依存）
+│   │   └── Preview.vue      ← サムネイル（Vue依存）
+│   │
+│   ├── index.ts             ← パッケージエントリポイント
+│   └── shims-vue.d.ts
+│
+├── demo/                    ← 開発用デモ
+│   ├── App.vue
+│   └── main.ts
+│
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+└── tsconfig.build.json
+```
+
+### 現在の plugin/index.ts
+
+```typescript
+// src/plugin/index.ts - 現状
+import type { ToolPlugin, ToolContext, ToolResult } from "../common";
+import { TOOL_DEFINITION } from "./tools";
+import type { QuizData, QuizArgs } from "./types";
+import { SAMPLES } from "./samples";
+import View from "./View.vue";      // ← Vue依存
+import Preview from "./Preview.vue"; // ← Vue依存
+
+const putQuestions = async (
+  _context: ToolContext,
+  args: QuizArgs,
+): Promise<ToolResult<never, QuizData>> => {
+  // ビジネスロジック（フレームワーク非依存）
+  const { title, questions } = args;
+  // バリデーション等...
+  return {
+    message: `Quiz presented with ${questions.length} questions`,
+    jsonData: { title, questions },
+    instructions: "Wait for user answers...",
+  };
+};
+
+export const plugin: ToolPlugin<never, QuizData, QuizArgs> = {
+  toolDefinition: TOOL_DEFINITION,
+  execute: putQuestions,
+  generatingMessage: "Preparing quiz...",
+  isEnabled: () => true,
+  viewComponent: View,       // ← Vue依存
+  previewComponent: Preview, // ← Vue依存
+  samples: SAMPLES,
+};
+```
+
+### 現在の package.json exports
+
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"  // ← Vue必須
+  }
+}
+```
+
+---
+
+## 提案: 新しいディレクトリ構成
+
+### core/vue/react 分離構造
+
+```
+@mulmochat-plugin/quiz/
+├── src/
+│   ├── common/              ← 共通型定義
+│   │   ├── index.ts
+│   │   └── types.ts
+│   │
+│   ├── core/                ← フレームワーク非依存（NEW）
+│   │   ├── index.ts         ← コアプラグインエクスポート
+│   │   ├── execute.ts       ← execute関数
+│   │   ├── tools.ts         ← TOOL_DEFINITION
+│   │   ├── types.ts         ← QuizData, QuizArgs
+│   │   └── samples.ts       ← テスト用サンプル
+│   │
+│   ├── vue/                 ← Vueアダプター（NEW）
+│   │   ├── index.ts         ← Vueプラグインエクスポート
+│   │   ├── View.vue
+│   │   └── Preview.vue
+│   │
+│   ├── react/               ← Reactアダプター（NEW）
+│   │   ├── index.tsx        ← Reactプラグインエクスポート
+│   │   ├── View.tsx
+│   │   └── Preview.tsx
+│   │
+│   └── index.ts             ← デフォルトエクスポート（後方互換: vue）
+│
+├── demo/
+│   ├── vue/                 ← Vueデモ
+│   │   ├── App.vue
+│   │   └── main.ts
+│   └── react/               ← Reactデモ（NEW）
+│       ├── App.tsx
+│       └── main.tsx
+│
+├── package.json
+├── vite.config.ts
+└── tsconfig.json
+```
+
+### 新しい core/index.ts
+
+```typescript
+// src/core/index.ts - フレームワーク非依存
+import type { ToolPluginCore } from "../common";
+import { TOOL_DEFINITION } from "./tools";
+import { executeQuiz } from "./execute";
+import type { QuizData, QuizArgs } from "./types";
+import { SAMPLES } from "./samples";
+
+// 型のエクスポート
+export type { QuizData, QuizArgs, QuizQuestion } from "./types";
+
+// コアプラグイン（UIなし）
+export const corePlugin: ToolPluginCore<never, QuizData, QuizArgs> = {
+  toolDefinition: TOOL_DEFINITION,
+  execute: executeQuiz,
+  generatingMessage: "Preparing quiz...",
+  isEnabled: () => true,
+  samples: SAMPLES,
+};
+```
+
+### 新しい vue/index.ts
+
+```typescript
+// src/vue/index.ts - Vueアダプター
+import type { ToolPluginVue } from "../common";
+import { corePlugin } from "../core";
+import type { QuizData, QuizArgs } from "../core";
+import View from "./View.vue";
+import Preview from "./Preview.vue";
+
+// 型の再エクスポート
+export type { QuizData, QuizArgs } from "../core";
+
+// Vueプラグイン
+export const plugin: ToolPluginVue<never, QuizData, QuizArgs> = {
+  ...corePlugin,
+  viewComponent: View,
+  previewComponent: Preview,
+};
+
+// デフォルトエクスポート
+export default { plugin };
+```
+
+### 新しい react/index.tsx
+
+```tsx
+// src/react/index.tsx - Reactアダプター
+import type { ToolPluginReact } from "../common";
+import { corePlugin } from "../core";
+import type { QuizData, QuizArgs } from "../core";
+import { View } from "./View";
+import { Preview } from "./Preview";
+
+// 型の再エクスポート
+export type { QuizData, QuizArgs } from "../core";
+
+// Reactプラグイン
+export const plugin: ToolPluginReact<never, QuizData, QuizArgs> = {
+  ...corePlugin,
+  ViewComponent: View,
+  PreviewComponent: Preview,
+};
+
+// デフォルトエクスポート
+export default { plugin };
+```
+
+### 新しい package.json exports
+
+```json
+{
+  "name": "@mulmochat-plugin/quiz",
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js",
+      "require": "./dist/core/index.cjs"
+    },
+    "./vue": {
+      "types": "./dist/vue/index.d.ts",
+      "import": "./dist/vue/index.js",
+      "require": "./dist/vue/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": { "optional": true },
+    "react": { "optional": true },
+    "react-dom": { "optional": true }
+  }
+}
+```
+
+---
+
+## React実装方針
+
+### Viewコンポーネントの変換パターン
+
+VueコンポーネントをReactに変換する際の対応表。
+
+#### 基本構造
+
+```vue
+<!-- Vue -->
+<template>
+  <div class="container">
+    <h1>{{ title }}</h1>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, computed } from "vue";
+
+const props = defineProps<{
+  selectedResult: ToolResult;
+  sendTextMessage: (text?: string) => void;
+}>();
+
+const emit = defineEmits<{
+  updateResult: [result: ToolResult];
+}>();
+</script>
+```
+
+```tsx
+// React
+import { useState, useEffect, useMemo } from "react";
+
+interface Props {
+  selectedResult: ToolResult;
+  sendTextMessage: (text?: string) => void;
+  onUpdateResult?: (result: ToolResult) => void;
+}
+
+export function View({ selectedResult, sendTextMessage, onUpdateResult }: Props) {
+  return (
+    <div className="container">
+      <h1>{title}</h1>
+    </div>
+  );
+}
+```
+
+#### 状態管理
+
+| Vue | React |
+|-----|-------|
+| `ref(initialValue)` | `useState(initialValue)` |
+| `reactive({...})` | `useState({...})` または複数の `useState` |
+| `computed(() => ...)` | `useMemo(() => ..., [deps])` |
+| `watch(() => x, (newVal) => {...})` | `useEffect(() => {...}, [x])` |
+
+```vue
+<!-- Vue -->
+<script setup>
+const count = ref(0);
+const doubled = computed(() => count.value * 2);
+
+watch(() => props.selectedResult, (newResult) => {
+  if (newResult?.jsonData) {
+    count.value = newResult.jsonData.count;
+  }
+}, { immediate: true });
+</script>
+```
+
+```tsx
+// React
+const [count, setCount] = useState(0);
+const doubled = useMemo(() => count * 2, [count]);
+
+useEffect(() => {
+  if (selectedResult?.jsonData) {
+    setCount(selectedResult.jsonData.count);
+  }
+}, [selectedResult]);
+```
+
+#### イベントハンドリング
+
+| Vue | React |
+|-----|-------|
+| `@click="handler"` | `onClick={handler}` |
+| `@input="handler"` | `onChange={handler}` |
+| `v-model="value"` | `value={value} onChange={e => setValue(e.target.value)}` |
+| `emit('updateResult', result)` | `onUpdateResult?.(result)` |
+
+```vue
+<!-- Vue -->
+<input v-model="text" @keydown.enter="submit" />
+<button @click="handleClick">Submit</button>
+```
+
+```tsx
+// React
+<input
+  value={text}
+  onChange={e => setText(e.target.value)}
+  onKeyDown={e => e.key === 'Enter' && submit()}
+/>
+<button onClick={handleClick}>Submit</button>
+```
+
+#### 条件付きレンダリング
+
+| Vue | React |
+|-----|-------|
+| `v-if="condition"` | `{condition && <Component />}` |
+| `v-else` | 三項演算子 `{condition ? <A /> : <B />}` |
+| `v-show="condition"` | `style={{ display: condition ? 'block' : 'none' }}` |
+| `v-for="item in items"` | `{items.map(item => <Component key={item.id} />)}` |
+
+```vue
+<!-- Vue -->
+<div v-if="loading">Loading...</div>
+<div v-else-if="error">Error: {{ error }}</div>
+<ul v-else>
+  <li v-for="item in items" :key="item.id">{{ item.name }}</li>
+</ul>
+```
+
+```tsx
+// React
+{loading ? (
+  <div>Loading...</div>
+) : error ? (
+  <div>Error: {error}</div>
+) : (
+  <ul>
+    {items.map(item => (
+      <li key={item.id}>{item.name}</li>
+    ))}
+  </ul>
+)}
+```
+
+### Quiz View.tsx 実装例
+
+```tsx
+// src/react/View.tsx
+import { useState, useEffect, useMemo } from "react";
+import type { ViewComponentProps } from "../common";
+import type { QuizData } from "../core";
+
+export function View({
+  selectedResult,
+  sendTextMessage,
+  onUpdateResult
+}: ViewComponentProps<never, QuizData>) {
+  const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
+
+  const quizData = selectedResult?.jsonData as QuizData | undefined;
+
+  // Initialize answers when result changes
+  useEffect(() => {
+    if (quizData) {
+      const savedAnswers = selectedResult?.viewState?.userAnswers as (number | null)[] | undefined;
+      setUserAnswers(savedAnswers ?? new Array(quizData.questions.length).fill(null));
+    }
+  }, [selectedResult?.uuid]);
+
+  // Save answers to viewState
+  useEffect(() => {
+    if (selectedResult && userAnswers.length > 0) {
+      onUpdateResult?.({
+        ...selectedResult,
+        viewState: { userAnswers },
+      });
+    }
+  }, [userAnswers]);
+
+  const answeredCount = useMemo(() =>
+    userAnswers.filter(a => a !== null).length,
+    [userAnswers]
+  );
+
+  const allAnswered = quizData && answeredCount === quizData.questions.length;
+
+  const handleAnswerChange = (qIndex: number, cIndex: number) => {
+    setUserAnswers(prev => {
+      const next = [...prev];
+      next[qIndex] = cIndex;
+      return next;
+    });
+  };
+
+  const handleSubmit = () => {
+    if (!quizData || !allAnswered) return;
+
+    const answerText = userAnswers
+      .map((answer, index) => {
+        if (answer === null) return null;
+        const choiceLetter = String.fromCharCode(65 + answer);
+        const choiceText = quizData.questions[index].choices[answer];
+        return `Q${index + 1}: ${choiceLetter} - ${choiceText}`;
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    sendTextMessage(`Here are my answers:\n${answerText}`);
+  };
+
+  if (!quizData) return null;
+
+  return (
+    <div className="size-full overflow-y-auto p-8 bg-[#1a1a2e]">
+      <div className="max-w-3xl w-full mx-auto">
+        {quizData.title && (
+          <h2 className="text-[#f0f0f0] text-3xl font-bold mb-8 text-center">
+            {quizData.title}
+          </h2>
+        )}
+
+        <div className="flex flex-col gap-6">
+          {quizData.questions.map((question, qIndex) => (
+            <div
+              key={qIndex}
+              className="bg-[#2d2d44] rounded-lg p-6 border-2 border-[#3d3d5c]"
+            >
+              <div className="text-white text-lg font-semibold mb-4">
+                <span className="text-blue-400 mr-2">{qIndex + 1}.</span>
+                {question.question}
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {question.choices.map((choice, cIndex) => {
+                  const isSelected = userAnswers[qIndex] === cIndex;
+                  return (
+                    <label
+                      key={cIndex}
+                      className={`flex items-start p-4 rounded-lg cursor-pointer transition-all duration-200 border-2 ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-500/20"
+                          : "border-[#4b4b6b] hover:border-[#6b6b8b] hover:bg-[#6b6b8b]/20"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`question-${qIndex}`}
+                        checked={isSelected}
+                        onChange={() => handleAnswerChange(qIndex, cIndex)}
+                        className="mt-1 mr-3 size-4 shrink-0"
+                      />
+                      <span className="text-white flex-1">
+                        <span className="font-semibold mr-2">
+                          {String.fromCharCode(65 + cIndex)}.
+                        </span>
+                        {choice}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={handleSubmit}
+            disabled={!allAnswered}
+            className={`py-3 px-8 rounded-lg text-white font-semibold text-lg transition-colors border-none cursor-pointer ${
+              allAnswered
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-gray-600 cursor-not-allowed opacity-50"
+            }`}
+          >
+            Submit Answers
+          </button>
+        </div>
+
+        <div className="mt-4 text-center text-gray-400 text-sm">
+          {answeredCount} / {quizData.questions.length} questions answered
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Quiz Preview.tsx 実装例
+
+```tsx
+// src/react/Preview.tsx
+import type { PreviewComponentProps } from "../common";
+import type { QuizData } from "../core";
+
+export function Preview({
+  result,
+  isSelected,
+  onSelect
+}: PreviewComponentProps<never, QuizData>) {
+  const quizData = result?.jsonData;
+  const questionCount = quizData?.questions?.length ?? 0;
+
+  return (
+    <div
+      onClick={onSelect}
+      className={`p-4 rounded-lg cursor-pointer transition-all ${
+        isSelected
+          ? "bg-blue-100 border-2 border-blue-500"
+          : "bg-gray-100 hover:bg-gray-200"
+      }`}
+    >
+      <div className="text-center">
+        <div className="text-2xl mb-2">📝</div>
+        <div className="font-medium text-gray-800">
+          {quizData?.title || "Quiz"}
+        </div>
+        <div className="text-sm text-gray-500">
+          {questionCount} question{questionCount !== 1 ? "s" : ""}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
 ## 解決方針
 
 ### 1. インターフェースの分離
