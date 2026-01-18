@@ -30,17 +30,17 @@ export interface ToolContext {
  * Result returned from plugin execution
  */
 export interface ToolResult<T = unknown, J = unknown> {
-  toolName?: string;
+  toolName?: string; // name of the tool that generated this result
   uuid?: string;
-  message: string;
+  message: string; // status message sent back to the LLM about the tool execution result
   title?: string;
-  jsonData?: J;
-  instructions?: string;
-  instructionsRequired?: boolean;
-  updating?: boolean;
-  cancelled?: boolean;
-  data?: T;
-  viewState?: Record<string, unknown>;
+  jsonData?: J; // data to be passed to the LLM
+  instructions?: string; // follow-up instructions for the LLM
+  instructionsRequired?: boolean; // if true, instructions will be sent even if suppressInstructions is enabled
+  updating?: boolean; // if true, updates existing result instead of creating new one
+  cancelled?: boolean; // if true, operation was cancelled by the user and should not be added to UI
+  data?: T; // tool specific data (for views, not visible to the LLM)
+  viewState?: Record<string, unknown>; // tool specific view state
 }
 
 /**
