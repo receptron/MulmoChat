@@ -836,8 +836,9 @@ import { plugin as quizCore } from "@mulmochat-plugin/quiz";
 ### Phase 1: 型定義の整理
 
 1. `ToolPluginCore` インターフェースを定義
-2. `ViewComponentProps`, `PreviewComponentProps` を定義
-3. 既存の `ToolPlugin` を `ToolPluginVue` のエイリアスとして維持（後方互換性）
+2. `ToolPluginVue`, `ToolPluginReact` を定義
+3. `ViewComponentProps`, `PreviewComponentProps` を定義
+4. `PluginConfigSchema` を定義
 
 **対象ファイル:**
 - `src/tools/types.ts`
@@ -920,19 +921,7 @@ export default defineConfig({
 });
 ```
 
-### CSSの扱い
-
-#### 選択肢1: CSS-in-JS
-
-```tsx
-// React: styled-components や emotion
-const Container = styled.div`
-  padding: 1rem;
-  background: white;
-`;
-```
-
-#### 選択肢2: Tailwind CSS（推奨）
+### CSS: Tailwind CSS
 
 両フレームワークで同じユーティリティクラスを使用。
 
@@ -944,20 +933,15 @@ const Container = styled.div`
 <div class="p-4 bg-white rounded-lg">
 ```
 
-#### 選択肢3: CSS Modules
+**メリット:**
+- フレームワーク間で完全に同じクラス名
+- ビルド時に未使用クラスが除去される
+- ホストアプリのTailwind設定を継承可能
 
-```tsx
-// React
-import styles from "./View.module.css";
-<div className={styles.container}>
-
-// Vue
-<style module>
-.container { ... }
-</style>
-```
-
-**推奨:** Tailwind CSS + 必要に応じてCSS Modules
+**注意点:**
+- プラグインは `@tailwind` ディレクティブを含めない
+- ホストアプリがTailwindを設定する責任を持つ
+- プラグインの `style.css` は追加のカスタムスタイルのみ
 
 ### 状態管理
 
@@ -1023,6 +1007,473 @@ function ToolView({ selectedResult, sendTextMessage, onUpdateResult }) {
 
 ---
 
+## プラグイン設定: JSON Schema仕様
+
+プラグイン固有の設定はJSON Schemaで定義し、ホストアプリがUIを自動生成する。
+
+### 型定義
+
+```typescript
+/**
+ * プラグイン設定スキーマ
+ */
+export interface PluginConfigSchema {
+  /** ストレージキー（ユニーク） */
+  key: string;
+
+  /** デフォルト値 */
+  defaultValue: ConfigValue;
+
+  /** UIスキーマ */
+  schema: ConfigFieldSchema;
+}
+
+/** 設定値の型 */
+export type ConfigValue = string | number | boolean | string[];
+
+/**
+ * 設定フィールドのスキーマ
+ */
+export type ConfigFieldSchema =
+  | StringFieldSchema
+  | NumberFieldSchema
+  | BooleanFieldSchema
+  | SelectFieldSchema
+  | MultiSelectFieldSchema;
+
+/** 共通フィールドプロパティ */
+interface BaseFieldSchema {
+  /** 表示ラベル */
+  label: string;
+
+  /** 説明文（オプション） */
+  description?: string;
+
+  /** 必須かどうか（デフォルト: true） */
+  required?: boolean;
+}
+
+/** 文字列入力フィールド */
+export interface StringFieldSchema extends BaseFieldSchema {
+  type: "string";
+
+  /** プレースホルダー */
+  placeholder?: string;
+
+  /** 最小文字数 */
+  minLength?: number;
+
+  /** 最大文字数 */
+  maxLength?: number;
+
+  /** 正規表現パターン */
+  pattern?: string;
+}
+
+/** 数値入力フィールド */
+export interface NumberFieldSchema extends BaseFieldSchema {
+  type: "number";
+
+  /** 最小値 */
+  min?: number;
+
+  /** 最大値 */
+  max?: number;
+
+  /** ステップ値 */
+  step?: number;
+}
+
+/** ブール値（チェックボックス）フィールド */
+export interface BooleanFieldSchema extends BaseFieldSchema {
+  type: "boolean";
+}
+
+/** 単一選択フィールド */
+export interface SelectFieldSchema extends BaseFieldSchema {
+  type: "select";
+
+  /** 選択肢 */
+  options: SelectOption[];
+}
+
+/** 複数選択フィールド */
+export interface MultiSelectFieldSchema extends BaseFieldSchema {
+  type: "multiselect";
+
+  /** 選択肢 */
+  options: SelectOption[];
+
+  /** 最小選択数 */
+  minItems?: number;
+
+  /** 最大選択数 */
+  maxItems?: number;
+}
+
+/** 選択肢 */
+export interface SelectOption {
+  /** 値（保存される値） */
+  value: string;
+
+  /** 表示ラベル */
+  label: string;
+
+  /** 説明（オプション） */
+  description?: string;
+
+  /** 無効化（オプション） */
+  disabled?: boolean;
+}
+```
+
+### 使用例
+
+#### 例1: 単一選択（セレクトボックス）
+
+```typescript
+// プラグイン定義
+export const plugin: ToolPluginCore = {
+  // ...
+  config: {
+    key: "imageStyle",
+    defaultValue: "photorealistic",
+    schema: {
+      type: "select",
+      label: "Default Image Style",
+      description: "Generated images will use this style by default",
+      options: [
+        { value: "photorealistic", label: "Photorealistic" },
+        { value: "anime", label: "Anime / Illustration" },
+        { value: "watercolor", label: "Watercolor" },
+        { value: "oil-painting", label: "Oil Painting" },
+        { value: "sketch", label: "Pencil Sketch" },
+      ],
+    },
+  },
+};
+```
+
+#### 例2: 数値入力（スライダー/入力）
+
+```typescript
+config: {
+  key: "maxQuestions",
+  defaultValue: 5,
+  schema: {
+    type: "number",
+    label: "Maximum Questions",
+    description: "Maximum number of questions per quiz",
+    min: 1,
+    max: 20,
+    step: 1,
+  },
+}
+```
+
+#### 例3: ブール値（トグル/チェックボックス）
+
+```typescript
+config: {
+  key: "autoSubmit",
+  defaultValue: false,
+  schema: {
+    type: "boolean",
+    label: "Auto Submit",
+    description: "Automatically submit when all questions are answered",
+  },
+}
+```
+
+#### 例4: 文字列入力
+
+```typescript
+config: {
+  key: "apiEndpoint",
+  defaultValue: "",
+  schema: {
+    type: "string",
+    label: "Custom API Endpoint",
+    description: "Leave empty to use default endpoint",
+    placeholder: "https://api.example.com/v1",
+    pattern: "^https?://.*",
+    required: false,
+  },
+}
+```
+
+#### 例5: 複数選択
+
+```typescript
+config: {
+  key: "enabledFeatures",
+  defaultValue: ["hints", "timer"],
+  schema: {
+    type: "multiselect",
+    label: "Enabled Features",
+    description: "Select features to enable",
+    options: [
+      { value: "hints", label: "Show Hints" },
+      { value: "timer", label: "Show Timer" },
+      { value: "progress", label: "Show Progress Bar" },
+      { value: "shuffle", label: "Shuffle Questions" },
+    ],
+    minItems: 1,
+  },
+}
+```
+
+### ホストアプリ実装
+
+ホストアプリはスキーマに基づいてUIを自動生成する。
+
+#### Vue実装例
+
+```vue
+<!-- components/PluginConfigField.vue -->
+<template>
+  <!-- String -->
+  <div v-if="schema.type === 'string'" class="flex flex-col gap-1">
+    <label class="text-sm font-medium">{{ schema.label }}</label>
+    <input
+      type="text"
+      :value="modelValue"
+      :placeholder="schema.placeholder"
+      :required="schema.required !== false"
+      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      class="px-3 py-2 border rounded-md"
+    />
+    <p v-if="schema.description" class="text-xs text-gray-500">
+      {{ schema.description }}
+    </p>
+  </div>
+
+  <!-- Number -->
+  <div v-else-if="schema.type === 'number'" class="flex flex-col gap-1">
+    <label class="text-sm font-medium">{{ schema.label }}</label>
+    <input
+      type="number"
+      :value="modelValue"
+      :min="schema.min"
+      :max="schema.max"
+      :step="schema.step"
+      @input="$emit('update:modelValue', Number(($event.target as HTMLInputElement).value))"
+      class="px-3 py-2 border rounded-md"
+    />
+    <p v-if="schema.description" class="text-xs text-gray-500">
+      {{ schema.description }}
+    </p>
+  </div>
+
+  <!-- Boolean -->
+  <label v-else-if="schema.type === 'boolean'" class="flex items-center gap-2">
+    <input
+      type="checkbox"
+      :checked="modelValue"
+      @change="$emit('update:modelValue', ($event.target as HTMLInputElement).checked)"
+    />
+    <span class="text-sm font-medium">{{ schema.label }}</span>
+    <span v-if="schema.description" class="text-xs text-gray-500">
+      - {{ schema.description }}
+    </span>
+  </label>
+
+  <!-- Select -->
+  <div v-else-if="schema.type === 'select'" class="flex flex-col gap-1">
+    <label class="text-sm font-medium">{{ schema.label }}</label>
+    <select
+      :value="modelValue"
+      @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
+      class="px-3 py-2 border rounded-md"
+    >
+      <option
+        v-for="option in schema.options"
+        :key="option.value"
+        :value="option.value"
+        :disabled="option.disabled"
+      >
+        {{ option.label }}
+      </option>
+    </select>
+    <p v-if="schema.description" class="text-xs text-gray-500">
+      {{ schema.description }}
+    </p>
+  </div>
+
+  <!-- MultiSelect -->
+  <div v-else-if="schema.type === 'multiselect'" class="flex flex-col gap-1">
+    <label class="text-sm font-medium">{{ schema.label }}</label>
+    <div class="flex flex-col gap-2">
+      <label
+        v-for="option in schema.options"
+        :key="option.value"
+        class="flex items-center gap-2"
+      >
+        <input
+          type="checkbox"
+          :checked="(modelValue as string[])?.includes(option.value)"
+          :disabled="option.disabled"
+          @change="handleMultiSelectChange(option.value, ($event.target as HTMLInputElement).checked)"
+        />
+        <span>{{ option.label }}</span>
+      </label>
+    </div>
+    <p v-if="schema.description" class="text-xs text-gray-500">
+      {{ schema.description }}
+    </p>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { ConfigFieldSchema, ConfigValue } from "@mulmochat/plugin-types";
+
+const props = defineProps<{
+  schema: ConfigFieldSchema;
+  modelValue: ConfigValue;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: ConfigValue];
+}>();
+
+function handleMultiSelectChange(value: string, checked: boolean) {
+  const current = (props.modelValue as string[]) || [];
+  const next = checked
+    ? [...current, value]
+    : current.filter((v) => v !== value);
+  emit("update:modelValue", next);
+}
+</script>
+```
+
+#### React実装例
+
+```tsx
+// components/PluginConfigField.tsx
+import type { ConfigFieldSchema, ConfigValue } from "@mulmochat/plugin-types";
+
+interface Props {
+  schema: ConfigFieldSchema;
+  value: ConfigValue;
+  onChange: (value: ConfigValue) => void;
+}
+
+export function PluginConfigField({ schema, value, onChange }: Props) {
+  switch (schema.type) {
+    case "string":
+      return (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">{schema.label}</label>
+          <input
+            type="text"
+            value={value as string}
+            placeholder={schema.placeholder}
+            required={schema.required !== false}
+            onChange={(e) => onChange(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          />
+          {schema.description && (
+            <p className="text-xs text-gray-500">{schema.description}</p>
+          )}
+        </div>
+      );
+
+    case "number":
+      return (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">{schema.label}</label>
+          <input
+            type="number"
+            value={value as number}
+            min={schema.min}
+            max={schema.max}
+            step={schema.step}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="px-3 py-2 border rounded-md"
+          />
+          {schema.description && (
+            <p className="text-xs text-gray-500">{schema.description}</p>
+          )}
+        </div>
+      );
+
+    case "boolean":
+      return (
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={value as boolean}
+            onChange={(e) => onChange(e.target.checked)}
+          />
+          <span className="text-sm font-medium">{schema.label}</span>
+          {schema.description && (
+            <span className="text-xs text-gray-500">- {schema.description}</span>
+          )}
+        </label>
+      );
+
+    case "select":
+      return (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">{schema.label}</label>
+          <select
+            value={value as string}
+            onChange={(e) => onChange(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          >
+            {schema.options.map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+                disabled={option.disabled}
+              >
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {schema.description && (
+            <p className="text-xs text-gray-500">{schema.description}</p>
+          )}
+        </div>
+      );
+
+    case "multiselect":
+      const selectedValues = (value as string[]) || [];
+      return (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">{schema.label}</label>
+          <div className="flex flex-col gap-2">
+            {schema.options.map((option) => (
+              <label key={option.value} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedValues.includes(option.value)}
+                  disabled={option.disabled}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                      ? [...selectedValues, option.value]
+                      : selectedValues.filter((v) => v !== option.value);
+                    onChange(next);
+                  }}
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+          {schema.description && (
+            <p className="text-xs text-gray-500">{schema.description}</p>
+          )}
+        </div>
+      );
+
+    default:
+      return null;
+  }
+}
+```
+
+---
+
 ## 課題と検討事項
 
 ### 1. fileUpload の扱い
@@ -1030,127 +1481,7 @@ function ToolView({ selectedResult, sendTextMessage, onUpdateResult }) {
 `FileUploadConfig.handleUpload` は同期的にUIを更新する必要がある場合がある。
 フレームワーク非依存にするには、コールバックベースの設計が必要。
 
-### 2. config.component の扱い
-
-プラグイン固有の設定UIもフレームワーク依存。
-
-#### 現状
-
-```typescript
-// src/tools/types.ts
-export interface ToolPluginConfig {
-  key: string;           // Storage key
-  defaultValue: unknown;
-  component: VueComponent;  // ← Vue依存
-}
-```
-
-#### 解決策の選択肢
-
-**選択肢A: JSON Schemaで定義（推奨）**
-
-設定のスキーマをJSONで定義し、ホストアプリがUIを自動生成。
-
-```typescript
-// プラグイン側（フレームワーク非依存）
-export interface ToolPluginConfigSchema {
-  key: string;
-  defaultValue: unknown;
-  schema: {
-    type: "string" | "number" | "boolean" | "select";
-    label: string;
-    description?: string;
-    options?: { value: string; label: string }[];  // select用
-    min?: number;  // number用
-    max?: number;
-  };
-}
-
-// 例: 画像スタイル設定
-config: {
-  key: "imageStyle",
-  defaultValue: "photorealistic",
-  schema: {
-    type: "select",
-    label: "Default Image Style",
-    options: [
-      { value: "photorealistic", label: "Photorealistic" },
-      { value: "anime", label: "Anime" },
-      { value: "watercolor", label: "Watercolor" },
-    ]
-  }
-}
-```
-
-ホストアプリ側でスキーマからUIを生成：
-
-```vue
-<!-- Vue ホスト -->
-<template>
-  <select v-if="schema.type === 'select'" ...>
-  <input v-else-if="schema.type === 'string'" ...>
-</template>
-```
-
-```tsx
-// React ホスト
-function ConfigField({ schema, value, onChange }) {
-  if (schema.type === 'select') return <select ... />;
-  if (schema.type === 'string') return <input ... />;
-}
-```
-
-**メリット:**
-- プラグインは完全にフレームワーク非依存
-- ホストアプリが統一されたUIを提供
-- 複雑なUIは不要（設定は通常シンプル）
-
-**デメリット:**
-- 複雑な設定UIには対応できない
-
-**選択肢B: コンポーネントもcore/vue/reactに分離**
-
-viewComponent と同様に分離。
-
-```typescript
-// core
-export interface ToolPluginConfigCore {
-  key: string;
-  defaultValue: unknown;
-}
-
-// vue
-export interface ToolPluginConfigVue extends ToolPluginConfigCore {
-  component: VueComponent;
-}
-
-// react
-export interface ToolPluginConfigReact extends ToolPluginConfigCore {
-  Component: React.ComponentType<ConfigProps>;
-}
-```
-
-**メリット:**
-- 複雑なUIにも対応可能
-
-**デメリット:**
-- 各フレームワークでコンポーネントを実装する必要がある
-
-**推奨: 選択肢A（JSON Schema）**
-
-設定UIは通常シンプル（セレクトボックス、チェックボックス等）であり、
-JSON Schemaで十分対応可能。複雑な設定が必要な場合のみ選択肢Bを検討。
-
-### 3. 後方互換性
-
-既存のVueアプリが壊れないよう、段階的な移行が必要。
-
-```typescript
-// 移行期間中の互換性レイヤー
-export type ToolPlugin<T, J, A> = ToolPluginVue<T, J, A>;
-```
-
-### 4. テスト戦略
+### 2. テスト戦略
 
 - コアロジック: フレームワーク非依存のユニットテスト
 - Vueコンポーネント: Vue Test Utils
