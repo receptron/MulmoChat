@@ -1,5 +1,61 @@
 # フレームワーク非依存プラグインアーキテクチャ
 
+## サマリー
+
+MulmoChatプラグインをVue以外のフレームワーク（React、Astro、Svelte等）でも利用可能にするための設計。
+
+### 設計方針
+
+| 項目 | 決定 |
+|------|------|
+| **型定義** | `gui-chat-protocol` npm パッケージとして独立 |
+| **プラグイン構造** | `core/` (ロジック) + `vue/` or `react/` (UI) に分離 |
+| **設定UI** | JSON Schemaで定義（Vueコンポーネント不要） |
+| **CSS** | Tailwind CSS |
+| **外部入力** | `InputHandler` で統一（file, clipboard, camera, url, audio） |
+
+### gui-chat-protocol パッケージ
+
+```
+gui-chat-protocol
+├── index.ts    # Core: ToolPluginCore, ToolContext, ToolResult, etc.
+├── vue.ts      # Vue: ToolPluginVue, ToolPlugin (alias)
+└── react.ts    # React: ToolPluginReact
+```
+
+### プラグイン構造（移行後）
+
+```
+@mulmochat-plugin/quiz
+├── core/       # ToolPluginCore + execute + TOOL_DEFINITION
+├── vue/        # View.vue + Preview.vue → ToolPluginVue
+└── react/      # View.tsx + Preview.tsx → ToolPluginReact
+```
+
+### TODO
+
+- [ ] **Phase 0**: `gui-chat-protocol` パッケージ作成・公開
+  - [ ] コア型定義 (`index.ts`) - ToolPluginCore, ToolContext, ToolResult, InputHandler, PluginConfigSchema
+  - [ ] Vue型定義 (`vue.ts`) - ToolPluginVue, ToolPlugin
+  - [ ] React型定義 (`react.ts`) - ToolPluginReact
+- [ ] **Phase 1**: MulmoChat本体の型定義を `gui-chat-protocol/vue` に移行
+- [ ] **Phase 2**: 内蔵プラグインのViewComponentProps/PreviewComponentPropsを標準化
+- [ ] **Phase 3**: 外部プラグイン (Quiz) の `src/common` を削除し `gui-chat-protocol` に移行
+- [ ] **Phase 4**: Quiz プラグインの React 実装（View.tsx, Preview.tsx）
+- [ ] **Phase 5**: 他の外部プラグイン (GenerateImage, Form, SummarizePdf) に展開
+
+### 将来の拡張提案（実装未定）
+
+| 提案 | 概要 | 優先度 |
+|------|------|--------|
+| リソース参照 | `context.results.getById(uuid)` で過去の結果を参照 | 高 |
+| Capabilities | ツールの機能宣言（outputType, streaming, undoable等） | 高 |
+| ワークスペース | 複数結果を構造化（プレゼン、レポート等） | 中 |
+| ストリーミング | `executeStream` + `onProgress` コールバック | 中 |
+| Undo/履歴 | `onUndo`, `onRedo`, `shouldSaveToHistory` | 低 |
+
+---
+
 ## 概要
 
 MulmoChatプラグインをVue以外のフレームワーク（React、Astro、Svelte等）でも利用可能にするための設計ドキュメント。
