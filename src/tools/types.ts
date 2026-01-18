@@ -4,7 +4,10 @@ import type { StartApiResponse } from "../../server/types";
  * App interface provided to plugins via context.app
  * Contains backend functions and config accessors
  */
-export interface ToolContextApp extends Record<string, (...args: any[]) => any> {
+export interface ToolContextApp extends Record<
+  string,
+  (...args: any[]) => any
+> {
   // Config accessors
   getConfig: <T = unknown>(key: string) => T | undefined;
   setConfig: (key: string, value: unknown) => void;
