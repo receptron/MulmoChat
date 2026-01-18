@@ -515,7 +515,7 @@ import { BackendSettings } from "./settings";
 import {
   getToolPlugin,
   getAcceptedFileTypes,
-  getFileUploadPlugins,
+  getFileInputPlugins,
   getPluginList,
   getPluginsWithConfig,
   hasAnyPluginConfig,
@@ -646,7 +646,7 @@ onUnmounted(() => {
 });
 
 const acceptedFileTypes = computed(() => getAcceptedFileTypes().join(","));
-const fileUploadPlugins = computed(() => getFileUploadPlugins());
+const fileInputPlugins = computed(() => getFileInputPlugins());
 const isVoiceMode = computed(
   () =>
     props.modelKind === "voice-realtime" ||
@@ -703,8 +703,8 @@ function handleFileUpload(event: Event): void {
 
   Array.from(files).forEach((file) => {
     // Find the plugin that handles this file type
-    const plugin = fileUploadPlugins.value.find((p) =>
-      p.fileUpload.acceptedTypes.includes(file.type),
+    const plugin = fileInputPlugins.value.find((p) =>
+      p.handler.acceptedTypes.includes(file.type),
     );
 
     if (!plugin) {
@@ -716,7 +716,7 @@ function handleFileUpload(event: Event): void {
     const reader = new FileReader();
     reader.onload = (e) => {
       const fileData = e.target?.result as string;
-      const result = plugin.fileUpload.handleUpload(fileData, file.name);
+      const result = plugin.handler.handleInput(fileData, file.name);
       results.push(result);
       loadedCount++;
 

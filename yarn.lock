@@ -700,24 +700,24 @@
   resolved "https://registry.yarnpkg.com/@mulmochat-plugin/form/-/form-0.2.0.tgz#18b6c9d606f5afdfd72aa0aa34862cf36cbcd90c"
   integrity sha512-lXUSuaysjk0otfGjeqS7Gxes9K7w4pPnkQM40UqJHzLnLTRkz0vL0y4BHwFgRR+dk3lluPo4SWLchFZ20WL4Qw==
 
-"@mulmochat-plugin/generate-image@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/generate-image/-/generate-image-0.2.0.tgz#ec9479943a105b44e0b0fd4b53521558eb0dca3c"
-  integrity sha512-YLKNXyKS0XR7SDP0NibJjUL6byvOQBSdM8ZwReOwUKfrtHgnZt23hFXjjuDkxHmRIPiCF8AopF8c906RmrSElA==
+"@mulmochat-plugin/generate-image@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/generate-image/-/generate-image-0.2.1.tgz#492db43262974e6dd6f6370a28558d527b5c88b4"
+  integrity sha512-aExuBr9/emTNUa2KI+6xARFtFoTwwTZVStQazw/lVkYH3mQxlUFrWbrwaeP1MIIOts8aweLrZbuXcgKy0YTTUA==
 
 "@mulmochat-plugin/quiz@^0.2.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.2.0.tgz#52c0903f24122458923512e4869a2651abda2565"
   integrity sha512-b2d11x8kHV59ntEOuAzcUmjCo2jRH1gFzh8YvRfLKtrrNqdTABqkTM9htbamhccB5v+rGkmIJKAJGptn5LMhuw==
 
-"@mulmochat-plugin/summarize-pdf@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/summarize-pdf/-/summarize-pdf-0.2.0.tgz#5d9def47bb94e3ea4939676f0c9b3e486ded6d1f"
-  integrity sha512-C/eQ5kjYEsa80xHs5ib79+v/9w8I6cPw/OZzaSalTjt3WFDCb2hubNGGI5i4/V3zJUaG4Q5nFtRFD4q/sVMlRQ==
+"@mulmochat-plugin/summarize-pdf@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/summarize-pdf/-/summarize-pdf-0.2.1.tgz#8ceafc846404572bb0c6fc6452fe75cc27ac8bae"
+  integrity sha512-3M8+4Wz79kq9chvQf1umCrMv7OLL4uefTojdDqigxaFfX0UjH3pD+k984sxty+kgkAZ+hra5YyqNGYdaJyH0HQ==
 
 "@mulmochat-plugin/ui-image@^0.1.0":
   version "0.1.0"
-  resolved "https://registry.npmjs.org/@mulmochat-plugin/ui-image/-/ui-image-0.1.0.tgz"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/ui-image/-/ui-image-0.1.0.tgz#6fb70ce8a467c645515a220e8e9f52893cb1aa48"
   integrity sha512-dbvRL4lCQ6ZrBnxJgNV3XUR/EgpBnSuNR+Buta5vAaBrbcwGc8dBv7O4Oh/YU6HWRJfdVZD8PlAQO1u6bebvpw==
 
 "@napi-rs/wasm-runtime@^1.1.0":
