@@ -107,8 +107,8 @@
           Feel free to ask me any questions...
         </div>
         <div
-          v-for="(result, index) in pluginResults"
-          :key="index"
+          v-for="result in pluginResults"
+          :key="result.uuid"
           class="cursor-pointer hover:opacity-75 transition-opacity border border-gray-300 rounded p-2"
           :class="{ 'ring-2 ring-blue-500': selectedResult === result }"
           @click="$emit('selectResult', result)"
