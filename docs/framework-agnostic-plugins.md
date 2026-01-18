@@ -467,7 +467,113 @@ function ToolView({ selectedResult, sendTextMessage, onUpdateResult }) {
 ### 2. config.component の扱い
 
 プラグイン固有の設定UIもフレームワーク依存。
-同様にcore/vue/reactに分離するか、設定はJSONスキーマで定義してホストアプリがUIを生成する方式を検討。
+
+#### 現状
+
+```typescript
+// src/tools/types.ts
+export interface ToolPluginConfig {
+  key: string;           // Storage key
+  defaultValue: unknown;
+  component: VueComponent;  // ← Vue依存
+}
+```
+
+#### 解決策の選択肢
+
+**選択肢A: JSON Schemaで定義（推奨）**
+
+設定のスキーマをJSONで定義し、ホストアプリがUIを自動生成。
+
+```typescript
+// プラグイン側（フレームワーク非依存）
+export interface ToolPluginConfigSchema {
+  key: string;
+  defaultValue: unknown;
+  schema: {
+    type: "string" | "number" | "boolean" | "select";
+    label: string;
+    description?: string;
+    options?: { value: string; label: string }[];  // select用
+    min?: number;  // number用
+    max?: number;
+  };
+}
+
+// 例: 画像スタイル設定
+config: {
+  key: "imageStyle",
+  defaultValue: "photorealistic",
+  schema: {
+    type: "select",
+    label: "Default Image Style",
+    options: [
+      { value: "photorealistic", label: "Photorealistic" },
+      { value: "anime", label: "Anime" },
+      { value: "watercolor", label: "Watercolor" },
+    ]
+  }
+}
+```
+
+ホストアプリ側でスキーマからUIを生成：
+
+```vue
+<!-- Vue ホスト -->
+<template>
+  <select v-if="schema.type === 'select'" ...>
+  <input v-else-if="schema.type === 'string'" ...>
+</template>
+```
+
+```tsx
+// React ホスト
+function ConfigField({ schema, value, onChange }) {
+  if (schema.type === 'select') return <select ... />;
+  if (schema.type === 'string') return <input ... />;
+}
+```
+
+**メリット:**
+- プラグインは完全にフレームワーク非依存
+- ホストアプリが統一されたUIを提供
+- 複雑なUIは不要（設定は通常シンプル）
+
+**デメリット:**
+- 複雑な設定UIには対応できない
+
+**選択肢B: コンポーネントもcore/vue/reactに分離**
+
+viewComponent と同様に分離。
+
+```typescript
+// core
+export interface ToolPluginConfigCore {
+  key: string;
+  defaultValue: unknown;
+}
+
+// vue
+export interface ToolPluginConfigVue extends ToolPluginConfigCore {
+  component: VueComponent;
+}
+
+// react
+export interface ToolPluginConfigReact extends ToolPluginConfigCore {
+  Component: React.ComponentType<ConfigProps>;
+}
+```
+
+**メリット:**
+- 複雑なUIにも対応可能
+
+**デメリット:**
+- 各フレームワークでコンポーネントを実装する必要がある
+
+**推奨: 選択肢A（JSON Schema）**
+
+設定UIは通常シンプル（セレクトボックス、チェックボックス等）であり、
+JSON Schemaで十分対応可能。複雑な設定が必要な場合のみ選択肢Bを検討。
 
 ### 3. 後方互換性
 
