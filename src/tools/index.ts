@@ -29,8 +29,8 @@ import type {
   ToolResult,
   ToolResultComplete,
   ToolPlugin,
-  BackendType,
 } from "./types";
+import type { BackendType } from "./backendTypes";
 
 // External plugins from npm packages
 import GenerateImagePlugin from "@mulmochat-plugin/generate-image";
