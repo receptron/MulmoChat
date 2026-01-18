@@ -1,5 +1,5 @@
 import { ref, type Ref } from "vue";
-import type { ToolContext, ToolResult } from "../tools";
+import type { ToolContext, ToolResult, ToolContextApp } from "../tools";
 import type { UserPreferencesState } from "./useUserPreferences";
 import { SESSION_CONFIG } from "../config/session";
 import { v4 as uuidv4 } from "uuid";
@@ -8,13 +8,11 @@ import {
   editImage as backendEditImage,
   generateImage as backendGenerateImage,
   generateImageWithBackend,
-  getRawImageConfig,
   normalizeImageConfig,
   browseUrl,
   getTwitterEmbed,
   searchExa,
   generateHtml as backendGenerateHtml,
-  getRawHtmlConfig,
   normalizeHtmlConfig,
   summarizePdf,
   saveImages,
@@ -25,12 +23,14 @@ import type { ImageToolData } from "../tools/utils/imageTypes";
 type ToolExecuteFn = typeof import("../tools").toolExecute;
 type GetToolPluginFn = typeof import("../tools").getToolPlugin;
 
+// Plugins that are allowed to use setConfig
+const PLUGINS_WITH_SET_CONFIG = ["setImageStyle"];
+
 interface UseToolResultsOptions {
   toolExecute: ToolExecuteFn;
   getToolPlugin: GetToolPluginFn;
   suppressInstructions: Ref<boolean>;
   userPreferences: Ref<UserPreferencesState>;
-  getPluginConfig: <T = unknown>(key: string) => T | undefined;
   sleep: (milliseconds: number) => Promise<void>;
   sendInstructions: (instructions: string) => boolean | Promise<boolean>;
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
@@ -145,12 +145,22 @@ export function useToolResults(
       options.scrollToBottomOfSideBar();
       const plugin = options.getToolPlugin(msg.name);
 
+      // Config accessor functions
+      const getConfig = <T = unknown>(key: string): T | undefined => {
+        return options.userPreferences.value?.pluginConfigs?.[key] as
+          | T
+          | undefined;
+      };
+
+      const setConfig = (key: string, value: unknown): void => {
+        if (options.userPreferences.value?.pluginConfigs) {
+          options.userPreferences.value.pluginConfigs[key] = value;
+        }
+      };
+
       // Resolve image config from user preferences
       const imageConfig = normalizeImageConfig(
-        getRawImageConfig({
-          getPluginConfig: options.getPluginConfig,
-          userPreferences: options.userPreferences.value,
-        }),
+        getConfig("imageGenerationBackend"),
       );
       const comfyuiModel =
         options.userPreferences.value?.comfyuiModel ||
@@ -167,39 +177,48 @@ export function useToolResults(
 
       // Resolve HTML config from user preferences
       const htmlBackend = normalizeHtmlConfig(
-        getRawHtmlConfig({
-          getPluginConfig: options.getPluginConfig,
-          userPreferences: options.userPreferences.value,
-        }),
+        getConfig("htmlGenerationBackend"),
       );
+
+      // Build app object with getConfig always available
+      // setConfig only works for authorized plugins
+      const app: ToolContextApp = {
+        // Config accessors
+        getConfig,
+        setConfig: PLUGINS_WITH_SET_CONFIG.includes(msg.name)
+          ? setConfig
+          : () => {
+              console.warn(
+                `Plugin "${msg.name}" is not authorized to use setConfig`,
+              );
+            },
+
+        // Wrapped image functions with config bound
+        editImage: (prompt: string) =>
+          backendEditImage(imageGenerationContext, prompt),
+        generateImage: (prompt: string) =>
+          backendGenerateImage(imageGenerationContext, prompt),
+        generateImageWithBackend: (prompt: string, images: string[]) =>
+          generateImageWithBackend(prompt, images, {
+            config: imageConfig,
+            comfyuiModel,
+          }),
+        // Wrapped HTML function with backend resolved
+        generateHtml: (params: Omit<HtmlGenerationParams, "backend">) =>
+          backendGenerateHtml({ ...params, backend: htmlBackend }),
+        // Other backend functions (no config needed)
+        browseUrl,
+        getTwitterEmbed,
+        searchExa,
+        summarizePdf,
+        saveImages,
+        // Config accessors for plugins that need to read/modify config
+        getImageConfig: () => imageConfig,
+      };
 
       const context: ToolContext = {
         currentResult: selectedResult.value ?? undefined,
-        userPreferences: options.userPreferences.value,
-        getPluginConfig: options.getPluginConfig,
-        app: {
-          // Wrapped image functions with config bound
-          editImage: (prompt: string) =>
-            backendEditImage(imageGenerationContext, prompt),
-          generateImage: (prompt: string) =>
-            backendGenerateImage(imageGenerationContext, prompt),
-          generateImageWithBackend: (prompt: string, images: string[]) =>
-            generateImageWithBackend(prompt, images, {
-              config: imageConfig,
-              comfyuiModel,
-            }),
-          // Wrapped HTML function with backend resolved
-          generateHtml: (params: Omit<HtmlGenerationParams, "backend">) =>
-            backendGenerateHtml({ ...params, backend: htmlBackend }),
-          // Other backend functions (no config needed)
-          browseUrl,
-          getTwitterEmbed,
-          searchExa,
-          summarizePdf,
-          saveImages,
-          // Config accessors for plugins that need to read/modify config
-          getImageConfig: () => imageConfig,
-        },
+        app,
       };
 
       // Note: waitingMessage is only sent for realtime sessions

@@ -25,6 +25,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getRole } from "../config/roles";
 import type {
   ToolContext,
+  ToolContextApp,
   ToolResult,
   ToolResultComplete,
   ToolPlugin,
@@ -39,6 +40,7 @@ import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf";
 
 export type {
   ToolContext,
+  ToolContextApp,
   ToolResult,
   ToolResultComplete,
   ToolPlugin,

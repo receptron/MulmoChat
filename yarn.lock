@@ -695,25 +695,25 @@
   resolved "https://registry.npmjs.org/@mozilla/readability/-/readability-0.6.0.tgz"
   integrity sha512-juG5VWh4qAivzTAeMzvY9xs9HY5rAcr2E4I7tiSSCokRFi7XIZCAu92ZkSTsIj1OPceCifL3cpfteP3pDT9/QQ==
 
-"@mulmochat-plugin/form@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.npmjs.org/@mulmochat-plugin/form/-/form-0.1.1.tgz"
-  integrity sha512-JIfJzUKJfa0xxTp/JCaRGQ3SUWV5/L8xy99f7+2QlghNMfmUde9oyPNeYEQRggcPPPH9vXjk/HWHyf1K0LSG3A==
+"@mulmochat-plugin/form@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/form/-/form-0.1.2.tgz#64e1f19a8749d419d94eea98c4cf2c1b5a562460"
+  integrity sha512-KfQi8aBXnGymq73GPCUjvzeZfeYD71IJEZ6if8s+o6Nl/323/DcZN7JiO5qP3CUHi6CId/Rz3FIz8CCrmKND5g==
 
-"@mulmochat-plugin/generate-image@^0.1.3":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/generate-image/-/generate-image-0.1.3.tgz#a15848f67cad10fbfc882cd11a60c4754a14a0ea"
-  integrity sha512-bwfJX4A1LufOfpTUv7bpl0i342nBpZgzXuL+/gNrjs2hRjqH7aD8khca6PjrU1bfR6mI4zMJFpNDa1itcPhbLg==
+"@mulmochat-plugin/generate-image@^0.1.4":
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/generate-image/-/generate-image-0.1.4.tgz#c89fb7ee47711cb06b84e47d320434133dd78ca8"
+  integrity sha512-DCseCcUNI5X3XWfWBWAnYGsE3DubpdPYvjKVwPfIxiizjC9xiJ7fHghGV7w59AVaqP//HNh/0n47N5U7MdG8SQ==
 
-"@mulmochat-plugin/quiz@^0.1.3":
-  version "0.1.3"
-  resolved "https://registry.npmjs.org/@mulmochat-plugin/quiz/-/quiz-0.1.3.tgz"
-  integrity sha512-fcM6XO97pvmIe+3KNv1y2BlfsLYT592ypqRRs6bOhmxTDR1o2RjQdrcyZ36Kq4dz/hwCLosS1yqx3XIkjTKcFQ==
+"@mulmochat-plugin/quiz@^0.1.4":
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.1.4.tgz#cd2f11948028e0dd73306abb9433f620f3453d2e"
+  integrity sha512-RHezAP9n/3huTmzTq9+Mr59WPH7s+Em6AiD2dVBvtM6wa2eIqgb6hsgzzRGwZc8684bMqU99/lfOCtIMyhvE5Q==
 
-"@mulmochat-plugin/summarize-pdf@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.npmjs.org/@mulmochat-plugin/summarize-pdf/-/summarize-pdf-0.1.1.tgz"
-  integrity sha512-pEMecOiB+iBqrqdLGKP4X6VVbS/eH034/xSrLfpTMQkrwJwP+2EUorr+dWY9fIVbUFg1EjKZ28XhCF/KwGYKEQ==
+"@mulmochat-plugin/summarize-pdf@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/summarize-pdf/-/summarize-pdf-0.1.2.tgz#c0b15bcb3788f7510156e319070661225d306af8"
+  integrity sha512-KTXi8cw3tXlidXJki1amp+i5KpWp694dX175w56XrlsKqfU073BJ62mxqIp1nffFYC+3B4XGLWRBbFVdq+S0uw==
 
 "@mulmochat-plugin/ui-image@^0.1.0":
   version "0.1.0"

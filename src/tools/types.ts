@@ -1,5 +1,4 @@
 import type { StartApiResponse } from "../../server/types";
-import type { UserPreferencesState } from "../composables/useUserPreferences";
 import type { BackendType } from "./backendTypes";
 
 // Re-export backend types from dedicated file
@@ -11,11 +10,22 @@ export type {
   ImageGenerationConfigValue,
 } from "./backendTypes";
 
+/**
+ * App interface provided to plugins via context.app
+ * Contains backend functions and config accessors
+ */
+export interface ToolContextApp extends Record<
+  string,
+  (...args: any[]) => any
+> {
+  // Config accessors
+  getConfig: <T = unknown>(key: string) => T | undefined;
+  setConfig: (key: string, value: unknown) => void;
+}
+
 export interface ToolContext {
   currentResult?: ToolResult<unknown> | null;
-  userPreferences?: UserPreferencesState;
-  getPluginConfig?: <T = unknown>(key: string) => T | undefined;
-  app?: Record<string, (...args: any[]) => any>;
+  app?: ToolContextApp;
 }
 
 export interface ToolResult<T = unknown, J = unknown> {
