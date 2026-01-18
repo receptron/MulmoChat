@@ -1762,6 +1762,418 @@ inputHandlers: [
 
 ---
 
+## 提案: 将来の拡張機能
+
+以下はMulmoChatのビジョン（音声/テキストで対話し、ツールを動的に使い、絵・グラフ・プレゼン等を作成）を実現するための拡張提案。実装は未定。
+
+### 現状の課題分析
+
+| 課題 | 現状 | 影響 |
+|------|------|------|
+| **結果間の参照なし** | 各ToolResultは独立 | 「さっきの画像」を参照できない |
+| **単一コンテキスト** | `context.currentResult`は選択中のみ | 複数結果を組み合わせられない |
+| **ツール間直接呼び出しなし** | LLM経由でのみチェーン可能 | 複合操作が冗長 |
+| **ワークスペース概念なし** | 結果は配列に蓄積されるだけ | プレゼン等のドキュメント構造表現が困難 |
+| **ストリーミングなし** | 結果は完成後に一括返却 | 長時間処理の進捗表示困難 |
+| **Undo/履歴なし** | 上書き更新のみ | 「元に戻す」ができない |
+
+---
+
+### 提案1: リソース参照システム
+
+ツール結果を他のツールから参照可能にする。
+
+```typescript
+interface ToolResultComplete<T, J> extends ToolResult<T, J> {
+  uuid: string;  // 既存
+  toolName: string;  // 既存
+
+  /** リソースタイプ（他ツールが参照時に使用） */
+  resourceType?: "image" | "document" | "chart" | "audio" | "video" | "data";
+
+  /** エクスポート可能な形式 */
+  exportFormats?: string[];  // ["png", "svg", "pdf"]
+
+  /** 依存する他の結果のUUID */
+  dependsOn?: string[];
+}
+
+// ToolContextに履歴アクセスを追加
+interface ToolContext {
+  currentResult?: ToolResult<unknown> | null;
+
+  /** 全結果へのアクセス */
+  results?: {
+    getAll: () => ToolResultComplete[];
+    getById: (uuid: string) => ToolResultComplete | null;
+    getByType: (resourceType: string) => ToolResultComplete[];
+    getByToolName: (name: string) => ToolResultComplete[];
+  };
+}
+```
+
+**使用例:**
+
+```typescript
+// プレゼンツールが既存の画像・グラフを参照
+const createPresentationExecute = async (context, args) => {
+  const { elementRefs } = args;  // ["uuid-1", "uuid-2", "uuid-3"]
+
+  const elements = elementRefs.map(uuid => {
+    const result = context.results?.getById(uuid);
+    if (!result) return null;
+
+    switch (result.resourceType) {
+      case "image":
+        return { type: "image", data: result.data };
+      case "chart":
+        return { type: "chart", data: result.data };
+      default:
+        return null;
+    }
+  }).filter(Boolean);
+
+  return {
+    resourceType: "document",
+    dependsOn: elementRefs,  // 依存関係を明示
+    data: { slides: elements },
+    message: `Created presentation with ${elements.length} elements`,
+  };
+};
+```
+
+**期待される効果:**
+- 「さっき作った画像を使って」が可能に
+- ツール間のデータ共有が明示的に
+- 依存関係の追跡が可能
+
+---
+
+### 提案2: ツール機能宣言（Capabilities）
+
+ツールが何をできるかを宣言し、LLMやホストがより賢く振る舞える。
+
+```typescript
+interface ToolCapabilities {
+  /** 出力リソースタイプ */
+  outputType?: "image" | "document" | "chart" | "audio" | "data";
+
+  /** 入力として受け付けるリソースタイプ */
+  acceptsInputTypes?: string[];
+
+  /** ストリーミング対応 */
+  streaming?: boolean;
+
+  /** Undo対応 */
+  undoable?: boolean;
+
+  /** 他のツール結果を参照可能 */
+  canReferenceResults?: boolean;
+
+  /** バッチ処理対応（複数入力を一度に処理） */
+  batchable?: boolean;
+
+  /** 長時間実行の可能性 */
+  longRunning?: boolean;
+}
+
+interface ToolPluginCore<T, J, A extends object> {
+  // ... 既存フィールド
+
+  /** ツールの機能宣言 */
+  capabilities?: ToolCapabilities;
+}
+```
+
+**使用例:**
+
+```typescript
+export const plugin: ToolPluginCore = {
+  toolDefinition: { /* ... */ },
+  execute: generateChartExecute,
+  generatingMessage: "Generating chart...",
+
+  capabilities: {
+    outputType: "chart",
+    acceptsInputTypes: ["data"],
+    streaming: false,
+    undoable: false,
+    canReferenceResults: true,
+  },
+};
+```
+
+**期待される効果:**
+- LLMがツール選択時に適切な判断可能
+- ホストアプリがUIを動的に調整（ストリーミング対応ツールにプログレスバー等）
+- ツールのチェーン可能性を自動判定
+
+---
+
+### 提案3: ワークスペース/ドキュメントモデル
+
+複数の結果を構造化して管理する概念。プレゼンテーション、レポート等の複合ドキュメント作成に有用。
+
+```typescript
+interface Workspace {
+  /** ワークスペースID */
+  id: string;
+
+  /** 名前 */
+  name: string;
+
+  /** 含まれる要素 */
+  elements: WorkspaceElement[];
+
+  /** ワークスペースの種類 */
+  type?: "presentation" | "report" | "canvas" | "collection";
+
+  /** メタデータ */
+  metadata?: Record<string, unknown>;
+}
+
+interface WorkspaceElement {
+  /** 要素ID */
+  id: string;
+
+  /** 参照するToolResultのUUID */
+  resultUuid: string;
+
+  /** ワークスペース内での位置/順序 */
+  position?: { x: number; y: number; z?: number };
+  order?: number;
+
+  /** 要素固有の設定（サイズ、スタイル等） */
+  settings?: Record<string, unknown>;
+}
+
+// ToolContextに追加
+interface ToolContext {
+  // ... 既存
+
+  /** 現在のワークスペース（オプション） */
+  workspace?: {
+    get: () => Workspace | null;
+    create: (name: string, type?: string) => Workspace;
+    addElement: (resultUuid: string, settings?: Record<string, unknown>) => WorkspaceElement;
+    removeElement: (elementId: string) => void;
+    updateElement: (elementId: string, updates: Partial<WorkspaceElement>) => void;
+    reorderElements: (elementIds: string[]) => void;
+  };
+}
+```
+
+**使用例: プレゼン作成ワークフロー**
+
+```
+1. ユーザー: 「猫の絵を描いて」
+   → generateImage実行 → 画像結果（uuid: img-1, resourceType: "image"）
+
+2. ユーザー: 「売上データでグラフ作って」
+   → generateChart実行 → グラフ結果（uuid: chart-1, resourceType: "chart"）
+
+3. ユーザー: 「これらでプレゼンにまとめて」
+   → LLMが以下を実行:
+      workspace.create("Cat Sales Presentation", "presentation")
+      workspace.addElement("img-1", { order: 1, title: "Our Cat" })
+      workspace.addElement("chart-1", { order: 2, title: "Sales Data" })
+   → createPresentation がワークスペースの要素を使用してプレゼン生成
+```
+
+**期待される効果:**
+- 複合ドキュメントの構造化された作成
+- 要素の再配置・編集が容易
+- ワークスペース単位での保存・共有
+
+---
+
+### 提案4: ストリーミング実行
+
+長時間処理の進捗をリアルタイムで表示。
+
+```typescript
+interface ToolPluginCore<T, J, A extends object> {
+  /** 通常の実行 */
+  execute: (context: ToolContext, args: A) => Promise<ToolResult<T, J>>;
+
+  /** ストリーミング実行（オプション） */
+  executeStream?: (
+    context: ToolContext,
+    args: A,
+    onProgress: (update: StreamUpdate<T, J>) => void
+  ) => Promise<ToolResult<T, J>>;
+}
+
+interface StreamUpdate<T, J> {
+  /** 進捗率（0-100） */
+  progress?: number;
+
+  /** 進捗メッセージ */
+  message?: string;
+
+  /** 部分的なデータ（プレビュー等） */
+  partialData?: Partial<T>;
+
+  /** 部分的なJSONデータ */
+  partialJsonData?: Partial<J>;
+
+  /** 現在のステップ */
+  step?: string;
+
+  /** 推定残り時間（秒） */
+  estimatedTimeRemaining?: number;
+}
+```
+
+**使用例:**
+
+```typescript
+// 動画生成プラグイン
+export const plugin: ToolPluginCore = {
+  execute: generateVideoExecute,
+
+  executeStream: async (context, args, onProgress) => {
+    onProgress({ progress: 0, step: "Initializing..." });
+
+    // フレーム生成
+    for (let i = 0; i < totalFrames; i++) {
+      const frame = await generateFrame(i);
+      onProgress({
+        progress: (i / totalFrames) * 80,
+        step: `Generating frame ${i + 1}/${totalFrames}`,
+        partialData: { previewFrame: frame },
+      });
+    }
+
+    // エンコード
+    onProgress({ progress: 80, step: "Encoding video..." });
+    const video = await encodeVideo(frames);
+
+    onProgress({ progress: 100, step: "Complete" });
+
+    return {
+      resourceType: "video",
+      data: { video },
+      message: "Video generated successfully",
+    };
+  },
+
+  capabilities: {
+    outputType: "video",
+    streaming: true,
+    longRunning: true,
+  },
+};
+```
+
+**期待される効果:**
+- 長時間処理でもユーザーが進捗を把握可能
+- 部分的なプレビュー表示
+- キャンセル機能の実装基盤
+
+---
+
+### 提案5: Undo/履歴サポート
+
+編集操作の取り消し・やり直し。
+
+```typescript
+interface ToolResultWithHistory<T, J> extends ToolResultComplete<T, J> {
+  /** 履歴管理 */
+  history?: {
+    /** 過去の状態スタック */
+    undoStack: ToolResult<T, J>[];
+
+    /** 取り消した状態スタック */
+    redoStack: ToolResult<T, J>[];
+
+    /** 最大履歴数 */
+    maxSize?: number;
+  };
+}
+
+interface ToolPluginCore<T, J, A extends object> {
+  // ... 既存
+
+  /** Undo実行（オプション） */
+  onUndo?: (
+    context: ToolContext,
+    currentResult: ToolResultWithHistory<T, J>
+  ) => ToolResult<T, J> | null;
+
+  /** Redo実行（オプション） */
+  onRedo?: (
+    context: ToolContext,
+    currentResult: ToolResultWithHistory<T, J>
+  ) => ToolResult<T, J> | null;
+
+  /** 履歴に保存すべきか判定（オプション） */
+  shouldSaveToHistory?: (
+    oldResult: ToolResult<T, J>,
+    newResult: ToolResult<T, J>
+  ) => boolean;
+}
+```
+
+**使用例:**
+
+```typescript
+// 画像編集プラグイン
+export const plugin: ToolPluginCore = {
+  execute: editImageExecute,
+
+  onUndo: (context, currentResult) => {
+    const { undoStack } = currentResult.history || { undoStack: [] };
+    if (undoStack.length === 0) return null;
+
+    return undoStack[undoStack.length - 1];
+  },
+
+  shouldSaveToHistory: (oldResult, newResult) => {
+    // データが実際に変更された場合のみ履歴に保存
+    return oldResult.data?.imageData !== newResult.data?.imageData;
+  },
+
+  capabilities: {
+    outputType: "image",
+    undoable: true,
+  },
+};
+```
+
+**期待される効果:**
+- 「元に戻す」「やり直す」操作が可能
+- 編集履歴の可視化
+- 誤操作からの復帰
+
+---
+
+### 提案の優先度
+
+| 提案 | 優先度 | 実装複雑度 | 効果 | 備考 |
+|------|--------|-----------|------|------|
+| **リソース参照** | 高 | 中 | 高 | ツール間連携の基盤 |
+| **Capabilities** | 高 | 低 | 中 | 型定義追加のみで効果大 |
+| **ワークスペース** | 中 | 高 | 高 | 複合ドキュメント作成に必須 |
+| **ストリーミング** | 中 | 中 | 中 | UX向上、長時間処理に有用 |
+| **Undo/履歴** | 低 | 高 | 中 | 編集系ツールに有用 |
+
+### 推奨実装順序
+
+**Phase A（基盤）:**
+1. `resourceType` と `dependsOn` を ToolResult に追加
+2. `context.results` で履歴アクセス追加
+3. `capabilities` を ToolPluginCore に追加
+
+**Phase B（拡張）:**
+4. ワークスペースモデルの設計・実装
+5. ストリーミング対応
+
+**Phase C（高度な機能）:**
+6. Undo/履歴サポート
+
+---
+
 ## 課題と検討事項
 
 ### テスト戦略
