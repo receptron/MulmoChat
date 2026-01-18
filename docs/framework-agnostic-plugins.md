@@ -27,9 +27,20 @@ gui-chat-protocol
 
 ```
 @mulmochat-plugin/quiz
-├── core/       # ToolPluginCore + execute + TOOL_DEFINITION
-├── vue/        # View.vue + Preview.vue → ToolPluginVue
-└── react/      # View.tsx + Preview.tsx → ToolPluginReact
+├── core/           # フレームワーク非依存
+│   ├── types.ts    # コア型定義
+│   ├── definition.ts # ツール定義（スキーマ）
+│   ├── samples.ts  # サンプルデータ
+│   ├── plugin.ts   # execute関数 + pluginCore
+│   └── index.ts    # エクスポート
+├── vue/            # Vue実装
+│   ├── View.vue
+│   ├── Preview.vue
+│   └── index.ts    # ToolPluginVue
+└── react/          # React実装（オプション）
+    ├── View.tsx
+    ├── Preview.tsx
+    └── index.ts    # ToolPluginReact
 ```
 
 ### TODO
