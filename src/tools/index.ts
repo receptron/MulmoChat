@@ -33,10 +33,10 @@ import type {
 import type { BackendType } from "./backendTypes";
 
 // External plugins from npm packages
-import GenerateImagePlugin from "@mulmochat-plugin/generate-image";
-import QuizPlugin from "@mulmochat-plugin/quiz";
-import FormPlugin from "@mulmochat-plugin/form";
-import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf";
+import GenerateImagePlugin from "@mulmochat-plugin/generate-image/vue";
+import QuizPlugin from "@mulmochat-plugin/quiz/vue";
+import FormPlugin from "@mulmochat-plugin/form/vue";
+import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf/vue";
 
 export type {
   ToolContext,
@@ -237,19 +237,51 @@ export const getToolPlugin = (name: string) => {
   return plugins[name] || null;
 };
 
-export const getFileUploadPlugins = () => {
+/**
+ * Gets plugins that have file input handlers
+ */
+export const getFileInputPlugins = () => {
   return pluginList
-    .filter((plugin) => plugin.plugin.fileUpload)
-    .map((plugin) => ({
-      toolName: plugin.plugin.toolDefinition.name,
-      fileUpload: plugin.plugin.fileUpload!,
-    }));
+    .filter((plugin) =>
+      plugin.plugin.inputHandlers?.some((h) => h.type === "file"),
+    )
+    .map((plugin) => {
+      const fileHandler = plugin.plugin.inputHandlers!.find(
+        (h) => h.type === "file",
+      )!;
+      return {
+        toolName: plugin.plugin.toolDefinition.name,
+        handler: fileHandler as import("./types").FileInputHandler,
+      };
+    });
 };
 
+/**
+ * Gets plugins that have clipboard-image input handlers
+ */
+export const getClipboardImagePlugins = () => {
+  return pluginList
+    .filter((plugin) =>
+      plugin.plugin.inputHandlers?.some((h) => h.type === "clipboard-image"),
+    )
+    .map((plugin) => {
+      const handler = plugin.plugin.inputHandlers!.find(
+        (h) => h.type === "clipboard-image",
+      )!;
+      return {
+        toolName: plugin.plugin.toolDefinition.name,
+        handler: handler as import("./types").ClipboardImageInputHandler,
+      };
+    });
+};
+
+/**
+ * Gets all accepted file types across all plugins with file handlers
+ */
 export const getAcceptedFileTypes = () => {
-  const uploadPlugins = getFileUploadPlugins();
-  const allTypes = uploadPlugins.flatMap(
-    (plugin) => plugin.fileUpload.acceptedTypes,
+  const filePlugins = getFileInputPlugins();
+  const allTypes = filePlugins.flatMap(
+    (plugin) => plugin.handler.acceptedTypes,
   );
   return Array.from(new Set(allTypes));
 };
