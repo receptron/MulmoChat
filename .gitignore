@@ -6,4 +6,4 @@ build
 output
 logs
 benchmark/results
-*~
+*~*.tgz
