@@ -830,11 +830,11 @@ jobs:
         path: "*.tgz"
 ```
 
-### Phase 10: README.npm.md 作成
+### Phase 10: README.md 作成
 
 npm 公開時に使用する README ファイルを作成します。
 
-**ファイル: `README.npm.md`**
+**ファイル: `README.md`**
 
 ```markdown
 # @gui-chat-plugin/xxx
@@ -1038,7 +1038,7 @@ export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // �
 - [ ] `package.json` が正しく設定されている（`@gui-chat-plugin/xxx` 形式）
 - [ ] 必要な npm 依存パッケージが `dependencies` に追加されている
 - [ ] `.github/workflows/pull_request.yaml` が作成されている
-- [ ] `README.npm.md` が作成されている
+- [ ] `README.md` が作成されている
 - [ ] `yarn install` が成功する
 - [ ] `yarn typecheck` がエラーなしで完了する
 - [ ] `yarn lint` がエラーなしで完了する

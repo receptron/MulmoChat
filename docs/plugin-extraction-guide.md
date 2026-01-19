@@ -43,7 +43,7 @@ GUIChatPluginXxx/
 ├── vite.config.ts
 ├── eslint.config.js
 ├── index.html
-├── README.npm.md          # npm 公開用 README
+├── README.md          # npm 公開用 README
 ├── .github/
 │   └── workflows/
 │       └── pull_request.yaml  # CI 設定
@@ -678,7 +678,7 @@ jobs:
         path: "*.tgz"
 ```
 
-### Step 9: README.npm.md 作成
+### Step 9: README.md 作成
 
 npm 公開時に使用する README ファイルを作成します：
 
@@ -860,7 +860,7 @@ yarn install
 
 - [ ] `package.json` が正しく設定されている（`@gui-chat-plugin/xxx` 形式）
 - [ ] `.github/workflows/pull_request.yaml` が作成されている
-- [ ] `README.npm.md` が作成されている
+- [ ] `README.md` が作成されている
 - [ ] `yarn typecheck` がエラーなしで完了
 - [ ] `yarn lint` がエラーなしで完了
 - [ ] `yarn dev` でデモアプリが正常に動作
