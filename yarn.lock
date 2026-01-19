@@ -3698,31 +3698,31 @@ jose@^6.1.1:
 
 jpeg-exif@^1.1.4:
   version "1.1.4"
-  resolved "https://registry.npmjs.org/jpeg-exif/-/jpeg-exif-1.1.4.tgz"
+  resolved "https://registry.yarnpkg.com/jpeg-exif/-/jpeg-exif-1.1.4.tgz#781a65b6cd74f62cb1c493511020f8d3577a1c2b"
   integrity sha512-a+bKEcCjtuW5WTdgeXFzswSrdqi0jk4XlEtZlx5A94wCoBpFjfFTbo/Tra5SpNCl/YFZPvcV1dJc+TAYeg6ROQ==
 
 js-tiktoken@^1.0.14:
   version "1.0.21"
-  resolved "https://registry.npmjs.org/js-tiktoken/-/js-tiktoken-1.0.21.tgz"
+  resolved "https://registry.yarnpkg.com/js-tiktoken/-/js-tiktoken-1.0.21.tgz#368a9957591a30a62997dd0c4cf30866f00f8221"
   integrity sha512-biOj/6M5qdgx5TKjDnFT1ymSpM5tbd3ylwDtrQvFQSu0Z7bBYko2dF+W/aUkXUPuk6IVpRxk/3Q2sHOzGlS36g==
   dependencies:
     base64-js "^1.5.1"
 
 js-tokens@^4.0.0:
   version "4.0.0"
-  resolved "https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
   integrity sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==
 
 js-yaml@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.npmjs.org/js-yaml/-/js-yaml-4.1.0.tgz"
-  integrity sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-4.1.1.tgz#854c292467705b699476e1a2decc0c8a3458806b"
+  integrity sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==
   dependencies:
     argparse "^2.0.1"
 
 jsdom@^27.4.0:
   version "27.4.0"
-  resolved "https://registry.npmjs.org/jsdom/-/jsdom-27.4.0.tgz"
+  resolved "https://registry.yarnpkg.com/jsdom/-/jsdom-27.4.0.tgz#c36af2e43e1281a7e8bb8f255086435d177801f2"
   integrity sha512-mjzqwWRD9Y1J1KUi7W97Gja1bwOOM5Ug0EZ6UDK3xS7j7mndrkwozHtSblfomlzyB4NepioNt+B2sOSzczVgtQ==
   dependencies:
     "@acemir/cssom" "^0.9.28"
@@ -3748,7 +3748,7 @@ jsdom@^27.4.0:
 
 json-bigint@^1.0.0:
   version "1.0.0"
-  resolved "https://registry.npmjs.org/json-bigint/-/json-bigint-1.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/json-bigint/-/json-bigint-1.0.0.tgz#ae547823ac0cad8398667f8cd9ef4730f5b01ff1"
   integrity sha512-SiPv/8VpZuWbvLSMtTDU8hEfrZWg/mH/nV/b4o0CYbSxu1UIQPLdwKOCIyLQX+VIPO5vrLX3i8qtqFyhdPSUSQ==
   dependencies:
     bignumber.js "^9.0.0"
@@ -3798,7 +3798,7 @@ jsx-ast-utils-x@0.1.0:
 
 jszip@3.10.1:
   version "3.10.1"
-  resolved "https://registry.npmjs.org/jszip/-/jszip-3.10.1.tgz"
+  resolved "https://registry.yarnpkg.com/jszip/-/jszip-3.10.1.tgz#34aee70eb18ea1faec2f589208a157d1feb091c2"
   integrity sha512-xXDvecyTpGLrqFrvkrUSoxxfJI5AH7U8zxxtVclpsUtMCq4JQ290LY8AW5c7Ggnr/Y/oK+bQMbqK2qmtk3pN4g==
   dependencies:
     lie "~3.3.0"
@@ -3808,7 +3808,7 @@ jszip@3.10.1:
 
 jszip@3.4.0:
   version "3.4.0"
-  resolved "https://registry.npmjs.org/jszip/-/jszip-3.4.0.tgz"
+  resolved "https://registry.yarnpkg.com/jszip/-/jszip-3.4.0.tgz#1a69421fa5f0bb9bc222a46bca88182fba075350"
   integrity sha512-gZAOYuPl4EhPTXT0GjhI3o+ZAz3su6EhLrKUoAivcKqyqC7laS5JEv4XWZND9BgcDcF83vI85yGbDmDR6UhrIg==
   dependencies:
     lie "~3.3.0"
@@ -4484,7 +4484,7 @@ openai@^6.9.1:
 
 opensheetmusicdisplay@^0.8.4:
   version "0.8.7"
-  resolved "https://registry.npmjs.org/opensheetmusicdisplay/-/opensheetmusicdisplay-0.8.7.tgz"
+  resolved "https://registry.yarnpkg.com/opensheetmusicdisplay/-/opensheetmusicdisplay-0.8.7.tgz#73e1fff4ebfa761224db870184dbf14d96b93939"
   integrity sha512-KBfWrhKhCTR2GaG9xnj9bIgYJd2/k3YZdQ9FPQDjbfVttMTD/CNBf1VNBU0cSZfU4pkRPpF16It+uACxK+wYQg==
   dependencies:
     "@types/vexflow" "^3.0.0"
@@ -4494,9 +4494,9 @@ opensheetmusicdisplay@^0.8.4:
     vexflow "1.2.93"
 
 opensheetmusicdisplay@^1.9.3:
-  version "1.9.3"
-  resolved "https://registry.npmjs.org/opensheetmusicdisplay/-/opensheetmusicdisplay-1.9.3.tgz"
-  integrity sha512-5wrcHQS0D3FJRNKzm4MTNOgzA/+YJpWdZvWotiFHDuJtpYoMTvBQIzEbVv/71AmAoeqYth23jxYJM0kIV2phDA==
+  version "1.9.4"
+  resolved "https://registry.yarnpkg.com/opensheetmusicdisplay/-/opensheetmusicdisplay-1.9.4.tgz#71041ddb71442e348d5b45ccedb5b8a7571988e8"
+  integrity sha512-0y1ucliKnKngMsoH/1FmBMxIZ7IZExfE7JM+0Y3Z/rR5GfxuU+eRSsQFeaj5EO/gH2M/2W+QGpX51E+QHusSaw==
   dependencies:
     "@types/vexflow" "^1.2.38"
     jszip "3.10.1"
