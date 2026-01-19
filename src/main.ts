@@ -14,5 +14,12 @@ import "@gui-chat-plugin/othello/style.css";
 import "@gui-chat-plugin/go/style.css";
 import "@gui-chat-plugin/weather/style.css";
 import "@gui-chat-plugin/music/style.css";
+import "@gui-chat-plugin/browse/style.css";
+import "@gui-chat-plugin/map/style.css";
+import "@gui-chat-plugin/exa/style.css";
+import "@gui-chat-plugin/markdown/style.css";
+import "@gui-chat-plugin/edit-image/style.css";
+import "@gui-chat-plugin/mulmocast/style.css";
+import "@gui-chat-plugin/present3d/style.css";
 
 createApp(App).use(router).mount("#app");

@@ -424,7 +424,7 @@
 
 "@graphai/browserless_agent@^2.0.1":
   version "2.0.1"
-  resolved "https://registry.npmjs.org/@graphai/browserless_agent/-/browserless_agent-2.0.1.tgz"
+  resolved "https://registry.yarnpkg.com/@graphai/browserless_agent/-/browserless_agent-2.0.1.tgz#951e9800ef7c3d696f3b829347ac9d05ba4e4dc5"
   integrity sha512-Uq7gikcA7lrK3xyZwKPx6au0VcMKXDHbzHjOkuBV/I0RDNWo3qApmF6pTVBVR49WtrKKloN2/a48+8IzPGefLg==
 
 "@graphai/gemini_agent@^2.0.2":
@@ -445,7 +445,7 @@
 
 "@graphai/input_agents@^1.0.2":
   version "1.0.2"
-  resolved "https://registry.npmjs.org/@graphai/input_agents/-/input_agents-1.0.2.tgz"
+  resolved "https://registry.yarnpkg.com/@graphai/input_agents/-/input_agents-1.0.2.tgz#1feb79e2c50b3634635bf408aa61108d7ac4d519"
   integrity sha512-DitXU2Z5LwBSPgYo6Pm9MPVNOG+ZxfBgqM59HeN+1bltGElxn+RFOjyAVHmuojKUpfxSp0WXjgm/BPW2zcp1nQ==
   dependencies:
     "@inquirer/input" "^4.2.1"
@@ -470,14 +470,14 @@
 
 "@graphai/vanilla@^2.0.12":
   version "2.0.12"
-  resolved "https://registry.npmjs.org/@graphai/vanilla/-/vanilla-2.0.12.tgz"
+  resolved "https://registry.yarnpkg.com/@graphai/vanilla/-/vanilla-2.0.12.tgz#1f1edf3e7f207c6f2ae02e4e5388a13493756981"
   integrity sha512-kCzU33iFJHIsyvM491Nl8zH6+B2hzOAtVZWT2F3cjrADZ+YrGio2LKjsOVt78ky4GUEJm+ovxJWxeP042JFNZg==
   dependencies:
     "@graphai/agent_utils" "^2.0.4"
 
 "@graphai/vanilla_node_agents@^2.0.4":
   version "2.0.4"
-  resolved "https://registry.npmjs.org/@graphai/vanilla_node_agents/-/vanilla_node_agents-2.0.4.tgz"
+  resolved "https://registry.yarnpkg.com/@graphai/vanilla_node_agents/-/vanilla_node_agents-2.0.4.tgz#9a75c98e6dfd326aca8b8b27b219bc7eea1edfcd"
   integrity sha512-TSIH2P8UgsvCGceWGh5a27SXoXUo0nUCPa6kAD604e28QckOVAPHeuEqRLHJseXPOLYzPbUDkldYPYQIWQxjKg==
 
 "@grpc/grpc-js@^1.12.6":
@@ -498,12 +498,58 @@
     protobufjs "^7.5.3"
     yargs "^17.7.2"
 
+"@gui-chat-plugin/browse@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/browse/-/browse-0.1.0.tgz#a926747e4d1ad047e05883737fe1c48567468383"
+  integrity sha512-kZvHNsNV1WiScyox2mWXLj+fRVrax81rN/hRlBNjf+WdKAlK2TUu5rgScdGu5eaeE+0vfxUOiATbJkMlp6A6eQ==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+
+"@gui-chat-plugin/edit-image@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/edit-image/-/edit-image-0.0.1.tgz#fab96257bf1f21af2ac0a64b30718a19aaed3de7"
+  integrity sha512-tcZeGnGR+l42N9FeBg4uLEOe1SE5oOIuGFTI/bOLTLhzHOpa1MGl0l/1sBlH30lONcFWUOK+FOB1QYOqmAXt+w==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+
+"@gui-chat-plugin/exa@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/exa/-/exa-0.1.0.tgz#aef4c4fb9b6006095e44924f76140f4275aedd54"
+  integrity sha512-62cuazOkZzAusTeNTP3Jk7Y6Gl8liS2J6WAn1xN8v8jjUpXIf+M4+w+Pw+BVKnZa4F063MLmUJKM196D2PQ2BQ==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+
 "@gui-chat-plugin/go@^0.1.0":
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/go/-/go-0.1.0.tgz#e92e967285f0744d933c636730ce6cd7515301af"
   integrity sha512-fPY8VaGG04nCC/3ecf3mtlw69jFyfRPKVcI5WIRDnU6PsLc5JHPagGSblhjAcZ6dSFmKjAQ1JfGVmczmwh0NCw==
   dependencies:
     gui-chat-protocol "^0.0.1"
+
+"@gui-chat-plugin/map@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/map/-/map-0.1.0.tgz#cf5eb3b054c2c8cdcfee0f3d71f74eabfbb65dda"
+  integrity sha512-L8zElcV7WolwYk6irSrza34QynOmUtqKNgrWPw5LVYRo7lg7+W7m2kNx+ul0gae6prziyp8YMP6kDTd6v+xToQ==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+
+"@gui-chat-plugin/markdown@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/markdown/-/markdown-0.0.1.tgz#ef48b7ec88d0f9a33c64ea046343d76dee53a742"
+  integrity sha512-PL7oizYRyZ/OaCu6+/lq6PVJorjx6MFGNm2XZHjauxm735cKxGcM47p3UW84QmQp4x9MLCvEMBvlxhNkFg8WMw==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+    marked "^15.0.0"
+
+"@gui-chat-plugin/mulmocast@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/mulmocast/-/mulmocast-0.0.2.tgz#d9263a2b599f7d580e99637024865ffdde8fd504"
+  integrity sha512-H7Ia8LcDN0FoiAzVhPFsOFfTVZilTriNE1uvYuwXRMdlRVbsmWWevetP/hlqZvN5pmZrvEON+SAsmsItRh7kAw==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+    mulmocast "^2.1.17"
+    mulmocast-viewer "^0.1.11"
+    uuid "^13.0.0"
 
 "@gui-chat-plugin/music@^0.0.1":
   version "0.0.1"
@@ -518,6 +564,16 @@
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/othello/-/othello-0.2.0.tgz#78838a679a4b325053181eef296fb40982713ca8"
   integrity sha512-hSV4o82NpZxPJaEomCoFrPftIcqlUZXdrEjs1bQIi0AwXOSsB7MKhF3jVfGyRy6akuZTifivlj/srmzZ0YwIoQ==
+
+"@gui-chat-plugin/present3d@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/present3d/-/present3d-0.0.2.tgz#788dca8258327d1268f577fb871358a2435e371c"
+  integrity sha512-QSzDTYiORnl0sN5Ajrj7TYg1rjHgUMumrJLA+p5TraQmv9ZgGKgfiGo3ppNQ6/KeG6zmBsgiQipzO4UYbmL1tg==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+    three "^0.172.0"
+    three-bvh-csg "^0.0.17"
+    three-mesh-bvh "^0.9.7"
 
 "@gui-chat-plugin/spreadsheet@^0.1.0":
   version "0.1.0"
@@ -4854,7 +4910,7 @@ puppeteer-core@24.35.0:
 
 puppeteer@^24.32.0, puppeteer@^24.35.0:
   version "24.35.0"
-  resolved "https://registry.npmjs.org/puppeteer/-/puppeteer-24.35.0.tgz"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-24.35.0.tgz#669ea2df1e20365124fff7c979fe286bb6bc58b4"
   integrity sha512-sbjB5JnJ+3nwgSdRM/bqkFXqLxRz/vsz0GRIeTlCk+j+fGpqaF2dId9Qp25rXz9zfhqnN9s0krek1M/C2GDKtA==
   dependencies:
     "@puppeteer/browsers" "2.11.1"
@@ -5082,7 +5138,7 @@ router@^2.2.0:
 
 rxjs@7.8.2:
   version "7.8.2"
-  resolved "https://registry.npmjs.org/rxjs/-/rxjs-7.8.2.tgz"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.8.2.tgz#955bc473ed8af11a002a2be52071bf475638607b"
   integrity sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==
   dependencies:
     tslib "^2.1.0"
@@ -5595,6 +5651,16 @@ three-mesh-bvh@^0.9.2:
   resolved "https://registry.npmjs.org/three-mesh-bvh/-/three-mesh-bvh-0.9.5.tgz"
   integrity sha512-MYpwzUWDxPAKGhSBFin9E/7K4AAHyIm4IfMZQ/3+Z/jq/swa2dAhXx0yUNDd9mjlhLuzXkMBTGDZioL2GSlIfQ==
 
+three-mesh-bvh@^0.9.7:
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/three-mesh-bvh/-/three-mesh-bvh-0.9.7.tgz#153c8c9cf49c337cd12b15a683958cb877567283"
+  integrity sha512-EYSJbykeAjhVxwZjuUYq/kelIbqBoV9sbAgvZ+j1xCgZyNYSkr51WDJWS4WIfK2OX6YcjBGoTicX4RoOVQzx0g==
+
+three@^0.172.0:
+  version "0.172.0"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.172.0.tgz#6944a72f8439e8f7e4b034c8539ec82f5ebe0082"
+  integrity sha512-6HMgMlzU97MsV7D/tY8Va38b83kz8YJX+BefKjspMNAv0Vx6dxMogHOrnRl/sbMIs3BPUKijPqDqJ/+UwJbIow==
+
 three@^0.181.1:
   version "0.181.2"
   resolved "https://registry.npmjs.org/three/-/three-0.181.2.tgz"
@@ -5882,7 +5948,7 @@ vue-drawing-canvas@^1.0.14:
 
 vue-router@^4.6.4:
   version "4.6.4"
-  resolved "https://registry.npmjs.org/vue-router/-/vue-router-4.6.4.tgz"
+  resolved "https://registry.yarnpkg.com/vue-router/-/vue-router-4.6.4.tgz#a0a9cb9ef811a106d249e4bb9313d286718020d8"
   integrity sha512-Hz9q5sa33Yhduglwz6g9skT8OBPii+4bFn88w6J+J4MfEo4KRRpmiNG/hHHkdbRFlLBOqxN8y8gf2Fb0MTUgVg==
   dependencies:
     "@vue/devtools-api" "^6.6.4"
@@ -6203,12 +6269,12 @@ zip-stream@^6.0.1:
 
 zod-to-json-schema@^3.20.0, zod-to-json-schema@^3.25.0:
   version "3.25.1"
-  resolved "https://registry.npmjs.org/zod-to-json-schema/-/zod-to-json-schema-3.25.1.tgz"
+  resolved "https://registry.yarnpkg.com/zod-to-json-schema/-/zod-to-json-schema-3.25.1.tgz#7f24962101a439ddade2bf1aeab3c3bfec7d84ba"
   integrity sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA==
 
 zod@^3.22.0, zod@^3.24.1:
   version "3.25.76"
-  resolved "https://registry.npmjs.org/zod/-/zod-3.25.76.tgz"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-3.25.76.tgz#26841c3f6fd22a6a2760e7ccb719179768471e34"
   integrity sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==
 
 "zod@^3.25 || ^4.0", zod@^4.3.5:
