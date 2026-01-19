@@ -73,6 +73,40 @@ GUIChatPluginXxx/
 mkdir -p ../GUIChatPluginXxx/src/{core,vue} ../GUIChatPluginXxx/demo ../GUIChatPluginXxx/.github/workflows
 ```
 
+### Step 1.5: テンプレートリポジトリからファイルをコピー（推奨）
+
+MulmoChatPluginQuiz をテンプレートとして使用すると効率的です：
+
+```bash
+cd ../GUIChatPluginXxx
+
+# テンプレートリポジトリをクローン（まだない場合）
+git clone https://github.com/receptron/MulmoChatPluginQuiz.git /tmp/MulmoChatPluginQuiz
+
+# 設定ファイルをコピー
+cp /tmp/MulmoChatPluginQuiz/tsconfig.json .
+cp /tmp/MulmoChatPluginQuiz/tsconfig.build.json .
+cp /tmp/MulmoChatPluginQuiz/eslint.config.js .
+cp /tmp/MulmoChatPluginQuiz/.gitignore .
+cp /tmp/MulmoChatPluginQuiz/index.html .
+cp /tmp/MulmoChatPluginQuiz/.github/workflows/pull_request.yaml .github/workflows/
+cp /tmp/MulmoChatPluginQuiz/src/style.css src/
+
+# package.json と vite.config.ts もコピーしてからプラグイン名を変更
+cp /tmp/MulmoChatPluginQuiz/package.json .
+cp /tmp/MulmoChatPluginQuiz/vite.config.ts .
+
+# package.json の name, description, keywords を変更
+# vite.config.ts の name を変更（例: GUIChatPluginQuiz → GUIChatPluginXxx）
+```
+
+または、ローカルにクローン済みの場合：
+
+```bash
+cp ../MulmoChatPluginQuiz/tsconfig.json .
+# ... 同様に他のファイルもコピー
+```
+
 ### Step 2: package.json 作成
 
 ```json
@@ -250,6 +284,10 @@ export default [
       ...tseslint.configs.recommended.rules,
       ...vuePlugin.configs["flat/recommended"].rules,
       "vue/multi-word-component-names": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
     },
   },
   {
@@ -878,3 +916,11 @@ yarn install
 - `@gui-chat-plugin/generate-image` - GenerateImage プラグイン
 - `@gui-chat-plugin/summarize-pdf` - SummarizePdf プラグイン
 - `@gui-chat-plugin/spreadsheet` - Spreadsheet プラグイン
+- `@gui-chat-plugin/scroll-to-anchor` - ScrollToAnchor プラグイン
+- `@gui-chat-plugin/set-image-style` - SetImageStyle プラグイン
+- `@gui-chat-plugin/switch-role` - SwitchRole プラグイン
+- `@gui-chat-plugin/camera` - Camera プラグイン
+- `@gui-chat-plugin/canvas` - Canvas プラグイン
+- `@gui-chat-plugin/edit-html` - EditHtml プラグイン
+- `@gui-chat-plugin/generate-html` - GenerateHtml プラグイン
+- `@gui-chat-plugin/html` - Html プラグイン
