@@ -498,6 +498,13 @@
     protobufjs "^7.5.3"
     yargs "^17.7.2"
 
+"@gui-chat-plugin/spreadsheet@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/spreadsheet/-/spreadsheet-0.1.0.tgz#616d363da21bb3adaedfb62c0cd2730466c3c6d8"
+  integrity sha512-0Ct9DJ6yCCeNNYVpazf72aUvsOKQOIm5W/5xGlrBuK/TF81+CDJuHDfevwiEw8c6r1yWqhuo+SoVPU3PL45Tcg==
+  dependencies:
+    xlsx "^0.18.5"
+
 "@hono/node-server@^1.19.7":
   version "1.19.8"
   resolved "https://registry.npmjs.org/@hono/node-server/-/node-server-1.19.8.tgz"

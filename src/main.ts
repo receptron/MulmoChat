@@ -7,5 +7,6 @@ import "@mulmochat-plugin/generate-image/style.css";
 import "@mulmochat-plugin/quiz/style.css";
 import "@mulmochat-plugin/form/style.css";
 import "@mulmochat-plugin/summarize-pdf/style.css";
+import "@gui-chat-plugin/spreadsheet/style.css";
 
 createApp(App).use(router).mount("#app");
