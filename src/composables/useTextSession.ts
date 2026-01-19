@@ -150,7 +150,6 @@ export function useTextSession(
       const tools = options.buildTools({
         startResponse: startResponse.value,
       });
-
       // Call stateless generate API with full conversation history
       const response = await fetch("/api/text/generate", {
         method: "POST",

@@ -1,13 +1,6 @@
-// Internal plugins
-import * as EditImagePlugin from "./models/editImage";
+// Internal plugins (not yet extracted to npm)
 import * as CameraPlugin from "./models/camera";
-import * as BrowsePlugin from "./models/browse";
-import * as MulmocastPlugin from "./models/mulmocast";
-import * as MapPlugin from "./models/map";
-import * as ExaPlugin from "./models/exa";
 import * as CanvasPlugin from "./models/canvas";
-import * as MarkdownPlugin from "./models/markdown";
-import * as Present3DPlugin from "./models/present3D";
 import * as HtmlPlugin from "./models/html";
 import * as GenerateHtmlPlugin from "./models/generateHtml";
 import * as EditHtmlPlugin from "./models/editHtml";
@@ -38,6 +31,13 @@ import OthelloPlugin from "@gui-chat-plugin/othello/vue";
 import GoPlugin from "@gui-chat-plugin/go/vue";
 import WeatherPlugin from "@gui-chat-plugin/weather/vue";
 import MusicPlugin from "@gui-chat-plugin/music/vue";
+import BrowsePlugin from "@gui-chat-plugin/browse/vue";
+import MapPlugin from "@gui-chat-plugin/map/vue";
+import ExaPlugin from "@gui-chat-plugin/exa/vue";
+import MarkdownPlugin from "@gui-chat-plugin/markdown/vue";
+import EditImagePlugin from "@gui-chat-plugin/edit-image/vue";
+import MulmocastPlugin from "@gui-chat-plugin/mulmocast/vue";
+import Present3DPlugin from "@gui-chat-plugin/present3d/vue";
 
 const pluginList = [
   // External plugins from npm packages
@@ -52,16 +52,16 @@ const pluginList = [
   GoPlugin,
   WeatherPlugin,
   MusicPlugin,
-  // Internal plugins
-  EditImagePlugin,
-  CameraPlugin,
   BrowsePlugin,
-  MulmocastPlugin,
   MapPlugin,
   ExaPlugin,
-  CanvasPlugin,
   MarkdownPlugin,
+  EditImagePlugin,
+  MulmocastPlugin,
   Present3DPlugin,
+  // Internal plugins (not yet extracted to npm)
+  CameraPlugin,
+  CanvasPlugin,
   HtmlPlugin,
   GenerateHtmlPlugin,
   EditHtmlPlugin,
