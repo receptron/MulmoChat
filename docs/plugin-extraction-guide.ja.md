@@ -124,6 +124,7 @@ grep "^import.*from" src/tools/views/${PLUGIN_NAME}.vue | grep -v "from \"\.\.\/
 PLUGIN_DIR=../GUIChatPlugin$(echo ${PLUGIN_NAME^})  # 最初の文字を大文字に
 mkdir -p ${PLUGIN_DIR}/src/{core,vue}
 mkdir -p ${PLUGIN_DIR}/demo
+mkdir -p ${PLUGIN_DIR}/.github/workflows
 
 # サブディレクトリがある場合
 # mkdir -p ${PLUGIN_DIR}/src/engine
@@ -135,7 +136,7 @@ mkdir -p ${PLUGIN_DIR}/demo
 
 ```json
 {
-  "name": "@your-scope/guichat-plugin-xxx",
+  "name": "@gui-chat-plugin/xxx",
   "version": "0.1.0",
   "description": "Xxx plugin for GUIChat",
   "type": "module",
@@ -780,6 +781,133 @@ rm ${PLUGIN_DIR}/src/engine/**/verify_*.ts 2>/dev/null
 
 エンジン内のファイルで `../` などの相対パスがある場合は、新しい構造に合わせて修正してください。
 
+### Phase 9: GitHub Actions CI 設定
+
+#### .github/workflows/pull_request.yaml
+
+```yaml
+name: Node.js CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+    - run: yarn install
+    - run: yarn run typecheck
+    - run: yarn run lint
+    - run: yarn run build
+    - name: Update version with timestamp
+      run: |
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        VERSION=$(node -p "require('./package.json').version")
+        NEW_VERSION="${VERSION}-${TIMESTAMP}"
+        npm version $NEW_VERSION --no-git-tag-version
+    - run: npm pack
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: npm-package
+        path: "*.tgz"
+```
+
+### Phase 10: README.npm.md 作成
+
+npm 公開時に使用する README ファイルを作成します。
+
+**ファイル: `README.npm.md`**
+
+```markdown
+# @gui-chat-plugin/xxx
+
+A plugin for [MulmoChat](https://github.com/receptron/MulmoChat) - a multi-modal voice chat application with OpenAI's GPT-4 Realtime API.
+
+## What this plugin does
+
+{プラグインの説明を記載}
+
+## Installation
+
+\`\`\`bash
+yarn add @gui-chat-plugin/xxx
+\`\`\`
+
+## Usage
+
+### Vue Implementation (for MulmoChat)
+
+\`\`\`typescript
+// In src/tools/index.ts
+import Plugin from "@gui-chat-plugin/xxx/vue";
+
+const pluginList = [
+  // ... other plugins
+  Plugin,
+];
+
+// In src/main.ts
+import "@gui-chat-plugin/xxx/style.css";
+\`\`\`
+
+### Core Only (Framework-agnostic)
+
+\`\`\`typescript
+import { pluginCore, TOOL_NAME } from "@gui-chat-plugin/xxx";
+// or
+import pluginCore from "@gui-chat-plugin/xxx";
+\`\`\`
+
+## Package Exports
+
+| Export | Description |
+|--------|-------------|
+| `@gui-chat-plugin/xxx` | Core (framework-agnostic) |
+| `@gui-chat-plugin/xxx/vue` | Vue implementation with UI components |
+| `@gui-chat-plugin/xxx/style.css` | Tailwind CSS styles |
+
+## Development
+
+\`\`\`bash
+# Install dependencies
+yarn install
+
+# Start dev server (http://localhost:5173/)
+yarn dev
+
+# Build
+yarn build
+
+# Type check
+yarn typecheck
+
+# Lint
+yarn lint
+\`\`\`
+
+## License
+
+MIT
+```
+
 ---
 
 ## MulmoChat への統合
@@ -789,7 +917,7 @@ rm ${PLUGIN_DIR}/src/engine/**/verify_*.ts 2>/dev/null
 ```json
 {
   "dependencies": {
-    "@your-scope/guichat-plugin-xxx": "file:../GUIChatPluginXxx"
+    "@gui-chat-plugin/xxx": "file:../GUIChatPluginXxx"
   }
 }
 ```
@@ -801,7 +929,7 @@ rm ${PLUGIN_DIR}/src/engine/**/verify_*.ts 2>/dev/null
 // import * as XxxPlugin from "./models/xxx";
 
 // 2. 外部プラグインセクションにインポートを追加
-import XxxPlugin from "@your-scope/guichat-plugin-xxx/vue";
+import XxxPlugin from "@gui-chat-plugin/xxx/vue";
 
 // 3. pluginList を更新
 const pluginList = [
@@ -901,8 +1029,10 @@ export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // �
 
 ### 新しいプラグイン
 
-- [ ] `package.json` が正しく設定されている
+- [ ] `package.json` が正しく設定されている（`@gui-chat-plugin/xxx` 形式）
 - [ ] 必要な npm 依存パッケージが `dependencies` に追加されている
+- [ ] `.github/workflows/pull_request.yaml` が作成されている
+- [ ] `README.npm.md` が作成されている
 - [ ] `yarn install` が成功する
 - [ ] `yarn typecheck` がエラーなしで完了する
 - [ ] `yarn lint` がエラーなしで完了する
@@ -923,10 +1053,10 @@ export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // �
 
 | パッケージ名 | リポジトリ | 備考 |
 |------------|-----------|------|
-| `@mulmochat-plugin/quiz` | MulmoChatPluginQuiz | jsonData を使用 |
-| `@mulmochat-plugin/form` | MulmoChatPluginForm | フォームプラグイン |
-| `@mulmochat-plugin/generate-image` | MulmoChatPluginGenerateImage | 画像生成 |
-| `@mulmochat-plugin/summarize-pdf` | MulmoChatPluginSummarizePdf | inputHandlers 使用 |
+| `@gui-chat-plugin/quiz` | GUIChatPluginQuiz | jsonData を使用 |
+| `@gui-chat-plugin/form` | GUIChatPluginForm | フォームプラグイン |
+| `@gui-chat-plugin/generate-image` | GUIChatPluginGenerateImage | 画像生成 |
+| `@gui-chat-plugin/summarize-pdf` | GUIChatPluginSummarizePdf | inputHandlers 使用 |
 | `@gui-chat-plugin/spreadsheet` | GUIChatPluginSpreadsheet | engine サブディレクトリあり |
 
 これらのプラグインのソースコードを参考にしてください。

@@ -43,6 +43,10 @@ GUIChatPluginXxx/
 ├── vite.config.ts
 ├── eslint.config.js
 ├── index.html
+├── README.npm.md          # npm 公開用 README
+├── .github/
+│   └── workflows/
+│       └── pull_request.yaml  # CI 設定
 ├── src/
 │   ├── index.ts           # メインエントリポイント（core を再エクスポート）
 │   ├── style.css          # Tailwind CSS インポート
@@ -66,14 +70,14 @@ GUIChatPluginXxx/
 ### Step 1: ディレクトリ作成
 
 ```bash
-mkdir -p ../GUIChatPluginXxx/src/{core,vue} ../GUIChatPluginXxx/demo
+mkdir -p ../GUIChatPluginXxx/src/{core,vue} ../GUIChatPluginXxx/demo ../GUIChatPluginXxx/.github/workflows
 ```
 
 ### Step 2: package.json 作成
 
 ```json
 {
-  "name": "@your-scope/guichat-plugin-xxx",
+  "name": "@gui-chat-plugin/xxx",
   "version": "0.1.0",
   "description": "Xxx plugin for GUIChat",
   "type": "module",
@@ -625,7 +629,132 @@ createApp(App).mount("#app");
 </html>
 ```
 
-### Step 8: 検証
+### Step 8: GitHub Actions CI 設定
+
+#### .github/workflows/pull_request.yaml
+
+```yaml
+name: Node.js CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+    - run: yarn install
+    - run: yarn run typecheck
+    - run: yarn run lint
+    - run: yarn run build
+    - name: Update version with timestamp
+      run: |
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        VERSION=$(node -p "require('./package.json').version")
+        NEW_VERSION="${VERSION}-${TIMESTAMP}"
+        npm version $NEW_VERSION --no-git-tag-version
+    - run: npm pack
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: npm-package
+        path: "*.tgz"
+```
+
+### Step 9: README.npm.md 作成
+
+npm 公開時に使用する README ファイルを作成します：
+
+```markdown
+# @gui-chat-plugin/xxx
+
+A plugin for [MulmoChat](https://github.com/receptron/MulmoChat) - a multi-modal voice chat application with OpenAI's GPT-4 Realtime API.
+
+## What this plugin does
+
+{プラグインの説明を記載}
+
+## Installation
+
+\`\`\`bash
+yarn add @gui-chat-plugin/xxx
+\`\`\`
+
+## Usage
+
+### Vue Implementation (for MulmoChat)
+
+\`\`\`typescript
+// In src/tools/index.ts
+import Plugin from "@gui-chat-plugin/xxx/vue";
+
+const pluginList = [
+  // ... other plugins
+  Plugin,
+];
+
+// In src/main.ts
+import "@gui-chat-plugin/xxx/style.css";
+\`\`\`
+
+### Core Only (Framework-agnostic)
+
+\`\`\`typescript
+import { pluginCore, TOOL_NAME } from "@gui-chat-plugin/xxx";
+// or
+import pluginCore from "@gui-chat-plugin/xxx";
+\`\`\`
+
+## Package Exports
+
+| Export | Description |
+|--------|-------------|
+| `@gui-chat-plugin/xxx` | Core (framework-agnostic) |
+| `@gui-chat-plugin/xxx/vue` | Vue implementation with UI components |
+| `@gui-chat-plugin/xxx/style.css` | Tailwind CSS styles |
+
+## Development
+
+\`\`\`bash
+# Install dependencies
+yarn install
+
+# Start dev server (http://localhost:5173/)
+yarn dev
+
+# Build
+yarn build
+
+# Type check
+yarn typecheck
+
+# Lint
+yarn lint
+\`\`\`
+
+## License
+
+MIT
+```
+
+### Step 10: 検証
 
 ```bash
 cd ../GUIChatPluginXxx
@@ -634,14 +763,14 @@ yarn typecheck
 yarn lint
 ```
 
-### Step 9: MulmoChat への統合
+### Step 11: MulmoChat への統合
 
 #### package.json に追加
 
 ```json
 {
   "dependencies": {
-    "@your-scope/guichat-plugin-xxx": "file:../GUIChatPluginXxx"
+    "@gui-chat-plugin/xxx": "file:../GUIChatPluginXxx"
   }
 }
 ```
@@ -653,7 +782,7 @@ yarn lint
 // import * as XxxPlugin from "./models/xxx";
 
 // 外部プラグインとしてインポート
-import XxxPlugin from "@your-scope/guichat-plugin-xxx/vue";
+import XxxPlugin from "@gui-chat-plugin/xxx/vue";
 
 const pluginList = [
   // External plugins from npm packages
@@ -721,17 +850,25 @@ yarn install
 
 ## 完了チェックリスト
 
+### 新しいプラグイン
+
+- [ ] `package.json` が正しく設定されている（`@gui-chat-plugin/xxx` 形式）
+- [ ] `.github/workflows/pull_request.yaml` が作成されている
+- [ ] `README.npm.md` が作成されている
 - [ ] `yarn typecheck` がエラーなしで完了
 - [ ] `yarn lint` がエラーなしで完了
 - [ ] `yarn dev` でデモアプリが正常に動作
+
+### MulmoChat
+
 - [ ] MulmoChat で `yarn typecheck` がエラーなしで完了
 - [ ] MulmoChat で `yarn lint` がエラーなしで完了
 - [ ] MulmoChat で `yarn run dev` でプラグインが正常に動作
 
 ## 参考: 既存の独立化済みプラグイン
 
-- `@mulmochat-plugin/quiz` - Quiz プラグイン
-- `@mulmochat-plugin/form` - Form プラグイン
-- `@mulmochat-plugin/generate-image` - GenerateImage プラグイン
-- `@mulmochat-plugin/summarize-pdf` - SummarizePdf プラグイン
-- `@anthropic/guichat-plugin-spreadsheet` - Spreadsheet プラグイン
+- `@gui-chat-plugin/quiz` - Quiz プラグイン
+- `@gui-chat-plugin/form` - Form プラグイン
+- `@gui-chat-plugin/generate-image` - GenerateImage プラグイン
+- `@gui-chat-plugin/summarize-pdf` - SummarizePdf プラグイン
+- `@gui-chat-plugin/spreadsheet` - Spreadsheet プラグイン
