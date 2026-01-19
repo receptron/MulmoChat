@@ -34,7 +34,7 @@
             <span
               :class="[
                 'flex-1 truncate',
-                item.completed ? 'line-through text-gray-500' : '',
+                item.completed ? 'line-through text-gray-500' : 'text-white',
               ]"
             >
               {{ item.text }}

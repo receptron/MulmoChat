@@ -34,7 +34,7 @@
           <div class="flex-1 min-w-0">
             <p
               :class="[
-                'text-gray-800 dark:text-gray-200 break-words',
+                'text-white break-words',
                 item.completed
                   ? 'line-through text-gray-500 dark:text-gray-500'
                   : '',
