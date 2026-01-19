@@ -791,6 +791,12 @@ const pluginList = [
 ];
 ```
 
+#### src/main.ts に CSS インポートを追加
+
+```typescript
+import "@gui-chat-plugin/xxx/style.css";
+```
+
 #### 依存関係を更新
 
 ```bash
