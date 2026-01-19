@@ -98,6 +98,10 @@ cp /tmp/MulmoChatPluginQuiz/vite.config.ts .
 
 # package.json の name, description, keywords を変更
 # vite.config.ts の name を変更（例: GUIChatPluginQuiz → GUIChatPluginXxx）
+
+# README.md もコピーして内容を変更
+cp /tmp/MulmoChatPluginQuiz/README.md .
+# README.md のプラグイン名、説明、Test Prompts を変更
 ```
 
 または、ローカルにクローン済みの場合：
