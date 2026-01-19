@@ -498,12 +498,55 @@
     protobufjs "^7.5.3"
     yargs "^17.7.2"
 
+"@gui-chat-plugin/go@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/go/-/go-0.1.0.tgz#e92e967285f0744d933c636730ce6cd7515301af"
+  integrity sha512-fPY8VaGG04nCC/3ecf3mtlw69jFyfRPKVcI5WIRDnU6PsLc5JHPagGSblhjAcZ6dSFmKjAQ1JfGVmczmwh0NCw==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+
+"@gui-chat-plugin/music@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/music/-/music-0.0.1.tgz#bffcbf6ae513c185400f4e5db434131e94b42fc2"
+  integrity sha512-VyscTRCfDyiIhaQfKsxiP5xNa8pO+tyHKoSY1k27/oIvUy/lWARyGT68/UkNF50j094EcfK+d7+dmHgPpa0J+w==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+    opensheetmusicdisplay "^1.9.3"
+    osmd-audio-player "^0.7.0"
+
+"@gui-chat-plugin/othello@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/othello/-/othello-0.2.0.tgz#78838a679a4b325053181eef296fb40982713ca8"
+  integrity sha512-hSV4o82NpZxPJaEomCoFrPftIcqlUZXdrEjs1bQIi0AwXOSsB7MKhF3jVfGyRy6akuZTifivlj/srmzZ0YwIoQ==
+
 "@gui-chat-plugin/spreadsheet@^0.1.0":
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/spreadsheet/-/spreadsheet-0.1.0.tgz#616d363da21bb3adaedfb62c0cd2730466c3c6d8"
   integrity sha512-0Ct9DJ6yCCeNNYVpazf72aUvsOKQOIm5W/5xGlrBuK/TF81+CDJuHDfevwiEw8c6r1yWqhuo+SoVPU3PL45Tcg==
   dependencies:
     xlsx "^0.18.5"
+
+"@gui-chat-plugin/text-response@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/text-response/-/text-response-0.1.0.tgz#a8c973f198b44ae7b7d3352afda098cd81fa00ff"
+  integrity sha512-SHtfTPMIgpCPLKnahvW48q6TRfgKDr77putXvAWPGc2LwuQezHmLG+gXqvxlFvvUGyJeCSyC+xYESE3H/uUigQ==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+    marked "^15.0.0"
+
+"@gui-chat-plugin/todo@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/todo/-/todo-0.1.0.tgz#74534b0a4c8f57d38d2897fd7d529fbfacadff5d"
+  integrity sha512-YpLuX8MwvRLIY7G/85vsWBTG/k+X1K/0kDhUaDOQnNSMS2I8JBSa9yR9pguvBfKuo/xi/wOKNgW2vN9zXca5VQ==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
+
+"@gui-chat-plugin/weather@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/weather/-/weather-0.0.1.tgz#fa5e750f778ab83e100c5122e65ee8ba1939f377"
+  integrity sha512-HDHW4jQvQz4zu//z10Edq4nO0RWHk7pjBR1A7nLCw9/R6jyX33b0dP9CzktszCcnKa00EygmPDR7EVcjEMbp5A==
+  dependencies:
+    gui-chat-protocol "^0.0.1"
 
 "@hono/node-server@^1.19.7":
   version "1.19.8"
@@ -3989,6 +4032,11 @@ make-fetch-happen@^13.0.0:
     proc-log "^4.2.0"
     promise-retry "^2.0.1"
     ssri "^10.0.0"
+
+marked@^15.0.0:
+  version "15.0.12"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-15.0.12.tgz#30722c7346e12d0a2d0207ab9b0c4f0102d86c4e"
+  integrity sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==
 
 marked@^17.0.1:
   version "17.0.1"
