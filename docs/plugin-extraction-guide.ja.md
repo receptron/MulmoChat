@@ -944,7 +944,13 @@ const pluginList = [
 ];
 ```
 
-### Step 3: 依存関係を更新
+### Step 3: src/main.ts に CSS インポートを追加
+
+```typescript
+import "@gui-chat-plugin/xxx/style.css";
+```
+
+### Step 4: 依存関係を更新
 
 ```bash
 cd ../MulmoChat

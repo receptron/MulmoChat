@@ -9,7 +9,6 @@ import * as OthelloPlugin from "./models/othello";
 import * as GoPlugin from "./models/go";
 import * as CanvasPlugin from "./models/canvas";
 import * as MarkdownPlugin from "./models/markdown";
-import * as SpreadsheetPlugin from "./models/spreadsheet";
 import * as Present3DPlugin from "./models/present3D";
 import * as MusicPlugin from "./models/music";
 import * as HtmlPlugin from "./models/html";
@@ -38,6 +37,7 @@ import QuizPlugin from "@mulmochat-plugin/quiz/vue";
 import GenerateImagePlugin from "@mulmochat-plugin/generate-image/vue";
 import FormPlugin from "@mulmochat-plugin/form/vue";
 import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf/vue";
+import SpreadsheetPlugin from "@gui-chat-plugin/spreadsheet/vue";
 
 const pluginList = [
   // External plugins from npm packages
@@ -45,6 +45,7 @@ const pluginList = [
   GenerateImagePlugin,
   FormPlugin,
   SummarizePdfPlugin,
+  SpreadsheetPlugin,
   // Internal plugins
   EditImagePlugin,
   CameraPlugin,
@@ -56,7 +57,6 @@ const pluginList = [
   GoPlugin,
   CanvasPlugin,
   MarkdownPlugin,
-  SpreadsheetPlugin,
   Present3DPlugin,
   MusicPlugin,
   HtmlPlugin,
