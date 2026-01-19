@@ -5,21 +5,15 @@ import * as BrowsePlugin from "./models/browse";
 import * as MulmocastPlugin from "./models/mulmocast";
 import * as MapPlugin from "./models/map";
 import * as ExaPlugin from "./models/exa";
-import * as OthelloPlugin from "./models/othello";
-import * as GoPlugin from "./models/go";
 import * as CanvasPlugin from "./models/canvas";
 import * as MarkdownPlugin from "./models/markdown";
 import * as Present3DPlugin from "./models/present3D";
-import * as MusicPlugin from "./models/music";
 import * as HtmlPlugin from "./models/html";
 import * as GenerateHtmlPlugin from "./models/generateHtml";
 import * as EditHtmlPlugin from "./models/editHtml";
-import * as TodoPlugin from "./models/todo";
 import * as SwitchRolePlugin from "./models/switchRole";
-import * as TextResponsePlugin from "./models/textResponse";
 import * as SetImageStylePlugin from "./models/setImageStyle";
 import * as ScrollToAnchorPlugin from "./models/scrollToAnchor";
-import * as WeatherPlugin from "./models/weather";
 import type { StartApiResponse } from "../../server/types";
 import type {
   ToolContext,
@@ -38,6 +32,12 @@ import GenerateImagePlugin from "@mulmochat-plugin/generate-image/vue";
 import FormPlugin from "@mulmochat-plugin/form/vue";
 import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf/vue";
 import SpreadsheetPlugin from "@gui-chat-plugin/spreadsheet/vue";
+import TodoPlugin from "@gui-chat-plugin/todo/vue";
+import TextResponsePlugin from "@gui-chat-plugin/text-response/vue";
+import OthelloPlugin from "@gui-chat-plugin/othello/vue";
+import GoPlugin from "@gui-chat-plugin/go/vue";
+import WeatherPlugin from "@gui-chat-plugin/weather/vue";
+import MusicPlugin from "@gui-chat-plugin/music/vue";
 
 const pluginList = [
   // External plugins from npm packages
@@ -46,6 +46,12 @@ const pluginList = [
   FormPlugin,
   SummarizePdfPlugin,
   SpreadsheetPlugin,
+  TodoPlugin,
+  TextResponsePlugin,
+  OthelloPlugin,
+  GoPlugin,
+  WeatherPlugin,
+  MusicPlugin,
   // Internal plugins
   EditImagePlugin,
   CameraPlugin,
@@ -53,21 +59,15 @@ const pluginList = [
   MulmocastPlugin,
   MapPlugin,
   ExaPlugin,
-  OthelloPlugin,
-  GoPlugin,
   CanvasPlugin,
   MarkdownPlugin,
   Present3DPlugin,
-  MusicPlugin,
   HtmlPlugin,
   GenerateHtmlPlugin,
   EditHtmlPlugin,
-  TodoPlugin,
   SwitchRolePlugin,
-  TextResponsePlugin,
   SetImageStylePlugin,
   ScrollToAnchorPlugin,
-  WeatherPlugin,
 ];
 
 export const getPluginList = () => pluginList;
