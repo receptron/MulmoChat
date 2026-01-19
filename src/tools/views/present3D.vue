@@ -47,7 +47,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { Present3DToolData } from "../models/present3D";
 import { parseShapeScript } from "../../utils/shapescript/parser";
 import { astToThreeJS } from "../../utils/shapescript/toThreeJS";

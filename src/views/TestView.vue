@@ -176,8 +176,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import type { ToolResultComplete } from "gui-chat-protocol/vue";
 import { getPluginList, toolExecute, getToolPlugin } from "../tools";
-import type { ToolResultComplete, ToolPlugin } from "../tools";
+import type { ToolPlugin } from "../tools/types";
 
 const plugins = computed(() => {
   return getPluginList()

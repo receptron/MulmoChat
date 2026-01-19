@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import * as THREE from "three";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { Present3DToolData } from "../models/present3D";
 import { parseShapeScript } from "../../utils/shapescript/parser";
 import { astToThreeJS } from "../../utils/shapescript/toThreeJS";

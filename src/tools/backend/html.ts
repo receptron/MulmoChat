@@ -2,7 +2,7 @@
  * Backend API calls for HTML generation plugins
  */
 
-import type { ToolContext } from "../types";
+import type { ToolContext } from "gui-chat-protocol/vue";
 import { getRawPluginConfig } from "./config";
 
 export type HtmlBackend = "claude" | "gemini";

@@ -31,7 +31,7 @@ import ImageGenSettings, {
   type ImageGenerationConfigValue,
 } from "./ImageGenSettings.vue";
 import MulmocastSettings from "./MulmocastSettings.vue";
-import type { BackendType } from "../../tools/backendTypes";
+import type { BackendType } from "gui-chat-protocol/vue";
 
 const props = defineProps<{
   textLLMBackend: "claude" | "gemini";

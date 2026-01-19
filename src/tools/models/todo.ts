@@ -1,5 +1,6 @@
 /* global localStorage */
-import { ToolPlugin, ToolContext, ToolResult } from "../types";
+import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
+import type { ToolPlugin } from "../types";
 import TodoView from "../views/todo.vue";
 import TodoPreview from "../previews/todo.vue";
 

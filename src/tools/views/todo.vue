@@ -84,7 +84,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { TodoToolData, TodoItem } from "../models/todo";
 
 const STORAGE_KEY = "mulmo_todo_list";

@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { TodoToolData } from "../models/todo";
 
 const props = defineProps<{

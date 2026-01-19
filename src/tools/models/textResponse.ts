@@ -1,4 +1,5 @@
-import type { ToolPlugin, ToolContext } from "../types";
+import type { ToolContext } from "gui-chat-protocol/vue";
+import type { ToolPlugin } from "../types";
 import TextResponseView from "../views/TextResponseView.vue";
 import TextResponsePreview from "../previews/TextResponsePreview.vue";
 

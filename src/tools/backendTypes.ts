@@ -1,17 +1,9 @@
 /**
  * Backend type definitions for plugin architecture
  * These types define what backend services are available and their settings
+ *
+ * For BackendType, import directly from "gui-chat-protocol/vue".
  */
-
-// Backend types that plugins can declare they use
-export type BackendType =
-  | "textLLM"
-  | "imageGen"
-  | "audio"
-  | "search"
-  | "browse"
-  | "map"
-  | "mulmocast";
 
 // Backend settings for each type (managed by app layer)
 // Provider names match current codebase conventions

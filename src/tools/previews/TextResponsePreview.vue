@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ToolResultComplete } from "../types";
+import type { ToolResultComplete } from "gui-chat-protocol/vue";
 import type { TextResponseData } from "../models/textResponse";
 
 const props = defineProps<{

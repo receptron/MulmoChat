@@ -1,4 +1,5 @@
-import { ToolPlugin, ToolContext, ToolResult } from "../types";
+import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
+import type { ToolPlugin } from "../types";
 import CanvasView from "../views/canvas.vue";
 import ImagePreview from "../previews/image.vue";
 import type { ImageToolData } from "../utils";

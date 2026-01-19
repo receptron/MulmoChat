@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { marked } from "marked";
-import type { ToolResult, ToolResultComplete } from "../types";
+import type { ToolResult, ToolResultComplete } from "gui-chat-protocol/vue";
 import type { TextResponseData } from "../models/textResponse";
 
 const props = defineProps<{

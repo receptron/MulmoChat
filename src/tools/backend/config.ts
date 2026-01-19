@@ -2,7 +2,7 @@
  * Shared config utilities for plugins
  */
 
-import type { ToolContext } from "../types";
+import type { ToolContext } from "gui-chat-protocol/vue";
 
 /**
  * Get raw plugin config from context via app.getConfig

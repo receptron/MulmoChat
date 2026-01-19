@@ -181,7 +181,7 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted, watch } from "vue";
 import { v4 as uuidv4 } from "uuid";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { MulmocastToolData } from "../models/mulmocast";
 import { MulmoViewer, type ViewerData } from "mulmocast-viewer";
 

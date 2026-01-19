@@ -1,4 +1,5 @@
-import { ToolPlugin, ToolContext, ToolResult } from "../types";
+import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
+import type { ToolPlugin } from "../types";
 import { playGo, Command, Side, GoState } from "../logic/goLogic";
 import GoView from "../views/go.vue";
 import GoPreview from "../previews/go.vue";
