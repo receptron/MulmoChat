@@ -122,7 +122,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import * as XLSX from "xlsx";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { SpreadsheetToolData } from "../models/spreadsheet";
 import {
   SpreadsheetEngine,

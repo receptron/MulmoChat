@@ -1,5 +1,6 @@
 /* global document, navigator */
-import { ToolPlugin, ToolContext, ToolResult } from "../types";
+import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
+import type { ToolPlugin } from "../types";
 import ImageView from "../views/image.vue";
 import ImagePreview from "../previews/image.vue";
 import type { ImageToolData } from "../utils";

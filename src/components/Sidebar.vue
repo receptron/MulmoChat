@@ -510,7 +510,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick, computed, onMounted, onUnmounted } from "vue";
-import type { ToolResult } from "../tools";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import { BackendSettings } from "./settings";
 import {
   getToolPlugin,

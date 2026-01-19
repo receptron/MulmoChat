@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { BrowseToolData, BrowseJsonData } from "../models/browse";
 import TextSelectionMenu from "../../components/TextSelectionMenu.vue";
 

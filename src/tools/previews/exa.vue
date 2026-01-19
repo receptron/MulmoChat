@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { ExaJsonData } from "../models/exa";
 
 defineProps<{

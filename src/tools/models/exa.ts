@@ -1,4 +1,5 @@
-import { ToolPlugin, ToolContext, ToolResult } from "../types";
+import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
+import type { ToolPlugin } from "../types";
 import ExaView from "../views/exa.vue";
 import ExaPreview from "../previews/exa.vue";
 import type { ExaSearchResult } from "../backend";

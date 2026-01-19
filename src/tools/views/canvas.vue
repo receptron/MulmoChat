@@ -96,7 +96,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue";
 import VueDrawingCanvas from "vue-drawing-canvas";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { ImageToolData } from "../utils";
 
 interface CanvasDrawingState {

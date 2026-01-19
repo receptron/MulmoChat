@@ -391,7 +391,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import type { WeatherToolData, WeatherJsonData } from "../models/weather";
 import TemperatureChart from "./components/TemperatureChart.vue";
 

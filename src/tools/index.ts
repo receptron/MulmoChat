@@ -1,3 +1,4 @@
+// Internal plugins
 import * as EditImagePlugin from "./models/editImage";
 import * as CameraPlugin from "./models/camera";
 import * as BrowsePlugin from "./models/browse";
@@ -11,7 +12,7 @@ import * as MarkdownPlugin from "./models/markdown";
 import * as SpreadsheetPlugin from "./models/spreadsheet";
 import * as Present3DPlugin from "./models/present3D";
 import * as MusicPlugin from "./models/music";
-// import * as HtmlPlugin from "./models/html";
+import * as HtmlPlugin from "./models/html";
 import * as GenerateHtmlPlugin from "./models/generateHtml";
 import * as EditHtmlPlugin from "./models/editHtml";
 import * as TodoPlugin from "./models/todo";
@@ -21,34 +22,30 @@ import * as SetImageStylePlugin from "./models/setImageStyle";
 import * as ScrollToAnchorPlugin from "./models/scrollToAnchor";
 import * as WeatherPlugin from "./models/weather";
 import type { StartApiResponse } from "../../server/types";
-import { v4 as uuidv4 } from "uuid";
-import { getRole } from "../config/roles";
 import type {
   ToolContext,
-  ToolContextApp,
-  ToolResult,
   ToolResultComplete,
-  ToolPlugin,
-} from "./types";
-import type { BackendType } from "./backendTypes";
+  BackendType,
+  FileInputHandler,
+  ClipboardImageInputHandler,
+} from "gui-chat-protocol/vue";
+import { v4 as uuidv4 } from "uuid";
+import { getRole } from "../config/roles";
+import type { ToolPlugin } from "./types";
 
 // External plugins from npm packages
-import GenerateImagePlugin from "@mulmochat-plugin/generate-image/vue";
 import QuizPlugin from "@mulmochat-plugin/quiz/vue";
+import GenerateImagePlugin from "@mulmochat-plugin/generate-image/vue";
 import FormPlugin from "@mulmochat-plugin/form/vue";
 import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf/vue";
 
-export type {
-  ToolContext,
-  ToolContextApp,
-  ToolResult,
-  ToolResultComplete,
-  ToolPlugin,
-  BackendType,
-};
-
 const pluginList = [
+  // External plugins from npm packages
+  QuizPlugin,
   GenerateImagePlugin,
+  FormPlugin,
+  SummarizePdfPlugin,
+  // Internal plugins
   EditImagePlugin,
   CameraPlugin,
   BrowsePlugin,
@@ -61,13 +58,10 @@ const pluginList = [
   MarkdownPlugin,
   SpreadsheetPlugin,
   Present3DPlugin,
-  QuizPlugin,
-  FormPlugin,
   MusicPlugin,
-  // HtmlPlugin,
+  HtmlPlugin,
   GenerateHtmlPlugin,
   EditHtmlPlugin,
-  SummarizePdfPlugin,
   TodoPlugin,
   SwitchRolePlugin,
   TextResponsePlugin,
@@ -251,7 +245,7 @@ export const getFileInputPlugins = () => {
       )!;
       return {
         toolName: plugin.plugin.toolDefinition.name,
-        handler: fileHandler as import("./types").FileInputHandler,
+        handler: fileHandler as FileInputHandler,
       };
     });
 };
@@ -270,7 +264,7 @@ export const getClipboardImagePlugins = () => {
       )!;
       return {
         toolName: plugin.plugin.toolDefinition.name,
-        handler: handler as import("./types").ClipboardImageInputHandler,
+        handler: handler as ClipboardImageInputHandler,
       };
     });
 };

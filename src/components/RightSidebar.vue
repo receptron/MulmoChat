@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick, computed } from "vue";
-import type { ToolResult } from "../tools";
+import type { ToolResult } from "gui-chat-protocol/vue";
 
 interface ToolCallHistoryItem {
   toolName: string;

@@ -2,7 +2,7 @@
  * Shared image generation functions used across multiple plugins
  */
 
-import type { ToolContext, ToolResult } from "../types";
+import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
 import type { ImageToolData } from "../utils/imageTypes";
 import type { ImageGenerationConfigValue } from "../backendTypes";
 import { getRawPluginConfig } from "./config";

@@ -119,8 +119,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
+import type { ToolResult } from "gui-chat-protocol/vue";
 import { toolExecute, getToolPlugin } from "../tools";
-import type { ToolResult } from "../tools";
 import Sidebar from "../components/Sidebar.vue";
 import RightSidebar from "../components/RightSidebar.vue";
 import { useSessionTransport } from "../composables/useSessionTransport";

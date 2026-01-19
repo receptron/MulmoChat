@@ -1,5 +1,9 @@
 import { ref, type Ref } from "vue";
-import type { ToolContext, ToolResult, ToolContextApp } from "../tools";
+import type {
+  ToolContext,
+  ToolResult,
+  ToolContextApp,
+} from "gui-chat-protocol/vue";
 import type { UserPreferencesState } from "./useUserPreferences";
 import { SESSION_CONFIG } from "../config/session";
 import { v4 as uuidv4 } from "uuid";

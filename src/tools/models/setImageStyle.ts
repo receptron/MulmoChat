@@ -1,4 +1,5 @@
-import { ToolPlugin, ToolContext, ToolResult } from "../types";
+import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
+import type { ToolPlugin } from "../types";
 import type { ImageGenerationConfigValue } from "../backendTypes";
 import SetImageStylePreview from "../previews/setImageStyle.vue";
 

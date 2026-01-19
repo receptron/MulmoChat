@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import type { ToolResult } from "../types";
+import type { ToolResult } from "gui-chat-protocol/vue";
 
 const props = defineProps<{
   selectedResult: ToolResult | null;
