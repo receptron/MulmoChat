@@ -89,7 +89,7 @@
               selectedResult.toolName &&
               getToolPlugin(selectedResult.toolName)?.viewComponent
             "
-            :is="getToolPlugin(selectedResult.toolName!).viewComponent"
+            :is="getToolPlugin(selectedResult.toolName!)!.viewComponent"
             :key="selectedResult.uuid"
             :selected-result="selectedResult"
             :send-text-message="sendTextMessage"
