@@ -2,6 +2,24 @@
 
 このドキュメントでは、GUIChat/MulmoChat のプラグインを新規開発するための完全なガイドを提供します。人間でも AI でもワンショットで実装できることを目指しています。
 
+## このガイドの範囲
+
+### このガイドが提供するもの
+
+- **プラグイン構造**: ディレクトリ構成、ファイル命名規則、エクスポートパターン
+- **型定義パターン**: ToolPluginCore、ToolResult、ToolContext の使い方
+- **Vue コンポーネント**: View/Preview コンポーネントの props と基本構造
+- **ビルド設定**: package.json、vite.config.ts、tsconfig.json の設定方法
+- **統合パターン**: context API、backends、isEnabled の使い方
+
+### 開発者が用意するもの
+
+- **機能仕様**: プラグインが何をするか（パラメータ、動作、出力）
+- **ドメインロジック**: ゲームルール、計算アルゴリズム、データ変換など
+- **UI 要件**: 表示するコンテンツ、インタラクション、デザイン
+
+このガイドは「プラグインの作り方」を教えますが、「何を作るか」は要件定義から得る必要があります。
+
 ## 目次
 
 1. [gui-chat-protocol とは](#gui-chat-protocol-とは)
@@ -58,6 +76,7 @@ interface ToolPluginCore<T, J, A, H, S> {
   toolDefinition: ToolDefinition;    // LLM 用ツール定義
   execute: (context: ToolContext, args: A) => Promise<ToolResult<T, J>>;
   generatingMessage: string;          // 処理中に表示するメッセージ
+  waitingMessage?: string;            // 結果表示前に LLM に伝えるメッセージ
   isEnabled: (startResponse?: S) => boolean;  // プラグインが有効か
   systemPrompt?: string;              // LLM への追加指示
   samples?: ToolSample[];             // テスト用サンプル
@@ -1142,7 +1161,21 @@ export const SAMPLES: ToolSample[] = [
     name: "Mountain Lake",
     args: {
       imageData: "https://picsum.photos/id/29/800/600",
-      prompt: "A serene mountain lake surrounded by pine trees",
+      prompt: "A serene mountain lake surrounded by pine trees and snow-capped peaks",
+    },
+  },
+  {
+    name: "City Skyline",
+    args: {
+      imageData: "https://picsum.photos/id/43/800/600",
+      prompt: "A modern city skyline at night with glowing skyscrapers",
+    },
+  },
+  {
+    name: "Forest Path",
+    args: {
+      imageData: "https://picsum.photos/id/15/800/600",
+      prompt: "A winding path through an enchanted forest with sunlight filtering through the leaves",
     },
   },
 ];
@@ -1275,6 +1308,9 @@ defineProps<{
 
 ### 新規プラグイン作成
 
+> **重要**: プラグインの品質は、提供する仕様の詳細度に依存します。
+> パラメータの型、取りうる値、UI の動作を具体的に記述してください。
+
 ```
 GUIChat プラグインを新規作成してください。
 
@@ -1284,13 +1320,21 @@ GUIChat プラグインを新規作成してください。
 Tool Definition:
 - name: xxxTool
 - description: {LLM への説明}
-- parameters: {パラメータ定義}
+- parameters:
+  - paramName (type): {説明}
+    - 必須/オプション
+    - 取りうる値（enum の場合はリスト）
+    - デフォルト値
 
 実装要件:
 - View: {メイン画面の表示方法、不要なら「なし」}
+  - 表示するコンテンツ
+  - ユーザーインタラクション
+  - 特殊な UI 要素（ダウンロードボタン等）
 - Preview: {サムネイルの表示方法、不要なら「なし」}
 - Backend: {使用するバックエンド、なしなら「なし」}
 - Samples: {テスト用サンプル}
+- ドメインロジック: {必要な計算、ルール、アルゴリズム}
 
 参照: docs/plugin-development-guide.md の手順に従い、
 チェックリストで漏れがないか確認してください。
