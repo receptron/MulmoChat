@@ -14,9 +14,6 @@ interface TextMessage {
   tool_calls?: Array<{ id: string; name: string; arguments: string }>;
 }
 
-export type UseTextSessionOptions = RealtimeSessionOptions;
-export type UseTextSessionReturn = UseRealtimeSessionReturn;
-
 const createCallId = () => crypto.randomUUID();
 
 async function fetchStartResponse(): Promise<StartApiResponse | null> {
@@ -40,8 +37,8 @@ async function fetchStartResponse(): Promise<StartApiResponse | null> {
 }
 
 export function useTextSession(
-  options: UseTextSessionOptions,
-): UseTextSessionReturn {
+  options: RealtimeSessionOptions,
+): UseRealtimeSessionReturn {
   let handlers: RealtimeSessionEventHandlers = {
     ...(options.handlers ?? {}),
   };
