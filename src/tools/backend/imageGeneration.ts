@@ -4,7 +4,7 @@
 
 import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
 import type { ImageToolData } from "../utils/imageTypes";
-import type { ImageGenerationConfigValue } from "../backendTypes";
+import type { ImageGenerationConfigValue } from "./types";
 import { getRawPluginConfig } from "./config";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";

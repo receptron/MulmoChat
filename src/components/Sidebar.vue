@@ -118,7 +118,7 @@
               result.toolName &&
               getToolPlugin(result.toolName)?.previewComponent
             "
-            :is="getToolPlugin(result.toolName!).previewComponent"
+            :is="getToolPlugin(result.toolName!)!.previewComponent"
             :result="result"
           />
         </div>

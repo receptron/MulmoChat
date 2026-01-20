@@ -74,7 +74,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ImageGenerationConfigValue } from "../../tools/backendTypes";
+import type { ImageGenerationConfigValue } from "../../tools/backend/types";
 
 export type { ImageGenerationConfigValue };
 
