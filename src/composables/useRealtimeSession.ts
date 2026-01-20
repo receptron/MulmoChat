@@ -4,11 +4,6 @@ import type { BuildContext, ToolCallMessage } from "./types";
 import { isValidToolCallMessage } from "./types";
 import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
 
-type BrowserRTCPeerConnection = globalThis.RTCPeerConnection;
-type BrowserRTCDataChannel = globalThis.RTCDataChannel;
-type BrowserMediaStream = globalThis.MediaStream;
-type BrowserHTMLAudioElement = HTMLAudioElement;
-
 export interface RealtimeSessionEventHandlers {
   onToolCall?: (msg: ToolCallMessage, id: string, argStr: string) => void;
   onTextDelta?: (delta: string) => void;
@@ -41,17 +36,17 @@ export interface UseRealtimeSessionReturn {
   sendInstructions: (instructions: string) => boolean | Promise<boolean>;
   setMute: (muted: boolean) => void;
   setLocalAudioEnabled: (enabled: boolean) => void;
-  attachRemoteAudioElement: (audio: BrowserHTMLAudioElement | null) => void;
+  attachRemoteAudioElement: (audio: HTMLAudioElement | null) => void;
   registerEventHandlers: (
     handlers: Partial<RealtimeSessionEventHandlers>,
   ) => void;
 }
 
 interface WebRtcState {
-  pc: BrowserRTCPeerConnection | null;
-  dc: BrowserRTCDataChannel | null;
-  localStream: BrowserMediaStream | null;
-  remoteStream: BrowserMediaStream | null;
+  pc: RTCPeerConnection | null;
+  dc: RTCDataChannel | null;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
 }
 
 export function useRealtimeSession(
@@ -77,7 +72,7 @@ export function useRealtimeSession(
   const startResponse = ref<StartApiResponse | null>(null);
   const pendingToolArgs: Record<string, string> = {};
   const processedToolCalls = new Map<string, string>();
-  const remoteAudioElement = shallowRef<BrowserHTMLAudioElement | null>(null);
+  const remoteAudioElement = shallowRef<HTMLAudioElement | null>(null);
 
   const webrtc: WebRtcState = {
     pc: null,
@@ -173,7 +168,7 @@ export function useRealtimeSession(
     }
   };
 
-  const attachRemoteAudioElement = (audio: BrowserHTMLAudioElement | null) => {
+  const attachRemoteAudioElement = (audio: HTMLAudioElement | null) => {
     remoteAudioElement.value = audio;
     if (audio && webrtc.remoteStream) {
       audio.srcObject = webrtc.remoteStream;
@@ -248,13 +243,13 @@ export function useRealtimeSession(
       }
     } catch (err) {
       console.error("Failed to get ephemeral key:", err);
-      globalThis.alert("Failed to start session. Check console for details.");
+      alert("Failed to start session. Check console for details.");
       connecting.value = false;
       return;
     }
 
     try {
-      webrtc.pc = new globalThis.RTCPeerConnection();
+      webrtc.pc = new RTCPeerConnection();
 
       const dc = webrtc.pc.createDataChannel("oai-events");
       webrtc.dc = dc;
@@ -290,7 +285,7 @@ export function useRealtimeSession(
         webrtc.dc = null;
       });
 
-      webrtc.remoteStream = new globalThis.MediaStream();
+      webrtc.remoteStream = new MediaStream();
       webrtc.pc.ontrack = (event) => {
         webrtc.remoteStream?.addTrack(event.track);
         if (remoteAudioElement.value) {
@@ -298,15 +293,13 @@ export function useRealtimeSession(
         }
       };
 
-      webrtc.localStream = await globalThis.navigator.mediaDevices.getUserMedia(
-        {
-          audio: true,
-        },
-      );
+      webrtc.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
       webrtc.localStream
         .getTracks()
         .forEach((track) =>
-          webrtc.pc?.addTrack(track, webrtc.localStream as BrowserMediaStream),
+          webrtc.pc?.addTrack(track, webrtc.localStream as MediaStream),
         );
 
       const offer = await webrtc.pc.createOffer();
@@ -330,9 +323,7 @@ export function useRealtimeSession(
     } catch (err) {
       console.error(err);
       stopChat();
-      globalThis.alert(
-        "Failed to start voice chat. Check console for details.",
-      );
+      alert("Failed to start voice chat. Check console for details.");
     } finally {
       connecting.value = false;
     }

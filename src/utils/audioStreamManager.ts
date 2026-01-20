@@ -38,7 +38,7 @@ export class AudioStreamManager {
     }
 
     // Create audio context
-    this.audioContext = new globalThis.AudioContext();
+    this.audioContext = new AudioContext();
     const sourceSampleRate = this.audioContext.sampleRate;
 
     // Create source from microphone stream
@@ -142,7 +142,7 @@ export class AudioStreamManager {
     }
 
     if (!this.audioContext) {
-      this.audioContext = new globalThis.AudioContext();
+      this.audioContext = new AudioContext();
     }
 
     // Create gain node for smooth volume control

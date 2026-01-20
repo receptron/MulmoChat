@@ -4,11 +4,8 @@ import {
   type UseRealtimeSessionReturn,
 } from "./useRealtimeSession";
 
-export type UseVoiceRealtimeSessionOptions = RealtimeSessionOptions;
-export type UseVoiceRealtimeSessionReturn = UseRealtimeSessionReturn;
-
 export function useVoiceRealtimeSession(
-  options: UseVoiceRealtimeSessionOptions,
-): UseVoiceRealtimeSessionReturn {
+  options: RealtimeSessionOptions,
+): UseRealtimeSessionReturn {
   return useRealtimeSession(options);
 }

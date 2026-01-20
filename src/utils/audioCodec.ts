@@ -1,3 +1,5 @@
+/* global OfflineAudioContext */
+
 /**
  * Audio codec utilities for Google Live API
  * Handles conversion between Float32Array (Web Audio API) and 16-bit PCM (Google format)
@@ -28,7 +30,7 @@ export function encodeAudioToPCM16(float32Data: Float32Array): string {
     binary += String.fromCharCode(uint8[i]);
   }
 
-  return globalThis.btoa(binary);
+  return btoa(binary);
 }
 
 /**
@@ -38,7 +40,7 @@ export function encodeAudioToPCM16(float32Data: Float32Array): string {
  */
 export function decodePCM16ToFloat32(base64PCM: string): Float32Array {
   // Decode base64 to binary string
-  const binary = globalThis.atob(base64PCM);
+  const binary = atob(base64PCM);
 
   // Convert binary string to Uint8Array
   const uint8 = new Uint8Array(binary.length);
@@ -76,7 +78,7 @@ export async function resampleAudio(
   }
 
   // Use OfflineAudioContext for high-quality browser-based resampling
-  const offlineContext = new globalThis.OfflineAudioContext(
+  const offlineContext = new OfflineAudioContext(
     1, // mono
     Math.ceil((audioData.length * targetSampleRate) / sourceSampleRate),
     targetSampleRate,

@@ -12,21 +12,15 @@ import { AudioStreamManager } from "../utils/audioStreamManager";
 import { convertToGoogleToolFormat } from "../utils/toolConverter";
 import { DEFAULT_GOOGLE_LIVE_MODEL_ID } from "../config/models";
 
-type BrowserMediaStream = globalThis.MediaStream;
-type BrowserHTMLAudioElement = HTMLAudioElement;
-
-export type UseGoogleLiveSessionOptions = RealtimeSessionOptions;
-export type UseGoogleLiveSessionReturn = UseRealtimeSessionReturn;
-
 interface GoogleLiveState {
   ws: WebSocket | null;
-  localStream: BrowserMediaStream | null;
+  localStream: MediaStream | null;
   audioManager: AudioStreamManager | null;
 }
 
 export function useGoogleLiveSession(
-  options: UseGoogleLiveSessionOptions,
-): UseGoogleLiveSessionReturn {
+  options: RealtimeSessionOptions,
+): UseRealtimeSessionReturn {
   let handlers: RealtimeSessionEventHandlers = {
     ...(options.handlers ?? {}),
   };
@@ -47,7 +41,7 @@ export function useGoogleLiveSession(
   const startResponse = ref<StartApiResponse | null>(null);
   const pendingToolCalls = new Map<string, any>();
   const processedToolCalls = new Set<string>();
-  const remoteAudioElement = shallowRef<BrowserHTMLAudioElement | null>(null);
+  const remoteAudioElement = shallowRef<HTMLAudioElement | null>(null);
 
   const googleLive: GoogleLiveState = {
     ws: null,
@@ -320,7 +314,7 @@ export function useGoogleLiveSession(
     }
   };
 
-  const attachRemoteAudioElement = (audio: BrowserHTMLAudioElement | null) => {
+  const attachRemoteAudioElement = (audio: HTMLAudioElement | null) => {
     remoteAudioElement.value = audio;
     // Google Live uses AudioStreamManager for playback, not HTML audio element
   };
@@ -402,15 +396,14 @@ export function useGoogleLiveSession(
         }) ?? DEFAULT_GOOGLE_LIVE_MODEL_ID;
 
       // Request microphone access FIRST (before WebSocket)
-      googleLive.localStream =
-        await globalThis.navigator.mediaDevices.getUserMedia({
-          audio: {
-            sampleRate: 16000,
-            channelCount: 1,
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
-        });
+      googleLive.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
 
       // Initialize audio stream manager
       googleLive.audioManager = new AudioStreamManager();
@@ -430,9 +423,7 @@ export function useGoogleLiveSession(
     } catch (err) {
       console.error("Failed to start Google Live session:", err);
       stopChat();
-      globalThis.alert(
-        "Failed to start Google Live session. Check console for details.",
-      );
+      alert("Failed to start Google Live session. Check console for details.");
     } finally {
       connecting.value = false;
     }
