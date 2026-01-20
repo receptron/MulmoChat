@@ -23,9 +23,7 @@ import {
 } from "../tools/backend";
 import type { HtmlGenerationParams } from "../tools/backend";
 import type { ImageToolData } from "../tools/utils/imageTypes";
-
-type ToolExecuteFn = typeof import("../tools").toolExecute;
-type GetToolPluginFn = typeof import("../tools").getToolPlugin;
+import type { ToolExecuteFn, GetToolPluginFn } from "../tools/types";
 
 // Plugins that are allowed to use setConfig
 const PLUGINS_WITH_SET_CONFIG = ["setImageStyle"];

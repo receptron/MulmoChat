@@ -9,6 +9,8 @@ import type { StartApiResponse } from "../../server/types";
 import type {
   ToolPlugin as BaseToolPlugin,
   InputHandler,
+  ToolContext,
+  ToolResultComplete,
 } from "gui-chat-protocol/vue";
 
 /**
@@ -19,3 +21,19 @@ export type ToolPlugin<
   J = unknown,
   A extends object = object,
 > = BaseToolPlugin<T, J, A, InputHandler, StartApiResponse>;
+
+/**
+ * Type for toolExecute function
+ */
+export type ToolExecuteFn = (
+  context: ToolContext,
+  name: string,
+  args: Record<string, unknown>,
+) => Promise<ToolResultComplete>;
+
+/**
+ * Type for getToolPlugin function
+ */
+export type GetToolPluginFn = (
+  name: string,
+) => ToolPlugin<unknown, unknown, object> | null;

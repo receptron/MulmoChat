@@ -8,7 +8,7 @@ import type {
 } from "gui-chat-protocol/vue";
 import { v4 as uuidv4 } from "uuid";
 import { getRole } from "../config/roles";
-import type { ToolPlugin } from "./types";
+import type { ToolPlugin, ToolExecuteFn, GetToolPluginFn } from "./types";
 
 // External plugins from npm packages
 import QuizPlugin from "@mulmochat-plugin/quiz/vue";
@@ -207,11 +207,7 @@ const plugins = pluginList.reduce(
   {} as Record<string, ToolPlugin<any, any, any>>,
 );
 
-export const toolExecute = async (
-  context: ToolContext,
-  name: string,
-  args: Record<string, unknown>,
-): Promise<ToolResultComplete> => {
+export const toolExecute: ToolExecuteFn = async (context, name, args) => {
   console.log(`EXE:${name}\n`, args);
   const plugin = plugins[name];
   if (!plugin) {
@@ -225,7 +221,7 @@ export const toolExecute = async (
   };
 };
 
-export const getToolPlugin = (name: string) => {
+export const getToolPlugin: GetToolPluginFn = (name) => {
   return plugins[name] || null;
 };
 
