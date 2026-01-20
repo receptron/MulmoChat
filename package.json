@@ -70,7 +70,7 @@
     "@mulmochat-plugin/ui-image": "^0.1.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
-    "exa-js": "^1.9.3",
+    "exa-js": "^2.0.12",
     "express": "^5.2.1",
     "material-icons": "^1.13.14",
     "uuid": "^13.0.0",
