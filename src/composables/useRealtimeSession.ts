@@ -4,11 +4,6 @@ import type { BuildContext, ToolCallMessage } from "./types";
 import { isValidToolCallMessage } from "./types";
 import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
 
-type BrowserRTCPeerConnection = RTCPeerConnection;
-type BrowserRTCDataChannel = RTCDataChannel;
-type BrowserMediaStream = MediaStream;
-type BrowserHTMLAudioElement = HTMLAudioElement;
-
 export interface RealtimeSessionEventHandlers {
   onToolCall?: (msg: ToolCallMessage, id: string, argStr: string) => void;
   onTextDelta?: (delta: string) => void;
@@ -41,17 +36,17 @@ export interface UseRealtimeSessionReturn {
   sendInstructions: (instructions: string) => boolean | Promise<boolean>;
   setMute: (muted: boolean) => void;
   setLocalAudioEnabled: (enabled: boolean) => void;
-  attachRemoteAudioElement: (audio: BrowserHTMLAudioElement | null) => void;
+  attachRemoteAudioElement: (audio: HTMLAudioElement | null) => void;
   registerEventHandlers: (
     handlers: Partial<RealtimeSessionEventHandlers>,
   ) => void;
 }
 
 interface WebRtcState {
-  pc: BrowserRTCPeerConnection | null;
-  dc: BrowserRTCDataChannel | null;
-  localStream: BrowserMediaStream | null;
-  remoteStream: BrowserMediaStream | null;
+  pc: RTCPeerConnection | null;
+  dc: RTCDataChannel | null;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
 }
 
 export function useRealtimeSession(
@@ -77,7 +72,7 @@ export function useRealtimeSession(
   const startResponse = ref<StartApiResponse | null>(null);
   const pendingToolArgs: Record<string, string> = {};
   const processedToolCalls = new Map<string, string>();
-  const remoteAudioElement = shallowRef<BrowserHTMLAudioElement | null>(null);
+  const remoteAudioElement = shallowRef<HTMLAudioElement | null>(null);
 
   const webrtc: WebRtcState = {
     pc: null,
@@ -173,7 +168,7 @@ export function useRealtimeSession(
     }
   };
 
-  const attachRemoteAudioElement = (audio: BrowserHTMLAudioElement | null) => {
+  const attachRemoteAudioElement = (audio: HTMLAudioElement | null) => {
     remoteAudioElement.value = audio;
     if (audio && webrtc.remoteStream) {
       audio.srcObject = webrtc.remoteStream;
@@ -304,7 +299,7 @@ export function useRealtimeSession(
       webrtc.localStream
         .getTracks()
         .forEach((track) =>
-          webrtc.pc?.addTrack(track, webrtc.localStream as BrowserMediaStream),
+          webrtc.pc?.addTrack(track, webrtc.localStream as MediaStream),
         );
 
       const offer = await webrtc.pc.createOffer();

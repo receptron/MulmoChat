@@ -12,15 +12,12 @@ import { AudioStreamManager } from "../utils/audioStreamManager";
 import { convertToGoogleToolFormat } from "../utils/toolConverter";
 import { DEFAULT_GOOGLE_LIVE_MODEL_ID } from "../config/models";
 
-type BrowserMediaStream = MediaStream;
-type BrowserHTMLAudioElement = HTMLAudioElement;
-
 export type UseGoogleLiveSessionOptions = RealtimeSessionOptions;
 export type UseGoogleLiveSessionReturn = UseRealtimeSessionReturn;
 
 interface GoogleLiveState {
   ws: WebSocket | null;
-  localStream: BrowserMediaStream | null;
+  localStream: MediaStream | null;
   audioManager: AudioStreamManager | null;
 }
 
@@ -47,7 +44,7 @@ export function useGoogleLiveSession(
   const startResponse = ref<StartApiResponse | null>(null);
   const pendingToolCalls = new Map<string, any>();
   const processedToolCalls = new Set<string>();
-  const remoteAudioElement = shallowRef<BrowserHTMLAudioElement | null>(null);
+  const remoteAudioElement = shallowRef<HTMLAudioElement | null>(null);
 
   const googleLive: GoogleLiveState = {
     ws: null,
@@ -320,7 +317,7 @@ export function useGoogleLiveSession(
     }
   };
 
-  const attachRemoteAudioElement = (audio: BrowserHTMLAudioElement | null) => {
+  const attachRemoteAudioElement = (audio: HTMLAudioElement | null) => {
     remoteAudioElement.value = audio;
     // Google Live uses AudioStreamManager for playback, not HTML audio element
   };
