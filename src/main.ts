@@ -21,5 +21,13 @@ import "@gui-chat-plugin/markdown/style.css";
 import "@gui-chat-plugin/edit-image/style.css";
 import "@gui-chat-plugin/mulmocast/style.css";
 import "@gui-chat-plugin/present3d/style.css";
+import "@gui-chat-plugin/camera/style.css";
+import "@gui-chat-plugin/canvas/style.css";
+import "@gui-chat-plugin/html/style.css";
+import "@gui-chat-plugin/generate-html/style.css";
+import "@gui-chat-plugin/edit-html/style.css";
+import "@gui-chat-plugin/switch-role/style.css";
+import "@gui-chat-plugin/set-image-style/style.css";
+import "@gui-chat-plugin/scroll-to-anchor/style.css";
 
 createApp(App).use(router).mount("#app");
