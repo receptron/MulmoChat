@@ -54,6 +54,7 @@
     "@gui-chat-plugin/mulmocast": "^0.0.2",
     "@gui-chat-plugin/music": "^0.0.1",
     "@gui-chat-plugin/othello": "^0.2.0",
+    "@gui-chat-plugin/tictactoe": "^0.1.0",
     "@gui-chat-plugin/present3d": "^0.0.2",
     "@gui-chat-plugin/scroll-to-anchor": "^0.1.0",
     "@gui-chat-plugin/set-image-style": "^0.1.0",

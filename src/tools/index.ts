@@ -18,6 +18,7 @@ import SpreadsheetPlugin from "@gui-chat-plugin/spreadsheet/vue";
 import TodoPlugin from "@gui-chat-plugin/todo/vue";
 import TextResponsePlugin from "@gui-chat-plugin/text-response/vue";
 import OthelloPlugin from "@gui-chat-plugin/othello/vue";
+import TicTacToePlugin from "@gui-chat-plugin/tictactoe/vue";
 import GoPlugin from "@gui-chat-plugin/go/vue";
 import WeatherPlugin from "@gui-chat-plugin/weather/vue";
 import MusicPlugin from "@gui-chat-plugin/music/vue";
@@ -47,6 +48,7 @@ const pluginList = [
   TodoPlugin,
   TextResponsePlugin,
   OthelloPlugin,
+  TicTacToePlugin,
   GoPlugin,
   WeatherPlugin,
   MusicPlugin,
