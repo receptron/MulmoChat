@@ -12,9 +12,6 @@ import { AudioStreamManager } from "../utils/audioStreamManager";
 import { convertToGoogleToolFormat } from "../utils/toolConverter";
 import { DEFAULT_GOOGLE_LIVE_MODEL_ID } from "../config/models";
 
-export type UseGoogleLiveSessionOptions = RealtimeSessionOptions;
-export type UseGoogleLiveSessionReturn = UseRealtimeSessionReturn;
-
 interface GoogleLiveState {
   ws: WebSocket | null;
   localStream: MediaStream | null;
@@ -22,8 +19,8 @@ interface GoogleLiveState {
 }
 
 export function useGoogleLiveSession(
-  options: UseGoogleLiveSessionOptions,
-): UseGoogleLiveSessionReturn {
+  options: RealtimeSessionOptions,
+): UseRealtimeSessionReturn {
   let handlers: RealtimeSessionEventHandlers = {
     ...(options.handlers ?? {}),
   };
