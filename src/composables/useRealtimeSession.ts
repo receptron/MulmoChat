@@ -4,9 +4,9 @@ import type { BuildContext, ToolCallMessage } from "./types";
 import { isValidToolCallMessage } from "./types";
 import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
 
-type BrowserRTCPeerConnection = globalThis.RTCPeerConnection;
-type BrowserRTCDataChannel = globalThis.RTCDataChannel;
-type BrowserMediaStream = globalThis.MediaStream;
+type BrowserRTCPeerConnection = RTCPeerConnection;
+type BrowserRTCDataChannel = RTCDataChannel;
+type BrowserMediaStream = MediaStream;
 type BrowserHTMLAudioElement = HTMLAudioElement;
 
 export interface RealtimeSessionEventHandlers {
@@ -248,13 +248,13 @@ export function useRealtimeSession(
       }
     } catch (err) {
       console.error("Failed to get ephemeral key:", err);
-      globalThis.alert("Failed to start session. Check console for details.");
+      alert("Failed to start session. Check console for details.");
       connecting.value = false;
       return;
     }
 
     try {
-      webrtc.pc = new globalThis.RTCPeerConnection();
+      webrtc.pc = new RTCPeerConnection();
 
       const dc = webrtc.pc.createDataChannel("oai-events");
       webrtc.dc = dc;
@@ -290,7 +290,7 @@ export function useRealtimeSession(
         webrtc.dc = null;
       });
 
-      webrtc.remoteStream = new globalThis.MediaStream();
+      webrtc.remoteStream = new MediaStream();
       webrtc.pc.ontrack = (event) => {
         webrtc.remoteStream?.addTrack(event.track);
         if (remoteAudioElement.value) {
@@ -298,11 +298,9 @@ export function useRealtimeSession(
         }
       };
 
-      webrtc.localStream = await globalThis.navigator.mediaDevices.getUserMedia(
-        {
-          audio: true,
-        },
-      );
+      webrtc.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
       webrtc.localStream
         .getTracks()
         .forEach((track) =>
@@ -330,9 +328,7 @@ export function useRealtimeSession(
     } catch (err) {
       console.error(err);
       stopChat();
-      globalThis.alert(
-        "Failed to start voice chat. Check console for details.",
-      );
+      alert("Failed to start voice chat. Check console for details.");
     } finally {
       connecting.value = false;
     }

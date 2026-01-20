@@ -17,11 +17,7 @@ interface TextMessage {
 export type UseTextSessionOptions = RealtimeSessionOptions;
 export type UseTextSessionReturn = UseRealtimeSessionReturn;
 
-let fallbackCallIdCounter = 0;
-
-const createCallId = () =>
-  globalThis.crypto?.randomUUID?.() ??
-  `text-${Date.now()}-${++fallbackCallIdCounter}`;
+const createCallId = () => crypto.randomUUID();
 
 async function fetchStartResponse(): Promise<StartApiResponse | null> {
   try {

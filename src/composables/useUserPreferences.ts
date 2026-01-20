@@ -32,8 +32,7 @@ interface StorageLike {
 }
 
 const getStorage = (): StorageLike | null => {
-  const globalObj = globalThis as { localStorage?: StorageLike };
-  return globalObj.localStorage ?? null;
+  return localStorage;
 };
 
 const getStoredValue = (key: string): string | null => {

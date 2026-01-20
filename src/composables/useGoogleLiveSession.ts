@@ -12,7 +12,7 @@ import { AudioStreamManager } from "../utils/audioStreamManager";
 import { convertToGoogleToolFormat } from "../utils/toolConverter";
 import { DEFAULT_GOOGLE_LIVE_MODEL_ID } from "../config/models";
 
-type BrowserMediaStream = globalThis.MediaStream;
+type BrowserMediaStream = MediaStream;
 type BrowserHTMLAudioElement = HTMLAudioElement;
 
 export type UseGoogleLiveSessionOptions = RealtimeSessionOptions;
@@ -402,15 +402,14 @@ export function useGoogleLiveSession(
         }) ?? DEFAULT_GOOGLE_LIVE_MODEL_ID;
 
       // Request microphone access FIRST (before WebSocket)
-      googleLive.localStream =
-        await globalThis.navigator.mediaDevices.getUserMedia({
-          audio: {
-            sampleRate: 16000,
-            channelCount: 1,
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
-        });
+      googleLive.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
 
       // Initialize audio stream manager
       googleLive.audioManager = new AudioStreamManager();
@@ -430,9 +429,7 @@ export function useGoogleLiveSession(
     } catch (err) {
       console.error("Failed to start Google Live session:", err);
       stopChat();
-      globalThis.alert(
-        "Failed to start Google Live session. Check console for details.",
-      );
+      alert("Failed to start Google Live session. Check console for details.");
     } finally {
       connecting.value = false;
     }
