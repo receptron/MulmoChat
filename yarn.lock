@@ -616,6 +616,11 @@
     gui-chat-protocol "^0.0.1"
     marked "^15.0.0"
 
+"@gui-chat-plugin/tictactoe@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/tictactoe/-/tictactoe-0.1.0.tgz#807d34f6c6992efe055e2b8796be67ebb37f9024"
+  integrity sha512-KfaalCSuLbmLoxXMRDpHu8bvbSTj2JjPDGFnTUijbrUqD47zqVFhehLNl7su7oZjCYkDJ9ClMfwbyj+LuwfU4A==
+
 "@gui-chat-plugin/todo@^0.1.0":
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/todo/-/todo-0.1.0.tgz#74534b0a4c8f57d38d2897fd7d529fbfacadff5d"

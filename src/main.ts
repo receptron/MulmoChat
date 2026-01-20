@@ -11,6 +11,7 @@ import "@gui-chat-plugin/spreadsheet/style.css";
 import "@gui-chat-plugin/todo/style.css";
 import "@gui-chat-plugin/text-response/style.css";
 import "@gui-chat-plugin/othello/style.css";
+import "@gui-chat-plugin/tictactoe/style.css";
 import "@gui-chat-plugin/go/style.css";
 import "@gui-chat-plugin/weather/style.css";
 import "@gui-chat-plugin/music/style.css";
