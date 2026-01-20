@@ -1,7 +1,5 @@
 import type { StartApiResponse } from "../../server/types";
 import type {
-  ToolContext,
-  ToolResultComplete,
   BackendType,
   FileInputHandler,
   ClipboardImageInputHandler,

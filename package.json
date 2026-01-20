@@ -31,7 +31,6 @@
     "test:tools:ollama": "tsx server/tests/test-tools-ollama.ts",
     "test:image:comfy": "tsx server/tests/test-comfyui.ts",
     "test:image:openai": "tsx server/tests/test-image-openai.ts",
-    "test:functions": "tsx src/tools/models/functions/test-functions.ts",
     "benchmark:llm": "tsx benchmark/src/cli.ts",
     "benchmark:test": "tsx benchmark/src/test-runner.ts",
     "benchmark:check": "tsx benchmark/src/cli.ts check",
