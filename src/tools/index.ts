@@ -5,8 +5,9 @@ import type {
   ClipboardImageInputHandler,
 } from "gui-chat-protocol/vue";
 import { v4 as uuidv4 } from "uuid";
-import { getRole } from "../config/roles";
+import { getRole, ROLES } from "../config/roles";
 import type { ToolPlugin, ToolExecuteFn, GetToolPluginFn } from "./types";
+import { createToolDefinition as createSwitchRoleToolDefinition } from "@gui-chat-plugin/switch-role/vue";
 
 // External plugins from npm packages
 import QuizPlugin from "@mulmochat-plugin/quiz/vue";
@@ -126,6 +127,11 @@ export function isRoleCustomizable(roleId: string): boolean {
   return role?.pluginMode === "customizable";
 }
 
+// Pre-compute switchRole tool definition with app roles
+const switchRoleToolDefinition = createSwitchRoleToolDefinition(
+  ROLES.map((r) => ({ id: r.id, name: r.name })),
+);
+
 export const pluginTools = (
   startResponse?: StartApiResponse | null,
   enabledPlugins?: Record<string, boolean>,
@@ -159,7 +165,13 @@ export const pluginTools = (
       // Fixed role: plugin is in the list, so it's enabled
       return true;
     })
-    .map((plugin) => plugin.plugin.toolDefinition);
+    .map((plugin) => {
+      // Use dynamic tool definition for switchRole with app roles
+      if (plugin.plugin.toolDefinition.name === "switchRole") {
+        return switchRoleToolDefinition;
+      }
+      return plugin.plugin.toolDefinition;
+    });
 };
 
 export const getPluginSystemPrompts = (

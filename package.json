@@ -58,7 +58,7 @@
     "@gui-chat-plugin/scroll-to-anchor": "^0.1.0",
     "@gui-chat-plugin/set-image-style": "^0.1.0",
     "@gui-chat-plugin/spreadsheet": "^0.2.0",
-    "@gui-chat-plugin/switch-role": "^0.1.0",
+    "@gui-chat-plugin/switch-role": "^0.2.0",
     "@gui-chat-plugin/text-response": "^0.1.0",
     "@gui-chat-plugin/todo": "^0.1.0",
     "@gui-chat-plugin/weather": "^0.0.1",

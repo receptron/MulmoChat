@@ -156,6 +156,9 @@ const messages = ref<string[]>([]);
 const currentText = ref("");
 const userInput = ref("");
 
+// Callback for switchRole plugin (set after function definition)
+const switchRoleCallback = ref<((roleId: string) => void) | null>(null);
+
 // Sidebar visibility state (persisted to localStorage)
 const SIDEBAR_VISIBLE_KEY = "sidebar_visible_v1";
 const sidebarVisible = ref<boolean>(
@@ -466,6 +469,9 @@ const {
   onToolCallError: (toolName: string, error: string) => {
     updateToolCallError({ name: toolName }, error);
   },
+  switchRole: (roleId: string) => {
+    switchRoleCallback.value?.(roleId);
+  },
 });
 
 // Wrapper to track results immediately
@@ -651,10 +657,8 @@ async function switchRole(newRoleId: string): Promise<void> {
   await startChat();
 }
 
-// Expose the API globally for external access
-if (typeof window !== "undefined") {
-  (window as any).switchRole = switchRole;
-}
+// Set the switchRole callback for the plugin
+switchRoleCallback.value = switchRole;
 
 watch(
   () => userPreferences.modelKind,
