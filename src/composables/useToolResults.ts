@@ -24,6 +24,7 @@ import {
 import type { HtmlGenerationParams } from "../tools/backend";
 import type { ImageToolData } from "../tools/utils/imageTypes";
 import type { ToolExecuteFn, GetToolPluginFn } from "../tools/types";
+import { ROLES } from "../config/roles";
 
 // Plugins that are allowed to use setConfig
 const PLUGINS_WITH_SET_CONFIG = ["setImageStyle"];
@@ -41,6 +42,7 @@ interface UseToolResultsOptions {
   scrollToBottomOfSideBar: () => void;
   scrollCurrentResultToTop: () => void;
   onToolCallError?: (toolName: string, error: string) => void;
+  switchRole?: (roleId: string) => void;
 }
 
 interface ToolCallMessage {
@@ -216,6 +218,10 @@ export function useToolResults(
         saveImages,
         // Config accessors for plugins that need to read/modify config
         getImageConfig: () => imageConfig,
+
+        // Role management for switchRole plugin
+        getRoles: () => ROLES.map((r) => ({ id: r.id, name: r.name })),
+        switchRole: options.switchRole ?? (() => {}),
       };
 
       const context: ToolContext = {
