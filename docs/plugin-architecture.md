@@ -1,290 +1,520 @@
-# プラグインアーキテクチャ設計
+# GUIChat Plugin Architecture
 
-## 目的
+This document describes the philosophy, overview, and architecture of the GUIChat/MulmoChat plugin system.
 
-**プラグインを汎用的に作りたい**
+## Table of Contents
 
-プラグインを他のアプリでも再利用可能にするためのリファクタリングと設計整理。
-
----
-
-## 現状の課題
-
-### 1. 設定の責務が不明確
-
-プラグイン固有の設定とバックエンド設定が混同している。
-
-```typescript
-// 現状: プラグインがバックエンド選択UIを持っている
-// src/tools/configs/HtmlGenerationConfig.vue - Claude or Gemini を選択
-config: {
-  key: "htmlBackend",
-  component: HtmlGenerationConfig,
-}
-```
-
-**本来の責務分離:**
-- **バックエンド設定** → アプリ層で管理 (どのAIプロバイダを使うか)
-- **プラグイン固有設定** → プラグインで管理 (プラグイン特有の動作設定)
-
-### 2. プラグインがバックエンドに依存している
-
-プラグインが特定のバックエンド (AIプロバイダ) を直接意識しているため、汎用性が低い。
-
-**あるべき姿:**
-- プラグインは「どのバックエンド種別を使うか」だけを宣言
-- 具体的なプロバイダ選択はアプリ層が管理
+1. [Design Philosophy](#design-philosophy)
+2. [Architecture Overview](#architecture-overview)
+3. [gui-chat-protocol Package](#gui-chat-protocol-package)
+4. [Plugin Structure](#plugin-structure)
+5. [Type System](#type-system)
+6. [Backend Abstraction](#backend-abstraction)
+7. [External Input Handlers](#external-input-handlers)
+8. [Future Extensions](#future-extensions)
 
 ---
 
-## 前提・制約
+## Design Philosophy
 
-### 変更しないもの
+### Core Principles
 
-- **サーバー側 (バックエンド) のエンドポイント** - 既存APIは維持
-- **APIキー管理** - 環境変数で管理 (変更不要)
+The GUIChat plugin system is designed based on the following principles.
 
-### 現状の設定管理
+#### 1. Framework Agnostic
 
-- クライアント側設定は localStorage に保存
-- リクエスト時にアプリ層からPOSTで送信
-
-### バックエンドの定義
-
-バックエンドはAIサービスに限らない (地図、検索など外部サービス全般)。
-そのため、共通型定義にはAI固有の概念 (provider等) は含めない。
-
----
-
-## プラグインの位置づけ
-
-プラグインはツール結果からUIを表示するレイヤー (アーキテクチャの最上位)。
+Plugin core logic does not depend on any specific UI framework (Vue, React, Svelte, etc.).
 
 ```
-Plugins (UI)        ← ツール結果からUI表示、プラグイン固有設定
-    ↓
-App Layer           ← バックエンド設定管理、プラグインへのサービス提供
-    ↓
-Backend Services    ← 既存APIを呼び出すラッパー
-    ↓
-Server (既存API)    ← 変更しない
+Plugin = Core Logic (Framework Agnostic) + UI Adapter (Framework Specific)
 ```
 
----
+**Reasons:**
+- Reusable in other projects
+- Resilient to UI framework changes
+- Easy to test
 
-## 解決方針
+#### 2. Separation of Concerns
 
-### バックエンド種別を定義
+Each layer has clear responsibilities.
 
-アプリ層でバックエンド種別を定義し、それぞれに設定画面を持つ。
+| Layer | Responsibility | Example |
+|-------|---------------|---------|
+| **Plugin** | Display UI from tool results, plugin-specific settings | Quiz display, image generation |
+| **App Layer** | Backend configuration management, service provision to plugins | API key management, backend selection |
+| **Backend Service** | External API wrappers | OpenAI, Google Maps, Exa |
+| **Server** | Provide existing APIs | Authentication, proxy |
+
+#### 3. Declarative Interface
+
+Plugins declare "what they can do" and leave "how to do it" to the app layer.
 
 ```typescript
-type BackendType = "textLLM" | "imageGen" | "audio" | "search" | "browse" | "map" | "mulmocast";
+// Plugin declares only the type
+backends: ["textLLM"],  // Uses text generation LLM
+
+// Specific provider selection is managed by app layer
+// Whether to use Claude or Gemini is selected by user in settings
 ```
 
-### プラグインはバックエンド種別のみを宣言
+#### 4. Type Safety
 
-プラグインは具体的なプロバイダを知らず、種別だけを持つ。
-
-```typescript
-// Before: プラグインがプロバイダ選択UIを持つ
-config: {
-  component: HtmlGenerationConfig,  // Claude or Gemini 選択
-}
-
-// After: プラグインは種別だけを宣言
-backends: ["textLLM"],
-```
-
-### アプリ層が設定を管理
-
-バックエンド種別ごとの設定 (プロバイダ、モデル等) はアプリ層で管理。
+All interfaces are strictly typed in TypeScript.
 
 ```typescript
-// アプリ層の設定
-backends: {
-  textLLM: { provider: "anthropic", model: "claude-sonnet-4-20250514" },
-  imageGen: { provider: "openai", model: "gpt-image-1" },
-}
+// Clearly defined with type parameters
+ToolPlugin<T, J, A>
+//        │  │  └── A: Argument type
+//        │  └───── J: Data type returned to LLM
+//        └──────── T: Data type for UI
 ```
 
 ---
 
-## 実装状況
+## Architecture Overview
 
-### 完了
+### Overall Picture
 
-- [x] バックエンド種別の型定義 (`src/tools/backendTypes.ts`)
-- [x] プラグインに `backends` フィールド追加
-- [x] `src/tools/configs/HtmlGenerationConfig.vue` 削除
-- [x] アプリ層のバックエンド設定UI (`src/components/settings/`)
-- [x] バックエンド設定を `pluginConfigs` に統合
-- [x] 有効なプラグインに基づくバックエンド設定の表示制御 (`getEnabledBackends`)
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Host App                             │
+│                   (MulmoChat, etc.)                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   Plugin A  │  │   Plugin B  │  │   Plugin C  │        │
+│  │  ┌───────┐  │  │  ┌───────┐  │  │  ┌───────┐  │        │
+│  │  │ Core  │  │  │  │ Core  │  │  │  │ Core  │  │        │
+│  │  └───────┘  │  │  └───────┘  │  │  └───────┘  │        │
+│  │  ┌───────┐  │  │  ┌───────┐  │  │  ┌───────┐  │        │
+│  │  │  Vue  │  │  │  │  Vue  │  │  │  │  Vue  │  │        │
+│  │  └───────┘  │  │  └───────┘  │  │  └───────┘  │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                    gui-chat-protocol                        │
+│            (Common Type Definitions & Interfaces)           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+```
+User Input → LLM → Tool Call → execute() → ToolResult → View/Preview
+     ↑                                                        │
+     └─────────────── instructions to LLM ←───────────────────┘
+```
+
+1. **User Input**: Instructions via voice or text
+2. **LLM Processing**: Determines which tool to use
+3. **Tool Call**: Executes plugin's `execute()` function
+4. **ToolResult**: Returns execution result
+5. **UI Display**: Shows result in View/Preview components
+6. **Instructions to LLM**: Instructs next action via `instructions`
+
+### Component Roles
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    MulmoChat UI                      │
+├──────────────┬──────────────────────────────────────┤
+│   Sidebar    │              Canvas                   │
+│              │                                       │
+│ ┌──────────┐ │   ┌─────────────────────────────┐    │
+│ │ Preview  │ │   │                             │    │
+│ │ Thumbnail│◄──┤         View                 │    │
+│ └──────────┘ │   │      Main Display           │    │
+│ ┌──────────┐ │   │   Interactive Operations    │    │
+│ │ Preview  │ │   │                             │    │
+│ └──────────┘ │   └─────────────────────────────┘    │
+└──────────────┴──────────────────────────────────────┘
+```
+
+| Component | Role | Props |
+|-----------|------|-------|
+| **Preview** | Small thumbnail displayed in sidebar | `result: ToolResult` |
+| **View** | Full-size UI displayed on canvas | `selectedResult: ToolResult`, `sendTextMessage: Function` |
 
 ---
 
-## 変更されたファイル
+## gui-chat-protocol Package
 
-### 型定義
+### Overview
 
-```typescript
-// src/tools/types.ts
-export type BackendType =
-  | "textLLM"
-  | "imageGen"
-  | "audio"
-  | "search"
-  | "browse"
-  | "map"
-  | "mulmocast";
+`gui-chat-protocol` is a TypeScript library that defines the standard protocol for GUIChat plugins.
 
-export interface ToolPlugin<T, J, A extends object> {
-  // ...existing fields
-  backends?: BackendType[];
-}
+```bash
+npm install gui-chat-protocol
 ```
 
-### 更新されたプラグイン
+### Package Structure
 
-| プラグイン | backends | 備考 |
-|-----------|----------|------|
-| generateHtml | `["textLLM"]` | |
-| editHtml | `["textLLM"]` | |
-| browse | `["browse"]` | |
-| exa | `["search"]` | |
-| editImage | `["imageGen"]` | |
-| setImageStyle | `["imageGen"]` | |
-| mulmocast | `["imageGen", "mulmocast"]` | |
-| map | `["map"]` | |
-| @mulmochat-plugin/generate-image | `["imageGen"]` | 外部プラグイン |
+```
+gui-chat-protocol/
+├── index.ts    # Core: ToolPluginCore, ToolContext, ToolResult, etc.
+├── vue.ts      # Vue: ToolPluginVue, ToolPlugin (alias)
+└── react.ts    # React: ToolPluginReact
+```
 
-### 削除されたファイル
+### Export Classification
 
-- `src/tools/configs/HtmlGenerationConfig.vue` (バックエンド設定 → アプリ層へ移行)
-- `src/tools/configs/MulmocastConfig.vue` (バックエンド設定 → アプリ層へ移行)
-- `@mulmochat-plugin/generate-image` の `ImageGenerationConfig.vue` (バックエンド設定 → アプリ層へ移行)
+| Export Source | Contents | Dependencies |
+|--------------|----------|--------------|
+| `.` (core) | `ToolPluginCore`, `ToolResult`, `ToolContext`, `ToolDefinition` | None |
+| `./vue` | `ToolPluginVue`, `ToolPlugin` | Vue |
+| `./react` | `ToolPluginReact` | React |
 
-### 新規追加ファイル
+### Usage Examples
 
-- `src/tools/backendTypes.ts` - バックエンド種別と設定の型定義
-- `src/components/settings/` - バックエンド設定UIコンポーネント
-  - `BackendSettings.vue` - メインコンポーネント (有効なバックエンドのみ表示)
-  - `TextLLMSettings.vue` - テキスト生成バックエンド設定
-  - `ImageGenSettings.vue` - 画像生成バックエンド設定
-  - `MulmocastSettings.vue` - Mulmocast バックエンド設定
-  - `index.ts` - エクスポート
+```typescript
+// Core logic only (no UI)
+import type { ToolPluginCore, ToolContext, ToolResult } from "gui-chat-protocol";
 
-### 追加された関数
+// Vue application
+import type { ToolPlugin } from "gui-chat-protocol/vue";
 
-- `src/tools/index.ts` - `getEnabledBackends()` 関数
-  - 有効なプラグインが使用するバックエンド種別の Set を返す
-  - BackendSettings.vue で表示制御に使用
+// React application
+import type { ToolPluginReact } from "gui-chat-protocol/react";
+```
 
 ---
 
-## 新しいバックエンド設定の追加方法
+## Plugin Structure
 
-新しいバックエンド種別 (例: `audio`) の設定UIを追加する手順。
+### Directory Structure
 
-### 1. 型定義を追加
+```
+GUIChatPluginXxx/
+├── package.json              # npm package configuration
+├── tsconfig.json             # TypeScript configuration
+├── vite.config.ts            # Vite build configuration
+├── src/
+│   ├── index.ts              # Main entry (re-exports core)
+│   ├── style.css             # Tailwind CSS import
+│   ├── core/                 # Framework-agnostic core
+│   │   ├── index.ts          # Core exports
+│   │   ├── types.ts          # Plugin-specific type definitions
+│   │   ├── definition.ts     # Tool definition (schema, SYSTEM_PROMPT)
+│   │   ├── plugin.ts         # execute function and pluginCore
+│   │   ├── samples.ts        # Test samples
+│   │   └── logic.ts          # Business logic (optional)
+│   └── vue/
+│       ├── index.ts          # Vue plugin exports
+│       ├── View.vue          # Main view component
+│       └── Preview.vue       # Preview component
+└── demo/
+    ├── App.vue               # Demo app
+    └── main.ts               # Demo entry point
+```
 
-`src/tools/backendTypes.ts` に設定インターフェースを追加:
+### Core and Vue Separation
+
+**Core (Framework Agnostic):**
 
 ```typescript
-export interface AudioBackendSettings {
-  provider: "openai" | "google" | "elevenlabs";
-  voice?: string;
-}
+// src/core/plugin.ts
+import type { ToolPluginCore } from "gui-chat-protocol";
 
-export interface BackendSettings {
-  textLLM?: TextLLMBackendSettings;
-  imageGen?: ImageGenBackendSettings;
-  audio?: AudioBackendSettings;  // 追加
-}
-```
-
-### 2. 設定コンポーネントを作成
-
-`src/components/settings/AudioSettings.vue` を作成:
-
-```vue
-<template>
-  <div>
-    <label class="block text-sm font-medium text-gray-700 mb-2">
-      Audio Backend
-    </label>
-    <select
-      :value="modelValue.provider"
-      @change="handleProviderChange"
-      class="w-full px-3 py-2 border border-gray-300 rounded-md ..."
-    >
-      <option value="openai">OpenAI</option>
-      <option value="google">Google</option>
-      <option value="elevenlabs">ElevenLabs</option>
-    </select>
-  </div>
-</template>
-
-<script setup lang="ts">
-// ... 実装
-</script>
-```
-
-### 3. index.ts にエクスポートを追加
-
-`src/components/settings/index.ts`:
-
-```typescript
-export { default as AudioSettings } from "./AudioSettings.vue";
-```
-
-### 4. BackendSettings.vue に統合
-
-`src/components/settings/BackendSettings.vue`:
-
-```vue
-<template>
-  <div class="space-y-6">
-    <TextLLMSettings v-if="showTextLLM" ... />
-    <ImageGenSettings v-if="showImageGen" ... />
-    <AudioSettings
-      v-if="showAudio"
-      :model-value="audioBackend"
-      @update:model-value="$emit('update:audioBackend', $event)"
-    />
-  </div>
-</template>
-
-<script setup lang="ts">
-// enabledBackends に基づいて表示を制御
-const showAudio = computed(
-  () => !props.enabledBackends || props.enabledBackends.has("audio"),
-);
-</script>
-```
-
-### 5. Sidebar.vue で pluginConfigs を使用
-
-`src/components/Sidebar.vue`:
-
-```vue
-<BackendSettings
-  :audio-backend="pluginConfigs.audioBackend || defaultValue"
-  @update:audio-backend="handlePluginConfigUpdate('audioBackend', $event)"
-/>
-```
-
-バックエンド設定は全て `pluginConfigs` に保存される。
-
-### 6. プラグインで使用
-
-プラグインで新しいバックエンド種別を宣言:
-
-```typescript
-export const plugin: ToolPlugin<...> = {
-  // ...
-  backends: ["audio"],
+export const pluginCore: ToolPluginCore<XxxToolData, XxxJsonData, XxxArgs> = {
+  toolDefinition: TOOL_DEFINITION,
+  execute: executeXxx,
+  generatingMessage: "Processing...",
+  isEnabled: () => true,
+  systemPrompt: SYSTEM_PROMPT,
 };
 ```
 
-これにより、`audio` バックエンドを使用するプラグインが有効な場合のみ、Audio 設定UIが表示される。
+**Vue (UI Adapter):**
+
+```typescript
+// src/vue/index.ts
+import type { ToolPlugin } from "gui-chat-protocol/vue";
+import { pluginCore } from "../core/plugin";
+import View from "./View.vue";
+import Preview from "./Preview.vue";
+
+export const plugin: ToolPlugin<XxxToolData, XxxJsonData, XxxArgs> = {
+  ...pluginCore,
+  viewComponent: View,
+  previewComponent: Preview,
+};
+```
+
+### Package Exports
+
+```json
+{
+  "exports": {
+    ".": "./dist/index.js",
+    "./core": "./dist/core.js",
+    "./vue": "./dist/vue.js",
+    "./style.css": "./dist/style.css"
+  }
+}
+```
+
+---
+
+## Type System
+
+### Main Types
+
+#### ToolPluginCore
+
+Framework-agnostic plugin definition.
+
+```typescript
+interface ToolPluginCore<T, J, A> {
+  toolDefinition: ToolDefinition;    // Tool definition for LLM
+  execute: (context: ToolContext, args: A) => Promise<ToolResult<T, J>>;
+  generatingMessage: string;          // Message displayed during processing
+  waitingMessage?: string;            // Message to LLM before showing result
+  isEnabled: (startResponse?) => boolean;  // Whether plugin is enabled
+  systemPrompt?: string;              // Additional instructions to LLM
+  samples?: ToolSample[];             // Test samples
+  backends?: BackendType[];           // Backends used
+  inputHandlers?: InputHandler[];     // File/clipboard input
+}
+```
+
+#### ToolResult
+
+Tool execution result.
+
+```typescript
+interface ToolResult<T, J> {
+  message: string;              // Status message to LLM (required)
+  data?: T;                     // Data for View/Preview (not sent to LLM)
+  jsonData?: J;                 // JSON data returned to LLM
+  title?: string;               // Result title
+  instructions?: string;        // Additional instructions to LLM
+  instructionsRequired?: boolean; // Whether to always send instructions
+  updating?: boolean;           // Whether to update existing result
+  viewState?: Record<string, unknown>; // View state
+}
+```
+
+#### ToolContext
+
+Context during tool execution.
+
+```typescript
+interface ToolContext {
+  currentResult?: ToolResult | null;  // Currently selected result
+  app?: ToolContextApp;               // Features provided by app
+}
+```
+
+### Type Parameter Explanation
+
+```typescript
+ToolPlugin<T, J, A>
+```
+
+| Parameter | Description | Usage |
+|-----------|-------------|-------|
+| `T` | Type of `result.data` | Data for UI display (not sent to LLM) |
+| `J` | Type of `result.jsonData` | Data returned to LLM |
+| `A` | Type of `execute` function arguments | Tool parameters |
+
+### Type Usage Guidelines
+
+| Data | Storage Location | Destination | Example |
+|------|-----------------|-------------|---------|
+| Large data for UI display | `result.data` | View/Preview only | Image data, HTML |
+| Data for LLM decision making | `result.jsonData` | LLM | Game state, legal moves |
+| Brief status | `result.message` | LLM | "Image generated" |
+
+---
+
+## Backend Abstraction
+
+### Design Philosophy
+
+Plugins don't know specific AI providers; they only declare "backend types".
+
+```typescript
+// Before: Plugin has provider selection UI (problematic)
+config: {
+  component: HtmlGenerationConfig,  // Claude or Gemini selection
+}
+
+// After: Plugin only declares type (recommended)
+backends: ["textLLM"],
+```
+
+### Backend Types
+
+```typescript
+type BackendType =
+  | "textLLM"    // Text generation LLM (Claude, Gemini)
+  | "imageGen"   // Image generation (DALL-E, Imagen)
+  | "audio"      // Audio processing
+  | "search"     // Search (Exa)
+  | "browse"     // Web browsing
+  | "map"        // Maps (Google Maps)
+  | "mulmocast"; // Mulmocast
+```
+
+### Layer Structure
+
+```
+┌─────────────────────────────────────────┐
+│  Plugin                                  │
+│  backends: ["textLLM"]                   │ ← Declares type only
+├─────────────────────────────────────────┤
+│  App Layer (Configuration Management)    │
+│  textLLM: { provider: "anthropic" }     │ ← Specific provider
+├─────────────────────────────────────────┤
+│  Backend Service                         │
+│  Anthropic API / Google API             │ ← Actual API calls
+└─────────────────────────────────────────┘
+```
+
+### Features Provided by context.app
+
+| Feature | Description | Backend Used |
+|---------|-------------|--------------|
+| `generateImage(prompt)` | Image generation | `imageGen` |
+| `generateHtml({ prompt })` | HTML generation | `textLLM` |
+| `browseUrl(url)` | Fetch web page | `browse` |
+| `searchExa(args)` | Exa search | `search` |
+| `getConfig(key)` | Get configuration value | - |
+| `setConfig(key, value)` | Save configuration value | - |
+
+---
+
+## External Input Handlers
+
+### Overview
+
+A mechanism for plugins to accept file uploads and clipboard input.
+
+### InputHandler Types
+
+```typescript
+type InputHandler =
+  | FileInputHandler        // File upload
+  | ClipboardImageInputHandler  // Clipboard image
+  | UrlInputHandler         // URL input
+  | TextInputHandler        // Text input
+  | CameraInputHandler      // Camera capture
+  | AudioInputHandler;      // Audio input
+```
+
+### Usage Example
+
+```typescript
+export const pluginCore: ToolPluginCore = {
+  // ...
+  inputHandlers: [
+    {
+      type: "file",
+      acceptedTypes: ["image/png", "image/jpeg"],
+      handleInput: (data, fileName) => ({
+        toolName: TOOL_NAME,
+        data: { imageData: data },
+        message: "",
+        title: fileName,
+      }),
+    },
+    {
+      type: "clipboard-image",
+      handleInput: (data) => ({
+        toolName: TOOL_NAME,
+        data: { imageData: data },
+        message: "Image pasted from clipboard",
+      }),
+    },
+  ],
+};
+```
+
+---
+
+## Future Extensions
+
+### Resource Reference System
+
+Enable tool results to be referenced from other tools.
+
+```typescript
+interface ToolContext {
+  // Existing
+  currentResult?: ToolResult | null;
+  app?: ToolContextApp;
+
+  // Future addition
+  results?: {
+    getById: (uuid: string) => ToolResultComplete | null;
+    getByType: (resourceType: string) => ToolResultComplete[];
+  };
+}
+```
+
+**Expected Benefits:**
+- Enables "use the image I just created"
+- Explicit data sharing between tools
+
+### Tool Capabilities Declaration
+
+Declare what tools can do.
+
+```typescript
+interface ToolCapabilities {
+  outputType?: "image" | "document" | "chart" | "audio" | "data";
+  acceptsInputTypes?: string[];
+  streaming?: boolean;
+  undoable?: boolean;
+}
+```
+
+**Expected Benefits:**
+- LLM can make appropriate decisions when selecting tools
+- Host app can dynamically adjust UI
+
+### Streaming Execution
+
+Display progress in real-time for long-running processes.
+
+```typescript
+interface ToolPluginCore {
+  execute: (context, args) => Promise<ToolResult>;
+
+  // Future addition
+  executeStream?: (
+    context,
+    args,
+    onProgress: (update: StreamUpdate) => void
+  ) => Promise<ToolResult>;
+}
+```
+
+---
+
+## References
+
+### Related Documents
+
+| Document | Contents |
+|----------|----------|
+| [plugin-development-guide.md](./plugin-development-guide.md) | Detailed plugin development procedures |
+| [plugin-extraction-guide.md](./plugin-extraction-guide.md) | Procedures for extracting existing plugins |
+
+### Existing Plugin List
+
+| Package Name | Features |
+|-------------|----------|
+| `@gui-chat-plugin/quiz` | Uses jsonData, simple data display |
+| `@gui-chat-plugin/generate-image` | inputHandlers, backends, shared UI |
+| `@gui-chat-plugin/othello` | Game, interactive UI, sendTextMessage |
+| `@gui-chat-plugin/generate-html` | context.app, isEnabled, backends |
+| `@gui-chat-plugin/scroll-to-anchor` | updating, viewState, currentResult |
+| `@gui-chat-plugin/switch-role` | context extension, custom functions |
+| `@gui-chat-plugin/spreadsheet` | Complex logic, logic.ts separation |
+
+### External Resources
+
+- [gui-chat-protocol npm package](https://www.npmjs.com/package/gui-chat-protocol)
+- [Vue 3 Components](https://vuejs.org/guide/components/registration.html)
+- [Vite Library Mode](https://vitejs.dev/guide/build.html#library-mode)
