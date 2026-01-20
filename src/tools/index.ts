@@ -1,12 +1,3 @@
-// Internal plugins (not yet extracted to npm)
-import * as CameraPlugin from "./models/camera";
-import * as CanvasPlugin from "./models/canvas";
-import * as HtmlPlugin from "./models/html";
-import * as GenerateHtmlPlugin from "./models/generateHtml";
-import * as EditHtmlPlugin from "./models/editHtml";
-import * as SwitchRolePlugin from "./models/switchRole";
-import * as SetImageStylePlugin from "./models/setImageStyle";
-import * as ScrollToAnchorPlugin from "./models/scrollToAnchor";
 import type { StartApiResponse } from "../../server/types";
 import type {
   ToolContext,
@@ -38,6 +29,14 @@ import MarkdownPlugin from "@gui-chat-plugin/markdown/vue";
 import EditImagePlugin from "@gui-chat-plugin/edit-image/vue";
 import MulmocastPlugin from "@gui-chat-plugin/mulmocast/vue";
 import Present3DPlugin from "@gui-chat-plugin/present3d/vue";
+import CameraPlugin from "@gui-chat-plugin/camera/vue";
+import CanvasPlugin from "@gui-chat-plugin/canvas/vue";
+import HtmlPlugin from "@gui-chat-plugin/html/vue";
+import GenerateHtmlPlugin from "@gui-chat-plugin/generate-html/vue";
+import EditHtmlPlugin from "@gui-chat-plugin/edit-html/vue";
+import SwitchRolePlugin from "@gui-chat-plugin/switch-role/vue";
+import SetImageStylePlugin from "@gui-chat-plugin/set-image-style/vue";
+import ScrollToAnchorPlugin from "@gui-chat-plugin/scroll-to-anchor/vue";
 
 const pluginList = [
   // External plugins from npm packages
@@ -59,7 +58,6 @@ const pluginList = [
   EditImagePlugin,
   MulmocastPlugin,
   Present3DPlugin,
-  // Internal plugins (not yet extracted to npm)
   CameraPlugin,
   CanvasPlugin,
   HtmlPlugin,

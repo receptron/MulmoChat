@@ -315,38 +315,44 @@ router.post("/text/session", (req: Request, res: Response) => {
   }
 });
 
-router.get("/text/session/:sessionId", (req: Request, res: Response) => {
-  const session = getTextSession(req.params.sessionId);
-  if (!session) {
-    res.status(404).json({
-      success: false,
-      error: "Session not found",
+router.get(
+  "/text/session/:sessionId",
+  (req: Request<{ sessionId: string }>, res: Response) => {
+    const session = getTextSession(req.params.sessionId);
+    if (!session) {
+      res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      session: serializeSession(session),
     });
-    return;
-  }
+  },
+);
 
-  res.json({
-    success: true,
-    session: serializeSession(session),
-  });
-});
+router.delete(
+  "/text/session/:sessionId",
+  (req: Request<{ sessionId: string }>, res: Response) => {
+    const deleted = deleteTextSession(req.params.sessionId);
+    if (!deleted) {
+      res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+      return;
+    }
 
-router.delete("/text/session/:sessionId", (req: Request, res: Response) => {
-  const deleted = deleteTextSession(req.params.sessionId);
-  if (!deleted) {
-    res.status(404).json({
-      success: false,
-      error: "Session not found",
-    });
-    return;
-  }
-
-  res.json({ success: true });
-});
+    res.json({ success: true });
+  },
+);
 
 router.post(
   "/text/session/:sessionId/instructions",
-  async (req: Request, res: Response) => {
+  async (req: Request<{ sessionId: string }>, res: Response) => {
     const session = getTextSession(req.params.sessionId);
     if (!session) {
       res.status(404).json({
@@ -439,7 +445,7 @@ router.post(
 
 router.post(
   "/text/session/:sessionId/tool-output",
-  (req: Request, res: Response) => {
+  (req: Request<{ sessionId: string }>, res: Response) => {
     const session = getTextSession(req.params.sessionId);
     if (!session) {
       res.status(404).json({
@@ -484,7 +490,7 @@ router.post(
 
 router.post(
   "/text/session/:sessionId/message",
-  async (req: Request, res: Response) => {
+  async (req: Request<{ sessionId: string }>, res: Response) => {
     const session = getTextSession(req.params.sessionId);
     if (!session) {
       res.status(404).json({
