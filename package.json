@@ -46,7 +46,7 @@
     "@gui-chat-plugin/canvas": "^0.1.0",
     "@gui-chat-plugin/edit-html": "^0.1.0",
     "@gui-chat-plugin/edit-image": "^0.0.1",
-    "@gui-chat-plugin/exa": "^0.1.0",
+    "@gui-chat-plugin/exa": "^0.1.1",
     "@gui-chat-plugin/generate-html": "^0.1.0",
     "@gui-chat-plugin/go": "^0.1.0",
     "@gui-chat-plugin/html": "^0.1.0",

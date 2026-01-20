@@ -512,11 +512,12 @@
   dependencies:
     gui-chat-protocol "^0.0.1"
 
-"@gui-chat-plugin/exa@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/exa/-/exa-0.1.0.tgz#aef4c4fb9b6006095e44924f76140f4275aedd54"
-  integrity sha512-62cuazOkZzAusTeNTP3Jk7Y6Gl8liS2J6WAn1xN8v8jjUpXIf+M4+w+Pw+BVKnZa4F063MLmUJKM196D2PQ2BQ==
+"@gui-chat-plugin/exa@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/exa/-/exa-0.1.1.tgz#703dd17ba3c7b02644d77fb373dfa7815991d91f"
+  integrity sha512-1u1Y0KT6iK8PcJ+WkCamYzGBktARG53nFKybh9C2Tu+v7Dwm0ojcDcioktKORsdZ7wiRONQ3Cxg+4jfqPLBRvg==
   dependencies:
+    exa-js "^2.0.12"
     gui-chat-protocol "^0.0.1"
 
 "@gui-chat-plugin/generate-html@^0.1.0":
@@ -2838,6 +2839,17 @@ exa-js@^1.9.3:
   version "1.10.2"
   resolved "https://registry.yarnpkg.com/exa-js/-/exa-js-1.10.2.tgz#92147c6da879d177d3eea675ac20d032b011b2ba"
   integrity sha512-nObBipoXKL5uL6Dc8Q3c9GA4xEfunQMdGGqtcCkQSNilzR6AExyVkBxTdpWqC20jKa3/dvXu6otXQLaRyZNqGw==
+  dependencies:
+    cross-fetch "~4.1.0"
+    dotenv "~16.4.7"
+    openai "^5.0.1"
+    zod "^3.22.0"
+    zod-to-json-schema "^3.20.0"
+
+exa-js@^2.0.12:
+  version "2.0.12"
+  resolved "https://registry.yarnpkg.com/exa-js/-/exa-js-2.0.12.tgz#9d2416de2969db4ada52552438560d4639354860"
+  integrity sha512-56ZYm8FLKAh3JXCptr0vlG8f39CZxCl4QcPW9QR4TSKS60PU12pEfuQdf+6xGWwQp+doTgXguCqqzxtvgDTDKw==
   dependencies:
     cross-fetch "~4.1.0"
     dotenv "~16.4.7"
