@@ -47,6 +47,9 @@ grep "^import" src/tools/views/YOUR_PLUGIN.vue
 
 # Preview コンポーネントの依存を確認
 grep "^import" src/tools/previews/YOUR_PLUGIN.vue
+
+# View/Preview の外部依存を確認
+grep -rh "import.*from.*\.\./\.\./components\|import.*from.*\.\./\.\./utils" src/tools/views/YOUR_PLUGIN.vue src/tools/previews/YOUR_PLUGIN.vue
 ```
 
 ### Step 2: 依存関係の分類
@@ -117,6 +120,44 @@ grep "^import.*from" src/tools/views/${PLUGIN_NAME}.vue | grep -v "from \"\.\.\/
 
 ## 完全な移行手順
 
+### ディレクトリ構造
+
+新しいプラグインは以下の構造で作成します：
+
+```
+GUIChatPluginXxx/
+├── package.json
+├── tsconfig.json
+├── tsconfig.build.json
+├── vite.config.ts
+├── eslint.config.js
+├── index.html
+├── README.md          # npm 公開用 README
+├── .gitignore
+├── check-plugin-structure.sh      # ファイル構成チェック
+├── check-mulmochat-integration.sh # MulmoChat統合チェック
+├── refresh-in-mulmochat.sh        # MulmoChatに反映
+├── .github/
+│   └── workflows/
+│       └── pull_request.yaml  # CI 設定
+├── src/
+│   ├── index.ts           # メインエントリポイント（core を再エクスポート）
+│   ├── style.css          # Tailwind CSS インポート
+│   ├── core/
+│   │   ├── index.ts       # Core エクスポート
+│   │   ├── types.ts       # プラグイン固有の型定義
+│   │   ├── definition.ts  # ツール定義（スキーマ）
+│   │   ├── samples.ts     # サンプルデータ（オプション）
+│   │   └── plugin.ts      # コアプラグインロジック
+│   └── vue/
+│       ├── index.ts       # Vue プラグインエクスポート
+│       ├── View.vue       # メインビューコンポーネント
+│       └── Preview.vue    # プレビューコンポーネント
+└── demo/
+    ├── App.vue            # デモアプリ
+    └── main.ts            # デモエントリポイント
+```
+
 ### Phase 1: ディレクトリ構造の作成
 
 ```bash
@@ -128,6 +169,44 @@ mkdir -p ${PLUGIN_DIR}/.github/workflows
 
 # サブディレクトリがある場合
 # mkdir -p ${PLUGIN_DIR}/src/engine
+```
+
+### Phase 1.5: テンプレートリポジトリからファイルをコピー（推奨）
+
+MulmoChatPluginQuiz をテンプレートとして使用すると効率的です：
+
+```bash
+cd ../GUIChatPluginXxx
+
+# テンプレートリポジトリをクローン（まだない場合）
+git clone https://github.com/receptron/MulmoChatPluginQuiz.git /tmp/MulmoChatPluginQuiz
+
+# 設定ファイルをコピー
+cp /tmp/MulmoChatPluginQuiz/tsconfig.json .
+cp /tmp/MulmoChatPluginQuiz/tsconfig.build.json .
+cp /tmp/MulmoChatPluginQuiz/eslint.config.js .
+cp /tmp/MulmoChatPluginQuiz/.gitignore .
+cp /tmp/MulmoChatPluginQuiz/index.html .
+cp /tmp/MulmoChatPluginQuiz/.github/workflows/pull_request.yaml .github/workflows/
+cp /tmp/MulmoChatPluginQuiz/src/style.css src/
+
+# package.json と vite.config.ts もコピーしてからプラグイン名を変更
+cp /tmp/MulmoChatPluginQuiz/package.json .
+cp /tmp/MulmoChatPluginQuiz/vite.config.ts .
+
+# package.json の name, description, keywords を変更
+# vite.config.ts の name を変更（例: GUIChatPluginQuiz → GUIChatPluginXxx）
+
+# README.md もコピーして内容を変更
+cp /tmp/MulmoChatPluginQuiz/README.md .
+# README.md のプラグイン名、説明、Test Prompts を変更
+```
+
+または、ローカルにクローン済みの場合：
+
+```bash
+cp ../MulmoChatPluginQuiz/tsconfig.json .
+# ... 同様に他のファイルもコピー
 ```
 
 ### Phase 2: package.json の作成
@@ -169,10 +248,8 @@ mkdir -p ${PLUGIN_DIR}/.github/workflows
     "lint": "eslint src demo"
   },
   "peerDependencies": {
+    "gui-chat-protocol": "^0.0.1",
     "vue": "^3.5.0"
-  },
-  "dependencies": {
-    "gui-chat-protocol": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.18",
@@ -182,6 +259,7 @@ mkdir -p ${PLUGIN_DIR}/.github/workflows
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "^10.6.2",
     "globals": "^17.0.0",
+    "gui-chat-protocol": "^0.0.2",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
@@ -310,6 +388,10 @@ export default [
       ...vuePlugin.configs["flat/recommended"].rules,
       "vue/multi-word-component-names": "off",
       "@typescript-eslint/no-explicit-any": "off",  // 必要に応じて
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
       "no-useless-escape": "off",  // 必要に応じて
     },
   },
@@ -524,6 +606,7 @@ import { someFunction } from "../core/plugin";
 
 const props = defineProps<{
   selectedResult: ToolResult<XxxToolData>;
+  sendTextMessage?: (text: string) => void;
 }>();
 
 const emit = defineEmits<{
@@ -537,6 +620,10 @@ const emit = defineEmits<{
 /* 元のスタイルをコピー */
 </style>
 ```
+
+**重要なインポートルール:**
+- `ToolResult` は `gui-chat-protocol` からインポート
+- プラグイン固有の型は `../core/types` からインポート
 
 #### src/vue/Preview.vue
 
@@ -632,7 +719,7 @@ export * from "./core";
 ```vue
 <template>
   <div class="max-w-3xl mx-auto">
-    <h1 class="text-gray-800 mb-8">{{ pluginName }} Demo</h1>
+    <h1 class="text-2xl font-bold text-gray-800 mb-8">{{ pluginName }} Demo</h1>
 
     <!-- Sample Selector Section -->
     <div class="bg-white rounded-lg p-5 mb-5 shadow-md">
@@ -740,6 +827,7 @@ onMounted(() => {
 ```typescript
 import { createApp } from "vue";
 import App from "./App.vue";
+import "../src/style.css";
 
 createApp(App).mount("#app");
 ```
@@ -908,6 +996,199 @@ yarn lint
 MIT
 ```
 
+### Phase 11: 開発スクリプトの作成
+
+#### check-plugin-structure.sh
+
+```bash
+#!/bin/bash
+# Plugin Structure Checker
+# Usage: ./check-plugin-structure.sh
+
+PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_NAME=$(basename "$PLUGIN_DIR")
+
+echo "=== Checking plugin structure: $PLUGIN_NAME ==="
+echo ""
+
+# Required files list
+REQUIRED_FILES=(
+  # Root config files
+  ".gitignore"
+  "package.json"
+  "tsconfig.json"
+  "tsconfig.build.json"
+  "vite.config.ts"
+  "eslint.config.js"
+  "index.html"
+  "README.md"
+
+  # Dev scripts
+  "check-plugin-structure.sh"
+  "check-mulmochat-integration.sh"
+  "refresh-in-mulmochat.sh"
+
+  # Source entry
+  "src/index.ts"
+  "src/style.css"
+
+  # Core module
+  "src/core/index.ts"
+  "src/core/types.ts"
+  "src/core/definition.ts"
+  "src/core/plugin.ts"
+  "src/core/samples.ts"
+
+  # Vue module
+  "src/vue/index.ts"
+  "src/vue/View.vue"
+  "src/vue/Preview.vue"
+
+  # Demo files (for yarn run dev)
+  "demo/main.ts"
+  "demo/App.vue"
+)
+
+MISSING=()
+OK=()
+
+for file in "${REQUIRED_FILES[@]}"; do
+  if [ -f "$PLUGIN_DIR/$file" ]; then
+    OK+=("$file")
+  else
+    MISSING+=("$file")
+  fi
+done
+
+# Print results
+echo "OK (${#OK[@]} files):"
+for file in "${OK[@]}"; do
+  echo "  ✓ $file"
+done
+
+echo ""
+
+if [ ${#MISSING[@]} -gt 0 ]; then
+  echo "MISSING (${#MISSING[@]} files):"
+  for file in "${MISSING[@]}"; do
+    echo "  ✗ $file"
+  done
+  echo ""
+  echo "=== FAILED: Missing ${#MISSING[@]} required files ==="
+  exit 1
+else
+  echo "=== PASSED: All required files exist ==="
+  exit 0
+fi
+```
+
+#### check-mulmochat-integration.sh
+
+```bash
+#!/bin/bash
+# MulmoChat Integration Checker
+# Usage: ./check-mulmochat-integration.sh
+
+PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_NAME="xxx"  # プラグイン名に変更
+PACKAGE_NAME="@gui-chat-plugin/xxx"  # パッケージ名に変更
+MULMOCHAT_DIR="$PLUGIN_DIR/../MulmoChat"
+
+echo "=== Checking MulmoChat integration for $PACKAGE_NAME ==="
+echo ""
+
+ERRORS=()
+
+# Check 1: package.json dependency
+echo "[1/3] Checking package.json dependency..."
+if grep -q "\"$PACKAGE_NAME\"" "$MULMOCHAT_DIR/package.json"; then
+  echo "  ✓ package.json: dependency exists"
+else
+  echo "  ✗ package.json: dependency MISSING"
+  echo "    Add to MulmoChat/package.json dependencies:"
+  echo "    \"$PACKAGE_NAME\": \"file:../GUIChatPluginXxx\","
+  ERRORS+=("package.json dependency")
+fi
+
+# Check 2: main.ts CSS import
+echo ""
+echo "[2/3] Checking main.ts CSS import..."
+if grep -q "$PACKAGE_NAME/style.css" "$MULMOCHAT_DIR/src/main.ts"; then
+  echo "  ✓ main.ts: CSS import exists"
+else
+  echo "  ✗ main.ts: CSS import MISSING"
+  echo "    Add to MulmoChat/src/main.ts:"
+  echo "    import \"$PACKAGE_NAME/style.css\";"
+  ERRORS+=("main.ts CSS import")
+fi
+
+# Check 3: tools/index.ts plugin registration
+echo ""
+echo "[3/3] Checking tools/index.ts plugin registration..."
+if grep -q "XxxPlugin" "$MULMOCHAT_DIR/src/tools/index.ts"; then
+  echo "  ✓ tools/index.ts: plugin registered"
+else
+  echo "  ✗ tools/index.ts: plugin NOT registered"
+  echo "    Add to MulmoChat/src/tools/index.ts:"
+  echo "    import XxxPlugin from \"$PACKAGE_NAME/vue\";"
+  echo "    // Add XxxPlugin to pluginList array"
+  ERRORS+=("tools/index.ts registration")
+fi
+
+echo ""
+if [ ${#ERRORS[@]} -gt 0 ]; then
+  echo "=== FAILED: ${#ERRORS[@]} integration issue(s) found ==="
+  echo ""
+  echo "Missing items:"
+  for err in "${ERRORS[@]}"; do
+    echo "  - $err"
+  done
+  exit 1
+else
+  echo "=== PASSED: MulmoChat integration complete ==="
+  exit 0
+fi
+```
+
+#### refresh-in-mulmochat.sh
+
+```bash
+#!/bin/bash
+# Refresh plugin in MulmoChat
+# Usage: ./refresh-in-mulmochat.sh
+
+PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_NAME=$(basename "$PLUGIN_DIR")
+MULMOCHAT_DIR="$PLUGIN_DIR/../MulmoChat"
+PACKAGE_NAME="@gui-chat-plugin/xxx"  # パッケージ名に変更
+
+echo "=== Refreshing $PLUGIN_NAME in MulmoChat ==="
+
+# Step 1: Build plugin
+echo ""
+echo "[1/3] Building plugin..."
+cd "$PLUGIN_DIR"
+yarn build
+if [ $? -ne 0 ]; then
+  echo "ERROR: Build failed"
+  exit 1
+fi
+
+# Step 2: Remove cached version in MulmoChat
+echo ""
+echo "[2/3] Clearing cache in MulmoChat..."
+rm -rf "$MULMOCHAT_DIR/node_modules/$PACKAGE_NAME"
+
+# Step 3: Reinstall
+echo ""
+echo "[3/3] Reinstalling in MulmoChat..."
+cd "$MULMOCHAT_DIR"
+yarn install --check-files
+
+echo ""
+echo "=== Done! Restart MulmoChat dev server to see changes ==="
+```
+
 ---
 
 ## MulmoChat への統合
@@ -1029,6 +1310,13 @@ import { TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // TOOL_NAME を
 export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // これは OK
 ```
 
+#### yarn install が新しいパッケージを認識しない
+
+```bash
+rm -rf node_modules yarn.lock
+yarn install
+```
+
 ---
 
 ## 完了チェックリスト
@@ -1039,6 +1327,9 @@ export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // �
 - [ ] 必要な npm 依存パッケージが `dependencies` に追加されている
 - [ ] `.github/workflows/pull_request.yaml` が作成されている
 - [ ] `README.md` が作成されている
+- [ ] `check-plugin-structure.sh` が作成されている
+- [ ] `check-mulmochat-integration.sh` が作成されている
+- [ ] `refresh-in-mulmochat.sh` が作成されている
 - [ ] `yarn install` が成功する
 - [ ] `yarn typecheck` がエラーなしで完了する
 - [ ] `yarn lint` がエラーなしで完了する
@@ -1047,6 +1338,7 @@ export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // �
 ### MulmoChat
 
 - [ ] `package.json` にプラグインへの参照が追加されている
+- [ ] `src/main.ts` に CSS インポートが追加されている
 - [ ] `src/tools/index.ts` でインポートと pluginList が更新されている
 - [ ] `yarn install` が成功する
 - [ ] `yarn typecheck` がエラーなしで完了する
@@ -1064,5 +1356,16 @@ export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // �
 | `@gui-chat-plugin/generate-image` | GUIChatPluginGenerateImage | 画像生成 |
 | `@gui-chat-plugin/summarize-pdf` | GUIChatPluginSummarizePdf | inputHandlers 使用 |
 | `@gui-chat-plugin/spreadsheet` | GUIChatPluginSpreadsheet | engine サブディレクトリあり |
+| `@gui-chat-plugin/scroll-to-anchor` | GUIChatPluginScrollToAnchor | アンカーへスクロール |
+| `@gui-chat-plugin/set-image-style` | GUIChatPluginSetImageStyle | 画像スタイル設定 |
+| `@gui-chat-plugin/switch-role` | GUIChatPluginSwitchRole | ロール切り替え |
+| `@gui-chat-plugin/camera` | GUIChatPluginCamera | カメラプラグイン |
+| `@gui-chat-plugin/canvas` | GUIChatPluginCanvas | キャンバスプラグイン |
+| `@gui-chat-plugin/edit-html` | GUIChatPluginEditHtml | HTML 編集 |
+| `@gui-chat-plugin/generate-html` | GUIChatPluginGenerateHtml | HTML 生成 |
+| `@gui-chat-plugin/html` | GUIChatPluginHtml | HTML 表示 |
+| `@gui-chat-plugin/othello` | GUIChatPluginOthello | オセロゲーム |
+| `@gui-chat-plugin/tictactoe` | GUIChatPluginTicTacToe | 三目並べゲーム |
+| `@gui-chat-plugin/go` | GUIChatPluginGo | 囲碁ゲーム |
 
 これらのプラグインのソースコードを参考にしてください。

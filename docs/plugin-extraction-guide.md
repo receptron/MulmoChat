@@ -1,39 +1,128 @@
-# プラグイン独立化ガイド
+# Plugin Extraction Guide (Detailed Version)
 
-このドキュメントでは、MulmoChat の内部プラグイン (`src/tools/models/`) を独立した npm パッケージとして抽出する手順を説明します。
+This document is a complete guide for extracting MulmoChat's internal plugins as independent npm packages. The goal is to enable Claude Code or developers to perfectly execute plugin migration by reading this document alone.
 
-## 概要
+## Table of Contents
 
-MulmoChat のプラグインは `gui-chat-protocol` パッケージの型定義を使用しています。プラグインを独立化することで：
+1. [Overview and Purpose](#overview-and-purpose)
+2. [Determining Plugin Extractability](#determining-plugin-extractability)
+3. [Pre-Migration Preparation](#pre-migration-preparation)
+4. [Complete Migration Steps](#complete-migration-steps)
+5. [MulmoChat Integration](#mulmochat-integration)
+6. [Verification and Troubleshooting](#verification-and-troubleshooting)
+7. [Completion Checklist](#completion-checklist)
 
-- 他のプロジェクトでも再利用可能になる
-- 独立してテスト・開発できる
-- npm で公開・配布できる
+---
 
-## 前提条件
+## Overview and Purpose
 
-### 独立化可能なプラグインの条件
+### Why Extract Plugins
 
-プラグインが以下の条件を満たす場合、独立化が可能です：
+1. **Reusability**: Can be used in other projects
+2. **Independent Development**: Can test and develop plugins standalone
+3. **Distribution**: Can publish and distribute via npm
+4. **Maintainability**: Improved maintainability through codebase separation
 
-1. **`src/components/` に依存していない** - 共有コンポーネントに依存している場合は、先にそのコンポーネントを npm 化する必要がある
-2. **他のプラグインと型を共有していない**（または共有型を npm 化している）
+### Required Knowledge
 
-**注意**: サーバー API に依存しているプラグインも独立化可能です。
+- TypeScript
+- Vue 3 Composition API
+- Basic npm package structure
+- gui-chat-protocol type system
 
-### 依存関係の確認方法
+---
+
+## Determining Plugin Extractability
+
+### Step 1: Check Plugin Dependencies
+
+Check dependencies with the following commands:
 
 ```bash
-# View/Preview の外部依存を確認
-grep -rh "import.*from.*\.\./\.\./components\|import.*from.*\.\./\.\./utils" src/tools/views/YOUR_PLUGIN.vue src/tools/previews/YOUR_PLUGIN.vue
-
-# プラグイン本体の依存を確認
+# Check plugin body dependencies
 grep "^import" src/tools/models/YOUR_PLUGIN.ts
+
+# Check View component dependencies
+grep "^import" src/tools/views/YOUR_PLUGIN.vue
+
+# Check Preview component dependencies
+grep "^import" src/tools/previews/YOUR_PLUGIN.vue
+
+# Check View/Preview external dependencies
+grep -rh "import.*from.*\.\./\.\./components\|import.*from.*\.\./\.\./utils" src/tools/views/YOUR_PLUGIN.vue src/tools/previews/YOUR_PLUGIN.vue
 ```
 
-## ディレクトリ構造
+### Step 2: Classify Dependencies
 
-新しいプラグインは以下の構造で作成します：
+#### ✅ Extractable Dependencies
+
+| Dependency | Solution |
+|------------|----------|
+| `gui-chat-protocol` | Use as-is |
+| npm packages | Add to `dependencies` |
+| `../logic/xxxLogic` | Include in plugin |
+| `./xxx-engine/` | Include in plugin |
+| Plugin-specific JSON files | Include in plugin |
+
+#### ⚠️ Dependencies That May Require Pre-Extraction Work
+
+| Dependency | Solution |
+|------------|----------|
+| `../../components/Xxx.vue` | Extract to npm first, or include in plugin |
+| `../../utils/xxx` | If shared, extract to npm first |
+| Shared types with other plugins | Extract shared types to npm |
+
+**Note**: Plugins that depend on server APIs can also be extracted. Server APIs can be accessed via `context`.
+
+### Current Extractable Plugins List
+
+Refer to `src/tools/memo.md` and verify:
+
+```bash
+# Check for dependencies on src/components
+grep -r "../../components" src/tools/models/YOUR_PLUGIN.ts src/tools/views/YOUR_PLUGIN.vue src/tools/previews/YOUR_PLUGIN.vue
+```
+
+---
+
+## Pre-Migration Preparation
+
+### 1. Identify Source Files
+
+Identify the files for the plugin to migrate:
+
+```bash
+# Set plugin name (e.g., spreadsheet)
+PLUGIN_NAME=spreadsheet
+
+# Check related files
+ls -la src/tools/models/${PLUGIN_NAME}*
+ls -la src/tools/views/${PLUGIN_NAME}*
+ls -la src/tools/previews/${PLUGIN_NAME}*
+```
+
+### 2. Check for Additional Subdirectories
+
+```bash
+# Check for subdirectories (e.g., spreadsheet-engine)
+ls -la src/tools/models/${PLUGIN_NAME}-*/
+```
+
+### 3. Check npm Dependencies
+
+Check npm packages used in View components:
+
+```bash
+grep "^import.*from" src/tools/views/${PLUGIN_NAME}.vue | grep -v "from \"\.\.\/" | grep -v "from \"vue\""
+```
+
+---
+
+## Complete Migration Steps
+
+### Directory Structure
+
+Create new plugins with the following structure:
 
 ```
 GUIChatPluginXxx/
@@ -43,47 +132,56 @@ GUIChatPluginXxx/
 ├── vite.config.ts
 ├── eslint.config.js
 ├── index.html
-├── README.md          # npm 公開用 README
+├── README.md                      # README for npm publishing
+├── .gitignore
+├── check-plugin-structure.sh      # File structure check
+├── check-mulmochat-integration.sh # MulmoChat integration check
+├── refresh-in-mulmochat.sh        # Refresh in MulmoChat
 ├── .github/
 │   └── workflows/
-│       └── pull_request.yaml  # CI 設定
+│       └── pull_request.yaml      # CI configuration
 ├── src/
-│   ├── index.ts           # メインエントリポイント（core を再エクスポート）
-│   ├── style.css          # Tailwind CSS インポート
+│   ├── index.ts           # Main entry point (re-exports core)
+│   ├── style.css          # Tailwind CSS import
 │   ├── core/
-│   │   ├── index.ts       # Core エクスポート
-│   │   ├── types.ts       # プラグイン固有の型定義
-│   │   ├── definition.ts  # ツール定義（スキーマ）
-│   │   ├── samples.ts     # サンプルデータ（オプション）
-│   │   └── plugin.ts      # コアプラグインロジック
+│   │   ├── index.ts       # Core exports
+│   │   ├── types.ts       # Plugin-specific type definitions
+│   │   ├── definition.ts  # Tool definition (schema)
+│   │   ├── samples.ts     # Sample data (optional)
+│   │   └── plugin.ts      # Core plugin logic
 │   └── vue/
-│       ├── index.ts       # Vue プラグインエクスポート
-│       ├── View.vue       # メインビューコンポーネント
-│       └── Preview.vue    # プレビューコンポーネント
+│       ├── index.ts       # Vue plugin exports
+│       ├── View.vue       # Main view component
+│       └── Preview.vue    # Preview component
 └── demo/
-    ├── App.vue            # デモアプリ
-    └── main.ts            # デモエントリポイント
+    ├── App.vue            # Demo app
+    └── main.ts            # Demo entry point
 ```
 
-## 移行手順
-
-### Step 1: ディレクトリ作成
+### Phase 1: Create Directory Structure
 
 ```bash
-mkdir -p ../GUIChatPluginXxx/src/{core,vue} ../GUIChatPluginXxx/demo ../GUIChatPluginXxx/.github/workflows
+# Create new plugin directory
+PLUGIN_DIR=../GUIChatPlugin$(echo ${PLUGIN_NAME^})  # Capitalize first letter
+mkdir -p ${PLUGIN_DIR}/src/{core,vue}
+mkdir -p ${PLUGIN_DIR}/demo
+mkdir -p ${PLUGIN_DIR}/.github/workflows
+
+# If subdirectory exists
+# mkdir -p ${PLUGIN_DIR}/src/engine
 ```
 
-### Step 1.5: テンプレートリポジトリからファイルをコピー（推奨）
+### Phase 1.5: Copy Files from Template Repository (Recommended)
 
-MulmoChatPluginQuiz をテンプレートとして使用すると効率的です：
+Using MulmoChatPluginQuiz as a template is efficient:
 
 ```bash
 cd ../GUIChatPluginXxx
 
-# テンプレートリポジトリをクローン（まだない場合）
+# Clone template repository (if not already)
 git clone https://github.com/receptron/MulmoChatPluginQuiz.git /tmp/MulmoChatPluginQuiz
 
-# 設定ファイルをコピー
+# Copy configuration files
 cp /tmp/MulmoChatPluginQuiz/tsconfig.json .
 cp /tmp/MulmoChatPluginQuiz/tsconfig.build.json .
 cp /tmp/MulmoChatPluginQuiz/eslint.config.js .
@@ -92,26 +190,28 @@ cp /tmp/MulmoChatPluginQuiz/index.html .
 cp /tmp/MulmoChatPluginQuiz/.github/workflows/pull_request.yaml .github/workflows/
 cp /tmp/MulmoChatPluginQuiz/src/style.css src/
 
-# package.json と vite.config.ts もコピーしてからプラグイン名を変更
+# Copy package.json and vite.config.ts, then change plugin name
 cp /tmp/MulmoChatPluginQuiz/package.json .
 cp /tmp/MulmoChatPluginQuiz/vite.config.ts .
 
-# package.json の name, description, keywords を変更
-# vite.config.ts の name を変更（例: GUIChatPluginQuiz → GUIChatPluginXxx）
+# Change name, description, keywords in package.json
+# Change name in vite.config.ts (e.g., GUIChatPluginQuiz → GUIChatPluginXxx)
 
-# README.md もコピーして内容を変更
+# Copy README.md and change content
 cp /tmp/MulmoChatPluginQuiz/README.md .
-# README.md のプラグイン名、説明、Test Prompts を変更
+# Change plugin name, description, Test Prompts in README.md
 ```
 
-または、ローカルにクローン済みの場合：
+Or if already cloned locally:
 
 ```bash
 cp ../MulmoChatPluginQuiz/tsconfig.json .
-# ... 同様に他のファイルもコピー
+# ... copy other files similarly
 ```
 
-### Step 2: package.json 作成
+### Phase 2: Create package.json
+
+**File: `package.json`**
 
 ```json
 {
@@ -148,10 +248,8 @@ cp ../MulmoChatPluginQuiz/tsconfig.json .
     "lint": "eslint src demo"
   },
   "peerDependencies": {
+    "gui-chat-protocol": "^0.0.1",
     "vue": "^3.5.0"
-  },
-  "dependencies": {
-    "gui-chat-protocol": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.18",
@@ -161,6 +259,7 @@ cp ../MulmoChatPluginQuiz/tsconfig.json .
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "^10.6.2",
     "globals": "^17.0.0",
+    "gui-chat-protocol": "^0.0.2",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
@@ -168,14 +267,14 @@ cp ../MulmoChatPluginQuiz/tsconfig.json .
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.2.2"
   },
-  "keywords": ["guichat", "plugin", "xxx"],
+  "keywords": ["guichat", "plugin"],
   "license": "MIT"
 }
 ```
 
-**注意**: プラグインが追加の npm パッケージを使用する場合は `dependencies` に追加してください。
+**Important**: Add npm packages used by the plugin (e.g., `xlsx`, `marked`, etc.) to `dependencies`.
 
-### Step 3: 設定ファイル作成
+### Phase 3: Create Configuration Files
 
 #### tsconfig.json
 
@@ -234,7 +333,7 @@ export default defineConfig({
         core: resolve(__dirname, "src/core/index.ts"),
         vue: resolve(__dirname, "src/vue/index.ts"),
       },
-      name: "GUIChatPluginXxx",
+      name: "GUIChatPluginXxx",  // Change to plugin name
       formats: ["es", "cjs"],
       fileName: (format, entryName) =>
         `${entryName}.${format === "es" ? "js" : "cjs"}`,
@@ -288,10 +387,12 @@ export default [
       ...tseslint.configs.recommended.rules,
       ...vuePlugin.configs["flat/recommended"].rules,
       "vue/multi-word-component-names": "off",
+      "@typescript-eslint/no-explicit-any": "off",  // As needed
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_" },
       ],
+      "no-useless-escape": "off",  // As needed
     },
   },
   {
@@ -300,33 +401,39 @@ export default [
 ];
 ```
 
-### Step 4: Core ファイル作成
+### Phase 4: Create Core Files
 
 #### src/core/types.ts
 
-プラグイン固有の型のみを定義します。**gui-chat-protocol の型は再定義しません。**
+**Important**: Do not redefine gui-chat-protocol types; define only plugin-specific types.
 
 ```typescript
 /**
- * Xxx Plugin Types
+ * Xxx Plugin - Type Definitions
  *
  * Plugin-specific types only.
  * Common types are imported from gui-chat-protocol.
  */
 
-/** Data stored in result.data (displayed in UI) */
+/** Data stored in result.data (for UI display) */
 export interface XxxToolData {
-  // プラグイン固有のデータ
+  // Plugin-specific data structure
+  // Example:
+  // items: XxxItem[];
+  // title: string;
 }
 
 /** Arguments passed to the tool */
 export interface XxxArgs {
-  // ツールに渡される引数
+  // Arguments passed to the tool
+  // Example:
+  // title: string;
+  // content: string;
 }
 
-/** JSON data returned in result.jsonData (sent to LLM) */
+/** JSON data returned in result.jsonData (data returned to LLM, optional) */
 export interface XxxJsonData {
-  // LLM に返すデータ（オプション）
+  // Data returned to LLM (only if needed)
 }
 ```
 
@@ -339,7 +446,7 @@ export interface XxxJsonData {
 
 import type { ToolDefinition } from "gui-chat-protocol";
 
-export const TOOL_NAME = "xxxTool";
+export const TOOL_NAME = "xxxTool";  // Keep same as original tool name
 
 export const TOOL_DEFINITION: ToolDefinition = {
   type: "function",
@@ -348,13 +455,14 @@ export const TOOL_DEFINITION: ToolDefinition = {
   parameters: {
     type: "object",
     properties: {
-      // パラメータ定義
+      // Copy original toolDefinition.parameters.properties
     },
-    required: ["requiredParam"],
+    required: ["requiredParam"],  // Required parameters
   },
 };
 
-export const SYSTEM_PROMPT = `Instructions for LLM on how to use ${TOOL_NAME}...`;
+// System prompt (instructions to LLM)
+export const SYSTEM_PROMPT = `Use ${TOOL_NAME} when...`;
 ```
 
 #### src/core/plugin.ts
@@ -362,6 +470,8 @@ export const SYSTEM_PROMPT = `Instructions for LLM on how to use ${TOOL_NAME}...
 ```typescript
 /**
  * Xxx Plugin Core (Framework-agnostic)
+ *
+ * Contains the plugin logic without UI components.
  */
 
 import type { ToolPluginCore, ToolContext, ToolResult } from "gui-chat-protocol";
@@ -371,45 +481,74 @@ import { TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";
 // Re-export for convenience
 export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";
 
+// ============================================================================
 // Execute Function
+// ============================================================================
+
 export const executeXxx = async (
   _context: ToolContext,
   args: XxxArgs,
 ): Promise<ToolResult<XxxToolData, never>> => {
-  // プラグインのロジック
+  // Copy original execute function logic
+  //
+  // Note: Always explicitly specify return type as ToolResult<XxxToolData, never>
+
   return {
     message: "Success message",
     title: args.title,
-    data: { /* XxxToolData */ },
-    instructions: "Instructions for LLM after execution",
+    data: {
+      // XxxToolData
+    },
+    instructions: "Instructions for LLM",
   };
 };
 
+// ============================================================================
 // Core Plugin (without UI components)
+// ============================================================================
+
 export const pluginCore: ToolPluginCore<XxxToolData, never, XxxArgs> = {
   toolDefinition: TOOL_DEFINITION,
   execute: executeXxx,
   generatingMessage: "Processing...",
-  isEnabled: () => true,
+  waitingMessage: "Optional waiting message",  // Optional
+  isEnabled: () => true,  // Or (startResponse) => !!startResponse?.hasXxxApiKey
   systemPrompt: SYSTEM_PROMPT,
+  // inputHandlers: [],  // If file input handlers exist
+  // samples: [],  // Omit if importing from samples.ts
 };
 ```
 
-**型パラメータの説明:**
-- `T` (第1引数): `result.data` に格納される UI 用データ型
-- `J` (第2引数): `result.jsonData` に格納される LLM に返すデータ型（不要な場合は `never`）
-- `A` (第3引数): ツールに渡される引数の型
-
-#### src/core/samples.ts（オプション）
+**Type Parameter Explanation:**
 
 ```typescript
+ToolPluginCore<T, J, A>
+//            │  │  └── A: Argument type (XxxArgs)
+//            │  └───── J: jsonData type (never = not used)
+//            └──────── T: data type (XxxToolData)
+```
+
+#### src/core/samples.ts (Optional)
+
+```typescript
+/**
+ * Xxx Plugin Samples
+ */
+
 import type { ToolSample } from "gui-chat-protocol";
 
 export const samples: ToolSample[] = [
   {
     name: "Sample 1",
     args: {
-      // サンプル引数
+      title: "Example Title",
+      // Other arguments
+    },
+  },
+  {
+    name: "Sample 2",
+    args: {
+      // ...
     },
   },
 ];
@@ -420,6 +559,8 @@ export const samples: ToolSample[] = [
 ```typescript
 /**
  * Xxx Plugin - Core (Framework-agnostic)
+ *
+ * Import from "@your-scope/guichat-plugin-xxx" or "@your-scope/guichat-plugin-xxx/core"
  */
 
 // Export plugin-specific types
@@ -438,49 +579,57 @@ export {
 export { samples } from "./samples";
 ```
 
-### Step 5: Vue ファイル作成
+### Phase 5: Create Vue Components
 
 #### src/vue/View.vue
 
+Copy from original `src/tools/views/xxx.vue` with the following modifications:
+
+**Modifications:**
+1. Change to `import type { ToolResult } from "gui-chat-protocol";`
+2. Import plugin-specific types from `../core/types`
+3. Change imports from `../models/xxx` to `../core/...`
+
 ```vue
 <template>
-  <div class="xxx-container">
-    <!-- メインコンテンツ -->
-  </div>
+  <!-- Copy original template -->
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { ref, computed, watch } from "vue";
+// Import ToolResult from gui-chat-protocol
 import type { ToolResult } from "gui-chat-protocol";
+// Import plugin-specific types from core
 import type { XxxToolData } from "../core/types";
+// Fix other internal imports to relative paths
+import { someFunction } from "../core/plugin";
 
 const props = defineProps<{
   selectedResult: ToolResult<XxxToolData>;
+  sendTextMessage?: (text: string) => void;
 }>();
 
 const emit = defineEmits<{
   updateResult: [result: ToolResult];
 }>();
 
-// コンポーネントロジック
+// Copy original logic
 </script>
 
 <style scoped>
-/* スタイル */
+/* Copy original styles */
 </style>
 ```
 
-**重要なインポートルール:**
-- `ToolResult` は `gui-chat-protocol` からインポート
-- プラグイン固有の型は `../core/types` からインポート
+**Important Import Rules:**
+- Import `ToolResult` from `gui-chat-protocol`
+- Import plugin-specific types from `../core/types`
 
 #### src/vue/Preview.vue
 
 ```vue
 <template>
-  <div class="xxx-preview">
-    <!-- プレビューコンテンツ -->
-  </div>
+  <!-- Copy original template -->
 </template>
 
 <script setup lang="ts">
@@ -491,6 +640,8 @@ import type { XxxToolData } from "../core/types";
 const props = defineProps<{
   result: ToolResult<XxxToolData>;
 }>();
+
+// Copy original logic
 </script>
 ```
 
@@ -499,6 +650,8 @@ const props = defineProps<{
 ```typescript
 /**
  * Xxx Plugin - Vue Implementation
+ *
+ * Import from "@your-scope/guichat-plugin-xxx/vue"
  */
 
 import "../style.css";
@@ -510,6 +663,7 @@ import { samples } from "../core/samples";
 import View from "./View.vue";
 import Preview from "./Preview.vue";
 
+// Vue Plugin (with components)
 export const plugin: ToolPlugin<XxxToolData, never, XxxArgs> = {
   ...pluginCore,
   viewComponent: View,
@@ -517,10 +671,10 @@ export const plugin: ToolPlugin<XxxToolData, never, XxxArgs> = {
   samples,
 };
 
-// Re-export types
+// Re-export plugin-specific types
 export type { XxxToolData, XxxArgs } from "../core/types";
 
-// Re-export utilities
+// Re-export core plugin utilities
 export {
   TOOL_NAME,
   TOOL_DEFINITION,
@@ -531,13 +685,14 @@ export {
 
 export { samples } from "../core/samples";
 
+// Export components for direct use
 export { View, Preview };
 
 // Default export for MulmoChat compatibility
 export default { plugin };
 ```
 
-### Step 6: メインエントリポイント
+### Phase 6: Entry Point and Styles
 
 #### src/index.ts
 
@@ -557,24 +712,24 @@ export * from "./core";
 @import "tailwindcss";
 ```
 
-### Step 7: デモアプリ
+### Phase 7: Create Demo App
 
 #### demo/App.vue
 
 ```vue
 <template>
   <div class="max-w-3xl mx-auto">
-    <h1 class="text-gray-800 mb-8">{{ pluginName }} Demo</h1>
+    <h1 class="text-2xl font-bold text-gray-800 mb-8">{{ pluginName }} Demo</h1>
 
-    <!-- Sample Selector -->
+    <!-- Sample Selector Section -->
     <div class="bg-white rounded-lg p-5 mb-5 shadow-md">
-      <h2 class="text-gray-600 text-xl mb-4">Samples</h2>
-      <div class="flex flex-wrap gap-2">
+      <h2 class="text-gray-600 text-xl mb-4">Sample Data</h2>
+      <div v-if="samplesList.length > 0" class="flex flex-wrap gap-2 mb-3">
         <button
           v-for="(sample, index) in samplesList"
           :key="index"
           @click="loadSample(sample)"
-          class="py-2 px-4 bg-indigo-100 border border-indigo-200 rounded-md cursor-pointer text-sm text-indigo-700 hover:bg-indigo-200"
+          class="py-2 px-4 bg-indigo-100 border border-indigo-200 rounded-md cursor-pointer text-sm text-indigo-700 transition-all hover:bg-indigo-200 hover:border-indigo-300"
         >
           {{ sample.name }}
         </button>
@@ -584,7 +739,7 @@ export * from "./core";
     <!-- View Component -->
     <div v-if="ViewComponent" class="bg-white rounded-lg p-5 mb-5 shadow-md">
       <h2 class="text-gray-600 text-xl mb-4">View Component</h2>
-      <div class="border border-gray-200 rounded">
+      <div class="border border-gray-200 rounded p-4">
         <component
           :is="ViewComponent"
           :selectedResult="result"
@@ -601,6 +756,12 @@ export * from "./core";
         <component :is="PreviewComponent" :result="result" />
       </div>
     </div>
+
+    <!-- Current Result Data -->
+    <div class="bg-white rounded-lg p-5 mb-5 shadow-md">
+      <h2 class="text-gray-600 text-xl mb-4">Current Result Data</h2>
+      <pre class="bg-gray-100 p-3 rounded overflow-x-auto text-xs">{{ JSON.stringify(result, null, 2) }}</pre>
+    </div>
   </div>
 </template>
 
@@ -610,33 +771,49 @@ import { plugin } from "../src/vue";
 import type { ToolResult, ToolSample, ToolPlugin } from "gui-chat-protocol/vue";
 import type { XxxToolData } from "../src/core/types";
 
+// Plugin configuration
 const currentPlugin = plugin as unknown as ToolPlugin;
 
+// Computed properties from plugin
 const pluginName = computed(() => currentPlugin.toolDefinition.name);
+const toolName = computed(() => currentPlugin.toolDefinition.name);
 const samplesList = computed(() => currentPlugin.samples || []);
 const ViewComponent = computed(() => currentPlugin.viewComponent);
 const PreviewComponent = computed(() => currentPlugin.previewComponent);
 
+// State
 const result = ref<ToolResult<XxxToolData>>({
-  toolName: pluginName.value,
-  uuid: "demo-uuid",
+  toolName: toolName.value,
+  uuid: "demo-uuid-123",
   message: "Ready",
   title: "",
   data: undefined,
 });
 
+// Actions
 const loadSample = (sample: ToolSample) => {
-  // サンプルをロード
+  const args = sample.args as XxxArgs;
+  result.value = {
+    toolName: toolName.value,
+    uuid: `demo-${Date.now()}`,
+    message: `Loaded: ${sample.name}`,
+    title: args.title || sample.name,
+    data: {
+      // Load sample data
+    },
+  };
 };
 
 const handleSendTextMessage = (text?: string) => {
-  console.log("sendTextMessage:", text);
+  console.log("sendTextMessage called:", text);
 };
 
 const handleUpdate = (updated: ToolResult<XxxToolData>) => {
   result.value = updated;
+  console.log("Result updated:", updated);
 };
 
+// Load first sample on mount
 onMounted(() => {
   if (samplesList.value.length > 0) {
     loadSample(samplesList.value[0]);
@@ -650,6 +827,7 @@ onMounted(() => {
 ```typescript
 import { createApp } from "vue";
 import App from "./App.vue";
+import "../src/style.css";
 
 createApp(App).mount("#app");
 ```
@@ -663,6 +841,8 @@ createApp(App).mount("#app");
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Xxx Plugin Demo</title>
+    <!-- Material Icons (if used) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   </head>
   <body class="bg-gray-100 p-8">
     <div id="app"></div>
@@ -671,7 +851,25 @@ createApp(App).mount("#app");
 </html>
 ```
 
-### Step 8: GitHub Actions CI 設定
+### Phase 8: Copy Subdirectories (If Applicable)
+
+If the plugin has logic directories:
+
+```bash
+# Example: copy spreadsheet-engine
+cp -r src/tools/models/spreadsheet-engine/ ${PLUGIN_DIR}/src/engine/
+
+# Remove test files
+rm -rf ${PLUGIN_DIR}/src/engine/__tests__/
+rm ${PLUGIN_DIR}/src/engine/**/test-*.ts 2>/dev/null
+rm ${PLUGIN_DIR}/src/engine/**/verify_*.ts 2>/dev/null
+```
+
+**Fix Import Paths:**
+
+If files in the engine use relative paths like `../`, fix them to match the new structure.
+
+### Phase 9: GitHub Actions CI Configuration
 
 #### .github/workflows/pull_request.yaml
 
@@ -720,9 +918,11 @@ jobs:
         path: "*.tgz"
 ```
 
-### Step 9: README.md 作成
+### Phase 10: Create README.md
 
-npm 公開時に使用する README ファイルを作成します：
+Create a README file for npm publishing.
+
+**File: `README.md`**
 
 ```markdown
 # @gui-chat-plugin/xxx
@@ -731,7 +931,7 @@ A plugin for [MulmoChat](https://github.com/receptron/MulmoChat) - a multi-modal
 
 ## What this plugin does
 
-{プラグインの説明を記載}
+{Describe what the plugin does}
 
 ## Installation
 
@@ -796,18 +996,204 @@ yarn lint
 MIT
 ```
 
-### Step 10: 検証
+### Phase 11: Create Development Scripts
+
+#### check-plugin-structure.sh
 
 ```bash
-cd ../GUIChatPluginXxx
-yarn install
-yarn typecheck
-yarn lint
+#!/bin/bash
+# Plugin Structure Checker
+# Usage: ./check-plugin-structure.sh
+
+PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_NAME=$(basename "$PLUGIN_DIR")
+
+echo "=== Checking plugin structure: $PLUGIN_NAME ==="
+echo ""
+
+# Required files list
+REQUIRED_FILES=(
+  # Root config files
+  ".gitignore"
+  "package.json"
+  "tsconfig.json"
+  "tsconfig.build.json"
+  "vite.config.ts"
+  "eslint.config.js"
+  "index.html"
+  "README.md"
+
+  # Dev scripts
+  "check-plugin-structure.sh"
+  "check-mulmochat-integration.sh"
+  "refresh-in-mulmochat.sh"
+
+  # Source entry
+  "src/index.ts"
+  "src/style.css"
+
+  # Core module
+  "src/core/index.ts"
+  "src/core/types.ts"
+  "src/core/definition.ts"
+  "src/core/plugin.ts"
+  "src/core/samples.ts"
+
+  # Vue module
+  "src/vue/index.ts"
+  "src/vue/View.vue"
+  "src/vue/Preview.vue"
+
+  # Demo files (for yarn run dev)
+  "demo/main.ts"
+  "demo/App.vue"
+)
+
+MISSING=()
+OK=()
+
+for file in "${REQUIRED_FILES[@]}"; do
+  if [ -f "$PLUGIN_DIR/$file" ]; then
+    OK+=("$file")
+  else
+    MISSING+=("$file")
+  fi
+done
+
+# Print results
+echo "OK (${#OK[@]} files):"
+for file in "${OK[@]}"; do
+  echo "  ✓ $file"
+done
+
+echo ""
+
+if [ ${#MISSING[@]} -gt 0 ]; then
+  echo "MISSING (${#MISSING[@]} files):"
+  for file in "${MISSING[@]}"; do
+    echo "  ✗ $file"
+  done
+  echo ""
+  echo "=== FAILED: Missing ${#MISSING[@]} required files ==="
+  exit 1
+else
+  echo "=== PASSED: All required files exist ==="
+  exit 0
+fi
 ```
 
-### Step 11: MulmoChat への統合
+#### check-mulmochat-integration.sh
 
-#### package.json に追加
+```bash
+#!/bin/bash
+# MulmoChat Integration Checker
+# Usage: ./check-mulmochat-integration.sh
+
+PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_NAME="xxx"  # Change to plugin name
+PACKAGE_NAME="@gui-chat-plugin/xxx"  # Change to package name
+MULMOCHAT_DIR="$PLUGIN_DIR/../MulmoChat"
+
+echo "=== Checking MulmoChat integration for $PACKAGE_NAME ==="
+echo ""
+
+ERRORS=()
+
+# Check 1: package.json dependency
+echo "[1/3] Checking package.json dependency..."
+if grep -q "\"$PACKAGE_NAME\"" "$MULMOCHAT_DIR/package.json"; then
+  echo "  ✓ package.json: dependency exists"
+else
+  echo "  ✗ package.json: dependency MISSING"
+  echo "    Add to MulmoChat/package.json dependencies:"
+  echo "    \"$PACKAGE_NAME\": \"file:../GUIChatPluginXxx\","
+  ERRORS+=("package.json dependency")
+fi
+
+# Check 2: main.ts CSS import
+echo ""
+echo "[2/3] Checking main.ts CSS import..."
+if grep -q "$PACKAGE_NAME/style.css" "$MULMOCHAT_DIR/src/main.ts"; then
+  echo "  ✓ main.ts: CSS import exists"
+else
+  echo "  ✗ main.ts: CSS import MISSING"
+  echo "    Add to MulmoChat/src/main.ts:"
+  echo "    import \"$PACKAGE_NAME/style.css\";"
+  ERRORS+=("main.ts CSS import")
+fi
+
+# Check 3: tools/index.ts plugin registration
+echo ""
+echo "[3/3] Checking tools/index.ts plugin registration..."
+if grep -q "XxxPlugin" "$MULMOCHAT_DIR/src/tools/index.ts"; then
+  echo "  ✓ tools/index.ts: plugin registered"
+else
+  echo "  ✗ tools/index.ts: plugin NOT registered"
+  echo "    Add to MulmoChat/src/tools/index.ts:"
+  echo "    import XxxPlugin from \"$PACKAGE_NAME/vue\";"
+  echo "    // Add XxxPlugin to pluginList array"
+  ERRORS+=("tools/index.ts registration")
+fi
+
+echo ""
+if [ ${#ERRORS[@]} -gt 0 ]; then
+  echo "=== FAILED: ${#ERRORS[@]} integration issue(s) found ==="
+  echo ""
+  echo "Missing items:"
+  for err in "${ERRORS[@]}"; do
+    echo "  - $err"
+  done
+  exit 1
+else
+  echo "=== PASSED: MulmoChat integration complete ==="
+  exit 0
+fi
+```
+
+#### refresh-in-mulmochat.sh
+
+```bash
+#!/bin/bash
+# Refresh plugin in MulmoChat
+# Usage: ./refresh-in-mulmochat.sh
+
+PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_NAME=$(basename "$PLUGIN_DIR")
+MULMOCHAT_DIR="$PLUGIN_DIR/../MulmoChat"
+PACKAGE_NAME="@gui-chat-plugin/xxx"  # Change to package name
+
+echo "=== Refreshing $PLUGIN_NAME in MulmoChat ==="
+
+# Step 1: Build plugin
+echo ""
+echo "[1/3] Building plugin..."
+cd "$PLUGIN_DIR"
+yarn build
+if [ $? -ne 0 ]; then
+  echo "ERROR: Build failed"
+  exit 1
+fi
+
+# Step 2: Remove cached version in MulmoChat
+echo ""
+echo "[2/3] Clearing cache in MulmoChat..."
+rm -rf "$MULMOCHAT_DIR/node_modules/$PACKAGE_NAME"
+
+# Step 3: Reinstall
+echo ""
+echo "[3/3] Reinstalling in MulmoChat..."
+cd "$MULMOCHAT_DIR"
+yarn install --check-files
+
+echo ""
+echo "=== Done! Restart MulmoChat dev server to see changes ==="
+```
+
+---
+
+## MulmoChat Integration
+
+### Step 1: Add to package.json
 
 ```json
 {
@@ -817,114 +1203,169 @@ yarn lint
 }
 ```
 
-#### src/tools/index.ts を更新
+### Step 2: Update src/tools/index.ts
 
 ```typescript
-// 内部プラグインのインポートを削除
+// 1. Remove internal plugin import
 // import * as XxxPlugin from "./models/xxx";
 
-// 外部プラグインとしてインポート
+// 2. Add import to external plugins section
 import XxxPlugin from "@gui-chat-plugin/xxx/vue";
 
+// 3. Update pluginList
 const pluginList = [
   // External plugins from npm packages
-  XxxPlugin,
-  // ... other plugins
+  QuizPlugin,
+  GenerateImagePlugin,
+  FormPlugin,
+  SummarizePdfPlugin,
+  XxxPlugin,  // ← Add
+  // Internal plugins
+  // ... (remove XxxPlugin)
 ];
 ```
 
-#### src/main.ts に CSS インポートを追加
+### Step 3: Add CSS Import to src/main.ts
 
 ```typescript
 import "@gui-chat-plugin/xxx/style.css";
 ```
 
-#### 依存関係を更新
+### Step 4: Update Dependencies
 
 ```bash
 cd ../MulmoChat
 rm -rf node_modules yarn.lock
 yarn install
+```
+
+---
+
+## Verification and Troubleshooting
+
+### Verification Commands
+
+```bash
+# In new plugin
+cd ../GUIChatPluginXxx
+yarn install
 yarn typecheck
 yarn lint
+yarn dev  # Check demo app
+
+# In MulmoChat
+cd ../MulmoChat
+yarn typecheck
+yarn lint
+yarn run dev  # Verify actual operation
 ```
 
-## 追加のサブディレクトリがある場合
+### Common Errors and Solutions
 
-プラグインが追加のロジックディレクトリを持つ場合（例: `spreadsheet-engine/`）：
+#### Error: `Type 'ToolResult<T>' is not assignable to type 'ToolResult<T, never>'`
 
-1. ディレクトリを `src/` 内にコピー
-2. テストファイル（`__tests__/`, `test-*.ts`）は除外
-3. インポートパスを相対パスに更新
+**Cause**: Execute function return type is not explicitly specified
 
-```bash
-# 例: spreadsheet-engine をコピー
-cp -r src/tools/models/spreadsheet-engine ../GUIChatPluginSpreadsheet/src/engine
-
-# テストファイルを削除
-rm -rf ../GUIChatPluginSpreadsheet/src/engine/__tests__
-rm ../GUIChatPluginSpreadsheet/src/engine/functions/test-*.ts
-```
-
-## トラブルシューティング
-
-### 型エラー: `ToolResult<T>` が `ToolResult<T, never>` に割り当てられない
-
-execute 関数の戻り値の型を明示的に指定してください：
-
+**Solution**:
 ```typescript
 // NG
-Promise<ToolResult<XxxToolData>>
+async (): Promise<ToolResult<XxxToolData>> => {
 
 // OK
-Promise<ToolResult<XxxToolData, never>>
+async (): Promise<ToolResult<XxxToolData, never>> => {
 ```
 
-### ESLint エラー: Definition for rule 'sonarjs/xxx' was not found
+#### Error: `Definition for rule 'sonarjs/xxx' was not found`
 
-MulmoChat から コピーしたファイルに `eslint-disable` コメントが含まれている場合、削除またはコメントアウトしてください：
+**Cause**: Files copied from MulmoChat contain sonarjs eslint-disable comments
 
+**Solution**:
 ```bash
-# sonarjs の eslint-disable コメントを無効化
+# Disable comments
 sed -i '' 's/eslint-disable.*sonarjs/eslint-disable -- sonarjs/g' src/**/*.ts
 ```
 
-### yarn install が新しいパッケージを認識しない
+Or manually delete the relevant lines
+
+#### Error: `Cannot find module '@your-scope/guichat-plugin-xxx'`
+
+**Cause**: yarn install was not executed correctly
+
+**Solution**:
+```bash
+rm -rf node_modules yarn.lock
+yarn install
+```
+
+#### Error: `'TOOL_NAME' is declared but its value is never read`
+
+**Cause**: Imported but not used
+
+**Solution**:
+```typescript
+// Remove from import if not used
+import { TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // Remove TOOL_NAME
+
+// Re-export is OK as-is
+export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT } from "./definition";  // This is OK
+```
+
+#### yarn install Not Recognizing New Package
 
 ```bash
 rm -rf node_modules yarn.lock
 yarn install
 ```
 
-## 完了チェックリスト
+---
 
-### 新しいプラグイン
+## Completion Checklist
 
-- [ ] `package.json` が正しく設定されている（`@gui-chat-plugin/xxx` 形式）
-- [ ] `.github/workflows/pull_request.yaml` が作成されている
-- [ ] `README.md` が作成されている
-- [ ] `yarn typecheck` がエラーなしで完了
-- [ ] `yarn lint` がエラーなしで完了
-- [ ] `yarn dev` でデモアプリが正常に動作
+### New Plugin
+
+- [ ] `package.json` is correctly configured (`@gui-chat-plugin/xxx` format)
+- [ ] Required npm dependency packages added to `dependencies`
+- [ ] `.github/workflows/pull_request.yaml` created
+- [ ] `README.md` created
+- [ ] `check-plugin-structure.sh` created
+- [ ] `check-mulmochat-integration.sh` created
+- [ ] `refresh-in-mulmochat.sh` created
+- [ ] `yarn install` succeeds
+- [ ] `yarn typecheck` completes without errors
+- [ ] `yarn lint` completes without errors
+- [ ] `yarn dev` demo app works correctly
 
 ### MulmoChat
 
-- [ ] MulmoChat で `yarn typecheck` がエラーなしで完了
-- [ ] MulmoChat で `yarn lint` がエラーなしで完了
-- [ ] MulmoChat で `yarn run dev` でプラグインが正常に動作
+- [ ] Plugin reference added to `package.json`
+- [ ] CSS import added to `src/main.ts`
+- [ ] Import and pluginList updated in `src/tools/index.ts`
+- [ ] `yarn install` succeeds
+- [ ] `yarn typecheck` completes without errors
+- [ ] `yarn lint` completes without errors
+- [ ] `yarn run dev` plugin works correctly
 
-## 参考: 既存の独立化済みプラグイン
+---
 
-- `@gui-chat-plugin/quiz` - Quiz プラグイン
-- `@gui-chat-plugin/form` - Form プラグイン
-- `@gui-chat-plugin/generate-image` - GenerateImage プラグイン
-- `@gui-chat-plugin/summarize-pdf` - SummarizePdf プラグイン
-- `@gui-chat-plugin/spreadsheet` - Spreadsheet プラグイン
-- `@gui-chat-plugin/scroll-to-anchor` - ScrollToAnchor プラグイン
-- `@gui-chat-plugin/set-image-style` - SetImageStyle プラグイン
-- `@gui-chat-plugin/switch-role` - SwitchRole プラグイン
-- `@gui-chat-plugin/camera` - Camera プラグイン
-- `@gui-chat-plugin/canvas` - Canvas プラグイン
-- `@gui-chat-plugin/edit-html` - EditHtml プラグイン
-- `@gui-chat-plugin/generate-html` - GenerateHtml プラグイン
-- `@gui-chat-plugin/html` - Html プラグイン
+## Reference: Existing Extracted Plugins
+
+| Package Name | Repository | Notes |
+|--------------|------------|-------|
+| `@gui-chat-plugin/quiz` | GUIChatPluginQuiz | Uses jsonData |
+| `@gui-chat-plugin/form` | GUIChatPluginForm | Form plugin |
+| `@gui-chat-plugin/generate-image` | GUIChatPluginGenerateImage | Image generation |
+| `@gui-chat-plugin/summarize-pdf` | GUIChatPluginSummarizePdf | Uses inputHandlers |
+| `@gui-chat-plugin/spreadsheet` | GUIChatPluginSpreadsheet | Has engine subdirectory |
+| `@gui-chat-plugin/scroll-to-anchor` | GUIChatPluginScrollToAnchor | Scroll to anchor |
+| `@gui-chat-plugin/set-image-style` | GUIChatPluginSetImageStyle | Image style settings |
+| `@gui-chat-plugin/switch-role` | GUIChatPluginSwitchRole | Role switching |
+| `@gui-chat-plugin/camera` | GUIChatPluginCamera | Camera plugin |
+| `@gui-chat-plugin/canvas` | GUIChatPluginCanvas | Canvas plugin |
+| `@gui-chat-plugin/edit-html` | GUIChatPluginEditHtml | HTML editing |
+| `@gui-chat-plugin/generate-html` | GUIChatPluginGenerateHtml | HTML generation |
+| `@gui-chat-plugin/html` | GUIChatPluginHtml | HTML display |
+| `@gui-chat-plugin/othello` | GUIChatPluginOthello | Othello game |
+| `@gui-chat-plugin/tictactoe` | GUIChatPluginTicTacToe | Tic-Tac-Toe game |
+| `@gui-chat-plugin/go` | GUIChatPluginGo | Go game |
+
+Please reference the source code of these plugins.

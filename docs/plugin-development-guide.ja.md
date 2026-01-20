@@ -1,125 +1,125 @@
-# GUIChat Plugin Development Guide
+# GUIChat プラグイン開発ガイド
 
-This document provides a complete guide for developing new plugins for GUIChat/MulmoChat. The goal is to enable both humans and AI to implement plugins in one shot.
+このドキュメントでは、GUIChat/MulmoChat のプラグインを新規開発するための完全なガイドを提供します。人間でも AI でもワンショットで実装できることを目指しています。
 
-## Scope of This Guide
+## このガイドの範囲
 
-### What This Guide Provides
+### このガイドが提供するもの
 
-- **Plugin Structure**: Directory layout, file naming conventions, export patterns
-- **Type Definition Patterns**: How to use ToolPluginCore, ToolResult, ToolContext
-- **Vue Components**: Props and basic structure of View/Preview components
-- **Build Configuration**: How to configure package.json, vite.config.ts, tsconfig.json
-- **Integration Patterns**: How to use context API, backends, isEnabled
+- **プラグイン構造**: ディレクトリ構成、ファイル命名規則、エクスポートパターン
+- **型定義パターン**: ToolPluginCore、ToolResult、ToolContext の使い方
+- **Vue コンポーネント**: View/Preview コンポーネントの props と基本構造
+- **ビルド設定**: package.json、vite.config.ts、tsconfig.json の設定方法
+- **統合パターン**: context API、backends、isEnabled の使い方
 
-### What Developers Must Provide
+### 開発者が用意するもの
 
-- **Feature Specification**: What the plugin does (parameters, behavior, output)
-- **Domain Logic**: Game rules, calculation algorithms, data transformations, etc.
-- **UI Requirements**: Content to display, interactions, design
+- **機能仕様**: プラグインが何をするか（パラメータ、動作、出力）
+- **ドメインロジック**: ゲームルール、計算アルゴリズム、データ変換など
+- **UI 要件**: 表示するコンテンツ、インタラクション、デザイン
 
-This guide teaches "how to build a plugin" but "what to build" must come from your requirements.
+このガイドは「プラグインの作り方」を教えますが、「何を作るか」は要件定義から得る必要があります。
 
-## Table of Contents
+## 目次
 
-1. [What is gui-chat-protocol](#what-is-gui-chat-protocol)
-2. [Plugin Architecture](#plugin-architecture)
-3. [Directory Structure](#directory-structure)
-4. [Development Steps](#development-steps)
-5. [Testing with samples](#testing-with-samples)
-6. [Implementation Example: Othello Plugin](#implementation-example-othello-plugin)
-7. [How to Use the context API](#how-to-use-the-context-api)
-8. [Reference Plugin List](#reference-plugin-list)
-9. [Completion Checklist](#completion-checklist)
-10. [AI Instruction Template](#ai-instruction-template)
+1. [gui-chat-protocol とは](#gui-chat-protocol-とは)
+2. [プラグインアーキテクチャ](#プラグインアーキテクチャ)
+3. [ディレクトリ構造](#ディレクトリ構造)
+4. [開発手順](#開発手順)
+5. [samples を使ったテスト](#samples-を使ったテスト)
+6. [実装例: オセロプラグイン](#実装例-オセロプラグイン)
+7. [context API の使い方](#context-api-の使い方)
+8. [参考プラグイン一覧](#参考プラグイン一覧)
+9. [完了チェックリスト](#完了チェックリスト)
+10. [AI への指示テンプレート](#ai-への指示テンプレート)
 
 ---
 
-## What is gui-chat-protocol
+## gui-chat-protocol とは
 
-### Overview
+### 概要
 
-`gui-chat-protocol` is a TypeScript library that defines the standard protocol for GUIChat plugins. It provides framework-agnostic core types and Vue/React adapters.
+`gui-chat-protocol` は、GUIChat プラグインの標準プロトコルを定義する TypeScript ライブラリです。フレームワーク非依存のコア型と、Vue/React アダプターを提供します。
 
 ```bash
 npm install gui-chat-protocol
 ```
 
-### Package Exports
+### パッケージエクスポート
 
 ```typescript
-// Core types (framework-agnostic)
+// Core 型（フレームワーク非依存）
 import { ToolPluginCore, ToolResult, ToolContext, ToolDefinition } from "gui-chat-protocol";
 
-// Vue types
+// Vue 用型
 import { ToolPlugin } from "gui-chat-protocol/vue";
 
-// React types
+// React 用型
 import { ToolPluginReact } from "gui-chat-protocol/react";
 ```
 
-### Key Types
+### 主要な型
 
-| Type | Description |
-|------|-------------|
-| `ToolPluginCore<T, J, A>` | Framework-agnostic plugin definition |
-| `ToolPlugin<T, J, A>` | Vue plugin (includes viewComponent, previewComponent) |
-| `ToolResult<T, J>` | Return value of execute function |
-| `ToolContext` | Context passed to execute function |
-| `ToolDefinition` | OpenAI-compatible tool definition schema |
-| `ToolSample` | Sample arguments for testing |
+| 型 | 説明 |
+|----|------|
+| `ToolPluginCore<T, J, A>` | フレームワーク非依存のプラグイン定義 |
+| `ToolPlugin<T, J, A>` | Vue 用プラグイン（viewComponent, previewComponent を含む） |
+| `ToolResult<T, J>` | execute 関数の戻り値 |
+| `ToolContext` | execute 関数に渡されるコンテキスト |
+| `ToolDefinition` | OpenAI 互換のツール定義スキーマ |
+| `ToolSample` | テスト用サンプル引数 |
 
-### ToolPluginCore Structure
+### ToolPluginCore の構造
 
 ```typescript
 interface ToolPluginCore<T, J, A, H, S> {
-  toolDefinition: ToolDefinition;    // Tool definition for LLM
+  toolDefinition: ToolDefinition;    // LLM 用ツール定義
   execute: (context: ToolContext, args: A) => Promise<ToolResult<T, J>>;
-  generatingMessage: string;          // Message displayed during processing
-  waitingMessage?: string;            // Message sent to LLM before result display
-  isEnabled: (startResponse?: S) => boolean;  // Whether plugin is enabled
-  systemPrompt?: string;              // Additional instructions for LLM
-  samples?: ToolSample[];             // Samples for testing
-  backends?: BackendType[];           // Backends to use
-  inputHandlers?: InputHandler[];     // File/clipboard input handlers
+  generatingMessage: string;          // 処理中に表示するメッセージ
+  waitingMessage?: string;            // 結果表示前に LLM に伝えるメッセージ
+  isEnabled: (startResponse?: S) => boolean;  // プラグインが有効か
+  systemPrompt?: string;              // LLM への追加指示
+  samples?: ToolSample[];             // テスト用サンプル
+  backends?: BackendType[];           // 使用するバックエンド
+  inputHandlers?: InputHandler[];     // ファイル/クリップボードの入力ハンドラー
 }
 ```
 
-### Backend Types
+### backends の種類
 
-| Backend | Description | Usage Examples |
-|---------|-------------|----------------|
-| `"imageGen"` | Image generation API | GenerateImage, EditImage |
-| `"textLLM"` | Text generation LLM | GenerateHtml, EditHtml |
+| Backend | 説明 | 使用例 |
+|---------|------|--------|
+| `"imageGen"` | 画像生成 API | GenerateImage, EditImage |
+| `"textLLM"` | テキスト生成 LLM | GenerateHtml, EditHtml |
 
 ```typescript
-// Example: Image generation plugin
+// 例: 画像生成プラグイン
 backends: ["imageGen"],
 
-// Example: HTML generation plugin
+// 例: HTML 生成プラグイン
 backends: ["textLLM"],
 ```
 
-### inputHandlers (File Input Handlers)
+### inputHandlers（ファイル入力ハンドラー）
 
-Used when plugins accept file uploads or clipboard input.
+プラグインがファイルアップロードやクリップボードからの入力を受け付ける場合に使用します。
 
 ```typescript
 interface InputHandler {
   type: "file" | "clipboard-image";
-  acceptedTypes?: string[];  // MIME types (for file type)
+  acceptedTypes?: string[];  // MIME タイプ（file の場合）
   handleInput: (data: string, fileName?: string) => ToolResult<T>;
 }
 ```
 
-**Usage Example (Image Plugin):**
+**使用例（画像プラグイン）:**
 
 ```typescript
 // src/core/plugin.ts
 import type { ToolResult } from "gui-chat-protocol";
 import type { ImageToolData } from "./types";
 
-// Helper function: Create ToolResult from uploaded image
+// ヘルパー関数: アップロードされた画像から ToolResult を作成
 export function createUploadedImageResult(
   imageData: string,
   fileName: string,
@@ -134,7 +134,7 @@ export function createUploadedImageResult(
 }
 
 export const pluginCore = {
-  // ...other properties
+  // ...他のプロパティ
   inputHandlers: [
     {
       type: "file",
@@ -151,46 +151,46 @@ export const pluginCore = {
 };
 ```
 
-### ToolResult Structure
+### ToolResult の構造
 
 ```typescript
 interface ToolResult<T, J> {
-  message: string;              // Status message for LLM (required)
-  data?: T;                     // Data for View/Preview (not sent to LLM)
-  jsonData?: J;                 // JSON data returned to LLM
-  title?: string;               // Title of the result
-  instructions?: string;        // Additional instructions for LLM
-  instructionsRequired?: boolean; // Whether to always send instructions
-  updating?: boolean;           // Whether to update existing result (true = don't create new)
-  viewState?: Record<string, unknown>; // View state
+  message: string;              // LLM へのステータスメッセージ（必須）
+  data?: T;                     // View/Preview 用データ（LLM には送られない）
+  jsonData?: J;                 // LLM に返す JSON データ
+  title?: string;               // 結果のタイトル
+  instructions?: string;        // LLM への追加指示
+  instructionsRequired?: boolean; // instructions を必ず送信するか
+  updating?: boolean;           // 既存の結果を更新するか（true = 新規作成しない）
+  viewState?: Record<string, unknown>; // View の状態
 }
 ```
 
-### Type Parameter Explanation
+### 型パラメータの説明
 
 ```typescript
 ToolPlugin<T, J, A>
 ```
 
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `T` | Type of `result.data` (for UI, not sent to LLM) | `OthelloState` |
-| `J` | Type of `result.jsonData` (sent to LLM) | `{ success: boolean }` |
-| `A` | Type of execute function arguments | `{ action: string; row?: number }` |
+| パラメータ | 説明 | 例 |
+|-----------|------|-----|
+| `T` | `result.data` の型（UI 用、LLM には送られない） | `OthelloState` |
+| `J` | `result.jsonData` の型（LLM に送られる） | `{ success: boolean }` |
+| `A` | execute 関数の引数の型 | `{ action: string; row?: number }` |
 
 ---
 
-## Plugin Architecture
+## プラグインアーキテクチャ
 
-### Operation Flow
+### 動作フロー
 
 ```
-User Input → LLM → Tool Call → execute() → ToolResult → View/Preview
-     ↑                                                        │
-     └──────────── Instruct LLM via instructions ←────────────┘
+ユーザー入力 → LLM → ツール呼び出し → execute() → ToolResult → View/Preview
+     ↑                                                              │
+     └──────────────── instructions で LLM に指示 ←──────────────────┘
 ```
 
-### Difference Between View and Preview
+### View と Preview の違い
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -200,67 +200,67 @@ User Input → LLM → Tool Call → execute() → ToolResult → View/Preview
 │              │                                       │
 │ ┌──────────┐ │   ┌─────────────────────────────┐    │
 │ │ Preview  │ │   │                             │    │
-│ │ Thumbnail│◄──┤         View                │    │
-│ └──────────┘ │   │      Main Display           │    │
-│ ┌──────────┐ │   │   Interactive Operations    │    │
+│ │ サムネイル │◄──┤         View                │    │
+│ └──────────┘ │   │      メイン表示              │    │
+│ ┌──────────┐ │   │   インタラクティブ操作可能   │    │
 │ │ Preview  │ │   │                             │    │
 │ └──────────┘ │   └─────────────────────────────┘    │
 └──────────────┴──────────────────────────────────────┘
 ```
 
-| Component | Role | Props |
-|-----------|------|-------|
-| **Preview** | Small thumbnail displayed in sidebar | `result: ToolResult` |
-| **View** | Full-size UI displayed on canvas | `selectedResult: ToolResult`, `sendTextMessage: Function` |
+| コンポーネント | 役割 | Props |
+|---------------|------|-------|
+| **Preview** | サイドバーに表示する小さなサムネイル | `result: ToolResult` |
+| **View** | キャンバスに表示するフルサイズ UI | `selectedResult: ToolResult`, `sendTextMessage: Function` |
 
 ---
 
-## Directory Structure
+## ディレクトリ構造
 
 ```
 GUIChatPluginXxx/
-├── package.json              # npm package configuration
-├── tsconfig.json             # TypeScript configuration
-├── tsconfig.build.json       # Build TypeScript configuration
-├── vite.config.ts            # Vite build configuration
-├── eslint.config.js          # ESLint configuration
-├── index.html                # Demo HTML
-├── README.md                 # README for npm publishing
+├── package.json              # npm パッケージ設定
+├── tsconfig.json             # TypeScript 設定
+├── tsconfig.build.json       # ビルド用 TypeScript 設定
+├── vite.config.ts            # Vite ビルド設定
+├── eslint.config.js          # ESLint 設定
+├── index.html                # デモ用 HTML
+├── README.md                 # npm 公開用 README
 ├── .gitignore
 ├── .github/
 │   └── workflows/
-│       └── pull_request.yaml # CI configuration
+│       └── pull_request.yaml # CI 設定
 ├── src/
-│   ├── index.ts              # Main entry (re-exports core)
-│   ├── style.css             # Tailwind CSS import
-│   ├── core/                 # Framework-agnostic core
-│   │   ├── index.ts          # Core exports
-│   │   ├── types.ts          # Plugin-specific type definitions
-│   │   ├── definition.ts     # Tool definition (TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT)
-│   │   ├── plugin.ts         # execute function and pluginCore
-│   │   ├── samples.ts        # Test samples (optional)
-│   │   └── logic.ts          # Business logic (optional)
+│   ├── index.ts              # メインエントリ（core を再エクスポート）
+│   ├── style.css             # Tailwind CSS インポート
+│   ├── core/                 # フレームワーク非依存のコア
+│   │   ├── index.ts          # Core エクスポート
+│   │   ├── types.ts          # プラグイン固有の型定義
+│   │   ├── definition.ts     # ツール定義（TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT）
+│   │   ├── plugin.ts         # execute 関数と pluginCore
+│   │   ├── samples.ts        # テスト用サンプル（オプション）
+│   │   └── logic.ts          # ビジネスロジック（オプション）
 │   └── vue/
-│       ├── index.ts          # Vue plugin exports
-│       ├── View.vue          # Main view component
-│       └── Preview.vue       # Preview component
+│       ├── index.ts          # Vue プラグインエクスポート
+│       ├── View.vue          # メインビューコンポーネント
+│       └── Preview.vue       # プレビューコンポーネント
 └── demo/
-    ├── App.vue               # Demo app (testing with samples)
-    └── main.ts               # Demo entry point
+    ├── App.vue               # デモアプリ（samples を使ったテスト）
+    └── main.ts               # デモエントリポイント
 ```
 
 ---
 
-## Development Steps
+## 開発手順
 
-### Step 1: Create Project from Template
+### Step 1: テンプレートからプロジェクト作成
 
 ```bash
-# Create directories
+# ディレクトリ作成
 mkdir -p ../GUIChatPluginXxx/src/{core,vue} ../GUIChatPluginXxx/demo ../GUIChatPluginXxx/.github/workflows
 cd ../GUIChatPluginXxx
 
-# Copy files from template (MulmoChatPluginQuiz recommended)
+# テンプレートからファイルをコピー（MulmoChatPluginQuiz を推奨）
 TEMPLATE="../MulmoChatPluginQuiz"
 
 cp $TEMPLATE/tsconfig.json .
@@ -275,13 +275,13 @@ cp $TEMPLATE/vite.config.ts .
 cp $TEMPLATE/README.md .
 ```
 
-### Step 2: Edit Configuration Files
+### Step 2: 設定ファイルを編集
 
 **package.json:**
 ```json
 {
   "name": "@gui-chat-plugin/xxx",
-  "description": "Plugin description",
+  "description": "プラグインの説明",
   "keywords": ["guichat", "plugin", "xxx"]
 }
 ```
@@ -291,21 +291,21 @@ cp $TEMPLATE/README.md .
 name: "GUIChatPluginXxx",
 ```
 
-### Step 3: Create Core Files
+### Step 3: Core ファイルを作成
 
 #### src/core/types.ts
 ```typescript
-/** UI data type (used in View/Preview) */
+/** UI 用データ型（View/Preview で使用） */
 export interface XxxToolData {
   content: string;
 }
 
-/** Execute function argument type */
+/** execute 関数の引数型 */
 export interface XxxArgs {
   prompt: string;
 }
 
-/** Data type returned to LLM (optional) */
+/** LLM に返すデータ型（オプション） */
 export interface XxxJsonData {
   success: boolean;
 }
@@ -320,20 +320,20 @@ export const TOOL_NAME = "xxxTool";
 export const TOOL_DEFINITION: ToolDefinition = {
   type: "function",
   name: TOOL_NAME,
-  description: "Tool description. Clearly describe when LLM should use this tool",
+  description: "ツールの説明。LLM がいつこのツールを使うべきかを明確に",
   parameters: {
     type: "object",
     properties: {
       prompt: {
         type: "string",
-        description: "Parameter description",
+        description: "パラメータの説明",
       },
     },
     required: ["prompt"],
   },
 };
 
-export const SYSTEM_PROMPT = `Additional instructions for using ${TOOL_NAME}...`;
+export const SYSTEM_PROMPT = `${TOOL_NAME} の使用に関する追加指示...`;
 ```
 
 #### src/core/samples.ts
@@ -384,7 +384,7 @@ export { TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT, executeXxx, pluginCore } fro
 export { samples } from "./samples";
 ```
 
-### Step 4: Create Vue Files
+### Step 4: Vue ファイルを作成
 
 #### src/vue/View.vue
 ```vue
@@ -456,7 +456,7 @@ export default { plugin };
 export * from "./core";
 ```
 
-### Step 5: Build and Verify
+### Step 5: ビルドと検証
 
 ```bash
 yarn install
@@ -467,18 +467,18 @@ yarn build
 
 ---
 
-## Testing with samples
+## samples を使ったテスト
 
-### What are samples
+### samples とは
 
-`samples` are sample arguments for testing plugins standalone. You can call the execute function directly in the demo app to test.
+`samples` は、プラグインをスタンドアロンでテストするためのサンプル引数です。デモアプリで execute 関数を直接呼び出してテストできます。
 
 ```typescript
 // src/core/samples.ts
 export const samples: ToolSample[] = [
   {
-    name: "New Game (User First)",  // Name displayed on button
-    args: {                          // Arguments passed to execute
+    name: "New Game (User First)",  // ボタンに表示される名前
+    args: {                          // execute に渡される引数
       action: "new_game",
       firstPlayer: "user",
     },
@@ -486,7 +486,7 @@ export const samples: ToolSample[] = [
 ];
 ```
 
-### Demo App Implementation
+### デモアプリの実装
 
 ```vue
 <!-- demo/App.vue -->
@@ -494,7 +494,7 @@ export const samples: ToolSample[] = [
   <div class="max-w-3xl mx-auto p-8">
     <h1 class="text-2xl font-bold mb-8">{{ pluginName }} Demo</h1>
 
-    <!-- Sample Buttons -->
+    <!-- サンプルボタン -->
     <div class="bg-white rounded-lg p-5 mb-5 shadow-md">
       <h2 class="text-xl mb-4">Samples</h2>
       <div class="flex flex-wrap gap-2">
@@ -509,7 +509,7 @@ export const samples: ToolSample[] = [
       </div>
     </div>
 
-    <!-- View Component -->
+    <!-- View コンポーネント -->
     <div v-if="ViewComponent" class="bg-white rounded-lg p-5 mb-5 shadow-md">
       <h2 class="text-xl mb-4">View Component</h2>
       <component
@@ -519,7 +519,7 @@ export const samples: ToolSample[] = [
       />
     </div>
 
-    <!-- Preview Component -->
+    <!-- Preview コンポーネント -->
     <div v-if="PreviewComponent" class="bg-white rounded-lg p-5 mb-5 shadow-md">
       <h2 class="text-xl mb-4">Preview Component</h2>
       <div class="max-w-[200px]">
@@ -559,21 +559,21 @@ const handleSendMessage = (text?: string) => {
 </script>
 ```
 
-### Running Tests
+### テスト実行
 
 ```bash
-yarn dev  # Demo starts at http://localhost:5173
+yarn dev  # http://localhost:5173 でデモが起動
 ```
 
 ---
 
-## Implementation Example: Othello Plugin
+## 実装例: オセロプラグイン
 
-The Othello plugin is a good example of implementing an interactive game.
+オセロプラグインは、インタラクティブなゲームを実装する良い例です。
 
-**Reference:** [GUIChatPluginOthello](https://github.com/nicedoc/GUIChatPluginOthello)
+**参照:** [GUIChatPluginOthello](https://github.com/nicedoc/GUIChatPluginOthello)
 
-### Type Definitions (types.ts)
+### 型定義 (types.ts)
 
 ```typescript
 export type Side = "B" | "W";
@@ -601,14 +601,14 @@ export interface OthelloArgs {
 }
 ```
 
-### Execute Function (plugin.ts)
+### execute 関数 (plugin.ts)
 
 ```typescript
 export const executeOthello = async (
   _context: ToolContext,
   args: OthelloArgs,
 ): Promise<ToolResult<never, OthelloState>> => {
-  const state = playOthello(args);  // Game logic
+  const state = playOthello(args);  // ゲームロジック
 
   const isComputerTurn = state.playerNames[state.currentSide] === "computer";
 
@@ -620,24 +620,24 @@ export const executeOthello = async (
 
   return {
     message: `Played at (${args.row}, ${args.col})`,
-    jsonData: state,  // Return board state to LLM
+    jsonData: state,  // LLM に盤面状態を返す
     instructions,
-    instructionsRequired: isComputerTurn,  // Always send instructions on computer turn
-    updating: args.action !== "new_game",  // Update existing result except for new_game
+    instructionsRequired: isComputerTurn,  // コンピュータのターンは必ず指示を送る
+    updating: args.action !== "new_game",  // new_game 以外は既存の結果を更新
   };
 };
 ```
 
-### View Component Key Points
+### View コンポーネントのポイント
 
 ```vue
 <script setup>
-// Use sendTextMessage to communicate user actions to LLM
+// sendTextMessage でユーザーの操作を LLM に伝える
 const handleCellClick = (row, col) => {
   const clickData = { row, col, currentState: gameState.value };
   props.sendTextMessage(
     `I want to play at ${columnLetter}${rowNumber}`,
-    { data: clickData }  // Optionally pass data
+    { data: clickData }  // オプションでデータを渡せる
   );
 };
 </script>
@@ -654,42 +654,42 @@ export const samples: ToolSample[] = [
 
 ---
 
-## How to Use the context API
+## context API の使い方
 
-### context Structure
+### context の構造
 
-The execute function receives `ToolContext`. Through this, you can access app features.
+execute 関数には `ToolContext` が渡されます。これを通じてアプリの機能にアクセスできます。
 
 ```typescript
 interface ToolContext {
-  currentResult?: ToolResult | null;  // Currently selected result (used when updating)
-  app?: ToolContextApp;               // Features provided by the app
+  currentResult?: ToolResult | null;  // 現在選択されている結果（updating 時に使用）
+  app?: ToolContextApp;               // アプリが提供する機能
 }
 ```
 
-### Features Provided by context.app
+### context.app が提供する機能一覧
 
-MulmoChat's `context.app` provides the following features:
+MulmoChat の `context.app` は以下の機能を提供します：
 
-| Feature | Description | Return Value | Example Plugins |
-|---------|-------------|--------------|-----------------|
-| `getConfig(key)` | Get configuration value | `T \| undefined` | SetImageStyle |
-| `setConfig(key, value)` | Save configuration value *Allowed plugins only | `void` | SetImageStyle |
-| `generateImage(prompt)` | Generate image | `Promise<string>` | GenerateImage |
-| `editImage(prompt)` | Edit image | `Promise<string>` | EditImage |
-| `generateHtml({ prompt })` | Generate HTML with LLM | `Promise<{ success, html?, error? }>` | GenerateHtml, EditHtml |
-| `browseUrl(url)` | Fetch web page | `Promise<BrowseResult>` | Browse |
-| `getTwitterEmbed(url)` | Get Twitter embed | `Promise<string>` | Browse |
-| `searchExa(args)` | Exa search | `Promise<SearchResult>` | Exa |
-| `summarizePdf(params)` | Summarize PDF | `Promise<string>` | SummarizePdf |
-| `saveImages({ uuid, images })` | Save images | `Promise<SaveResult>` | Canvas, Markdown |
-| `getImageConfig()` | Get image generation config | `ImageGenerationConfig` | SetImageStyle |
-| `getRoles()` | Get role list | `Role[]` | SwitchRole |
-| `switchRole(roleId)` | Switch role | `void` | SwitchRole |
+| 機能 | 説明 | 戻り値 | 使用例プラグイン |
+|------|------|--------|-----------------|
+| `getConfig(key)` | 設定値を取得 | `T \| undefined` | SetImageStyle |
+| `setConfig(key, value)` | 設定値を保存 ※許可されたプラグインのみ | `void` | SetImageStyle |
+| `generateImage(prompt)` | 画像生成 | `Promise<string>` | GenerateImage |
+| `editImage(prompt)` | 画像編集 | `Promise<string>` | EditImage |
+| `generateHtml({ prompt })` | LLM で HTML 生成 | `Promise<{ success, html?, error? }>` | GenerateHtml, EditHtml |
+| `browseUrl(url)` | Web ページ取得 | `Promise<BrowseResult>` | Browse |
+| `getTwitterEmbed(url)` | Twitter 埋め込み取得 | `Promise<string>` | Browse |
+| `searchExa(args)` | Exa 検索 | `Promise<SearchResult>` | Exa |
+| `summarizePdf(params)` | PDF 要約 | `Promise<string>` | SummarizePdf |
+| `saveImages({ uuid, images })` | 画像保存 | `Promise<SaveResult>` | Canvas, Markdown |
+| `getImageConfig()` | 画像生成設定を取得 | `ImageGenerationConfig` | SetImageStyle |
+| `getRoles()` | ロール一覧を取得 | `Role[]` | SwitchRole |
+| `switchRole(roleId)` | ロールを切り替え | `void` | SwitchRole |
 
-### Concrete Implementation Examples
+### 具体的な実装例
 
-#### Example 1: Call Backend (GenerateHtml)
+#### 例1: バックエンドを呼び出す（GenerateHtml）
 
 ```typescript
 // GUIChatPluginGenerateHtml/src/core/plugin.ts
@@ -699,7 +699,7 @@ export const executeGenerateHtml = async (
 ): Promise<ToolResult<HtmlToolData>> => {
   const { prompt } = args;
 
-  // 1. Check feature availability (required)
+  // 1. 機能の存在チェック（必須）
   if (!context.app?.generateHtml) {
     return {
       message: "generateHtml function not available",
@@ -708,10 +708,10 @@ export const executeGenerateHtml = async (
   }
 
   try {
-    // 2. Call backend
+    // 2. バックエンドを呼び出し
     const data = await context.app.generateHtml({ prompt });
 
-    // 3. Return based on result
+    // 3. 結果に応じて返却
     if (data.success && data.html) {
       return {
         data: { html: data.html, type: "tailwind" },
@@ -733,16 +733,16 @@ export const executeGenerateHtml = async (
   }
 };
 
-// Set isEnabled and backends in pluginCore
+// pluginCore で isEnabled と backends を設定
 export const pluginCore = {
   // ...
   isEnabled: (startResponse) =>
     !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGoogleApiKey,
-  backends: ["textLLM"],  // Explicitly specify backend used
+  backends: ["textLLM"],  // 使用するバックエンドを明示
 };
 ```
 
-#### Example 2: Fetch Web Page (Browse)
+#### 例2: Web ページを取得する（Browse）
 
 ```typescript
 // GUIChatPluginBrowse/src/core/plugin.ts
@@ -752,10 +752,10 @@ export const browse = async (
 ): Promise<BrowseResult> => {
   const { url } = args;
 
-  // Get embed for Twitter URLs
+  // Twitter URL の場合は埋め込みを取得
   if (isTwitterUrl(url)) {
     const embedHtml = await context.app?.getTwitterEmbed?.(url);
-    // Save embedHtml...
+    // embedHtml を保存...
   }
 
   if (!context.app?.browseUrl) {
@@ -772,18 +772,18 @@ export const browse = async (
       return {
         message: "Successfully browsed the webpage",
         title: data.data.title || "Untitled",
-        jsonData: { data: data.data },  // Return page content to LLM
-        data: { url, twitterEmbedHtml },  // Data for UI
+        jsonData: { data: data.data },  // LLM にページ内容を返す
+        data: { url, twitterEmbedHtml },  // UI 用データ
         instructions: "Give a ONE-SENTENCE summary of the content.",
       };
     }
   } catch (error) {
-    // Error handling
+    // エラー処理
   }
 };
 ```
 
-#### Example 3: Read/Write Configuration (SetImageStyle)
+#### 例3: 設定を読み書きする（SetImageStyle）
 
 ```typescript
 // GUIChatPluginSetImageStyle/src/core/plugin.ts
@@ -793,7 +793,7 @@ export const executeSetImageStyle = async (
 ): Promise<ToolResult<SetImageStyleData, SetImageStyleJsonData>> => {
   const { styleModifier } = args;
 
-  // Cast context.app to extended type
+  // context.app を拡張した型でキャスト
   const app = context.app as {
     getImageConfig?: () => ImageGenerationConfig;
     setConfig?: (key: string, value: ImageGenerationConfig) => void;
@@ -807,17 +807,17 @@ export const executeSetImageStyle = async (
   }
 
   try {
-    // Get current config
+    // 現在の設定を取得
     const config = app.getImageConfig();
     const previousStyleModifier = config.styleModifier || "";
 
-    // Create new config
+    // 新しい設定を作成
     const newConfig: ImageGenerationConfig = {
       ...config,
       styleModifier: styleModifier.trim(),
     };
 
-    // Save config with setConfig (only available to allowed plugins)
+    // setConfig で設定を保存（許可されたプラグインのみ使用可能）
     app.setConfig?.("imageGenerationBackend", newConfig);
 
     return {
@@ -828,14 +828,14 @@ export const executeSetImageStyle = async (
       instructionsRequired: true,
     };
   } catch (error) {
-    // Error handling
+    // エラー処理
   }
 };
 ```
 
-**Note:** `setConfig` is only available to plugins allowed by MulmoChat (security measure).
+**注意:** `setConfig` は MulmoChat で許可されたプラグインのみ使用可能です（セキュリティ対策）。
 
-#### Example 4: Update Existing Result (ScrollToAnchor)
+#### 例4: 既存の結果を更新する（ScrollToAnchor）
 
 ```typescript
 // GUIChatPluginScrollToAnchor/src/core/plugin.ts
@@ -845,7 +845,7 @@ export const executeScrollToAnchor = async (
 ): Promise<ToolResult> => {
   const { anchorId } = args;
 
-  // Check currentResult exists
+  // currentResult の存在チェック
   if (!context.currentResult) {
     return {
       message: "No document is currently displayed to scroll.",
@@ -853,15 +853,15 @@ export const executeScrollToAnchor = async (
     };
   }
 
-  // Copy existing result and update viewState
+  // 既存の結果をコピーして viewState を更新
   return {
     ...context.currentResult,
     message: `Scrolled to ${anchorId}`,
-    updating: true,  // Important: Update existing result instead of creating new
+    updating: true,  // 重要: 新規作成せず既存の結果を更新
     viewState: {
       ...context.currentResult.viewState,
       scrollToAnchor: anchorId,
-      scrollTimestamp: Date.now(),  // Add timestamp to react even to same anchor
+      scrollTimestamp: Date.now(),  // 同じアンカーでも反応するようにタイムスタンプ追加
     },
     instructions: "Read the step aloud.",
     instructionsRequired: true,
@@ -869,12 +869,12 @@ export const executeScrollToAnchor = async (
 };
 ```
 
-#### Example 5: Use App-Specific Features (SwitchRole)
+#### 例5: アプリ固有機能を使う（SwitchRole）
 
 ```typescript
 // GUIChatPluginSwitchRole/src/core/plugin.ts
 
-// Extend context with required features type definition
+// context を拡張して必要な機能を型定義
 interface SwitchRoleToolContext extends ToolContext {
   app?: ToolContext["app"] & {
     getRoles?: () => Role[];
@@ -888,7 +888,7 @@ export const executeSwitchRole = async (
 ): Promise<ToolResult<unknown, SwitchRoleJsonData>> => {
   const { role } = args;
 
-  // Check if getRoles is available
+  // getRoles が利用可能かチェック
   if (typeof context.app?.getRoles !== "function") {
     console.warn("switchRole: context.app.getRoles() not available");
     return {
@@ -909,7 +909,7 @@ export const executeSwitchRole = async (
     };
   }
 
-  // Call switchRole asynchronously (uses setTimeout due to connection disconnect)
+  // switchRole を非同期で呼び出し（接続切断を伴うため setTimeout を使用）
   if (typeof context.app?.switchRole === "function") {
     setTimeout(() => {
       context.app?.switchRole?.(role);
@@ -923,11 +923,11 @@ export const executeSwitchRole = async (
 };
 ```
 
-### Pattern-Based Implementation
+### パターン別実装
 
-#### Pattern A: Call Backend
+#### パターン A: バックエンドを呼び出す
 
-**Reference:** [GUIChatPluginGenerateHtml](https://github.com/nicedoc/GUIChatPluginGenerateHtml)
+**参照:** [GUIChatPluginGenerateHtml](https://github.com/nicedoc/GUIChatPluginGenerateHtml)
 
 ```typescript
 export const executeGenerateHtml = async (
@@ -945,7 +945,7 @@ export const executeGenerateHtml = async (
   };
 };
 
-// Check backend availability in isEnabled
+// isEnabled でバックエンドの有無をチェック
 export const pluginCore = {
   isEnabled: (startResponse) =>
     !!startResponse?.hasAnthropicApiKey || !!startResponse?.hasGoogleApiKey,
@@ -953,9 +953,9 @@ export const pluginCore = {
 };
 ```
 
-#### Pattern B: Update Existing Result
+#### パターン B: 既存の結果を更新する
 
-**Reference:** [GUIChatPluginScrollToAnchor](https://github.com/nicedoc/GUIChatPluginScrollToAnchor)
+**参照:** [GUIChatPluginScrollToAnchor](https://github.com/nicedoc/GUIChatPluginScrollToAnchor)
 
 ```typescript
 export const executeScrollToAnchor = async (
@@ -968,7 +968,7 @@ export const executeScrollToAnchor = async (
 
   return {
     ...context.currentResult,
-    updating: true,  // Update existing result
+    updating: true,  // 既存の結果を更新
     viewState: {
       ...context.currentResult.viewState,
       scrollToAnchor: args.anchorId,
@@ -977,9 +977,9 @@ export const executeScrollToAnchor = async (
 };
 ```
 
-#### Pattern C: Use App-Specific Features
+#### パターン C: アプリ固有機能を使う
 
-**Reference:** [GUIChatPluginSwitchRole](https://github.com/nicedoc/GUIChatPluginSwitchRole)
+**参照:** [GUIChatPluginSwitchRole](https://github.com/nicedoc/GUIChatPluginSwitchRole)
 
 ```typescript
 interface ExtendedContext extends ToolContext {
@@ -1005,13 +1005,13 @@ export const executeSwitchRole = async (
 
 ---
 
-## Shared UI Components
+## 共有 UI コンポーネント
 
-When using common UI across multiple plugins, you can use shared packages.
+複数のプラグインで共通の UI を使用する場合、共有パッケージを利用できます。
 
 ### @mulmochat-plugin/ui-image
 
-Provides shared components for image display. Used by GenerateImage, EditImage, etc.
+画像表示用の共有コンポーネントを提供します。GenerateImage, EditImage などで使用。
 
 ```typescript
 // src/vue/View.vue
@@ -1021,7 +1021,7 @@ import { ImageView } from "@mulmochat-plugin/ui-image";
 import { ImagePreview } from "@mulmochat-plugin/ui-image";
 ```
 
-**package.json configuration:**
+**package.json での設定:**
 
 ```json
 {
@@ -1036,11 +1036,11 @@ import { ImagePreview } from "@mulmochat-plugin/ui-image";
 
 ---
 
-## Implementation Example: Image Generation Plugin
+## 実装例: 画像生成プラグイン
 
-The image generation plugin uses `context.app.generateImage()` and accepts file uploads via `inputHandlers`.
+画像生成プラグインは、`context.app.generateImage()` を使用し、`inputHandlers` でファイルアップロードを受け付ける例です。
 
-**Reference:** [@mulmochat-plugin/generate-image](https://www.npmjs.com/package/@mulmochat-plugin/generate-image)
+**参照:** [@mulmochat-plugin/generate-image](https://www.npmjs.com/package/@mulmochat-plugin/generate-image)
 
 ### types.ts
 
@@ -1088,7 +1088,7 @@ import type { ImageToolData, GenerateImageArgs } from "./types";
 import { TOOL_DEFINITION, TOOL_NAME, SYSTEM_PROMPT } from "./definition";
 import { SAMPLES } from "./samples";
 
-// Helper: Create ToolResult from uploaded image
+// ヘルパー: アップロード画像から ToolResult を作成
 export function createUploadedImageResult(
   imageData: string,
   fileName: string,
@@ -1102,7 +1102,7 @@ export function createUploadedImageResult(
   };
 }
 
-// execute: Return result from context.app.generateImage() directly
+// execute: context.app.generateImage() の結果をそのまま返す
 export const executeGenerateImage = async (
   context: ToolContext,
   args: GenerateImageArgs,
@@ -1113,7 +1113,7 @@ export const executeGenerateImage = async (
     return { message: "generateImage function not available" };
   }
 
-  // generateImage returns ToolResult
+  // generateImage は ToolResult を返す
   return context.app.generateImage(prompt);
 };
 
@@ -1143,12 +1143,12 @@ export const pluginCore: ToolPluginCore<ImageToolData, never, GenerateImageArgs>
 
 ### samples.ts
 
-Image plugin samples include pre-loaded images for demo.
+画像プラグインの samples はデモ用に pre-loaded 画像を含めます。
 
 ```typescript
 import type { ToolSample } from "gui-chat-protocol";
 
-// Demo samples: Set URL in imageData (displayed as image at runtime)
+// デモ用サンプル: imageData に URL を設定（実行時に画像として表示）
 export const SAMPLES: ToolSample[] = [
   {
     name: "Sunset Beach",
@@ -1181,7 +1181,7 @@ export const SAMPLES: ToolSample[] = [
 ];
 ```
 
-### Vue Components (Using Shared Package)
+### Vue コンポーネント（共有パッケージ使用）
 
 ```typescript
 // src/vue/View.vue
@@ -1233,23 +1233,23 @@ defineProps<{
 
 ---
 
-## Reference Plugin List
+## 参考プラグイン一覧
 
-| Plugin | Features | Reference Points |
-|--------|----------|------------------|
-| **[@mulmochat-plugin/generate-image](https://www.npmjs.com/package/@mulmochat-plugin/generate-image)** | Image generation | inputHandlers, backends, shared UI |
-| **[Othello](https://github.com/nicedoc/GUIChatPluginOthello)** | Game, interactive UI | samples, sendTextMessage, jsonData |
-| **[GenerateHtml](https://github.com/nicedoc/GUIChatPluginGenerateHtml)** | Backend call | context.app, isEnabled, backends |
-| **[ScrollToAnchor](https://github.com/nicedoc/GUIChatPluginScrollToAnchor)** | Result update | updating, viewState, currentResult |
-| **[SwitchRole](https://github.com/nicedoc/GUIChatPluginSwitchRole)** | App feature call | context extension, custom functions |
-| **[Quiz](https://github.com/receptron/MulmoChatPluginQuiz)** | Simple data display | samples, View, Preview |
-| **[Spreadsheet](https://github.com/nicedoc/GUIChatPluginSpreadsheet)** | Complex logic | logic.ts separation, formula calculation |
+| プラグイン | 特徴 | 参照ポイント |
+|-----------|------|-------------|
+| **[@mulmochat-plugin/generate-image](https://www.npmjs.com/package/@mulmochat-plugin/generate-image)** | 画像生成 | inputHandlers, backends, 共有 UI |
+| **[Othello](https://github.com/nicedoc/GUIChatPluginOthello)** | ゲーム、インタラクティブ UI | samples, sendTextMessage, jsonData |
+| **[GenerateHtml](https://github.com/nicedoc/GUIChatPluginGenerateHtml)** | バックエンド呼び出し | context.app, isEnabled, backends |
+| **[ScrollToAnchor](https://github.com/nicedoc/GUIChatPluginScrollToAnchor)** | 結果更新 | updating, viewState, currentResult |
+| **[SwitchRole](https://github.com/nicedoc/GUIChatPluginSwitchRole)** | アプリ機能呼び出し | context 拡張、カスタム関数 |
+| **[Quiz](https://github.com/receptron/MulmoChatPluginQuiz)** | シンプルなデータ表示 | samples, View, Preview |
+| **[Spreadsheet](https://github.com/nicedoc/GUIChatPluginSpreadsheet)** | 複雑なロジック | logic.ts 分離、フォーミュラ計算 |
 
 ---
 
-## Completion Checklist
+## 完了チェックリスト
 
-### Required Files
+### 必須ファイル
 
 - [ ] `package.json` - name: `@gui-chat-plugin/xxx`, description, keywords
 - [ ] `vite.config.ts` - name: `GUIChatPluginXxx`
@@ -1257,99 +1257,99 @@ defineProps<{
 - [ ] `tsconfig.build.json`
 - [ ] `eslint.config.js`
 - [ ] `.gitignore`
-- [ ] `index.html` - Change title
-- [ ] `README.md` - Plugin description, installation method, Test Prompts
+- [ ] `index.html` - タイトルを変更
+- [ ] `README.md` - プラグイン説明、インストール方法、Test Prompts
 - [ ] `.github/workflows/pull_request.yaml`
 
-### src Files
+### src ファイル
 
 - [ ] `src/style.css` - `@import "tailwindcss";`
 - [ ] `src/index.ts` - `export * from "./core";`
 
-### Core Files
+### Core ファイル
 
 - [ ] `src/core/types.ts` - XxxToolData, XxxArgs, (XxxJsonData)
 - [ ] `src/core/definition.ts` - TOOL_NAME, TOOL_DEFINITION, SYSTEM_PROMPT
 - [ ] `src/core/plugin.ts` - executeXxx, pluginCore
-- [ ] `src/core/index.ts` - Export everything
-- [ ] `src/core/samples.ts` - Test samples
+- [ ] `src/core/index.ts` - すべてをエクスポート
+- [ ] `src/core/samples.ts` - テスト用サンプル
 
-### Vue Files
+### Vue ファイル
 
-- [ ] `src/vue/index.ts` - plugin, exports, `export default { plugin }`
-- [ ] `src/vue/View.vue` - `selectedResult` props, `sendTextMessage` props
+- [ ] `src/vue/index.ts` - plugin, エクスポート, `export default { plugin }`
+- [ ] `src/vue/View.vue` - `selectedResult` props、`sendTextMessage` props
 - [ ] `src/vue/Preview.vue` - `result` props
 
-### Demo Files
+### Demo ファイル
 
 - [ ] `demo/main.ts`
-- [ ] `demo/App.vue` - samples buttons, View display, Preview display
+- [ ] `demo/App.vue` - samples ボタン、View 表示、Preview 表示
 
-### Build Verification
+### ビルド検証
 
-- [ ] `yarn install` succeeds
-- [ ] `yarn typecheck` no errors
-- [ ] `yarn lint` no errors
-- [ ] `yarn build` succeeds
-- [ ] `yarn dev` demo works
+- [ ] `yarn install` 成功
+- [ ] `yarn typecheck` エラーなし
+- [ ] `yarn lint` エラーなし
+- [ ] `yarn build` 成功
+- [ ] `yarn dev` でデモ動作確認
 
-### MulmoChat Integration
+### MulmoChat 統合
 
-- [ ] Add to `package.json`: `"@gui-chat-plugin/xxx": "file:../GUIChatPluginXxx"`
-- [ ] Add import to `src/tools/index.ts`
-- [ ] Add CSS import to `src/main.ts`
-- [ ] `yarn install` in MulmoChat
-- [ ] `yarn typecheck` no errors in MulmoChat
-- [ ] `yarn lint` no errors in MulmoChat
+- [ ] `package.json` に追加: `"@gui-chat-plugin/xxx": "file:../GUIChatPluginXxx"`
+- [ ] `src/tools/index.ts` にインポート追加
+- [ ] `src/main.ts` に CSS インポート追加
+- [ ] MulmoChat で `yarn install`
+- [ ] MulmoChat で `yarn typecheck` エラーなし
+- [ ] MulmoChat で `yarn lint` エラーなし
 
 ---
 
-## AI Instruction Template
+## AI への指示テンプレート
 
-### New Plugin Creation
+### 新規プラグイン作成
 
-> **Important**: Plugin quality depends on the detail of the specification you provide.
-> Describe parameter types, possible values, and UI behavior concretely.
+> **重要**: プラグインの品質は、提供する仕様の詳細度に依存します。
+> パラメータの型、取りうる値、UI の動作を具体的に記述してください。
 
 ```
-Create a new GUIChat plugin.
+GUIChat プラグインを新規作成してください。
 
-Plugin name: @gui-chat-plugin/xxx
-Function: {Detailed function description}
+プラグイン名: @gui-chat-plugin/xxx
+機能: {機能の詳細説明}
 
 Tool Definition:
 - name: xxxTool
-- description: {Description for LLM}
+- description: {LLM への説明}
 - parameters:
-  - paramName (type): {Description}
-    - Required/Optional
-    - Possible values (list if enum)
-    - Default value
+  - paramName (type): {説明}
+    - 必須/オプション
+    - 取りうる値（enum の場合はリスト）
+    - デフォルト値
 
-Implementation requirements:
-- View: {Main screen display method, "none" if not needed}
-  - Content to display
-  - User interactions
-  - Special UI elements (download button, etc.)
-- Preview: {Thumbnail display method, "none" if not needed}
-- Backend: {Backend to use, "none" if not needed}
-- Samples: {Test samples}
-- Domain logic: {Required calculations, rules, algorithms}
+実装要件:
+- View: {メイン画面の表示方法、不要なら「なし」}
+  - 表示するコンテンツ
+  - ユーザーインタラクション
+  - 特殊な UI 要素（ダウンロードボタン等）
+- Preview: {サムネイルの表示方法、不要なら「なし」}
+- Backend: {使用するバックエンド、なしなら「なし」}
+- Samples: {テスト用サンプル}
+- ドメインロジック: {必要な計算、ルール、アルゴリズム}
 
-Reference: Follow the steps in docs/plugin-development-guide.md,
-and verify with the checklist that nothing is missing.
+参照: docs/plugin-development-guide.md の手順に従い、
+チェックリストで漏れがないか確認してください。
 ```
 
-### Extracting Existing Plugin
+### 既存プラグインの独立化
 
 ```
-Extract MulmoChat internal plugin {pluginName} as an independent npm package.
+MulmoChat の内部プラグイン {pluginName} を独立した npm パッケージとして抽出してください。
 
-Source files:
+ソースファイル:
 - src/tools/models/{pluginName}.ts
 - src/tools/views/{PluginName}.vue
 - src/tools/previews/{PluginName}.vue
 
-Reference: Follow the steps in docs/plugin-extraction-guide.md,
-and verify with the checklist that nothing is missing.
+参照: docs/plugin-extraction-guide.md の手順に従い、
+チェックリストで漏れがないか確認してください。
 ```
