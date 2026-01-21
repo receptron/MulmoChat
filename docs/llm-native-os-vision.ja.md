@@ -544,7 +544,7 @@ Tools:
 View:
   - メイン表示（View.vue）
   - サムネイル（Preview.vue）
-  → フロントエンド固有
+  → フロントエンド固有（オプション）
 ```
 
 **MCP（Model Context Protocol）とは:**
@@ -552,105 +552,163 @@ View:
 MCP は LLM アプリケーションにツールを提供するための標準プロトコル。
 サーバー側でツールを実装し、クライアント（LLM アプリ）から呼び出す。
 
+**提案: OS 層で MCP を管理し、UI は後付け**
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  現状: プラグインがすべてを実装                                   │
+│  新アーキテクチャ: MCP ファースト                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  Plugin                                                         │
-│  ├── toolDefinition (自分で定義)                                │
-│  ├── execute() (自分で実装)                                     │
-│  ├── View.vue (自分で実装)                                      │
-│  └── Preview.vue (自分で実装)                                   │
+│  1. OS 層が MCP サーバーを設定・接続                             │
+│  2. MCP からツール一覧を取得                                     │
+│  3. 各ツールに UI プラグイン（Vue）があれば表示に使用             │
+│  4. UI がなくてもタスク実行には使用可能                          │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  OS 層 (MCP Client)                                      │   │
+│  │  ┌─────────────────────────────────────────────────────┐ │   │
+│  │  │  MCP Server 設定                                     │ │   │
+│  │  │  - weather-server: localhost:3001                    │ │   │
+│  │  │  - search-server: localhost:3002                     │ │   │
+│  │  │  - database-server: localhost:3003                   │ │   │
+│  │  └─────────────────────────────────────────────────────┘ │   │
+│  │                         │                                │   │
+│  │                         ↓ ツール一覧取得                  │   │
+│  │  ┌─────────────────────────────────────────────────────┐ │   │
+│  │  │  利用可能なツール                                    │ │   │
+│  │  │  - mcp://weather-server/get_weather                 │ │   │
+│  │  │  - mcp://weather-server/get_forecast                │ │   │
+│  │  │  - mcp://search-server/web_search                   │ │   │
+│  │  │  - mcp://database-server/query (UI なし)            │ │   │
+│  │  └─────────────────────────────────────────────────────┘ │   │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                              │                                   │
+│                              ↓ UI マッチング                     │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │  UI プラグイン登録                                           │ │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │ │
+│  │  │ WeatherView │  │ SearchView  │  │ (UI なし)   │        │ │
+│  │  │ for weather │  │ for search  │  │ database    │        │ │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘        │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  結果:                                                          │
+│  - weather, search: UI 付きで表示                               │
+│  - database: エージェントタスク用（UI なし）                     │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
+```
 
-┌─────────────────────────────────────────────────────────────────┐
-│  提案: MCP + UI ラッパーとしてのプラグイン                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Plugin (薄いラッパー)                                          │
-│  ├── mcpTool: "weather" (MCP ツールを参照)                      │
-│  ├── View.vue (UI だけ実装)                                     │
-│  └── Preview.vue (UI だけ実装)                                  │
-│          │                                                      │
-│          ▼                                                      │
-│  ┌─────────────────────────────────────────┐                   │
-│  │  MCP Client (ホストアプリ層)              │                   │
-│  │  - MCP サーバーに接続                     │                   │
-│  │  - ツール呼び出しをプロキシ               │                   │
-│  └─────────────────────────────────────────┘                   │
-│          │                                                      │
-│          ▼                                                      │
-│  ┌─────────────────────────────────────────┐                   │
-│  │  MCP Server(s)                           │                   │
-│  │  - Weather, Search, Database, etc.       │                   │
-│  │  - 既存のエコシステムを活用               │                   │
-│  └─────────────────────────────────────────┘                   │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+**UI なしツールの活用（エージェントタスク）:**
+
+```
+ユーザー: 「売上データを分析してグラフを作って」
+
+[エージェント自律実行]
+
+Step 1: データ取得（UI なし）
+  → mcp://database-server/query 呼び出し
+  → SQL: "SELECT date, amount FROM sales"
+  → 結果: データ配列（表示なし、内部で保持）
+
+Step 2: データ分析（UI なし）
+  → textLLM で分析
+  → 結果: 分析結果テキスト（内部で保持）
+
+Step 3: グラフ生成（UI あり）
+  → mcp://chart-server/create_chart 呼び出し
+  → 結果: グラフ画像
+  → ChartView で表示 ← ここで初めて UI 表示
+
+[完了]
+ユーザーにはグラフだけ表示、途中経過は非表示
 ```
 
 **必要な機能:**
 
-##### 4.1 MCP ツールラッパー型プラグイン
+##### 4.1 OS 層での MCP 管理
 
 ```typescript
-// 従来: すべて自分で実装
-export const pluginCore: ToolPluginCore = {
-  toolDefinition: {
-    name: "weather",
-    description: "Get weather information",
-    parameters: { /* スキーマ定義 */ }
-  },
-  execute: async (context, args) => {
-    // 天気 API を自分で呼び出し
-    const data = await fetchWeatherAPI(args.location);
-    return { message: "Weather fetched", data };
-  },
-};
+// OS 層（gui-chat-protocol または ホストアプリ）で MCP を管理
+interface MCPManager {
+  // MCP サーバー設定（バックエンドで管理）
+  servers: MCPServerConfig[];
 
-// 提案: MCP ツールを参照
-export const pluginCore: ToolPluginCore = {
-  // MCP ツールを参照（toolDefinition は MCP から取得）
-  mcpTool: {
-    server: "weather-server",  // MCP サーバー名
-    tool: "get_weather",       // ツール名
-  },
+  // 全ツール一覧を取得
+  getAllTools: () => MCPTool[];
 
-  // execute は自動生成または省略可能
-  // MCP ツールの結果を UI 用に変換する場合のみ実装
-  transformResult: (mcpResult) => ({
-    message: mcpResult.content,
-    data: { temperature: mcpResult.temperature, ... }
-  }),
-};
-```
+  // ツール実行
+  executeTool: (toolUri: string, args: unknown) => Promise<MCPResult>;
+}
 
-##### 4.2 MCP サーバー管理
+interface MCPServerConfig {
+  name: string;          // "weather-server"
+  endpoint: string;      // "localhost:3001" or "https://..."
+  transport: "stdio" | "sse" | "http";
+  enabled: boolean;
+}
 
-```typescript
-interface ToolContextApp {
-  // 既存の機能...
-
-  // MCP 関連
-  mcp: {
-    // 利用可能な MCP サーバー一覧
-    listServers: () => MCPServerInfo[];
-
-    // MCP ツール呼び出し
-    callTool: (server: string, tool: string, args: unknown) => Promise<MCPResult>;
-
-    // MCP ツール定義取得
-    getToolDefinition: (server: string, tool: string) => ToolDefinition;
-  };
+interface MCPTool {
+  uri: string;           // "mcp://weather-server/get_weather"
+  definition: ToolDefinition;  // MCP から取得したスキーマ
+  hasUI: boolean;        // UI プラグインがあるか
 }
 ```
 
-##### 4.3 プラグイン種別
+##### 4.2 UI プラグイン（オプション）
 
 ```typescript
-// 1. フルプラグイン（従来通り）
+// UI プラグインは MCP ツールに対応する表示コンポーネントのみ提供
+interface UIPlugin {
+  // 対応する MCP ツール URI
+  toolUri: string;  // "mcp://weather-server/get_weather"
+
+  // オプション: 結果の変換（MCP 結果 → UI 用データ）
+  transformResult?: (mcpResult: unknown) => ToolResultData;
+
+  // UI コンポーネント
+  viewComponent: Component;
+  previewComponent?: Component;
+}
+
+// 登録例
+const weatherUIPlugin: UIPlugin = {
+  toolUri: "mcp://weather-server/get_weather",
+  viewComponent: WeatherView,
+  previewComponent: WeatherPreview,
+};
+```
+
+##### 4.3 ツールの分類
+
+```typescript
+// OS 層が管理するツール一覧
+interface ToolRegistry {
+  // 全ツール（MCP + 従来プラグイン）
+  tools: Map<string, RegisteredTool>;
+
+  // ツール実行（UI の有無に関わらず）
+  execute: (toolUri: string, args: unknown) => Promise<ToolResult>;
+
+  // UI 付きツールのみ取得（表示用）
+  getToolsWithUI: () => RegisteredTool[];
+
+  // 全ツール取得（エージェント用）
+  getAllTools: () => RegisteredTool[];
+}
+
+interface RegisteredTool {
+  uri: string;
+  source: "mcp" | "plugin";  // MCP 由来か従来プラグインか
+  definition: ToolDefinition;
+  ui?: UIPlugin;             // UI があれば
+}
+```
+
+##### 4.4 従来プラグインとの互換性
+
+```typescript
+// 従来のフルプラグイン（引き続きサポート）
 interface FullPlugin extends ToolPluginCore {
   toolDefinition: ToolDefinition;
   execute: ExecuteFunction;
@@ -658,48 +716,24 @@ interface FullPlugin extends ToolPluginCore {
   previewComponent: Component;
 }
 
-// 2. MCP ラッパープラグイン（新規）
-interface MCPWrapperPlugin {
-  // MCP ツール参照
-  mcpTool: {
-    server: string;
-    tool: string;
-  };
-
-  // オプション: 結果の変換
-  transformResult?: (mcpResult: unknown) => ToolResult;
-
-  // UI コンポーネント
-  viewComponent: Component;
-  previewComponent?: Component;
-}
-
-// 3. UI オンリープラグイン（MCP ツールに UI を追加）
-interface UIOnlyPlugin {
-  // 既存の MCP ツールまたは他プラグインのツールを参照
-  toolRef: string;  // "mcp:weather-server/get_weather" or "plugin:weather"
-
-  // UI のみ提供
-  viewComponent: Component;
-  previewComponent?: Component;
-}
+// 従来プラグインは自動的に ToolRegistry に登録
+// uri: "plugin://pluginName/toolName"
 ```
 
 **具体例:**
 
-##### 例1: 既存 MCP ツールに UI を追加
+##### 例1: MCP ツールに UI を追加
 
 ```
 [状況]
-- MCP サーバー "exa-search" が既に存在
-- search ツールを提供
-- しかし UI がない（テキスト結果のみ）
+- MCP サーバー "exa-search" が OS 層で設定済み
+- search ツールが利用可能だが UI がない
 
-[解決策: UI オンリープラグイン]
+[解決策: UI プラグインを追加]
 
-// プラグイン定義（最小限）
-export const plugin: UIOnlyPlugin = {
-  toolRef: "mcp:exa-search/search",
+// UI プラグイン定義（最小限）
+export const searchUIPlugin: UIPlugin = {
+  toolUri: "mcp://exa-search/search",
 
   viewComponent: SearchResultsView,  // カード形式で結果表示
   previewComponent: SearchPreview,   // サムネイル
@@ -715,84 +749,78 @@ export const plugin: UIOnlyPlugin = {
     </div>
   </div>
 </template>
+
+// OS 層が自動で MCP ツールと UI をマッチング
 ```
 
-##### 例2: MCP ツール + カスタム後処理
+##### 例2: MCP ツール + 結果変換
 
 ```
 [状況]
 - MCP サーバー "weather" が気象データを返す
-- しかしユーザーには「服装提案」も表示したい
+- UI 用にデータ構造を変換したい
 
-[解決策: MCP ラッパープラグイン with transformResult]
+[解決策: transformResult を使用]
 
-export const pluginCore: MCPWrapperPlugin = {
-  mcpTool: {
-    server: "weather",
-    tool: "get_current_weather",
-  },
+export const weatherUIPlugin: UIPlugin = {
+  toolUri: "mcp://weather-server/get_weather",
 
-  // MCP 結果を加工
-  transformResult: async (mcpResult, context) => {
-    const weather = mcpResult;
+  // MCP 結果を UI 用に変換
+  transformResult: (mcpResult) => ({
+    temperature: mcpResult.temp,
+    condition: mcpResult.weather[0].main,
+    icon: mcpResult.weather[0].icon,
+    location: mcpResult.name,
+  }),
 
-    // textLLM で服装提案を生成
-    const suggestion = await context.app?.generateText({
-      prompt: `気温${weather.temperature}度、${weather.condition}の日の服装を提案して`,
-    });
-
-    return {
-      message: `${weather.location}: ${weather.temperature}度`,
-      data: {
-        weather,
-        clothingSuggestion: suggestion,
-      },
-    };
-  },
+  viewComponent: WeatherView,
+  previewComponent: WeatherPreview,
 };
 ```
 
-##### 例3: 複数 MCP ツールの組み合わせ
+##### 例3: UI なしツールのエージェント活用
 
 ```
 [状況]
-- "search" MCP サーバー: Web 検索
-- "browser" MCP サーバー: ページ取得
-- これらを組み合わせて「検索して要約」したい
+- "database" MCP サーバー: SQL クエリ実行
+- UI は不要、エージェントが内部で使用
 
-[解決策: フルプラグイン with MCP 呼び出し]
+[設定: OS 層で MCP サーバーを登録するだけ]
 
-export const pluginCore: ToolPluginCore = {
-  toolDefinition: {
-    name: "search_and_summarize",
-    description: "Search and summarize results",
-    parameters: { query: { type: "string" } }
-  },
+// mcp-servers.json（OS 層の設定）
+{
+  "servers": [
+    {
+      "name": "database-server",
+      "endpoint": "localhost:3003",
+      "transport": "stdio"
+    }
+  ]
+}
 
-  execute: async (context, args) => {
-    // 1. MCP で検索
-    const searchResults = await context.app?.mcp.callTool(
-      "search", "web_search", { query: args.query }
-    );
+// UI プラグインなし → エージェントが直接使用
+// ツールは LLM に公開されるが、結果は内部データとして保持
+```
 
-    // 2. 上位3件のページを取得
-    const pages = await Promise.all(
-      searchResults.slice(0, 3).map(r =>
-        context.app?.mcp.callTool("browser", "fetch_page", { url: r.url })
-      )
-    );
+##### 例4: 複数ツールをエージェントで連携
 
-    // 3. textLLM で要約
-    const summary = await context.app?.generateText({
-      prompt: `以下の情報を要約して:\n${pages.join('\n')}`
-    });
+```
+[状況]
+- database ツール（UI なし）
+- chart ツール（UI あり）
+- これらを組み合わせてデータ可視化
 
-    return {
-      message: "Search and summarize completed",
-      data: { searchResults, summary },
-    };
-  },
-};
+[フロー]
+ユーザー: 「売上データをグラフ化して」
+
+LLM エージェント:
+  1. database ツール呼び出し（UI なし）
+     → データ取得、内部保持
+  2. chart ツール呼び出し（UI あり）
+     → グラフ生成、ChartView で表示
+
+// 途中経過（database）は非表示
+// 最終結果（chart）のみ UI 表示
 ```
 
 **開発フローの変化:**
@@ -806,11 +834,15 @@ export const pluginCore: ToolPluginCore = {
 5. テスト
 → 1-2日かかる
 
-MCP 統合後のプラグイン開発:
-1. 既存 MCP ツールを探す（または作る）
-2. View/Preview を実装
+MCP + UI プラグイン:
+1. MCP サーバーを設定（または既存を使用）
+2. 必要なら UI プラグインを実装（View/Preview のみ）
 3. 必要なら transformResult を実装
 → 数時間で完了
+
+UI 不要のツール:
+1. MCP サーバーを設定するだけ
+→ 即座に利用可能
 ```
 
 **アーキテクチャへの影響:**
@@ -818,50 +850,53 @@ MCP 統合後のプラグイン開発:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    アプリケーション層                            │
-│               (プラグイン / LLM Native Apps)                     │
+│                    (UI プラグイン)                               │
 │                                                                 │
 │   ┌───────────┐  ┌───────────┐  ┌───────────┐                 │
-│   │FullPlugin │  │MCP Wrapper│  │ UI Only   │                 │
-│   │(従来型)    │  │ Plugin    │  │ Plugin    │                 │
+│   │ WeatherUI │  │ SearchUI  │  │ ChartUI   │  (UI なしも可)   │
+│   │  Plugin   │  │  Plugin   │  │  Plugin   │                 │
 │   └───────────┘  └───────────┘  └───────────┘                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                      OS 層（Core）                               │
-│                    gui-chat-protocol                            │
 │                                                                 │
-│  ・ToolPluginCore / MCPWrapperPlugin / UIOnlyPlugin 型定義      │
-│  ・MCP Client インターフェース                                   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  ToolRegistry                                            │   │
+│  │  - MCP ツール + 従来プラグイン を統合管理                │   │
+│  │  - UI プラグインとのマッチング                          │   │
+│  │  - ツール実行（UI 有無に関わらず）                       │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  MCPManager                                               │   │
+│  │  - MCP サーバー接続管理                                  │   │
+│  │  - ツール定義の取得                                      │   │
+│  │  - ツール呼び出しプロキシ                                │   │
+│  └─────────────────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────────────────────┤
-│                    ホストアプリ層                                │
-│                                                                 │
-│  ┌─────────────────────────────────────────┐                   │
-│  │  MCP Client 実装                         │                   │
-│  │  - サーバー接続管理                       │                   │
-│  │  - ツール呼び出しプロキシ                 │                   │
-│  └─────────────────────────────────────────┘                   │
-├─────────────────────────────────────────────────────────────────┤
-│                   バックエンド層                                 │
+│                   バックエンド層 (MCP Servers)                   │
 │                                                                 │
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐          │
-│  │  MCP    │  │  MCP    │  │  MCP    │  │ Direct  │          │
-│  │ Server  │  │ Server  │  │ Server  │  │  API    │          │
-│  │(Weather)│  │(Search) │  │(Browser)│  │(Legacy) │          │
+│  │ Weather │  │ Search  │  │Database │  │  Chart  │          │
+│  │ Server  │  │ Server  │  │ Server  │  │ Server  │          │
+│  │ (UI有)  │  │ (UI有)  │  │ (UI無)  │  │ (UI有)  │          │
 │  └─────────┘  └─────────┘  └─────────┘  └─────────┘          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 **インパクト:**
+- MCP 設定だけで即座にツール利用可能（UI は後付け）
+- UI なしツールもエージェントタスクで活用
 - プラグイン開発時間の大幅短縮（UI 実装だけでOK）
 - MCP エコシステムの活用（既存ツールの再利用）
 - バックエンド/フロントエンドの明確な分離
-- ツールの共有・再利用が容易に
 
 **設計考慮:**
-- MCP サーバーの接続管理をホストアプリ層で行う
-- プラグインは MCP を意識せず、context.app.mcp 経由で呼び出し
-- MCP 非対応の既存プラグインとの互換性維持
+- MCP サーバーの設定は OS 層（バックエンド）で管理
+- UI プラグインは MCP ツールに対するオプションの拡張
+- ツール実行結果の UI 有無で表示/非表示を自動判定
+- MCP 非対応の既存プラグイン（FullPlugin）との互換性維持
 - MCP サーバーのセキュリティ（信頼できるサーバーのみ接続）
 
-##### 4.4 ツールインターフェース仕様（RFC 的アプローチ）
+##### 4.5 ツールインターフェース仕様（RFC 的アプローチ）
 
 **課題:**
 既存プラグインのバックエンドとプラグインの整合性を保証する仕組みがない。
