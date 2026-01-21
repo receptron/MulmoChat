@@ -1,0 +1,822 @@
+# LLM Native OS Vision
+
+Design vision and development roadmap viewing MulmoChat as an "OS" and plugins as "LLM Native Applications".
+
+## Table of Contents
+
+1. [Concept](#concept)
+2. [Architecture Layers](#architecture-layers)
+3. [Current Features](#current-features)
+4. [Missing Features](#missing-features)
+5. [Development Roadmap](#development-roadmap)
+6. [Design Principles](#design-principles)
+7. [Portability](#portability)
+
+---
+
+## Concept
+
+### What is LLM Native OS
+
+Just as traditional operating systems abstract hardware and provide APIs to applications, an LLM Native OS abstracts the LLM and provides a unified interface to applications (plugins).
+
+```
+Traditional OS                      LLM Native OS
+─────────────────────────────────────────────────────
+Applications                        Plugins (LLM Native Apps)
+    ↓                                  ↓
+System Calls                        context.app API
+    ↓                                  ↓
+Kernel                              LLM Native OS Core
+    ↓                                  ↓
+Hardware                            LLM / Backend Services
+```
+
+### Why This Perspective Matters
+
+1. **Feature Discovery**: Comparing with traditional OS features reveals what's needed
+2. **Design Guidance**: Clear responsibilities for each layer improve modular design
+3. **Ecosystem Formation**: More plugin developers lead to richer applications
+4. **Portability**: Abstracting the OS layer allows plugin sharing across different host apps
+
+---
+
+## Architecture Layers
+
+### 4-Layer Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                         │
+│               (Plugins / LLM Native Apps)                    │
+│                                                             │
+│   ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐      │
+│   │ Weather │  │ Othello │  │   Map   │  │  HTML   │      │
+│   └─────────┘  └─────────┘  └─────────┘  └─────────┘      │
+├─────────────────────────────────────────────────────────────┤
+│                      OS Layer (Core)                         │
+│                    gui-chat-protocol                         │
+│                                                             │
+│  • Type definitions (ToolPlugin, ToolResult, ToolContext)   │
+│  • Protocol (Plugin ↔ OS contract)                          │
+│  • Resource management (future)                             │
+│  • Permissions (future)                                     │
+├─────────────────────────────────────────────────────────────┤
+│                     Host App Layer                           │
+│               (MulmoChat, future apps)                       │
+│                                                             │
+│  • UI framework implementation (Vue/React)                  │
+│  • Session management                                       │
+│  • User settings                                            │
+│  • context.app implementation                               │
+├─────────────────────────────────────────────────────────────┤
+│                     Backend Layer                            │
+│                                                             │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐      │
+│  │ textLLM │  │imageGen │  │ search  │  │   map   │      │
+│  │(Claude) │  │(Gemini) │  │  (Exa)  │  │(Google) │      │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Layer Responsibilities
+
+| Layer | Responsibility | Implementation |
+|-------|---------------|----------------|
+| **Application Layer** | User-facing features | Individual plugin packages |
+| **OS Layer** | Standard protocol, inter-layer contracts | gui-chat-protocol |
+| **Host App Layer** | UI implementation, session management, API provision | MulmoChat |
+| **Backend Layer** | External service communication | Server / APIs |
+
+---
+
+## Current Features
+
+### Implemented ✅
+
+| Feature | Description | Implementation |
+|---------|-------------|----------------|
+| **Tool Execution** | LLM calls plugins | execute() |
+| **UI Display** | Result display (View/Preview) | Vue components |
+| **Backend Abstraction** | Provider-independent | backends declaration |
+| **External Input** | File/clipboard | inputHandlers |
+| **Config Management** | Plugin settings storage | getConfig/setConfig |
+| **LLM Instructions** | Post-execution instructions | instructions |
+| **State Updates** | Update existing results | updating flag |
+
+---
+
+## Missing Features
+
+### Priority: High 🔴
+
+#### 1. Agentic Execution System
+
+**Current Problem:**
+- Only simple user question → response loop
+- Cannot automatically complete multi-step tasks
+- Cannot auto-correct and retry on errors
+- Cannot manage multiple requests in parallel
+
+**Required Features:**
+
+##### 1.1 Auto-Loop Execution (attempt_completion pattern)
+
+```typescript
+interface TaskExecution {
+  // Task completion check
+  attemptCompletion: () => CompletionResult;
+
+  // Continue execution
+  continueExecution: () => Promise<void>;
+
+  // Request user confirmation when needed
+  requestUserConfirmation: (question: string) => Promise<boolean>;
+}
+
+type CompletionResult =
+  | { status: "completed"; summary: string }
+  | { status: "needs_more_work"; nextAction: string }
+  | { status: "needs_user_input"; question: string }
+  | { status: "error"; error: string; canRetry: boolean };
+```
+
+##### 1.2 Task & Context Management
+
+```typescript
+interface TaskContext {
+  id: string;
+
+  // Task purpose/intent
+  purpose: {
+    original: string;        // User's original request
+    clarified: string;       // Clarified purpose
+    confirmedByUser: boolean;
+  };
+
+  // State management
+  state: TaskState;
+
+  // Todo list
+  todos: TodoItem[];
+
+  // Execution history
+  history: ExecutionRecord[];
+
+  // Related resources
+  resources: ResourceReference[];
+
+  // Error history and learning
+  errors: ErrorRecord[];
+}
+
+type TaskState =
+  | "planning"      // Planning
+  | "executing"     // Executing
+  | "waiting_user"  // Waiting for user input
+  | "error"         // Error occurred
+  | "completed";    // Completed
+
+interface TodoItem {
+  id: string;
+  description: string;
+  status: "pending" | "in_progress" | "completed" | "failed";
+  result?: unknown;
+}
+
+interface ExecutionRecord {
+  timestamp: Date;
+  action: string;
+  toolUsed?: string;
+  input?: unknown;
+  output?: unknown;
+  success: boolean;
+}
+```
+
+##### 1.3 Auto Error Correction
+
+```typescript
+interface ErrorHandler {
+  // Error analysis
+  analyzeError: (error: Error, context: TaskContext) => ErrorAnalysis;
+
+  // Attempt auto-fix
+  attemptAutoFix: (analysis: ErrorAnalysis) => Promise<FixResult>;
+
+  // Retry strategy
+  getRetryStrategy: (error: Error) => RetryStrategy;
+}
+
+interface ErrorAnalysis {
+  type: "input_error" | "api_error" | "logic_error" | "resource_missing";
+  cause: string;
+  suggestedFix: string;
+  canAutoFix: boolean;
+}
+
+interface RetryStrategy {
+  shouldRetry: boolean;
+  maxAttempts: number;
+  backoffMs: number;
+  modifyInput?: (original: unknown) => unknown;
+}
+```
+
+##### 1.4 Multi-Task Management
+
+```typescript
+interface TaskManager {
+  // Create task
+  createTask: (userRequest: string) => TaskContext;
+
+  // Get active tasks
+  getActiveTasks: () => TaskContext[];
+
+  // Switch task
+  switchTask: (taskId: string) => void;
+
+  // Update task purpose
+  updatePurpose: (taskId: string, newPurpose: string) => void;
+
+  // Confirm purpose with user
+  confirmPurposeWithUser: (taskId: string) => Promise<boolean>;
+}
+```
+
+**Detailed User Experience Examples:**
+
+##### Example 1: Multi-Step Task Auto-Execution
+
+```
+User: "Write a blog post, generate images, and compile into HTML"
+
+┌─────────────────────────────────────────────────────────────────┐
+│ TaskContext Created                                             │
+├─────────────────────────────────────────────────────────────────┤
+│ id: "task-001"                                                  │
+│ purpose:                                                        │
+│   original: "Write a blog post, generate images, compile HTML"  │
+│   clarified: "Create a blog post about AI technology,           │
+│              generate 3 related images, output as HTML page"    │
+│   confirmedByUser: false  ← Confirm with user if needed         │
+│                                                                 │
+│ state: "planning"                                               │
+│                                                                 │
+│ todos:                                                          │
+│   [1] Write blog article (pending)                              │
+│   [2] Generate 3 images matching the article (pending)          │
+│   [3] Compile article and images into HTML (pending)            │
+└─────────────────────────────────────────────────────────────────┘
+
+System: "Let me confirm the blog topic. Is AI technology in general OK?
+        Or do you have a specific topic (Generative AI, ML, etc.)?"
+
+User: "Latest trends in generative AI"
+
+┌─────────────────────────────────────────────────────────────────┐
+│ TaskContext Updated                                             │
+├─────────────────────────────────────────────────────────────────┤
+│ purpose:                                                        │
+│   clarified: "Create blog post about latest generative AI..."   │
+│   confirmedByUser: true  ✓                                      │
+│                                                                 │
+│ state: "executing"                                              │
+└─────────────────────────────────────────────────────────────────┘
+
+[Auto-execution loop started]
+
+Step 1: Write blog article
+  → Call textLLM plugin
+  → Result: 2000-word article generated
+  → todos[1].status = "completed"
+  → Record in history
+
+Step 2: Generate images
+  → Call imageGen plugin
+  → Error: "Rate limit exceeded"
+
+[Auto error correction]
+  → ErrorAnalysis: { type: "api_error", canAutoFix: true }
+  → RetryStrategy: { shouldRetry: true, backoffMs: 5000 }
+  → Wait 5 seconds, retry
+  → Success: 3 images generated
+  → todos[2].status = "completed"
+
+Step 3: Create HTML
+  → Get article and images via resource reference system
+  → Call generateHtml plugin
+  → Result: Complete HTML page generated
+  → todos[3].status = "completed"
+
+[attemptCompletion]
+  → All todos are completed
+  → status: "completed"
+  → summary: "Created blog post about latest generative AI trends,
+             3 images, and HTML page"
+
+System: "Done! I've created a blog post about latest generative AI trends,
+        3 images, and an HTML page.
+        The HTML page is displayed in the preview."
+```
+
+##### Example 2: Auto Error Correction with User Confirmation
+
+```
+User: "Check Tokyo weather and suggest appropriate clothing"
+
+[Auto-execution loop]
+
+Step 1: Get weather info
+  → Call weather plugin
+  → Error: "Location ambiguous: Tokyo Prefecture? Tokyo Station?"
+
+[Auto error correction decision]
+  → ErrorAnalysis: { type: "input_error", canAutoFix: false }
+  → User confirmation required
+
+System: "I couldn't identify 'Tokyo' precisely.
+        Which one do you mean?
+        1. Tokyo Prefecture (downtown weather)
+        2. Tokyo Station (pinpoint weather)"
+
+User: "1"
+
+[TaskContext updated, execution resumed]
+  → Tokyo Prefecture weather retrieved successfully
+  → "Sunny, high 28°C, humidity 60%"
+
+Step 2: Clothing suggestion
+  → Call textLLM plugin
+  → Get weather info via resource reference
+  → Generate clothing suggestion
+
+[attemptCompletion]
+  → status: "completed"
+  → summary: "Tokyo Prefecture is sunny at 28°C.
+             Light shirt and pants recommended."
+```
+
+##### Example 3: Multi-Task Parallel Management
+
+```
+User: "Create a presentation. Oh, but first I want to check today's schedule"
+
+[Multi-task management]
+
+┌─────────────────────────────────────────────────────────────────┐
+│ TaskManager.getActiveTasks()                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ Task 1 (task-001):                                              │
+│   purpose: "Create presentation"                                │
+│   state: "waiting_user"  ← Waiting for details                  │
+│   todos: [Decide theme, Create slides, ...]                     │
+│                                                                 │
+│ Task 2 (task-002):                                              │
+│   purpose: "Check today's schedule"                             │
+│   state: "executing"  ← Currently running                       │
+│   todos: [Check calendar]                                       │
+└─────────────────────────────────────────────────────────────────┘
+
+System: "I'm managing 2 tasks.
+        Let me check today's schedule first."
+
+[Task 2 execution]
+  → Call calendar plugin
+  → "10:00 Team meeting, 14:00 Client call"
+  → Task 2 completed
+
+System: "Today's schedule: 10:00 Team meeting, 14:00 Client call
+
+        Now, let's get back to the presentation.
+        What topic is the presentation about?"
+
+[Switch to Task 1]
+  → TaskManager.switchTask("task-001")
+  → state: "waiting_user" → Waiting for user input
+```
+
+##### Example 4: Purpose Modification
+
+```
+[Running task]
+TaskContext:
+  purpose: "Create product landing page"
+  state: "executing"
+  todos:
+    [1] Write product description (completed)
+    [2] Generate product images (in_progress)
+    [3] Create HTML page (pending)
+
+User: "Actually, never mind the landing page.
+      Just the SNS post images will do."
+
+[Purpose modification]
+  → TaskManager.updatePurpose("task-001", "Create SNS product images")
+
+┌─────────────────────────────────────────────────────────────────┐
+│ TaskContext Updated                                             │
+├─────────────────────────────────────────────────────────────────┤
+│ purpose:                                                        │
+│   original: "Create product landing page"                       │
+│   clarified: "Create SNS product images"  ← Modified            │
+│   confirmedByUser: true                                         │
+│                                                                 │
+│ todos:                                                          │
+│   [1] Write product description (completed) → Reuse as-is       │
+│   [2] Generate SNS product images (in_progress) ← Direction changed │
+│   [3] Create HTML page (pending) → Removed                      │
+└─────────────────────────────────────────────────────────────────┘
+
+System: "Got it. Switching to SNS image creation.
+        I'll use the product description we already created
+        to generate Instagram-ready images."
+```
+
+**Impact:**
+- Automatic completion of complex tasks
+- Auto-recovery from errors
+- Parallel management of multiple tasks
+- Accurate understanding and execution of user intent
+
+**Design Considerations:**
+- TaskContext persisted for cross-session continuity
+- User can check/modify task state anytime
+- Execution limit setting (prevent infinite loops)
+- Request user confirmation for important decisions
+
+---
+
+#### 2. Resource Reference System (Inter-App Communication)
+
+**Current Problem:**
+- Cannot share data between plugins
+- "Edit the image I just generated" is not possible
+- LLM cannot reference past tool results
+
+**Required Features:**
+```typescript
+interface ToolContext {
+  // Existing
+  currentResult?: ToolResult | null;
+  app?: ToolContextApp;
+
+  // Addition
+  resources?: {
+    getById: (uuid: string) => Resource | null;
+    getByType: (type: ResourceType) => Resource[];
+    getRecent: (count: number) => Resource[];
+  };
+}
+
+type ResourceType = "image" | "document" | "data" | "audio" | "video";
+```
+
+**Impact:**
+- LLM can chain tool results in pipelines
+- Workflow automation
+- Significant UX improvement
+
+**Design Considerations:**
+- Separate lightweight references (ID + metadata) from actual data
+- Memory efficiency (load large data only when needed)
+- Add to gui-chat-protocol (host app independent)
+
+---
+
+#### 2. Enhanced Persistence (Persistent Storage)
+
+**Current Problem:**
+- Data lost when session ends
+- Cannot store structured data
+- Cannot share data between plugins
+
+**Required Features:**
+```typescript
+interface ToolContextApp {
+  // Existing
+  getConfig: (key: string) => unknown;
+  setConfig: (key: string, value: unknown) => void;
+
+  // Addition
+  storage: {
+    // Key-Value storage
+    get: (key: string) => Promise<unknown>;
+    set: (key: string, value: unknown) => Promise<void>;
+    delete: (key: string) => Promise<void>;
+
+    // File storage
+    saveFile: (name: string, data: Blob) => Promise<string>;
+    loadFile: (id: string) => Promise<Blob>;
+    listFiles: (filter?: FileFilter) => Promise<FileInfo[]>;
+  };
+}
+```
+
+**Impact:**
+- Cross-session workflows
+- User work history retention
+- Foundation for inter-plugin data sharing
+
+---
+
+### Priority: Medium 🟡
+
+#### 3. Tool Capabilities Declaration
+
+**Current Problem:**
+- LLM cannot accurately understand tool input/output
+- Difficult to select appropriate tools
+
+**Required Features:**
+```typescript
+interface ToolCapabilities {
+  inputTypes?: ResourceType[];   // Accepted inputs
+  outputType?: ResourceType;     // Output type
+  streaming?: boolean;           // Streaming support
+  undoable?: boolean;            // Can be undone
+  sideEffects?: boolean;         // Has side effects
+}
+```
+
+**Impact:**
+- Improved LLM tool selection accuracy
+- Integration with resource reference system
+- Host app UI optimization
+
+---
+
+#### 4. Undo/Redo / History Management
+
+**Current Problem:**
+- Cannot undo tool executions
+- Cannot rollback state
+
+**Required Features:**
+```typescript
+interface ToolResult {
+  // Existing fields...
+
+  // Addition
+  undoable?: boolean;
+  undo?: () => Promise<void>;
+}
+
+interface ToolContext {
+  history?: {
+    canUndo: boolean;
+    canRedo: boolean;
+    undo: () => Promise<void>;
+    redo: () => Promise<void>;
+  };
+}
+```
+
+**Impact:**
+- Safe environment for experimentation
+- Complex workflow management
+
+---
+
+#### 5. Background Tasks / Notifications
+
+**Current Problem:**
+- Plugins only run when called
+- No progress display for long operations
+- Cannot send proactive notifications
+
+**Required Features:**
+```typescript
+interface ToolContextApp {
+  // Addition
+  tasks: {
+    run: (task: BackgroundTask) => TaskHandle;
+    cancel: (handle: TaskHandle) => void;
+  };
+
+  notifications: {
+    show: (notification: Notification) => void;
+    requestPermission: () => Promise<boolean>;
+  };
+}
+```
+
+**Impact:**
+- Improved UX for long operations (video generation, etc.)
+- Proactive AI assistant
+
+---
+
+### Priority: Low 🟢
+
+#### 6. Permission System
+
+**Required Features:**
+```typescript
+interface ToolPluginCore {
+  // Addition
+  permissions?: Permission[];
+}
+
+type Permission =
+  | "network"       // Network access
+  | "storage"       // Storage access
+  | "camera"        // Camera access
+  | "location"      // Location info
+  | "notifications"; // Notifications
+```
+
+**Impact:**
+- Improved security
+- User trust
+- Safe third-party plugin adoption
+
+---
+
+#### 7. Plugin Marketplace
+
+**Required Features:**
+- Plugin discovery/search
+- Install/uninstall
+- Version management/auto-update
+- Reviews/ratings
+
+**Impact:**
+- Ecosystem formation
+- Developer community growth
+
+---
+
+## Development Roadmap
+
+### Phase 1: Foundation (Short-term)
+
+```
+┌─────────────────────────────────────────┐
+│  1. Agentic Execution System             │
+│     - TaskContext type definitions       │
+│     - attempt_completion pattern         │
+│     - Auto error correction              │
+│     - Multi-task management              │
+├─────────────────────────────────────────┤
+│  2. Resource Reference System            │
+│     - Resource type definitions          │
+│     - context.resources API              │
+│     - Inter-plugin demo                  │
+├─────────────────────────────────────────┤
+│  3. Persistence API                      │
+│     - storage API definition             │
+│     - MulmoChat implementation           │
+└─────────────────────────────────────────┘
+```
+
+### Phase 2: Feature Expansion (Medium-term)
+
+```
+┌─────────────────────────────────────────┐
+│  3. Capabilities declaration             │
+│  4. Undo/Redo                           │
+│  5. Background tasks                     │
+│  6. Streaming execution                  │
+└─────────────────────────────────────────┘
+```
+
+### Phase 3: Ecosystem (Long-term)
+
+```
+┌─────────────────────────────────────────┐
+│  7. Permission system                    │
+│  8. Plugin marketplace                   │
+│  9. Expansion to other host apps         │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Design Principles
+
+### 1. Layer Independence
+
+Each layer can be tested and developed independently.
+
+```
+gui-chat-protocol    → Type definitions only, no implementation
+Plugin (core)        → Depends only on OS layer
+Plugin (vue)         → Depends on core + Vue
+Host App             → Integrates all layers
+```
+
+### 2. Minimal API Principle
+
+Keep OS layer API minimal.
+
+```typescript
+// Good: Generic and minimal
+context.resources.getById(uuid)
+
+// Bad: Specialized for specific use case
+context.getLastGeneratedImage()
+```
+
+### 3. Declarative Interface
+
+Plugins declare "what they can do" and leave "how to do it" to the host app.
+
+```typescript
+// Plugin side
+capabilities: {
+  outputType: "image",
+  inputTypes: ["image", "text"],
+}
+
+// Host app provides appropriate UI/routing
+```
+
+### 4. Backward Compatibility
+
+Add new features as optional, don't break existing plugins.
+
+```typescript
+interface ToolContext {
+  currentResult?: ToolResult;    // Existing
+  app?: ToolContextApp;          // Existing
+  resources?: ResourceManager;   // New (Optional)
+}
+```
+
+### 5. Framework Agnostic
+
+OS layer (gui-chat-protocol) does not depend on UI frameworks.
+
+```
+gui-chat-protocol/
+├── index.ts    # Core (framework agnostic)
+├── vue.ts      # Vue bindings
+└── react.ts    # React bindings
+```
+
+---
+
+## Portability
+
+### Goal
+
+Plugin core parts work on host apps other than MulmoChat.
+
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   MulmoChat     │  │   Future App A  │  │   Future App B  │
+│   (Vue)         │  │   (React)       │  │   (CLI)         │
+├─────────────────┤  ├─────────────────┤  ├─────────────────┤
+│ gui-chat-protocol (shared)                                 │
+├─────────────────────────────────────────────────────────────┤
+│ Plugin Core (shared)                                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Requirements for Portability
+
+1. **gui-chat-protocol Standardization**
+   - API stabilization
+   - Versioning policy
+   - Documentation
+
+2. **Host App Implementation Guide**
+   - context.app implementation requirements
+   - UI component requirements
+   - Test suite
+
+3. **Plugin Certification**
+   - Compatibility testing
+   - Certification badge
+
+---
+
+## Next Steps
+
+1. **Detailed Agentic Execution System Design**
+   - TaskContext / TaskManager API design
+   - attempt_completion pattern implementation
+   - Error handling strategy
+
+2. **Detailed Resource Reference System Design**
+   - Resource type definitions
+   - context.resources API
+   - Existing plugin adaptation
+
+3. **Prototype Implementation**
+   - Multi-step task auto-execution demo
+   - Image generation → Image editing pipeline
+   - Auto error correction demo
+
+4. **Developer Feedback**
+   - API design review
+   - Use case collection
+
+---
+
+## Related Documents
+
+- [Plugin Architecture](./plugin-architecture.md)
+- [Plugin Development Guide](./plugin-development-guide.md)
+- [Plugin Extraction Guide](./plugin-extraction-guide.md)
