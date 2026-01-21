@@ -2,6 +2,8 @@
 
 MulmoChat を「OS」、プラグインを「LLM Native Application」として捉えた設計ビジョンと開発ロードマップ。
 
+> **注**: このドキュメントは [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) を基盤として、その発展形を記述しています。GUI Chat Protocol で定義されたコアコンセプト（Enhanced Tool Calls、Typed Return Data、Roles、Chat-Centric OS）の上に、エージェント自律実行、MCP 統合、リソース参照などの新機能を追加する方向性を示しています。
+
 ## 目次
 
 1. [コンセプト](#コンセプト)
@@ -1302,8 +1304,72 @@ gui-chat-protocol/
 
 ---
 
+## GUI Chat Protocol との対応
+
+このビジョンドキュメントは [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) の発展形です。
+
+### 用語の対応
+
+| GUI Chat Protocol | 現在の実装 | 説明 |
+|-------------------|-----------|------|
+| `llmResponse` | `result.message` | LLM に返すテキスト |
+| `guiData` | `result.data` | UI 表示用データ |
+| `guiData.type` | `toolName` | どのコンポーネントで表示するか |
+| `instructions` | `result.instructions` | LLM への追加指示 |
+| Role | systemPrompt + enabledPlugins | ツール選択 + システムプロンプト |
+| Tool | Plugin | LLM が呼び出せる機能 |
+
+### GUI Chat Protocol のコア概念
+
+**Enhanced Tool Calls（拡張ツール呼び出し）:**
+```
+ツール実行 → LLM へのレスポンス + GUI 用データ
+         → LLM は会話を継続
+         → UI は適切なコンポーネントを表示
+```
+
+**Roles（ロール）:**
+```typescript
+// Role = 利用可能なツール + システムプロンプト
+interface Role {
+  name: string;
+  tools: string[];      // 有効なプラグイン
+  systemPrompt: string; // 振る舞いの指示
+}
+
+// 例: Recipe Guide ロール
+const recipeGuide: Role = {
+  name: "recipeGuide",
+  tools: ["presentForm", "presentDocument", "generateImage", "browse"],
+  systemPrompt: "あなたは料理インストラクターです。ユーザーを..."
+};
+```
+
+**動的ロール切り替え:**
+```typescript
+// LLM が switchRole を呼び出してロールを変更
+switchRole({ role: "recipeGuide" });  // 料理ガイドモード
+switchRole({ role: "tutor" });        // 家庭教師モード
+switchRole({ role: "tripPlanner" });  // 旅行プランナーモード
+```
+
+### 本ドキュメントで追加する機能
+
+GUI Chat Protocol の基盤の上に、以下を追加:
+
+1. **エージェント自律実行** - attempt_completion パターンによる自動ループ
+2. **リソース参照システム** - ツール結果間のデータ共有
+3. **MCP 統合** - 既存 MCP エコシステムの活用
+4. **タスクコンテキスト管理** - 複数タスクの並行管理
+5. **ツールインターフェース仕様** - RFC 的な標準化
+
+これらは GUI Chat Protocol の「Chat-Centric OS」ビジョンを実現するための具体的な実装方針です。
+
+---
+
 ## 関連ドキュメント
 
+- [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) - 基盤となるプロトコル仕様
 - [プラグインアーキテクチャ](./plugin-architecture.ja.md)
 - [プラグイン開発ガイド](./plugin-development-guide.ja.md)
 - [プラグイン抽出ガイド](./plugin-extraction-guide.ja.md)

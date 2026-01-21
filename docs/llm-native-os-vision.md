@@ -2,6 +2,8 @@
 
 Design vision and development roadmap viewing MulmoChat as an "OS" and plugins as "LLM Native Applications".
 
+> **Note**: This document builds upon the [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) as its foundation. It describes extensions to the core concepts defined in GUI Chat Protocol (Enhanced Tool Calls, Typed Return Data, Roles, Chat-Centric OS), adding new capabilities such as agentic execution, MCP integration, and resource references.
+
 ## Table of Contents
 
 1. [Concept](#concept)
@@ -1301,8 +1303,72 @@ Plugin core parts work on host apps other than MulmoChat.
 
 ---
 
+## GUI Chat Protocol Correspondence
+
+This vision document is an extension of [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md).
+
+### Terminology Mapping
+
+| GUI Chat Protocol | Current Implementation | Description |
+|-------------------|----------------------|-------------|
+| `llmResponse` | `result.message` | Text returned to LLM |
+| `guiData` | `result.data` | Data for UI display |
+| `guiData.type` | `toolName` | Which component to render |
+| `instructions` | `result.instructions` | Additional instructions to LLM |
+| Role | systemPrompt + enabledPlugins | Tool selection + system prompt |
+| Tool | Plugin | Function callable by LLM |
+
+### GUI Chat Protocol Core Concepts
+
+**Enhanced Tool Calls:**
+```
+Tool executes → Response to LLM + GUI data
+            → LLM continues conversation
+            → UI renders appropriate component
+```
+
+**Roles:**
+```typescript
+// Role = Available tools + System prompt
+interface Role {
+  name: string;
+  tools: string[];      // Enabled plugins
+  systemPrompt: string; // Behavioral instructions
+}
+
+// Example: Recipe Guide role
+const recipeGuide: Role = {
+  name: "recipeGuide",
+  tools: ["presentForm", "presentDocument", "generateImage", "browse"],
+  systemPrompt: "You are a cooking instructor who guides users..."
+};
+```
+
+**Dynamic Role Switching:**
+```typescript
+// LLM calls switchRole to change roles
+switchRole({ role: "recipeGuide" });  // Cooking guide mode
+switchRole({ role: "tutor" });        // Tutor mode
+switchRole({ role: "tripPlanner" });  // Trip planner mode
+```
+
+### Features Added in This Document
+
+Building on GUI Chat Protocol's foundation, this document adds:
+
+1. **Agentic Execution** - Auto-loop via attempt_completion pattern
+2. **Resource Reference System** - Data sharing between tool results
+3. **MCP Integration** - Leveraging existing MCP ecosystem
+4. **Task Context Management** - Parallel management of multiple tasks
+5. **Tool Interface Specification** - RFC-like standardization
+
+These are concrete implementation directions to realize GUI Chat Protocol's "Chat-Centric OS" vision.
+
+---
+
 ## Related Documents
 
+- [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) - Foundation protocol specification
 - [Plugin Architecture](./plugin-architecture.md)
 - [Plugin Development Guide](./plugin-development-guide.md)
 - [Plugin Extraction Guide](./plugin-extraction-guide.md)
