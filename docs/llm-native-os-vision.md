@@ -103,6 +103,7 @@ Hardware                            LLM / Backend Services
 | **Backend Abstraction** | Provider-independent | backends declaration |
 | **External Input** | File/clipboard | inputHandlers |
 | **Config Management** | Plugin settings storage | getConfig/setConfig |
+| **Config UI Delegation** | Delegate plugin config UI to app | ToolPluginConfig |
 | **LLM Instructions** | Post-execution instructions | instructions |
 | **State Updates** | Update existing results | updating flag |
 
@@ -999,7 +1000,387 @@ toolRegistry.isCompatible("guichat://weather/get_current@^1.0.0", spec_v2);
 
 ### Priority: Medium 🟡
 
-#### 5. Tool Capabilities Declaration
+#### 5. Unified Configuration System
+
+**Current Mechanism:**
+
+MulmoChat currently implements the following configuration flow:
+
+```
+localStorage ("plugin_configs_v1")
+    ↓
+useUserPreferences (state management)
+    ↓
+HomeView.vue (defines getPluginConfig function)
+    ↓
+useToolResults (builds ToolContext)
+    ↓
+context.app.getConfig() / setConfig()
+    ↓
+Plugin / Backend
+```
+
+**Current Problems:**
+- Plugin configuration schemas are not explicitly defined
+- Backend settings (which API to use, etc.) tend to be hardcoded
+- Settings UI generation is manual for each plugin
+- Inconsistent validation across settings
+- Cannot express configuration dependencies (e.g., imageGen requires API key)
+
+**Required Features:**
+
+##### 5.1 Plugin Configuration Schema
+
+```typescript
+interface ToolPluginCore {
+  // Existing fields...
+
+  // Addition: Configuration schema
+  configSchema?: ConfigSchema;
+}
+
+interface ConfigSchema {
+  // Unique config key
+  key: string;  // "imageGenerationBackend", "weather.location"
+
+  // JSON Schema based schema definition
+  schema: JSONSchema;
+
+  // Default value
+  defaultValue: unknown;
+
+  // UI hints
+  ui?: {
+    label: string;
+    description?: string;
+    component?: "select" | "input" | "toggle" | "slider" | "custom";
+    group?: string;  // Settings group ("backend", "appearance", etc.)
+  };
+
+  // Validation
+  validate?: (value: unknown) => ValidationResult;
+
+  // Dependencies
+  dependencies?: ConfigDependency[];
+}
+
+interface ConfigDependency {
+  // Dependent config key
+  key: string;
+  // Condition
+  condition: "exists" | "equals" | "notEquals";
+  value?: unknown;
+}
+```
+
+##### 5.2 Backend Configuration Schema
+
+```typescript
+interface BackendConfig {
+  // Backend type
+  type: BackendType;  // "textLLM", "imageGen", etc.
+
+  // Available providers
+  providers: ProviderConfig[];
+
+  // Selected provider
+  selectedProvider: string;
+}
+
+interface ProviderConfig {
+  id: string;           // "anthropic", "openai", "gemini"
+  name: string;         // Display name
+  configSchema: ConfigSchema[];  // Provider-specific settings
+
+  // Required settings like API keys
+  requiredSecrets?: SecretConfig[];
+}
+
+interface SecretConfig {
+  key: string;           // "ANTHROPIC_API_KEY"
+  label: string;         // "Anthropic API Key"
+  description?: string;
+  envVar?: string;       // Environment variable name (if set server-side)
+}
+```
+
+##### 5.3 Auto-Generated Settings UI
+
+```typescript
+interface ToolContextApp {
+  // Existing features...
+  getConfig: <T>(key: string) => T | undefined;
+  setConfig: (key: string, value: unknown) => void;
+
+  // Addition: Configuration metadata
+  config: {
+    // Get schema for auto-generating UI from schema
+    getSchema: (key: string) => ConfigSchema | undefined;
+
+    // List all plugin config schemas
+    getAllSchemas: () => ConfigSchema[];
+
+    // Get backend configuration
+    getBackendConfig: (type: BackendType) => BackendConfig;
+
+    // Validate configuration
+    validate: (key: string, value: unknown) => ValidationResult;
+
+    // Subscribe to config changes
+    subscribe: (key: string, callback: (value: unknown) => void) => () => void;
+  };
+}
+```
+
+**Concrete Examples:**
+
+##### Example 1: Image Generation Plugin Configuration
+
+```typescript
+// Plugin declares configuration schema
+export const pluginCore: ToolPluginCore = {
+  toolDefinition: { /* ... */ },
+  execute: async (context, args) => { /* ... */ },
+
+  // Configuration schema
+  configSchema: {
+    key: "imageGenerationBackend",
+    schema: {
+      type: "object",
+      properties: {
+        backend: {
+          type: "string",
+          enum: ["gemini", "openai", "comfyui"],
+          default: "gemini"
+        },
+        styleModifier: {
+          type: "string",
+          default: ""
+        },
+        geminiModel: {
+          type: "string",
+          enum: ["gemini-2.5-flash-image", "imagen-3.0"],
+          default: "gemini-2.5-flash-image"
+        }
+      }
+    },
+    defaultValue: {
+      backend: "gemini",
+      styleModifier: "",
+      geminiModel: "gemini-2.5-flash-image"
+    },
+    ui: {
+      label: "Image Generation Settings",
+      group: "backend",
+      component: "custom"  // Use custom UI
+    },
+    dependencies: [
+      {
+        key: "secrets.GOOGLE_AI_API_KEY",
+        condition: "exists"
+      }
+    ]
+  }
+};
+```
+
+##### Example 2: Weather Plugin Configuration
+
+```typescript
+export const pluginCore: ToolPluginCore = {
+  toolDefinition: { /* ... */ },
+  execute: async (context, args) => { /* ... */ },
+
+  configSchema: {
+    key: "weather.preferences",
+    schema: {
+      type: "object",
+      properties: {
+        unit: {
+          type: "string",
+          enum: ["celsius", "fahrenheit"],
+          default: "celsius"
+        },
+        defaultLocation: {
+          type: "string",
+          default: ""
+        }
+      }
+    },
+    defaultValue: {
+      unit: "celsius",
+      defaultLocation: ""
+    },
+    ui: {
+      label: "Weather Settings",
+      group: "plugins",
+      description: "Display settings for weather plugin"
+    }
+  }
+};
+```
+
+##### Example 3: Backend Configuration
+
+```typescript
+// Host app defines backend configuration
+const textLLMBackendConfig: BackendConfig = {
+  type: "textLLM",
+  providers: [
+    {
+      id: "anthropic",
+      name: "Claude (Anthropic)",
+      configSchema: [
+        {
+          key: "textLLM.anthropic.model",
+          schema: {
+            type: "string",
+            enum: ["claude-3-5-sonnet", "claude-3-opus"],
+            default: "claude-3-5-sonnet"
+          },
+          ui: { label: "Model" }
+        }
+      ],
+      requiredSecrets: [
+        {
+          key: "ANTHROPIC_API_KEY",
+          label: "Anthropic API Key",
+          envVar: "ANTHROPIC_API_KEY"
+        }
+      ]
+    },
+    {
+      id: "openai",
+      name: "GPT (OpenAI)",
+      configSchema: [
+        {
+          key: "textLLM.openai.model",
+          schema: {
+            type: "string",
+            enum: ["gpt-4o", "gpt-4-turbo"],
+            default: "gpt-4o"
+          },
+          ui: { label: "Model" }
+        }
+      ],
+      requiredSecrets: [
+        {
+          key: "OPENAI_API_KEY",
+          label: "OpenAI API Key"
+        }
+      ]
+    }
+  ],
+  selectedProvider: "anthropic"
+};
+```
+
+**Auto-Generated Settings UI on App Side:**
+
+```vue
+<!-- SettingsPanel.vue -->
+<template>
+  <div class="settings-panel">
+    <!-- Plugin settings -->
+    <section v-for="schema in pluginSchemas" :key="schema.key">
+      <h3>{{ schema.ui?.label }}</h3>
+
+      <!-- Auto-generate UI based on schema -->
+      <ConfigField
+        :schema="schema"
+        :value="getConfig(schema.key)"
+        @update="setConfig(schema.key, $event)"
+      />
+    </section>
+
+    <!-- Backend settings -->
+    <section v-for="backend in backendConfigs" :key="backend.type">
+      <h3>{{ backend.type }} Backend</h3>
+
+      <select v-model="backend.selectedProvider">
+        <option
+          v-for="provider in backend.providers"
+          :key="provider.id"
+          :value="provider.id"
+        >
+          {{ provider.name }}
+        </option>
+      </select>
+
+      <!-- Selected provider settings -->
+      <ConfigField
+        v-for="config in selectedProviderConfigs(backend)"
+        :schema="config"
+        :value="getConfig(config.key)"
+        @update="setConfig(config.key, $event)"
+      />
+    </section>
+  </div>
+</template>
+```
+
+**Data Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Plugin / Backend                                                            │
+│                                                                             │
+│  configSchema: {                                                            │
+│    key: "imageGenerationBackend",                                          │
+│    schema: { type: "object", ... },                                        │
+│    ui: { label: "Image Generation Settings", ... }                         │
+│  }                                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ↓ Collect schemas
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Host App Layer (MulmoChat)                                                  │
+│                                                                             │
+│  1. Collect configSchema from all plugins                                   │
+│  2. Auto-generate settings UI from schemas                                  │
+│  3. Persist settings values to localStorage                                 │
+│  4. Provide values via context.app.getConfig()                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ↓ Auto-generate UI
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Settings Screen (Auto-generated)                                            │
+│                                                                             │
+│  ┌─────────────────────────────────────┐                                   │
+│  │ Image Generation Settings            │                                   │
+│  │ ┌─────────────────────────────────┐ │                                   │
+│  │ │ Backend: [Gemini ▼]             │ │                                   │
+│  │ │ Style: [________________]        │ │                                   │
+│  │ │ Model: [gemini-2.5-flash ▼]     │ │                                   │
+│  │ └─────────────────────────────────┘ │                                   │
+│  └─────────────────────────────────────┘                                   │
+│                                                                             │
+│  ┌─────────────────────────────────────┐                                   │
+│  │ Weather Settings                     │                                   │
+│  │ ┌─────────────────────────────────┐ │                                   │
+│  │ │ Unit: ○ Celsius ● Fahrenheit    │ │                                   │
+│  │ │ Default Location: [Tokyo___]     │ │                                   │
+│  │ └─────────────────────────────────┘ │                                   │
+│  └─────────────────────────────────────┘                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Impact:**
+- Plugin developers just declare configuration schema
+- Reduced settings UI implementation effort
+- Unified validation across settings
+- Centralized backend configuration management
+- Improved user experience (consistent settings UI)
+
+**Design Considerations:**
+- Maintain backward compatibility with existing getConfig/setConfig
+- Support custom UI components (component: "custom")
+- Separate management for secrets (API keys, etc.) - environment variables or encrypted storage
+- Reactive updates on config changes
+
+---
+
+#### 6. Tool Capabilities Declaration
 
 **Current Problem:**
 - LLM cannot accurately understand tool input/output
@@ -1023,7 +1404,7 @@ interface ToolCapabilities {
 
 ---
 
-#### 6. Undo/Redo / History Management
+#### 7. Undo/Redo / History Management
 
 **Current Problem:**
 - Cannot undo tool executions
@@ -1055,7 +1436,7 @@ interface ToolContext {
 
 ---
 
-#### 7. Background Tasks / Notifications
+#### 8. Background Tasks / Notifications
 
 **Current Problem:**
 - Plugins only run when called
@@ -1086,7 +1467,7 @@ interface ToolContextApp {
 
 ### Priority: Low 🟢
 
-#### 8. Permission System
+#### 9. Permission System
 
 **Required Features:**
 ```typescript
@@ -1110,7 +1491,7 @@ type Permission =
 
 ---
 
-#### 9. Plugin Marketplace
+#### 10. Plugin Marketplace
 
 **Required Features:**
 - Plugin discovery/search
@@ -1156,10 +1537,15 @@ type Permission =
 
 ```
 ┌─────────────────────────────────────────┐
-│  5. Capabilities declaration             │
-│  6. Undo/Redo                           │
-│  7. Background tasks                     │
-│  8. Streaming execution                  │
+│  5. Unified Configuration System         │
+│     - ConfigSchema definition            │
+│     - Auto-generated settings UI         │
+│     - Backend config integration         │
+├─────────────────────────────────────────┤
+│  6. Capabilities declaration             │
+│  7. Undo/Redo                           │
+│  8. Background tasks                     │
+│  9. Streaming execution                  │
 └─────────────────────────────────────────┘
 ```
 
@@ -1167,9 +1553,9 @@ type Permission =
 
 ```
 ┌─────────────────────────────────────────┐
-│  9. Permission system                    │
-│  10. Plugin marketplace                  │
-│  11. Expansion to other host apps        │
+│  10. Permission system                   │
+│  11. Plugin marketplace                  │
+│  12. Expansion to other host apps        │
 └─────────────────────────────────────────┘
 ```
 
