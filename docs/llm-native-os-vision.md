@@ -520,9 +520,484 @@ interface ToolContextApp {
 
 ---
 
+#### 4. MCP Integration for Efficient Plugin Development
+
+**Current Problem:**
+- Creating plugins from scratch every time is tedious
+- Tool logic (backend) and UI (frontend) are tightly coupled
+- Cannot leverage existing MCP tool ecosystem
+
+**Plugin Component Decomposition:**
+
+```
+Plugin = Tools (functionality) + View (UI)
+
+Tools:
+  - Tool definition (schema)
+  - Execution logic (backend processing)
+  → Can be provided via MCP
+
+View:
+  - Main display (View.vue)
+  - Thumbnail (Preview.vue)
+  → Frontend-specific
+```
+
+**What is MCP (Model Context Protocol):**
+
+MCP is a standard protocol for providing tools to LLM applications.
+Tools are implemented on the server side and called from clients (LLM apps).
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Current: Plugin implements everything                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Plugin                                                         │
+│  ├── toolDefinition (define yourself)                           │
+│  ├── execute() (implement yourself)                             │
+│  ├── View.vue (implement yourself)                              │
+│  └── Preview.vue (implement yourself)                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  Proposed: Plugin as MCP + UI wrapper                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Plugin (thin wrapper)                                          │
+│  ├── mcpTool: "weather" (reference MCP tool)                    │
+│  ├── View.vue (implement UI only)                               │
+│  └── Preview.vue (implement UI only)                            │
+│          │                                                      │
+│          ▼                                                      │
+│  ┌─────────────────────────────────────────┐                   │
+│  │  MCP Client (Host App Layer)             │                   │
+│  │  - Connect to MCP servers                │                   │
+│  │  - Proxy tool calls                      │                   │
+│  └─────────────────────────────────────────┘                   │
+│          │                                                      │
+│          ▼                                                      │
+│  ┌─────────────────────────────────────────┐                   │
+│  │  MCP Server(s)                           │                   │
+│  │  - Weather, Search, Database, etc.       │                   │
+│  │  - Leverage existing ecosystem           │                   │
+│  └─────────────────────────────────────────┘                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Required Features:**
+
+##### 4.1 MCP Tool Wrapper Plugin
+
+```typescript
+// Traditional: Implement everything yourself
+export const pluginCore: ToolPluginCore = {
+  toolDefinition: {
+    name: "weather",
+    description: "Get weather information",
+    parameters: { /* schema definition */ }
+  },
+  execute: async (context, args) => {
+    // Call weather API yourself
+    const data = await fetchWeatherAPI(args.location);
+    return { message: "Weather fetched", data };
+  },
+};
+
+// Proposed: Reference MCP tool
+export const pluginCore: ToolPluginCore = {
+  // Reference MCP tool (toolDefinition obtained from MCP)
+  mcpTool: {
+    server: "weather-server",  // MCP server name
+    tool: "get_weather",       // Tool name
+  },
+
+  // execute is auto-generated or can be omitted
+  // Only implement if you need to transform MCP result for UI
+  transformResult: (mcpResult) => ({
+    message: mcpResult.content,
+    data: { temperature: mcpResult.temperature, ... }
+  }),
+};
+```
+
+##### 4.2 MCP Server Management
+
+```typescript
+interface ToolContextApp {
+  // Existing features...
+
+  // MCP related
+  mcp: {
+    // List available MCP servers
+    listServers: () => MCPServerInfo[];
+
+    // Call MCP tool
+    callTool: (server: string, tool: string, args: unknown) => Promise<MCPResult>;
+
+    // Get MCP tool definition
+    getToolDefinition: (server: string, tool: string) => ToolDefinition;
+  };
+}
+```
+
+##### 4.3 Plugin Types
+
+```typescript
+// 1. Full Plugin (traditional)
+interface FullPlugin extends ToolPluginCore {
+  toolDefinition: ToolDefinition;
+  execute: ExecuteFunction;
+  viewComponent: Component;
+  previewComponent: Component;
+}
+
+// 2. MCP Wrapper Plugin (new)
+interface MCPWrapperPlugin {
+  // MCP tool reference
+  mcpTool: {
+    server: string;
+    tool: string;
+  };
+
+  // Optional: result transformation
+  transformResult?: (mcpResult: unknown) => ToolResult;
+
+  // UI components
+  viewComponent: Component;
+  previewComponent?: Component;
+}
+
+// 3. UI Only Plugin (add UI to MCP tool)
+interface UIOnlyPlugin {
+  // Reference existing MCP tool or other plugin's tool
+  toolRef: string;  // "mcp:weather-server/get_weather" or "plugin:weather"
+
+  // Provide UI only
+  viewComponent: Component;
+  previewComponent?: Component;
+}
+```
+
+**Concrete Examples:**
+
+##### Example 1: Add UI to Existing MCP Tool
+
+```
+[Situation]
+- MCP server "exa-search" already exists
+- Provides search tool
+- But no UI (text results only)
+
+[Solution: UI Only Plugin]
+
+// Plugin definition (minimal)
+export const plugin: UIOnlyPlugin = {
+  toolRef: "mcp:exa-search/search",
+
+  viewComponent: SearchResultsView,  // Card format results display
+  previewComponent: SearchPreview,   // Thumbnail
+};
+
+// Only implement View.vue
+<template>
+  <div class="search-results">
+    <div v-for="result in results" class="result-card">
+      <h3>{{ result.title }}</h3>
+      <p>{{ result.snippet }}</p>
+      <a :href="result.url">Details</a>
+    </div>
+  </div>
+</template>
+```
+
+##### Example 2: MCP Tool + Custom Post-Processing
+
+```
+[Situation]
+- MCP server "weather" returns meteorological data
+- But user also wants "clothing suggestions" displayed
+
+[Solution: MCP Wrapper Plugin with transformResult]
+
+export const pluginCore: MCPWrapperPlugin = {
+  mcpTool: {
+    server: "weather",
+    tool: "get_current_weather",
+  },
+
+  // Process MCP result
+  transformResult: async (mcpResult, context) => {
+    const weather = mcpResult;
+
+    // Generate clothing suggestion with textLLM
+    const suggestion = await context.app?.generateText({
+      prompt: `Suggest clothing for ${weather.temperature}°C, ${weather.condition} weather`,
+    });
+
+    return {
+      message: `${weather.location}: ${weather.temperature}°C`,
+      data: {
+        weather,
+        clothingSuggestion: suggestion,
+      },
+    };
+  },
+};
+```
+
+##### Example 3: Combining Multiple MCP Tools
+
+```
+[Situation]
+- "search" MCP server: Web search
+- "browser" MCP server: Page fetching
+- Want to combine them for "search and summarize"
+
+[Solution: Full Plugin with MCP calls]
+
+export const pluginCore: ToolPluginCore = {
+  toolDefinition: {
+    name: "search_and_summarize",
+    description: "Search and summarize results",
+    parameters: { query: { type: "string" } }
+  },
+
+  execute: async (context, args) => {
+    // 1. Search via MCP
+    const searchResults = await context.app?.mcp.callTool(
+      "search", "web_search", { query: args.query }
+    );
+
+    // 2. Fetch top 3 pages
+    const pages = await Promise.all(
+      searchResults.slice(0, 3).map(r =>
+        context.app?.mcp.callTool("browser", "fetch_page", { url: r.url })
+      )
+    );
+
+    // 3. Summarize with textLLM
+    const summary = await context.app?.generateText({
+      prompt: `Summarize the following:\n${pages.join('\n')}`
+    });
+
+    return {
+      message: "Search and summarize completed",
+      data: { searchResults, summary },
+    };
+  },
+};
+```
+
+**Development Flow Changes:**
+
+```
+Traditional plugin development:
+1. Write tool definition
+2. Research and implement backend API
+3. Implement error handling
+4. Implement View/Preview
+5. Test
+→ Takes 1-2 days
+
+After MCP integration:
+1. Find existing MCP tool (or create one)
+2. Implement View/Preview
+3. Implement transformResult if needed
+→ Done in a few hours
+```
+
+**Architecture Impact:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Application Layer                             │
+│               (Plugins / LLM Native Apps)                        │
+│                                                                 │
+│   ┌───────────┐  ┌───────────┐  ┌───────────┐                 │
+│   │FullPlugin │  │MCP Wrapper│  │ UI Only   │                 │
+│   │(Traditional)│  │ Plugin    │  │ Plugin    │                 │
+│   └───────────┘  └───────────┘  └───────────┘                 │
+├─────────────────────────────────────────────────────────────────┤
+│                      OS Layer (Core)                             │
+│                    gui-chat-protocol                             │
+│                                                                 │
+│  • ToolPluginCore / MCPWrapperPlugin / UIOnlyPlugin types       │
+│  • MCP Client interface                                         │
+├─────────────────────────────────────────────────────────────────┤
+│                     Host App Layer                               │
+│                                                                 │
+│  ┌─────────────────────────────────────────┐                   │
+│  │  MCP Client Implementation               │                   │
+│  │  - Server connection management          │                   │
+│  │  - Tool call proxy                       │                   │
+│  └─────────────────────────────────────────┘                   │
+├─────────────────────────────────────────────────────────────────┤
+│                     Backend Layer                                │
+│                                                                 │
+│  ┌─────────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐      │
+│  │    MCP      │  │   MCP   │  │   MCP   │  │ Direct  │      │
+│  │   Server    │  │  Server │  │  Server │  │   API   │      │
+│  │ (Weather)   │  │(Search) │  │(Browser)│  │(Legacy) │      │
+│  └─────────────┘  └─────────┘  └─────────┘  └─────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Impact:**
+- Significant reduction in plugin development time (just implement UI)
+- Leverage MCP ecosystem (reuse existing tools)
+- Clear separation of backend/frontend
+- Easy tool sharing and reuse
+
+**Design Considerations:**
+- MCP server connection management at host app layer
+- Plugins call via context.app.mcp without MCP awareness
+- Maintain compatibility with existing non-MCP plugins
+- MCP server security (connect only to trusted servers)
+
+##### 4.4 Tool Interface Specification (RFC-like Approach)
+
+**Problem:**
+No mechanism to guarantee consistency between existing plugin backends and plugins.
+
+**Proposal: Unified Tool Identifier and Interface Specification**
+
+```typescript
+// Unique tool identifier
+type ToolURI = string;  // e.g., "guichat://weather/get_current"
+                        //       "mcp://exa-search/search"
+                        //       "plugin://othello/make_move"
+
+// Tool interface specification
+interface ToolSpec {
+  // Identifier
+  uri: ToolURI;
+  version: string;  // Semantic versioning "1.0.0"
+
+  // Interface definition (JSON Schema based)
+  input: JSONSchema;
+  output: JSONSchema;
+
+  // Metadata
+  metadata: {
+    name: string;
+    description: string;
+    category: string;
+    capabilities?: ToolCapabilities;
+  };
+}
+```
+
+**Tool Registration Registry:**
+
+```typescript
+interface ToolRegistry {
+  // Register tool
+  register: (spec: ToolSpec, implementation: ToolImplementation) => void;
+
+  // Search tools
+  lookup: (uri: ToolURI) => ToolSpec | null;
+  search: (query: { category?: string; capability?: string }) => ToolSpec[];
+
+  // Version compatibility check
+  isCompatible: (required: ToolURI, available: ToolURI) => boolean;
+}
+```
+
+**Consistency with Existing Plugins:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Existing Plugin → ToolSpec Generation                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  // Existing weather plugin                                     │
+│  export const pluginCore = {                                    │
+│    toolDefinition: { name: "weather", ... },                    │
+│    execute: async (ctx, args) => { ... }                        │
+│  };                                                             │
+│                                                                 │
+│  ↓ Auto-conversion                                              │
+│                                                                 │
+│  ToolSpec {                                                     │
+│    uri: "plugin://weather/get_weather",                         │
+│    version: "1.0.0",                                            │
+│    input: { /* generated from toolDefinition.parameters */ },   │
+│    output: { /* ToolResult schema */ },                         │
+│  }                                                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  MCP Tool → ToolSpec Mapping                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  MCP Server "exa-search" tool "search"                          │
+│                                                                 │
+│  ↓ Auto-mapping                                                 │
+│                                                                 │
+│  ToolSpec {                                                     │
+│    uri: "mcp://exa-search/search",                              │
+│    version: "1.0.0",                                            │
+│    input: { /* from MCP tool schema */ },                       │
+│    output: { /* from MCP result schema */ },                    │
+│  }                                                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Achieving Interoperability:**
+
+```typescript
+// UI plugin references any tool
+export const plugin: UIOnlyPlugin = {
+  // Reference by ToolURI (doesn't care if implementation is plugin or MCP)
+  toolRef: "guichat://weather/get_current",  // or "mcp://..." or "plugin://..."
+
+  viewComponent: WeatherView,
+};
+
+// Host app routes to appropriate implementation
+const result = await toolRegistry.execute("guichat://weather/get_current", args);
+// → Registry resolves whether it's plugin or MCP implementation
+```
+
+**Version Management and Compatibility:**
+
+```typescript
+// Tool spec version management
+const spec_v1: ToolSpec = {
+  uri: "guichat://weather/get_current",
+  version: "1.0.0",
+  input: { location: "string" },
+  output: { temperature: "number", condition: "string" },
+};
+
+const spec_v2: ToolSpec = {
+  uri: "guichat://weather/get_current",
+  version: "2.0.0",
+  input: { location: "string", unit: "celsius | fahrenheit" },  // added
+  output: { temperature: "number", condition: "string", humidity: "number" },  // added
+};
+
+// Compatibility check
+toolRegistry.isCompatible("guichat://weather/get_current@^1.0.0", spec_v2);
+// → true (backward compatible)
+```
+
+**Benefits:**
+- Unified handling of existing plugins and MCP tools
+- Explicit interface specification (RFC-like)
+- Compatibility guarantee through version management
+- Easy tool discovery and search
+
+---
+
 ### Priority: Medium 🟡
 
-#### 3. Tool Capabilities Declaration
+#### 5. Tool Capabilities Declaration
 
 **Current Problem:**
 - LLM cannot accurately understand tool input/output
@@ -546,7 +1021,7 @@ interface ToolCapabilities {
 
 ---
 
-#### 4. Undo/Redo / History Management
+#### 6. Undo/Redo / History Management
 
 **Current Problem:**
 - Cannot undo tool executions
@@ -578,7 +1053,7 @@ interface ToolContext {
 
 ---
 
-#### 5. Background Tasks / Notifications
+#### 7. Background Tasks / Notifications
 
 **Current Problem:**
 - Plugins only run when called
@@ -609,7 +1084,7 @@ interface ToolContextApp {
 
 ### Priority: Low 🟢
 
-#### 6. Permission System
+#### 8. Permission System
 
 **Required Features:**
 ```typescript
@@ -633,7 +1108,7 @@ type Permission =
 
 ---
 
-#### 7. Plugin Marketplace
+#### 9. Plugin Marketplace
 
 **Required Features:**
 - Plugin discovery/search
@@ -664,7 +1139,12 @@ type Permission =
 │     - context.resources API              │
 │     - Inter-plugin demo                  │
 ├─────────────────────────────────────────┤
-│  3. Persistence API                      │
+│  3. MCP Integration                      │
+│     - MCP Client interface definition    │
+│     - MCPWrapperPlugin / UIOnlyPlugin    │
+│     - Existing MCP tool integration demo │
+├─────────────────────────────────────────┤
+│  4. Persistence API                      │
 │     - storage API definition             │
 │     - MulmoChat implementation           │
 └─────────────────────────────────────────┘
@@ -674,10 +1154,10 @@ type Permission =
 
 ```
 ┌─────────────────────────────────────────┐
-│  3. Capabilities declaration             │
-│  4. Undo/Redo                           │
-│  5. Background tasks                     │
-│  6. Streaming execution                  │
+│  5. Capabilities declaration             │
+│  6. Undo/Redo                           │
+│  7. Background tasks                     │
+│  8. Streaming execution                  │
 └─────────────────────────────────────────┘
 ```
 
@@ -685,9 +1165,9 @@ type Permission =
 
 ```
 ┌─────────────────────────────────────────┐
-│  7. Permission system                    │
-│  8. Plugin marketplace                   │
-│  9. Expansion to other host apps         │
+│  9. Permission system                    │
+│  10. Plugin marketplace                  │
+│  11. Expansion to other host apps        │
 └─────────────────────────────────────────┘
 ```
 
@@ -804,12 +1284,18 @@ Plugin core parts work on host apps other than MulmoChat.
    - context.resources API
    - Existing plugin adaptation
 
-3. **Prototype Implementation**
+3. **Detailed MCP Integration Design**
+   - context.app.mcp API design
+   - MCPWrapperPlugin / UIOnlyPlugin type definitions
+   - MCP server connection management
+
+4. **Prototype Implementation**
    - Multi-step task auto-execution demo
    - Image generation → Image editing pipeline
+   - Existing MCP tool + UI plugin demo
    - Auto error correction demo
 
-4. **Developer Feedback**
+5. **Developer Feedback**
    - API design review
    - Use case collection
 
