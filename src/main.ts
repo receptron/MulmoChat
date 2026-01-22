@@ -30,5 +30,6 @@ import "@gui-chat-plugin/edit-html/style.css";
 import "@gui-chat-plugin/switch-role/style.css";
 import "@gui-chat-plugin/set-image-style/style.css";
 import "@gui-chat-plugin/scroll-to-anchor/style.css";
+import "guichat-plugin-akinator/style.css";
 
 createApp(App).use(router).mount("#app");
