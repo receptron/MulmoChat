@@ -6,6 +6,7 @@ This directory contains documentation for developing plugins for GUIChat/MulmoCh
 
 | Document | Description |
 |----------|-------------|
+| [LLM Native OS Vision](./llm-native-os-vision.md) | Vision and roadmap: MulmoChat as OS, plugins as LLM Native Apps |
 | [Plugin Architecture](./plugin-architecture.md) | Design philosophy, overview, and architecture of the plugin system |
 | [Plugin Development Guide](./plugin-development-guide.md) | Step-by-step guide for developing new plugins |
 | [Plugin Extraction Guide](./plugin-extraction-guide.md) | Guide for extracting internal plugins to standalone npm packages |

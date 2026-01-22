@@ -6,6 +6,7 @@
 
 | ドキュメント | 説明 |
 |------------|------|
+| [LLM Native OS ビジョン](./llm-native-os-vision.ja.md) | ビジョンとロードマップ：MulmoChat を OS、プラグインを LLM Native App として捉える |
 | [プラグインアーキテクチャ](./plugin-architecture.ja.md) | プラグインシステムの設計思想、概要、アーキテクチャ |
 | [プラグイン開発ガイド](./plugin-development-guide.ja.md) | 新規プラグイン開発のステップバイステップガイド |
 | [プラグイン抽出ガイド](./plugin-extraction-guide.ja.md) | 内部プラグインを独立した npm パッケージに移行するガイド |
