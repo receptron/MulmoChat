@@ -6,6 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Vue 3 application called "MulmoChat" that provides a multi-modal voice chat interface with OpenAI's GPT-4 Realtime API. The application features a comprehensive plugin system with various AI-powered tools including image generation, web browsing, search, mapping, and interactive games.
 
+## Philosophy
+
+MulmoChat is a reference implementation of **[gui-chat-protocol](https://github.com/receptron/gui-chat-protocol)**.
+
+gui-chat-protocol defines a standard interface for creating visual, interactive tool plugins that work with LLM chat applications. Key concepts:
+
+- **ToolDefinition**: JSON Schema format for LLM function calling
+- **ToolResult**: Standardized result format with `data`, `jsonData`, `instructions`, etc.
+- **ViewComponent / PreviewComponent**: UI components for displaying tool results
+- **Framework agnostic core**: Business logic separated from Vue/React UI
+
+By implementing gui-chat-protocol, MulmoChat enables:
+- **Plugin interoperability**: Plugins can be shared across different chat applications
+- **Framework flexibility**: Plugins can be written in Vue, React, or other frameworks
+- **LLM agnostic**: Works with any LLM that supports function calling (OpenAI, Anthropic, Google, etc.)
+
+GUIChatPluginTemplate provides a starting point for creating new plugins that follow this protocol.
+
 ## Key Commands
 
 - **Development server**: `npm run dev` (runs both client and server concurrently)
