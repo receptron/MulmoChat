@@ -37,6 +37,7 @@ import EditHtmlPlugin from "@gui-chat-plugin/edit-html/vue";
 import SwitchRolePlugin from "@gui-chat-plugin/switch-role/vue";
 import SetImageStylePlugin from "@gui-chat-plugin/set-image-style/vue";
 import ScrollToAnchorPlugin from "@gui-chat-plugin/scroll-to-anchor/vue";
+import AkinatorPlugin from "guichat-plugin-akinator/vue";
 
 const pluginList = [
   // External plugins from npm packages
@@ -67,6 +68,7 @@ const pluginList = [
   SwitchRolePlugin,
   SetImageStylePlugin,
   ScrollToAnchorPlugin,
+  AkinatorPlugin,
 ];
 
 export const getPluginList = () => pluginList;
