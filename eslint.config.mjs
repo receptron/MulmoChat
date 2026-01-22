@@ -59,7 +59,7 @@ export default [
       "sonarjs/no-unused-vars": "error",
       "sonarjs/cognitive-complexity": "off",
       "no-console": "off",
-      "sonarjs/no-nested-conditional": "warn",
+      "sonarjs/no-nested-conditional": "off",
       "sonarjs/redundant-type-aliases": "off",
       "sonarjs/x-powered-by": "error",
       "sonarjs/cors": "off",

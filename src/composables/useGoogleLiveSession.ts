@@ -12,10 +12,79 @@ import { AudioStreamManager } from "../utils/audioStreamManager";
 import { convertToGoogleToolFormat } from "../utils/toolConverter";
 import { DEFAULT_GOOGLE_LIVE_MODEL_ID } from "../config/models";
 
+// Types for Google Live API
 interface GoogleLiveState {
   ws: WebSocket | null;
   localStream: MediaStream | null;
   audioManager: AudioStreamManager | null;
+}
+
+interface PendingToolCall {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+}
+
+interface GoogleFunctionCall {
+  id?: string;
+  name: string;
+  args?: Record<string, unknown>;
+}
+
+interface GoogleToolCall {
+  functionCalls?: GoogleFunctionCall[];
+}
+
+interface GoogleInlineData {
+  data: string;
+  mimeType?: string;
+}
+
+interface GooglePart {
+  text?: string;
+  inlineData?: GoogleInlineData;
+  functionCall?: GoogleFunctionCall;
+}
+
+interface GoogleModelTurn {
+  parts?: GooglePart[];
+}
+
+interface GoogleServerContent {
+  modelTurn?: GoogleModelTurn;
+  turnComplete?: boolean;
+  interrupted?: boolean;
+}
+
+interface GoogleWebSocketMessage {
+  error?: unknown;
+  data?: string;
+  toolCall?: GoogleToolCall;
+  serverContent?: GoogleServerContent;
+  setupComplete?: boolean;
+}
+
+interface GoogleGenerationConfig {
+  responseModalities: string[];
+}
+
+interface GoogleSystemInstruction {
+  parts: { text: string }[];
+}
+
+interface GoogleToolDeclarations {
+  functionDeclarations: unknown[];
+}
+
+interface GoogleSetupConfig {
+  model: string;
+  generationConfig?: GoogleGenerationConfig;
+  systemInstruction?: GoogleSystemInstruction;
+  tools?: GoogleToolDeclarations[];
+}
+
+interface GoogleSetupMessage {
+  setup: GoogleSetupConfig;
 }
 
 export function useGoogleLiveSession(
@@ -39,7 +108,7 @@ export function useGoogleLiveSession(
   const connecting = ref(false);
   const isMuted = ref(false);
   const startResponse = ref<StartApiResponse | null>(null);
-  const pendingToolCalls = new Map<string, any>();
+  const pendingToolCalls = new Map<string, PendingToolCall>();
   const processedToolCalls = new Set<string>();
   const remoteAudioElement = shallowRef<HTMLAudioElement | null>(null);
 
@@ -49,7 +118,7 @@ export function useGoogleLiveSession(
     audioManager: null,
   };
 
-  const sendWebSocketMessage = (message: any): boolean => {
+  const sendWebSocketMessage = (message: unknown): boolean => {
     if (!googleLive.ws || googleLive.ws.readyState !== WebSocket.OPEN) {
       console.warn("Cannot send message because WebSocket is not open.");
       return false;
@@ -62,13 +131,13 @@ export function useGoogleLiveSession(
    * Fix Google's double-stringification issue where array elements
    * are returned as JSON strings instead of objects
    */
-  const fixGoogleArgs = (args: any): any => {
+  const fixGoogleArgs = (args: unknown): unknown => {
     if (Array.isArray(args)) {
-      return args.map((item) => {
+      return args.map((item: unknown) => {
         // If array item is a string that looks like JSON, parse it
         if (typeof item === "string" && item.startsWith("{")) {
           try {
-            return JSON.parse(item);
+            return JSON.parse(item) as unknown;
           } catch {
             return item;
           }
@@ -78,10 +147,10 @@ export function useGoogleLiveSession(
     }
 
     if (args && typeof args === "object") {
-      const fixed: any = {};
+      const fixed: Record<string, unknown> = {};
       for (const key in args) {
         if (Object.prototype.hasOwnProperty.call(args, key)) {
-          fixed[key] = fixGoogleArgs(args[key]);
+          fixed[key] = fixGoogleArgs((args as Record<string, unknown>)[key]);
         }
       }
       return fixed;
@@ -91,7 +160,7 @@ export function useGoogleLiveSession(
   };
 
   const handleWebSocketMessage = async (event: MessageEvent) => {
-    let data: any;
+    let data: GoogleWebSocketMessage;
 
     try {
       // Google Live API sends messages as Blobs, not strings
@@ -253,22 +322,18 @@ export function useGoogleLiveSession(
 
   const handleWebSocketOpen = (
     instructions: string,
-    tools: any[],
+    tools: unknown[],
     modelId: string,
   ) => {
     // Convert tools to Google format
     const googleTools = convertToGoogleToolFormat(tools);
 
-    // Send setup message
-    const setupMessage: any = {
-      setup: {
-        model: modelId.startsWith("models/") ? modelId : `models/${modelId}`,
+    // Build setup config
+    const setupConfig: GoogleSetupConfig = {
+      model: modelId.startsWith("models/") ? modelId : `models/${modelId}`,
+      generationConfig: {
+        responseModalities: ["AUDIO"],
       },
-    };
-
-    // Add generation config
-    setupMessage.setup.generationConfig = {
-      responseModalities: ["AUDIO"],
     };
 
     // Add system instruction if provided
@@ -278,16 +343,17 @@ export function useGoogleLiveSession(
         instructions +
         "\n\nIMPORTANT: When you need to use tools, you MUST call the functions directly using function calling. DO NOT use code execution or write Python code to call functions. Always use the native function calling mechanism.";
 
-      setupMessage.setup.systemInstruction = {
+      setupConfig.systemInstruction = {
         parts: [{ text: enhancedInstructions }],
       };
     }
 
     // Add tools if any
     if (googleTools.length > 0) {
-      setupMessage.setup.tools = [{ functionDeclarations: googleTools }];
+      setupConfig.tools = [{ functionDeclarations: googleTools }];
     }
 
+    const setupMessage: GoogleSetupMessage = { setup: setupConfig };
     sendWebSocketMessage(setupMessage);
 
     // Now that WebSocket is open, start audio capture
@@ -480,7 +546,7 @@ export function useGoogleLiveSession(
     });
   };
 
-  const sendInstructions = (instructions: string) => {
+  const sendInstructions = (instructions: string): Promise<boolean> => {
     // Google Live API doesn't support mid-conversation instruction updates
     // We'll send it as a user message instead
     return sendUserMessage(instructions);
@@ -499,7 +565,7 @@ export function useGoogleLiveSession(
     stopChat,
     sendUserMessage,
     sendFunctionCallOutput,
-    sendInstructions: sendInstructions as any,
+    sendInstructions,
     setMute,
     setLocalAudioEnabled,
     attachRemoteAudioElement,
