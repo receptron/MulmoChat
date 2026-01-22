@@ -235,6 +235,7 @@ export const ROLES: Role[] = [
       "playOthello",
       "playGo",
       "putQuestions",
+      "akinator_game",
       "generateHtml",
       "editHtml",
       "switchRole",

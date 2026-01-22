@@ -3380,7 +3380,7 @@ gui-chat-protocol@^0.0.1:
 
 "guichat-plugin-akinator@github:isamu/AkinatorGame":
   version "0.1.0"
-  resolved "https://codeload.github.com/isamu/AkinatorGame/tar.gz/0d769d06c640fdfbcd987e7e0f13c06e39464edb"
+  resolved "https://codeload.github.com/isamu/AkinatorGame/tar.gz/e28a88610f8b9702d99d26898e1fa0de86be4c6d"
   dependencies:
     gui-chat-protocol "^0.0.1"
     openai "^4.77.0"
