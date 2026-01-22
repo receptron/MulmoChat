@@ -45,7 +45,7 @@ const setStoredValue = (key: string, value: string) => {
   storage?.setItem(key, value);
 };
 
-const setStoredObject = (key: string, value: Record<string, boolean>) => {
+const setStoredObject = (key: string, value: Record<string, unknown>) => {
   const storage = getStorage();
   storage?.setItem(key, JSON.stringify(value));
 };

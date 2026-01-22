@@ -9,7 +9,10 @@ import {
   type UseRealtimeSessionReturn,
 } from "./useRealtimeSession";
 import { AudioStreamManager } from "../utils/audioStreamManager";
-import { convertToGoogleToolFormat } from "../utils/toolConverter";
+import {
+  convertToGoogleToolFormat,
+  type OpenAITool,
+} from "../utils/toolConverter";
 import { DEFAULT_GOOGLE_LIVE_MODEL_ID } from "../config/models";
 
 // Types for Google Live API
@@ -263,7 +266,11 @@ export function useGoogleLiveSession(
 
             // Skip if already processed
             if (!processedToolCalls.has(callId)) {
-              pendingToolCalls.set(callId, functionCall);
+              pendingToolCalls.set(callId, {
+                id: callId,
+                name: functionCall.name,
+                args: functionCall.args || {},
+              });
             }
           }
         }
@@ -322,7 +329,7 @@ export function useGoogleLiveSession(
 
   const handleWebSocketOpen = (
     instructions: string,
-    tools: unknown[],
+    tools: OpenAITool[],
     modelId: string,
   ) => {
     // Convert tools to Google format
@@ -455,7 +462,7 @@ export function useGoogleLiveSession(
       });
       const tools = options.buildTools({
         startResponse: startResponse.value,
-      });
+      }) as OpenAITool[];
       const modelId =
         options.getModelId?.({
           startResponse: startResponse.value,

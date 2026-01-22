@@ -215,7 +215,11 @@ export const getPluginSystemPrompts = (
 
 const plugins = pluginList.reduce(
   (acc, plugin) => {
-    acc[plugin.plugin.toolDefinition.name] = plugin.plugin;
+    acc[plugin.plugin.toolDefinition.name] = plugin.plugin as ToolPlugin<
+      unknown,
+      unknown,
+      object
+    >;
     return acc;
   },
   {} as Record<string, ToolPlugin<unknown, unknown, object>>,
