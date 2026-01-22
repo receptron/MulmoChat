@@ -2324,6 +2324,14 @@ cors@^2.8.5:
     object-assign "^4"
     vary "^1"
 
+cors@^2.8.6:
+  version "2.8.6"
+  resolved "https://registry.yarnpkg.com/cors/-/cors-2.8.6.tgz#ff5dd69bd95e547503820d29aba4f8faf8dfec96"
+  integrity sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw==
+  dependencies:
+    object-assign "^4"
+    vary "^1"
+
 cosmiconfig@^9.0.0:
   version "9.0.0"
   resolved "https://registry.yarnpkg.com/cosmiconfig/-/cosmiconfig-9.0.0.tgz#34c3fc58287b915f3ae905ab6dc3de258b55ad9d"
@@ -2867,10 +2875,10 @@ exa-js@^2.0.12:
     zod "^3.22.0"
     zod-to-json-schema "^3.20.0"
 
-exa-js@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/exa-js/-/exa-js-2.1.0.tgz#b7fb7778dbdebe81da8b2aec59da57a8e4e74a69"
-  integrity sha512-lLW0H8VS8JhxLIHapw2weik7AcZz6y+JoribbrxbKxxy3M5A1Fw5bGhCPKQrT0X0dqQ3FHGDGwbQn4sY7LseoA==
+exa-js@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/exa-js/-/exa-js-2.1.1.tgz#a013f07b3ff42eb668019a0835ea9301f04f7f95"
+  integrity sha512-dT+xAePN3LS79XjpSbSml1/FYygiEtbJU3WVjrcniSxywogKk9x74HeVFTWgOeveppxsNJ6dq7MWoXbtGJl9Qg==
   dependencies:
     cross-fetch "~4.1.0"
     dotenv "~16.4.7"
