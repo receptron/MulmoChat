@@ -61,8 +61,7 @@ export interface UserPreferencesState extends Record<string, unknown> {
   textModelId: string;
   imageGenerationBackend: "gemini" | "openai" | "comfyui";
   comfyuiModel: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pluginConfigs: Record<string, any>;
+  pluginConfigs: Record<string, unknown>;
 }
 
 export interface UseUserPreferencesReturn {
@@ -81,11 +80,11 @@ const initEnabledPlugins = (): Record<string, boolean> => {
   }
 };
 
-const initPluginConfigs = (): Record<string, any> => {
+const initPluginConfigs = (): Record<string, unknown> => {
   const stored = getStoredValue(PLUGIN_CONFIGS_KEY);
   if (!stored) return {};
   try {
-    return JSON.parse(stored);
+    return JSON.parse(stored) as Record<string, unknown>;
   } catch {
     return {};
   }

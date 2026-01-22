@@ -218,7 +218,7 @@ const plugins = pluginList.reduce(
     acc[plugin.plugin.toolDefinition.name] = plugin.plugin;
     return acc;
   },
-  {} as Record<string, ToolPlugin<any, any, any>>,
+  {} as Record<string, ToolPlugin<unknown, unknown, object>>,
 );
 
 export const toolExecute: ToolExecuteFn = async (context, name, args) => {
