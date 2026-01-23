@@ -5,7 +5,6 @@ import type {
   ToolContextApp,
 } from "gui-chat-protocol/vue";
 import type { UserPreferencesState } from "./useUserPreferences";
-import { SESSION_CONFIG } from "../config/session";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -308,21 +307,6 @@ export function useToolResults(
 
       toolResults.value.push(completeResult);
       updateSelectedResult(completeResult);
-
-      const plugin = options.getToolPlugin(result.toolName!);
-      if (plugin?.uploadMessage && options.isDataChannelOpen()) {
-        for (
-          let i = 0;
-          i < SESSION_CONFIG.UPLOAD_RETRY_ATTEMPTS &&
-          options.conversationActive.value;
-          i++
-        ) {
-          console.log(`WAIT:${i} \n`, plugin.uploadMessage);
-          await options.sleep(SESSION_CONFIG.UPLOAD_RETRY_DELAY_MS);
-        }
-        console.log(`UPL:${result.toolName}\n${plugin.uploadMessage}`);
-        options.sendInstructions(plugin.uploadMessage);
-      }
     }
 
     options.scrollToBottomOfSideBar();
