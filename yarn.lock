@@ -3413,6 +3413,11 @@ gui-chat-protocol@^0.0.1:
   resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-0.0.1.tgz#d0770d03a6669b075473a0d8753ca9506f718dcd"
   integrity sha512-FStQbzQ7gvjDugWAmf4IOsvhqxe8/DUdA9VK9PgXwi44J2lZyEd1ww1bhThoHXpXT4djFpayQ2uMO1YMtQhCqA==
 
+gui-chat-protocol@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-0.0.3.tgz#0e86a15ade6c46ed698abaa6ae6aed5edfdd8dde"
+  integrity sha512-usoH2h4rONFl4E54y1Cl9O3WXS73q3XVs5aiCTAxJa+462nW6QVGPPOGyeeieFqMmjCHNWBfvtHAklg+D+eFRA==
+
 "guichat-plugin-akinator@github:isamu/AkinatorGame":
   version "0.1.0"
   resolved "https://codeload.github.com/isamu/AkinatorGame/tar.gz/e28a88610f8b9702d99d26898e1fa0de86be4c6d"
