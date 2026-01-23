@@ -223,7 +223,7 @@ export function useGoogleLiveSession(
         const argStr = JSON.stringify(fixedArgs);
 
         // Call handler immediately - don't store in pendingToolCalls since we're handling it now
-        handlers.onToolCall?.(toolCallMsg, callId, argStr);
+        await handlers.onToolCall?.(toolCallMsg, callId, argStr);
 
         // Store ONLY for sendFunctionCallOutput to retrieve the name later
         pendingToolCalls.set(callId, {
@@ -291,7 +291,7 @@ export function useGoogleLiveSession(
 
             const argStr = JSON.stringify(functionCall.args || {});
             processedToolCalls.add(callId);
-            handlers.onToolCall?.(toolCallMsg, callId, argStr);
+            await handlers.onToolCall?.(toolCallMsg, callId, argStr);
           }
         }
 

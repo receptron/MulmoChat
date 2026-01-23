@@ -518,7 +518,7 @@ const isListenerMode = computed(() => userPreferences.roleId === "listener");
 const lastSpeechStartedTime = ref<number | null>(null);
 
 registerEventHandlers({
-  onToolCall: (msg, id, argStr) => {
+  onToolCall: async (msg, id, argStr) => {
     // Track tool call in history for debugging
     const toolName = typeof msg === "string" ? msg : msg.name || "unknown";
     try {
@@ -527,7 +527,7 @@ registerEventHandlers({
     } catch {
       addToolCallToHistory(toolName, argStr);
     }
-    void handleToolCall({ msg, rawArgs: argStr });
+    await handleToolCall({ msg, rawArgs: argStr });
   },
   onTextDelta: (delta) => {
     currentText.value += delta;

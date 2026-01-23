@@ -217,7 +217,7 @@ export function useTextSession(
       // Handle tool calls if present
       if (toolCalls && toolCalls.length > 0) {
         for (const toolCall of toolCalls) {
-          handlers.onToolCall?.(
+          await handlers.onToolCall?.(
             {
               type: "response.function_call_arguments.done",
               name: toolCall.name,
