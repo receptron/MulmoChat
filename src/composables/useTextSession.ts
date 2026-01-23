@@ -383,7 +383,9 @@ export function useTextSession(
     return true;
   };
 
-  const isDataChannelOpen = () => !conversationActive.value;
+  // For text sessions, always return false to prevent intermediate messages
+  // OpenAI's Chat API requires all tool responses before any other messages
+  const isDataChannelOpen = () => false;
 
   const setMute = (muted: boolean) => {
     isMuted.value = muted;
