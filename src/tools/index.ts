@@ -228,10 +228,17 @@ export const toolExecute: ToolExecuteFn = async (context, name, args) => {
     throw new Error(`Plugin ${name} not found`);
   }
   const result = await plugin.execute(context, args);
+
+  // When updating existing result, preserve the original UUID to avoid race conditions
+  const uuid =
+    result.updating && context.currentResult?.uuid
+      ? context.currentResult.uuid
+      : result.uuid || uuidv4();
+
   return {
     ...result,
     toolName: result.toolName ?? name,
-    uuid: result.uuid || uuidv4(),
+    uuid,
   };
 };
 
