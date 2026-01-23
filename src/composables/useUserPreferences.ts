@@ -45,7 +45,7 @@ const setStoredValue = (key: string, value: string) => {
   storage?.setItem(key, value);
 };
 
-const setStoredObject = (key: string, value: Record<string, boolean>) => {
+const setStoredObject = (key: string, value: Record<string, unknown>) => {
   const storage = getStorage();
   storage?.setItem(key, JSON.stringify(value));
 };
@@ -61,8 +61,7 @@ export interface UserPreferencesState extends Record<string, unknown> {
   textModelId: string;
   imageGenerationBackend: "gemini" | "openai" | "comfyui";
   comfyuiModel: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pluginConfigs: Record<string, any>;
+  pluginConfigs: Record<string, unknown>;
 }
 
 export interface UseUserPreferencesReturn {
@@ -81,11 +80,11 @@ const initEnabledPlugins = (): Record<string, boolean> => {
   }
 };
 
-const initPluginConfigs = (): Record<string, any> => {
+const initPluginConfigs = (): Record<string, unknown> => {
   const stored = getStoredValue(PLUGIN_CONFIGS_KEY);
   if (!stored) return {};
   try {
-    return JSON.parse(stored);
+    return JSON.parse(stored) as Record<string, unknown>;
   } catch {
     return {};
   }
@@ -126,25 +125,33 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     pluginConfigs: initPluginConfigs(),
   });
 
-  watch(
-    () => state.userLanguage,
-    (val) => {
-      setStoredValue(USER_LANGUAGE_KEY, val);
-    },
-  );
+  // Simple string preference watchers
+  const stringPrefs: [keyof UserPreferencesState, string][] = [
+    ["userLanguage", USER_LANGUAGE_KEY],
+    ["customInstructions", CUSTOM_INSTRUCTIONS_KEY],
+    ["modelId", MODEL_ID_KEY],
+    ["textModelId", TEXT_MODEL_ID_KEY],
+    ["imageGenerationBackend", IMAGE_GENERATION_BACKEND_KEY],
+    ["comfyuiModel", COMFYUI_MODEL_KEY],
+  ];
+  stringPrefs.forEach(([key, storageKey]) => {
+    watch(
+      () => state[key],
+      (val) => setStoredValue(storageKey, String(val)),
+    );
+  });
 
+  // Boolean preference
   watch(
     () => state.suppressInstructions,
-    (val) => {
-      setStoredValue(SUPPRESS_INSTRUCTIONS_KEY, String(val));
-    },
+    (val) => setStoredValue(SUPPRESS_INSTRUCTIONS_KEY, String(val)),
   );
 
+  // Role with migration cleanup
   watch(
     () => state.roleId,
     (val) => {
       setStoredValue(ROLE_ID_KEY, val);
-      // Clean up old keys after migration
       const storage = getStorage();
       if (storage?.getItem(LEGACY_MODE_ID_KEY)) {
         storage.setItem(LEGACY_MODE_ID_KEY, "");
@@ -155,83 +162,34 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     },
   );
 
-  watch(
-    () => state.customInstructions,
-    (val) => {
-      setStoredValue(CUSTOM_INSTRUCTIONS_KEY, val);
-    },
-  );
-
-  watch(
-    () => state.modelId,
-    (val) => {
-      setStoredValue(MODEL_ID_KEY, val);
-    },
-  );
-
+  // Model kind with auto-select logic
   watch(
     () => state.modelKind,
     (val, oldVal) => {
       setStoredValue(MODEL_KIND_KEY, val);
-
-      // Auto-select appropriate default model when switching modes
       if (val !== oldVal) {
         if (val === "voice-realtime") {
-          // Switching to OpenAI - check if current model is valid for OpenAI
-          const isValidRealtimeModel = REALTIME_MODELS.some(
-            (m) => m.id === state.modelId,
-          );
-          if (!isValidRealtimeModel) {
-            state.modelId = DEFAULT_REALTIME_MODEL_ID;
-          }
+          const isValid = REALTIME_MODELS.some((m) => m.id === state.modelId);
+          if (!isValid) state.modelId = DEFAULT_REALTIME_MODEL_ID;
         } else if (val === "voice-google-live") {
-          // Switching to Google - check if current model is valid for Google
-          const isValidGoogleModel = GOOGLE_LIVE_MODELS.some(
+          const isValid = GOOGLE_LIVE_MODELS.some(
             (m) => m.id === state.modelId,
           );
-          if (!isValidGoogleModel) {
-            state.modelId = DEFAULT_GOOGLE_LIVE_MODEL_ID;
-          }
+          if (!isValid) state.modelId = DEFAULT_GOOGLE_LIVE_MODEL_ID;
         }
-        // For text-rest mode, we use textModelId, so no need to change modelId
       }
     },
   );
 
-  watch(
-    () => state.textModelId,
-    (val) => {
-      setStoredValue(TEXT_MODEL_ID_KEY, val);
-    },
-  );
-
-  watch(
-    () => state.imageGenerationBackend,
-    (val) => {
-      setStoredValue(IMAGE_GENERATION_BACKEND_KEY, val);
-    },
-  );
-
-  watch(
-    () => state.comfyuiModel,
-    (val) => {
-      setStoredValue(COMFYUI_MODEL_KEY, val);
-    },
-  );
-
+  // Object preferences with deep watch
   watch(
     () => state.enabledPlugins,
-    (val) => {
-      setStoredObject(ENABLED_PLUGINS_KEY, val);
-    },
+    (val) => setStoredObject(ENABLED_PLUGINS_KEY, val),
     { deep: true },
   );
-
   watch(
     () => state.pluginConfigs,
-    (val) => {
-      setStoredObject(PLUGIN_CONFIGS_KEY, val);
-    },
+    (val) => setStoredObject(PLUGIN_CONFIGS_KEY, val),
     { deep: true },
   );
 

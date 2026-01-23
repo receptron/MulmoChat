@@ -139,6 +139,12 @@ import { getLanguageName } from "../config/languages";
 import type { TextProvidersResponse } from "../../server/types";
 import { v4 as uuidv4 } from "uuid";
 
+interface ImageGenerationConfigObject {
+  backend?: string;
+  geminiModel?: string;
+  openaiModel?: string;
+}
+
 const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
 const rightSidebarRef = ref<InstanceType<typeof RightSidebar> | null>(null);
 const preferences = useUserPreferences();
@@ -344,16 +350,17 @@ const statusLine = computed(() => {
     }
   } else if (imageConfig && typeof imageConfig === "object") {
     // New format with backend and model
-    const backend = imageConfig.backend;
+    const config = imageConfig as ImageGenerationConfigObject;
+    const backend = config.backend;
     if (backend === "gemini") {
-      const geminiModel = imageConfig.geminiModel || "gemini-2.5-flash-image";
+      const geminiModel = config.geminiModel || "gemini-2.5-flash-image";
       if (geminiModel === "gemini-3-pro-image-preview") {
         imageModelName = "Gemini 3 Pro Image";
       } else {
         imageModelName = "Gemini 2.5 Flash Image";
       }
     } else if (backend === "openai") {
-      const openaiModel = imageConfig.openaiModel || "gpt-image-1";
+      const openaiModel = config.openaiModel || "gpt-image-1";
       if (openaiModel === "gpt-image-1.5") {
         imageModelName = "GPT Image 1.5";
       } else if (openaiModel === "gpt-image-1-mini") {

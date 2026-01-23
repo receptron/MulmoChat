@@ -215,10 +215,14 @@ export const getPluginSystemPrompts = (
 
 const plugins = pluginList.reduce(
   (acc, plugin) => {
-    acc[plugin.plugin.toolDefinition.name] = plugin.plugin;
+    acc[plugin.plugin.toolDefinition.name] = plugin.plugin as ToolPlugin<
+      unknown,
+      unknown,
+      object
+    >;
     return acc;
   },
-  {} as Record<string, ToolPlugin<any, any, any>>,
+  {} as Record<string, ToolPlugin<unknown, unknown, object>>,
 );
 
 export const toolExecute: ToolExecuteFn = async (context, name, args) => {

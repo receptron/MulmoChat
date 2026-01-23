@@ -3,7 +3,7 @@
  */
 
 // OpenAI tool definition types
-interface OpenAITool {
+export interface OpenAITool {
   type?: "function";
   function?: {
     name: string;
