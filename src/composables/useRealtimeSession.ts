@@ -5,7 +5,11 @@ import { isValidToolCallMessage } from "./types";
 import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
 
 export interface RealtimeSessionEventHandlers {
-  onToolCall?: (msg: ToolCallMessage, id: string, argStr: string) => void;
+  onToolCall?: (
+    msg: ToolCallMessage,
+    id: string,
+    argStr: string,
+  ) => void | Promise<void>;
   onTextDelta?: (delta: string) => void;
   onTextCompleted?: () => void;
   onConversationStarted?: () => void;
@@ -94,7 +98,7 @@ export function useRealtimeSession(
     return true;
   };
 
-  const handleMessage = (event: MessageEvent) => {
+  const handleMessage = async (event: MessageEvent) => {
     let msg: ToolCallMessage;
 
     try {
@@ -148,7 +152,7 @@ export function useRealtimeSession(
         }
         console.log(`MSG: toolcall\n${argStr}`);
         processedToolCalls.set(id, argStr);
-        handlers.onToolCall?.(msg, id, argStr);
+        await handlers.onToolCall?.(msg, id, argStr);
         break;
       }
       case "response.created":
