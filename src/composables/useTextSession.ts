@@ -256,130 +256,17 @@ export function useTextSession(
       return false;
     }
 
-    void (async () => {
-      if (!chatActive.value) {
-        await startChat();
-        if (!chatActive.value) {
-          return;
-        }
-      }
+    // For text sessions, we don't make an immediate API call.
+    // Instructions are appended to conversation history as a user message
+    // and will be sent with the next API call.
+    // This prevents the "tool_use without tool_result" error when
+    // instructions are sent during tool call processing.
+    console.log("QUEUING INSTRUCTIONS (text session)", `"${trimmed}"`);
+    conversationMessages.value.push({
+      role: "user",
+      content: `[System instruction] ${trimmed}`,
+    });
 
-      await ensureStartResponse();
-
-      const resolvedModel = resolveTextModelId(
-        options.getModelId?.({ startResponse: startResponse.value }) ??
-          DEFAULT_TEXT_MODEL.rawId,
-      );
-
-      // Append instructions as system message
-      conversationMessages.value.push({
-        role: "system",
-        content: trimmed,
-      });
-
-      conversationActive.value = true;
-      handlers.onConversationStarted?.();
-
-      try {
-        console.log("SENDING INSTRUCTIONS", `"${trimmed}"`);
-
-        const tools = options.buildTools({
-          startResponse: startResponse.value,
-        });
-
-        // Call stateless generate API with full conversation history
-        const response = await fetch("/api/text/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            provider: resolvedModel.provider,
-            model: resolvedModel.model,
-            messages: conversationMessages.value,
-            tools: tools.length > 0 ? tools : undefined,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorBody = await response.text();
-          console.error("Instructions API error:", response.status, errorBody);
-          throw new Error(`API error: ${response.statusText} - ${errorBody}`);
-        }
-
-        const payload = (await response.json()) as {
-          success?: boolean;
-          result?: {
-            text?: string;
-            toolCalls?: Array<{ id: string; name: string; arguments: string }>;
-          };
-          error?: unknown;
-        };
-
-        if (!payload.success) {
-          throw new Error(
-            typeof payload.error === "string"
-              ? payload.error
-              : "Instruction processing failed",
-          );
-        }
-
-        const assistantText = payload.result?.text ?? "";
-        const toolCalls = payload.result?.toolCalls;
-
-        // Append assistant response to conversation history
-        if (assistantText || toolCalls) {
-          conversationMessages.value.push({
-            role: "assistant",
-            content: assistantText || "",
-            ...(toolCalls?.length ? { tool_calls: toolCalls } : {}),
-          });
-        }
-
-        // Handle tool calls if present
-        if (toolCalls && toolCalls.length > 0) {
-          for (const toolCall of toolCalls) {
-            handlers.onToolCall?.(
-              {
-                type: "response.function_call_arguments.done",
-                name: toolCall.name,
-                call_id: toolCall.id,
-              },
-              toolCall.id,
-              toolCall.arguments,
-            );
-          }
-        }
-
-        // Always show text response if there's any text
-        if (assistantText) {
-          handlers.onTextDelta?.(assistantText);
-          handlers.onTextCompleted?.();
-
-          const callId = createCallId();
-          handlers.onToolCall?.(
-            {
-              type: "response.function_call_arguments.done",
-              name: "text-response",
-              // Intentionally omit call_id so the pseudo tool doesn't trigger
-              // sendFunctionCallOutput back to the LLM transport.
-            },
-            callId,
-            JSON.stringify({
-              text: assistantText,
-              role: "assistant",
-              transportKind: "text-rest",
-            }),
-          );
-        }
-      } catch (error) {
-        console.error("Instructions request failed", error);
-        handlers.onError?.(error);
-      } finally {
-        conversationActive.value = false;
-        handlers.onConversationFinished?.();
-      }
-    })();
     return true;
   };
 
