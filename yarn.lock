@@ -544,13 +544,6 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/html/-/html-0.1.0.tgz#08cb1e9e6e3ca1dd61916aba8103393211f830e2"
   integrity sha512-sYaCSYfZNLGwF1tdtJ8Dv4LsZ6RpASU02Pjz+osZG6a/mkBuQWYcGYUE0cHhL4/5MfTGzHY1fqeEncRyr34osg==
 
-"@gui-chat-plugin/map@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/map/-/map-0.1.1.tgz#75bfcfd74a1eb671e765ba17fca149f5d0f2aadd"
-  integrity sha512-lw7Oid7chRUjp+b5VTKRprxlM0gUJTsrydXei/v0bJ2noFjNSxxaQvV/LV8jL80agj9uQoWrYW2iw6Wtzf9t0g==
-  dependencies:
-    gui-chat-protocol "^0.0.3"
-
 "@gui-chat-plugin/markdown@^0.0.2":
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/markdown/-/markdown-0.0.2.tgz#42780a5be86e90fa5eb31b796007ee6026ef2743"
@@ -559,11 +552,13 @@
     gui-chat-protocol "^0.0.3"
     marked "^17.0.1"
 
-"@gui-chat-plugin/mindmap@github:receptron/GUIChatPluginMindMap":
-  version "0.1.3"
-  resolved "https://codeload.github.com/receptron/GUIChatPluginMindMap/tar.gz/ba841f45e1c2c359b54dc4deb2c49685142fbb8b"
+"@gui-chat-plugin/mindmap@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/mindmap/-/mindmap-0.3.0.tgz#c77f3840918406ff6f2abb79f7ef6b88eedb285e"
+  integrity sha512-13YoUHPJfY6vjdWdqrwHUGYCOUGfl1eLXe4p7BrMywsFDF4+nhNwwfa5af2LQyzrTLAKMFNENH4XlwYhbByaoQ==
   dependencies:
     gui-chat-protocol "^0.0.3"
+    jspdf "^4.0.0"
 
 "@gui-chat-plugin/mulmocast@^0.0.3":
   version "0.0.3"
