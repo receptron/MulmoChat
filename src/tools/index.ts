@@ -280,7 +280,9 @@ export const getFileInputPlugins = () => {
 export const getClipboardImagePlugins = () => {
   return pluginList
     .filter((plugin) =>
-      plugin.plugin.inputHandlers?.some((h: InputHandler) => h.type === "clipboard-image"),
+      plugin.plugin.inputHandlers?.some(
+        (h: InputHandler) => h.type === "clipboard-image",
+      ),
     )
     .map((plugin) => {
       const handler = plugin.plugin.inputHandlers!.find(
