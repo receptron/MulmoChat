@@ -532,10 +532,10 @@
   dependencies:
     gui-chat-protocol "^0.0.3"
 
-"@gui-chat-plugin/google-map@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/google-map/-/google-map-0.3.0.tgz#b18349c5a94fa2d8b97b7382e130d686ecac61af"
-  integrity sha512-IpwxVW2lq6mwZPtIKYo7JXOxlg/Ky3l9AM2jQfmMrVZx/LqKB3fzYrJdrzuspeQNIBq1ORDVS/0E1XOvKJqnOw==
+"@gui-chat-plugin/google-map@^0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/google-map/-/google-map-0.3.1.tgz#5fe8c916ba8bfdd51d91ea0ef052a9437fbcc3d9"
+  integrity sha512-J8Rrz2546wTIjZUPYOJOYYP9r18XZsap6p5plfb6Fnzj9uAdp75EJUsvnslPUinv+T8QquuJJRTjQH9OxgRw1g==
   dependencies:
     gui-chat-protocol "^0.0.3"
 
@@ -564,7 +564,6 @@
   resolved "https://codeload.github.com/receptron/GUIChatPluginMindMap/tar.gz/ba841f45e1c2c359b54dc4deb2c49685142fbb8b"
   dependencies:
     gui-chat-protocol "^0.0.3"
-    jspdf "^4.0.0"
 
 "@gui-chat-plugin/mulmocast@^0.0.3":
   version "0.0.3"
