@@ -563,7 +563,7 @@
 
 "@gui-chat-plugin/mindmap@github:receptron/GUIChatPluginMindMap":
   version "0.1.3"
-  resolved "https://codeload.github.com/receptron/GUIChatPluginMindMap/tar.gz/5de78416d6fd37768f6fe00b69c4b8ab5cdf77e9"
+  resolved "https://codeload.github.com/receptron/GUIChatPluginMindMap/tar.gz/d823026d16db8118809543f0527c32dfc46433b6"
   dependencies:
     gui-chat-protocol "^0.0.3"
 
