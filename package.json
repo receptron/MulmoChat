@@ -49,6 +49,7 @@
     "@gui-chat-plugin/generate-html": "^0.1.1",
     "@gui-chat-plugin/go": "^0.1.1",
     "@gui-chat-plugin/html": "^0.1.0",
+    "@gui-chat-plugin/google-map": "^0.3.0",
     "@gui-chat-plugin/map": "^0.1.1",
     "@gui-chat-plugin/markdown": "^0.0.2",
     "@gui-chat-plugin/mindmap": "github:receptron/GUIChatPluginMindMap",

@@ -24,6 +24,7 @@ import GoPlugin from "@gui-chat-plugin/go/vue";
 import WeatherPlugin from "@gui-chat-plugin/weather/vue";
 import MusicPlugin from "@gui-chat-plugin/music/vue";
 import BrowsePlugin from "@gui-chat-plugin/browse/vue";
+import GoogleMapPlugin from "@gui-chat-plugin/google-map/vue";
 import MapPlugin from "@gui-chat-plugin/map/vue";
 import ExaPlugin from "@gui-chat-plugin/exa/vue";
 import MarkdownPlugin from "@gui-chat-plugin/markdown/vue";
@@ -57,6 +58,7 @@ const pluginList = [
   WeatherPlugin,
   MusicPlugin,
   BrowsePlugin,
+  GoogleMapPlugin,
   MapPlugin,
   ExaPlugin,
   MarkdownPlugin,
