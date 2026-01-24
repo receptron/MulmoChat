@@ -497,15 +497,15 @@
   dependencies:
     gui-chat-protocol "^0.0.3"
 
-"@gui-chat-plugin/camera@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/camera/-/camera-0.1.1.tgz#c4ae7bc16bbd2af215ba3ae97672a08f41da8441"
-  integrity sha512-S7knoDi3j6Jhf+EbvhPQkEz8j02p83yJe/NR9W+M7yAO16VZdomCbO+1uWZT/r+NckOj+2k1SqJiYnU0X7V4Pg==
+"@gui-chat-plugin/camera@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/camera/-/camera-0.3.0.tgz#071e6e47d9995441285621707798108e2dfef594"
+  integrity sha512-4l2T0e02/hHM6uJvTC9Yd+I7wdxSCNJEjDfl1IGPAGlR7Wij6R5jR0Pey0KirUuIy8N637+nC0Jt9Lh58w2JDA==
 
-"@gui-chat-plugin/canvas@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/canvas/-/canvas-0.1.1.tgz#e7f5f337e0592340c5ff2b9189d308736a7239cd"
-  integrity sha512-+ssaFzv3hxxWcvT52exxoI8FtilXmHNzuGH4Z9XKkQg5zx5f9gGdgzJYBjok5grOINeXxkioj50Ny3xLPpjmnA==
+"@gui-chat-plugin/canvas@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/canvas/-/canvas-0.3.0.tgz#dab8770b7a2ab51c392e74bc992e63247905e199"
+  integrity sha512-OMTfNtWdptiH8/9jnVxWhZozARkjdEI4/q6o0+Vb9TpAjgN+b4CzUxC9Iwq1vL2hMx31dw6UZKn97wionpS6Vg==
   dependencies:
     vue-drawing-canvas "^1.0.14"
 
@@ -514,10 +514,10 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/edit-html/-/edit-html-0.1.1.tgz#cd037a791b18149c65e77ecea3ef0aad2a4859b3"
   integrity sha512-mZzHcLFYvfKkVQLm0pvly8QIXpgIMNhJ7gttHY0np7dDbfDShxESEdAHnVFxR1o1utVwTkbXbTI+4zalSm17hQ==
 
-"@gui-chat-plugin/edit-image@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/edit-image/-/edit-image-0.0.2.tgz#a2b520a5d35f0bbde10e70016d38aa1b3ad9b6da"
-  integrity sha512-lNNbN59ygRl7wHCZiGNsehOGXyfTthjKKotz+e+/JqPqVFaR2isCTk83p9LB8KO05/HMvkzei2Qxs5BA6dca0Q==
+"@gui-chat-plugin/edit-image@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/edit-image/-/edit-image-0.3.0.tgz#89045471e0cab9536b8652fc29604c24008e5053"
+  integrity sha512-/8ckzhqpOYAasMnHHcpaGwEIUf/78Em3TxAKHuIeDVIN3IBcdleMoIVmMv3/Nlj0eASTGs3/vid69+Z+JH5OgA==
   dependencies:
     gui-chat-protocol "^0.0.3"
 
@@ -862,17 +862,17 @@
   dependencies:
     gui-chat-protocol "^0.0.3"
 
-"@mulmochat-plugin/generate-image@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/generate-image/-/generate-image-0.3.1.tgz#22acc47b6be9f1f84b17e0412758c178d37d4d5b"
-  integrity sha512-FE0YZjuM9577gjpLrgzX3ww8HGqN9RrSgyK9gJU9qJXuVfTt0CLoFo+i2mRpzUf/wLF12feUEn0el3Nn54VijA==
+"@mulmochat-plugin/generate-image@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/generate-image/-/generate-image-0.3.2.tgz#5fb4bdba578e19b1b0c502268796c9dfcf579183"
+  integrity sha512-nm9rE1KWpE06OXek6nlG6g8QOfiiC/Fm/ThqvO20KkC/ENLhbRVilz2yi4mKL74TTX39mpTLUCpDTxd9UzaOUw==
   dependencies:
     gui-chat-protocol "^0.0.3"
 
-"@mulmochat-plugin/quiz@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.3.1.tgz#be3dfd6af6350aaa1bf857a6519321e3fa099f48"
-  integrity sha512-W1KHiUKeNjObdC+s1evoK3/UedTK7xQAFsb+mflcXcl24cbZWmXP1d67MoyYD50AS9yKaFobydOR926ncTJpNA==
+"@mulmochat-plugin/quiz@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/quiz/-/quiz-0.3.2.tgz#c1bac9d7c6c6bfee05eea2557a9498d44f989cfb"
+  integrity sha512-J3qrmwC0ec64SXiXXaqVo4pwo3HU4X48eRm/uPb45p9scC1RIn1Suycery8gE3HDTuJ0xV+nhfj9EHr5tub8oA==
   dependencies:
     gui-chat-protocol "^0.0.3"
 
@@ -883,10 +883,10 @@
   dependencies:
     gui-chat-protocol "^0.0.3"
 
-"@mulmochat-plugin/ui-image@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/ui-image/-/ui-image-0.1.0.tgz#6fb70ce8a467c645515a220e8e9f52893cb1aa48"
-  integrity sha512-dbvRL4lCQ6ZrBnxJgNV3XUR/EgpBnSuNR+Buta5vAaBrbcwGc8dBv7O4Oh/YU6HWRJfdVZD8PlAQO1u6bebvpw==
+"@mulmochat-plugin/ui-image@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/ui-image/-/ui-image-0.3.0.tgz#3973a10ddc43eedb5487a503aef5631d2f9cd5bd"
+  integrity sha512-InzBl29BwtI6TZaMlKfmYzcX9EgjaJtWg2kxkNuK++h+fb8nsxcGpABQuUSznOtXNVYgx48XQFrYFc1sR+V8aw==
 
 "@napi-rs/wasm-runtime@^1.1.0":
   version "1.1.1"

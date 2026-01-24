@@ -130,6 +130,25 @@ Each plugin has associated Vue components:
 - **Components** (src/tools/views/): Full-view components for displaying tool results
 - **Previews** (src/tools/previews/): Sidebar thumbnail previews of tool results
 
+#### Plugin Documentation Sync (IMPORTANT)
+
+When changing plugin implementation policies or adding new constraints, the following documentation must be updated:
+
+**In this repository (MulmoChat):**
+- `docs/plugin-development-guide.md` (English)
+- `docs/plugin-development-guide.ja.md` (Japanese)
+
+**In external repositories:**
+- `GUIChatPluginTemplate/README.md`
+- `GUIChatPluginTemplate/TEMPLATE.md`
+- `GUIChatPluginTemplate/docs/plugin-development-guide.md`
+- `GUIChatPluginTemplate/docs/getting-started.md`
+- `GUIChatPluginTemplate/docs/getting-started.ja.md`
+- `MulmoChatPluginQuiz/README.md`
+- `MulmoChatPluginQuiz/TEMPLATE.md`
+
+These documents are used by developers creating new plugins. Keeping them in sync ensures consistent guidance across all plugin development resources.
+
 ### Key Integration Points
 
 The application integrates multiple AI services and APIs:

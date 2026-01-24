@@ -55,6 +55,17 @@ This directory contains documentation for developing plugins for GUIChat/MulmoCh
 | [GUIChatPluginTodo](https://github.com/receptron/GUIChatPluginTodo) | Todo list |
 | [GUIChatPluginWeather](https://github.com/receptron/GUIChatPluginWeather) | Weather display |
 
+## Documentation Sync (IMPORTANT)
+
+When changing plugin implementation policies or adding new constraints in MulmoChat, the following external repositories must also be updated:
+
+| Repository | Files to Update |
+|------------|-----------------|
+| **GUIChatPluginTemplate** | `README.md`, `TEMPLATE.md`, `docs/plugin-development-guide.md`, `docs/getting-started.md`, `docs/getting-started.ja.md` |
+| **MulmoChatPluginQuiz** | `README.md`, `TEMPLATE.md` |
+
+These repositories serve as templates and reference implementations for plugin developers. Keeping documentation in sync ensures consistent guidance.
+
 ## Related Resources
 
 - [gui-chat-protocol npm package](https://www.npmjs.com/package/gui-chat-protocol)
