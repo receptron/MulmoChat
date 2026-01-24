@@ -55,6 +55,17 @@
 | [GUIChatPluginTodo](https://github.com/receptron/GUIChatPluginTodo) | Todo リスト |
 | [GUIChatPluginWeather](https://github.com/receptron/GUIChatPluginWeather) | 天気表示 |
 
+## ドキュメント同期（重要）
+
+MulmoChat でプラグイン実装方針を変更したり、新しい制約を追加した場合、以下の外部リポジトリも更新が必要です：
+
+| リポジトリ | 更新対象ファイル |
+|-----------|-----------------|
+| **GUIChatPluginTemplate** | `README.md`, `TEMPLATE.md`, `docs/plugin-development-guide.md`, `docs/getting-started.md`, `docs/getting-started.ja.md` |
+| **MulmoChatPluginQuiz** | `README.md`, `TEMPLATE.md` |
+
+これらのリポジトリはプラグイン開発者向けのテンプレートおよびリファレンス実装です。ドキュメントを同期することで一貫したガイダンスを提供できます。
+
 ## 関連リソース
 
 - [gui-chat-protocol npm パッケージ](https://www.npmjs.com/package/gui-chat-protocol)
