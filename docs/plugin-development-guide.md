@@ -251,6 +251,58 @@ GUIChatPluginXxx/
 
 ---
 
+## Tailwind CSS Guidelines
+
+### Important: No Arbitrary Values
+
+**Do NOT use Tailwind's arbitrary values (JIT syntax) in plugin code.**
+
+MulmoChat uses Tailwind's `@source` directive to scan plugin dist files for Tailwind classes. This means only standard Tailwind classes are supported - arbitrary values like `bg-[#1a1a2e]` or `w-[137px]` will NOT work because they require build-time scanning.
+
+```html
+<!-- ✅ Good: Standard Tailwind classes -->
+<div class="bg-slate-900 w-48 p-4">
+
+<!-- ❌ Bad: Arbitrary values - will NOT work -->
+<div class="bg-[#1a1a2e] w-[137px] p-[10px]">
+```
+
+### Why This Matters
+
+```
+Plugin built separately → dist/vue.js
+                              ↓
+MulmoChat @source scans → finds "bg-slate-900" → generates CSS ✓
+                              ↓
+                        → finds "bg-[#1a1a2e]" → NOT generated ✗
+```
+
+Tailwind needs to see arbitrary values at build time to generate the corresponding CSS. Since plugins are built separately and then scanned by MulmoChat's `@source` directive, arbitrary values in the scanned files don't trigger CSS generation.
+
+### Alternatives
+
+If you need custom colors or sizes:
+
+1. **Use closest standard Tailwind values**
+   - Instead of `bg-[#1a1a2e]`, use `bg-slate-900` or `bg-gray-900`
+
+2. **Define custom styles in your plugin's style.css**
+   ```css
+   /* src/style.css */
+   @import "tailwindcss";
+
+   .my-custom-bg {
+     background-color: #1a1a2e;
+   }
+   ```
+
+3. **Use inline styles for truly dynamic values**
+   ```vue
+   <div :style="{ backgroundColor: dynamicColor }">
+   ```
+
+---
+
 ## Development Steps
 
 ### Step 1: Create Project from Template
@@ -1265,6 +1317,7 @@ defineProps<{
 
 - [ ] `src/style.css` - `@import "tailwindcss";`
 - [ ] `src/index.ts` - `export * from "./core";`
+- [ ] **No Tailwind arbitrary values** - Use standard classes only (no `bg-[#xxx]`, `w-[xxx]` etc.)
 
 ### Core Files
 
