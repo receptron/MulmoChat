@@ -566,6 +566,7 @@
   resolved "https://codeload.github.com/receptron/GUIChatPluginMindMap/tar.gz/ba841f45e1c2c359b54dc4deb2c49685142fbb8b"
   dependencies:
     gui-chat-protocol "^0.0.3"
+    jspdf "^4.0.0"
 
 "@gui-chat-plugin/mulmocast@^0.0.3":
   version "0.0.3"
@@ -593,7 +594,7 @@
 
 "@gui-chat-plugin/piano@github:receptron/GUIChatPluginPiano":
   version "0.1.0"
-  resolved "https://codeload.github.com/receptron/GUIChatPluginPiano/tar.gz/33b6c1575a35d5fb98ef519879a6ad09191acf32"
+  resolved "https://codeload.github.com/receptron/GUIChatPluginPiano/tar.gz/166821d095217f7c788ce600048e5cd688751240"
   dependencies:
     gui-chat-protocol "^0.0.3"
     openai "^4.77.0"
