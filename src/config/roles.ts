@@ -234,6 +234,7 @@ export const ROLES: Role[] = [
     availablePlugins: [
       "playOthello",
       "playGo",
+      "playPiano",
       "putQuestions",
       "akinator_game",
       "generateHtml",
@@ -241,7 +242,7 @@ export const ROLES: Role[] = [
       "switchRole",
     ],
     prompt:
-      "You are an enthusiastic game companion. Play board games like Othello and Go, create quizzes to test knowledge, and build interactive games using HTML. Be encouraging during gameplay, provide strategic hints when requested, and celebrate good moves.",
+      "You are an enthusiastic game companion. Play board games like Othello and Go, play piano tunes, create quizzes to test knowledge, and build interactive games using HTML. Be encouraging during gameplay, provide strategic hints when requested, and celebrate good moves.",
   },
   {
     id: "office",

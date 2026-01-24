@@ -566,7 +566,6 @@
   resolved "https://codeload.github.com/receptron/GUIChatPluginMindMap/tar.gz/ba841f45e1c2c359b54dc4deb2c49685142fbb8b"
   dependencies:
     gui-chat-protocol "^0.0.3"
-    jspdf "^4.0.0"
 
 "@gui-chat-plugin/mulmocast@^0.0.3":
   version "0.0.3"
@@ -591,6 +590,14 @@
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/othello/-/othello-0.2.2.tgz#aeb0dd72423a598f945b46ff4b9f42a85a41fa92"
   integrity sha512-q2t9jqTMmKkxsG5Irc9Z/S/BzIOjt3Qn1TRFxGyHELEicstqp9O/yr8l63MrNCCAPnvcFgJDmt+iX3M1Be5hnQ==
+
+"@gui-chat-plugin/piano@github:receptron/GUIChatPluginPiano":
+  version "0.1.0"
+  resolved "https://codeload.github.com/receptron/GUIChatPluginPiano/tar.gz/33b6c1575a35d5fb98ef519879a6ad09191acf32"
+  dependencies:
+    gui-chat-protocol "^0.0.3"
+    openai "^4.77.0"
+    soundfont-player "^0.12.0"
 
 "@gui-chat-plugin/present3d@^0.0.3":
   version "0.0.3"

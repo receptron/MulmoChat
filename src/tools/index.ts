@@ -38,6 +38,7 @@ import SwitchRolePlugin from "@gui-chat-plugin/switch-role/vue";
 import SetImageStylePlugin from "@gui-chat-plugin/set-image-style/vue";
 import ScrollToAnchorPlugin from "@gui-chat-plugin/scroll-to-anchor/vue";
 import MindMapPlugin from "@gui-chat-plugin/mindmap/vue";
+import PianoPlugin from "@gui-chat-plugin/piano/vue";
 import AkinatorPlugin from "guichat-plugin-akinator/vue";
 
 const pluginList = [
@@ -70,6 +71,7 @@ const pluginList = [
   SetImageStylePlugin,
   ScrollToAnchorPlugin,
   MindMapPlugin,
+  PianoPlugin,
   AkinatorPlugin,
 ];
 
