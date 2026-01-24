@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Scan plugin dist files for Tailwind classes */
+@source "../node_modules/@gui-chat-plugin/*/dist/vue.js";
+@source "../node_modules/@mulmochat-plugin/*/dist/vue.js";
+@source "../node_modules/guichat-plugin-*/dist/vue.js";
