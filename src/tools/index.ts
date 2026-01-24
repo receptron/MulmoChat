@@ -25,7 +25,6 @@ import WeatherPlugin from "@gui-chat-plugin/weather/vue";
 import MusicPlugin from "@gui-chat-plugin/music/vue";
 import BrowsePlugin from "@gui-chat-plugin/browse/vue";
 import GoogleMapPlugin from "@gui-chat-plugin/google-map/vue";
-import MapPlugin from "@gui-chat-plugin/map/vue";
 import ExaPlugin from "@gui-chat-plugin/exa/vue";
 import MarkdownPlugin from "@gui-chat-plugin/markdown/vue";
 import EditImagePlugin from "@gui-chat-plugin/edit-image/vue";
@@ -59,7 +58,6 @@ const pluginList = [
   MusicPlugin,
   BrowsePlugin,
   GoogleMapPlugin,
-  MapPlugin,
   ExaPlugin,
   MarkdownPlugin,
   EditImagePlugin,
