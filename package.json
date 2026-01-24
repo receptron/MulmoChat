@@ -55,6 +55,7 @@
     "@gui-chat-plugin/mulmocast": "^0.0.3",
     "@gui-chat-plugin/music": "^0.0.2",
     "@gui-chat-plugin/othello": "^0.2.2",
+    "@gui-chat-plugin/piano": "github:receptron/GUIChatPluginPiano",
     "@gui-chat-plugin/present3d": "^0.0.3",
     "@gui-chat-plugin/scroll-to-anchor": "^0.1.1",
     "@gui-chat-plugin/set-image-style": "^0.1.1",

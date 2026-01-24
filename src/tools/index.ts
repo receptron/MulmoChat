@@ -3,6 +3,7 @@ import type {
   BackendType,
   FileInputHandler,
   ClipboardImageInputHandler,
+  InputHandler,
 } from "gui-chat-protocol/vue";
 import { v4 as uuidv4 } from "uuid";
 import { getRole, ROLES } from "../config/roles";
@@ -38,6 +39,7 @@ import SwitchRolePlugin from "@gui-chat-plugin/switch-role/vue";
 import SetImageStylePlugin from "@gui-chat-plugin/set-image-style/vue";
 import ScrollToAnchorPlugin from "@gui-chat-plugin/scroll-to-anchor/vue";
 import MindMapPlugin from "@gui-chat-plugin/mindmap/vue";
+import PianoPlugin from "@gui-chat-plugin/piano/vue";
 import AkinatorPlugin from "guichat-plugin-akinator/vue";
 
 const pluginList = [
@@ -70,6 +72,7 @@ const pluginList = [
   SetImageStylePlugin,
   ScrollToAnchorPlugin,
   MindMapPlugin,
+  PianoPlugin,
   AkinatorPlugin,
 ];
 
@@ -258,11 +261,11 @@ export const getToolPlugin: GetToolPluginFn = (name) => {
 export const getFileInputPlugins = () => {
   return pluginList
     .filter((plugin) =>
-      plugin.plugin.inputHandlers?.some((h) => h.type === "file"),
+      plugin.plugin.inputHandlers?.some((h: InputHandler) => h.type === "file"),
     )
     .map((plugin) => {
       const fileHandler = plugin.plugin.inputHandlers!.find(
-        (h) => h.type === "file",
+        (h: InputHandler) => h.type === "file",
       )!;
       return {
         toolName: plugin.plugin.toolDefinition.name,
@@ -277,11 +280,13 @@ export const getFileInputPlugins = () => {
 export const getClipboardImagePlugins = () => {
   return pluginList
     .filter((plugin) =>
-      plugin.plugin.inputHandlers?.some((h) => h.type === "clipboard-image"),
+      plugin.plugin.inputHandlers?.some(
+        (h: InputHandler) => h.type === "clipboard-image",
+      ),
     )
     .map((plugin) => {
       const handler = plugin.plugin.inputHandlers!.find(
-        (h) => h.type === "clipboard-image",
+        (h: InputHandler) => h.type === "clipboard-image",
       )!;
       return {
         toolName: plugin.plugin.toolDefinition.name,
