@@ -500,6 +500,12 @@
   dependencies:
     vue-drawing-canvas "^1.0.14"
 
+"@gui-chat-plugin/drawing-game@github:receptron/GUIChatPluginDrawingGame#main":
+  version "0.1.0"
+  resolved "https://codeload.github.com/receptron/GUIChatPluginDrawingGame/tar.gz/77b9c4a71ffc0e7dafc2eac2554b73d85f37adc3"
+  dependencies:
+    gui-chat-protocol "^0.0.3"
+
 "@gui-chat-plugin/edit-html@^0.1.1":
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/edit-html/-/edit-html-0.1.1.tgz#cd037a791b18149c65e77ecea3ef0aad2a4859b3"
