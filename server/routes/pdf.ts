@@ -8,7 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import { sendApiError } from "../utils/logger";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const router: Router = express.Router();
 

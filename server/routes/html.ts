@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { sendApiError, logApiRequest } from "../utils/logger";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const router: Router = express.Router();
 
