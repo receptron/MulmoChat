@@ -38,11 +38,12 @@
     "benchmark:re-evaluate": "tsx benchmark/src/re-evaluate.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.65.0",
+    "@anthropic-ai/sdk": "^0.71.2",
     "@google/genai": "^1.38.0",
     "@gui-chat-plugin/browse": "^0.1.1",
     "@gui-chat-plugin/camera": "^0.3.0",
     "@gui-chat-plugin/canvas": "^0.3.0",
+    "@gui-chat-plugin/drawing-game": "github:receptron/GUIChatPluginDrawingGame#main",
     "@gui-chat-plugin/edit-html": "^0.1.1",
     "@gui-chat-plugin/edit-image": "^0.3.0",
     "@gui-chat-plugin/exa": "^0.1.2",
@@ -55,7 +56,6 @@
     "@gui-chat-plugin/mulmocast": "^0.0.3",
     "@gui-chat-plugin/music": "^0.0.2",
     "@gui-chat-plugin/othello": "^0.2.2",
-    "@gui-chat-plugin/drawing-game": "github:receptron/GUIChatPluginDrawingGame#main",
     "@gui-chat-plugin/piano": "github:receptron/GUIChatPluginPiano",
     "@gui-chat-plugin/present3d": "^0.0.3",
     "@gui-chat-plugin/scroll-to-anchor": "^0.1.1",
@@ -106,8 +106,8 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.53.1",
+    "typescript-eslint": "^8.54.0",
     "vite": "^7.3.1",
-    "vue-tsc": "^3.2.2"
+    "vue-tsc": "^3.2.4"
   }
 }
