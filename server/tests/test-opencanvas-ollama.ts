@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ quiet: true });
 
 const BASE_URL = process.env.TEST_SERVER_URL ?? "http://localhost:3001";
 

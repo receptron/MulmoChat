@@ -11,7 +11,7 @@ import htmlRouter from "./html";
 import textRouter from "./textLLM";
 import comfyRouter from "./comfyui";
 import imageRouter from "./image";
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const router: Router = express.Router();
 
