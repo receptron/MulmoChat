@@ -2,7 +2,7 @@
 
 MulmoChat を「OS」、プラグインを「LLM Native Application」として捉えた設計ビジョンと開発ロードマップ。
 
-> **注**: このドキュメントは [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) を基盤として、その発展形を記述しています。GUI Chat Protocol で定義されたコアコンセプト（Enhanced Tool Calls、Typed Return Data、Roles、Chat-Centric OS）の上に、エージェント自律実行、MCP 統合、リソース参照などの新機能を追加する方向性を示しています。
+> **注**: このドキュメントは [GUI Chat Protocol](https://github.com/receptron/gui-chat-protocol/blob/main/spec/GUI_CHAT_PROTOCOL.md) を基盤として、その発展形を記述しています。GUI Chat Protocol で定義されたコアコンセプト（Enhanced Tool Calls、Typed Return Data、Roles、Chat-Centric OS）の上に、エージェント自律実行、MCP 統合、リソース参照などの新機能を追加する方向性を示しています。
 
 ## 目次
 
@@ -1727,7 +1727,7 @@ gui-chat-protocol/
 
 ## GUI Chat Protocol との対応
 
-このビジョンドキュメントは [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) の発展形です。
+このビジョンドキュメントは [GUI Chat Protocol](https://github.com/receptron/gui-chat-protocol/blob/main/spec/GUI_CHAT_PROTOCOL.md) の発展形です。
 
 ### 用語の対応
 
@@ -1790,7 +1790,7 @@ GUI Chat Protocol の基盤の上に、以下を追加:
 
 ## 関連ドキュメント
 
-- [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) - 基盤となるプロトコル仕様
+- [GUI Chat Protocol](https://github.com/receptron/gui-chat-protocol/blob/main/spec/GUI_CHAT_PROTOCOL.md) - 基盤となるプロトコル仕様
 - [プラグインアーキテクチャ](./plugin-architecture.ja.md)
 - [プラグイン開発ガイド](./plugin-development-guide.ja.md)
 - [プラグイン抽出ガイド](./plugin-extraction-guide.ja.md)

@@ -2,7 +2,7 @@
 
 Design vision and development roadmap viewing MulmoChat as an "OS" and plugins as "LLM Native Applications".
 
-> **Note**: This document builds upon the [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) as its foundation. It describes extensions to the core concepts defined in GUI Chat Protocol (Enhanced Tool Calls, Typed Return Data, Roles, Chat-Centric OS), adding new capabilities such as agentic execution, MCP integration, and resource references.
+> **Note**: This document builds upon the [GUI Chat Protocol](https://github.com/receptron/gui-chat-protocol/blob/main/spec/GUI_CHAT_PROTOCOL.md) as its foundation. It describes extensions to the core concepts defined in GUI Chat Protocol (Enhanced Tool Calls, Typed Return Data, Roles, Chat-Centric OS), adding new capabilities such as agentic execution, MCP integration, and resource references.
 
 ## Table of Contents
 
@@ -1726,7 +1726,7 @@ Plugin core parts work on host apps other than MulmoChat.
 
 ## GUI Chat Protocol Correspondence
 
-This vision document is an extension of [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md).
+This vision document is an extension of [GUI Chat Protocol](https://github.com/receptron/gui-chat-protocol/blob/main/spec/GUI_CHAT_PROTOCOL.md).
 
 ### Terminology Mapping
 
@@ -1789,7 +1789,7 @@ These are concrete implementation directions to realize GUI Chat Protocol's "Cha
 
 ## Related Documents
 
-- [GUI Chat Protocol](../GUI_CHAT_PROTOCOL.md) - Foundation protocol specification
+- [GUI Chat Protocol](https://github.com/receptron/gui-chat-protocol/blob/main/spec/GUI_CHAT_PROTOCOL.md) - Foundation protocol specification
 - [Plugin Architecture](./plugin-architecture.md)
 - [Plugin Development Guide](./plugin-development-guide.md)
 - [Plugin Extraction Guide](./plugin-extraction-guide.md)
