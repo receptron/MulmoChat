@@ -40,7 +40,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/genai": "^1.38.0",
-    "@gui-chat-plugin/avatar": "0.0.2",
+    "@gui-chat-plugin/avatar": "0.0.3",
     "@gui-chat-plugin/browse": "^0.1.1",
     "@gui-chat-plugin/camera": "^0.3.0",
     "@gui-chat-plugin/canvas": "^0.3.0",

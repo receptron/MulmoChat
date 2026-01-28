@@ -474,13 +474,13 @@
     protobufjs "^7.5.3"
     yargs "^17.7.2"
 
-"@gui-chat-plugin/avatar@0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/avatar/-/avatar-0.0.2.tgz#6f6d5b02905eb6f00d75c3a99bfe9b4d77ea2847"
-  integrity sha512-UUvuU5tjiD6iYeZB8GrMh66Oc7s0k4HvCTIEtwcuXRaTpMVoPFdwQcwVwVCUY/HwAyE0kgsIV+FADnWk0yZgbg==
+"@gui-chat-plugin/avatar@0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/avatar/-/avatar-0.0.3.tgz#d57e5ccf00036cabf1d9669b40a19341ff80b2cf"
+  integrity sha512-6kdS1nCR1UP/OrClX5l71G1z8xJAGK1ZqKAXWtv7+A7T0VzJqGX8xpcRFV4Me4q4H92I4fj/iUhEz7hTWG88Jg==
   dependencies:
     "@pixiv/three-vrm" "^3.3.3"
-    gui-chat-protocol "file:../../../Library/Caches/Yarn/v6/npm-@gui-chat-plugin-avatar-0.0.2-6f6d5b02905eb6f00d75c3a99bfe9b4d77ea2847-integrity/node_modules/@gui-chat-plugin/gui-chat-protocol"
+    gui-chat-protocol "^0.0.4"
     three "^0.174.0"
 
 "@gui-chat-plugin/browse@^0.1.1":
@@ -3558,9 +3558,6 @@ gtoken@^8.0.0:
     gaxios "^7.0.0"
     jws "^4.0.0"
 
-gui-chat-protocol@0.0.4, "gui-chat-protocol@file:../gui-chat-protocol":
-  version "0.0.4"
-
 gui-chat-protocol@^0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-0.0.1.tgz#d0770d03a6669b075473a0d8753ca9506f718dcd"
@@ -3570,6 +3567,11 @@ gui-chat-protocol@^0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-0.0.3.tgz#0e86a15ade6c46ed698abaa6ae6aed5edfdd8dde"
   integrity sha512-usoH2h4rONFl4E54y1Cl9O3WXS73q3XVs5aiCTAxJa+462nW6QVGPPOGyeeieFqMmjCHNWBfvtHAklg+D+eFRA==
+
+gui-chat-protocol@^0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-0.0.4.tgz#dd8c0c4a979f06f87cfc406760491834f1d4ce69"
+  integrity sha512-TsmO0vRnKUl0zWXbZlj1u35JRz0sum2JtzsKrTKtT+yJt0mHBVRX+o8McIihACTnlXVssjJ9bxYiH+k17S5BhQ==
 
 "guichat-plugin-akinator@github:isamu/AkinatorGame":
   version "0.1.0"
