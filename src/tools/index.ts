@@ -42,6 +42,7 @@ import MindMapPlugin from "@gui-chat-plugin/mindmap/vue";
 import PianoPlugin from "@gui-chat-plugin/piano/vue";
 import DrawingGamePlugin from "@gui-chat-plugin/drawing-game/vue";
 import AkinatorPlugin from "guichat-plugin-akinator/vue";
+import AvatarPlugin from "@gui-chat-plugin/avatar/vue";
 
 const pluginList = [
   // External plugins from npm packages
@@ -76,6 +77,7 @@ const pluginList = [
   PianoPlugin,
   DrawingGamePlugin,
   AkinatorPlugin,
+  AvatarPlugin,
 ];
 
 export const getPluginList = () => pluginList;

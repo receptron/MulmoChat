@@ -481,6 +481,19 @@ export function useGoogleLiveSession(
       // Initialize audio stream manager
       googleLive.audioManager = new AudioStreamManager();
 
+      // Set up audio playback event handlers for avatar lip-sync, visual feedback, etc.
+      console.log("[Avatar Debug] Google: Setting up audioManager handlers, onAudioPlaybackStarted exists:", !!handlers.onAudioPlaybackStarted);
+      googleLive.audioManager.setPlaybackEventHandlers({
+        onPlaybackStarted: () => {
+          console.log("[Avatar Debug] Google: audioManager callback onPlaybackStarted called");
+          handlers.onAudioPlaybackStarted?.();
+        },
+        onPlaybackStopped: () => {
+          console.log("[Avatar Debug] Google: audioManager callback onPlaybackStopped called");
+          handlers.onAudioPlaybackStopped?.();
+        },
+      });
+
       // NOW establish WebSocket connection (after mic is ready)
       const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${startResponse.value.googleApiKey}`;
 

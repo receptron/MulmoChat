@@ -96,6 +96,7 @@
             :google-map-key="startResponse?.googleMapKey || null"
             :set-mute="setMute"
             :plugin-configs="userPreferences.pluginConfigs"
+            :is-audio-playing="isAudioPlaying"
             @update-result="handleUpdateResult"
           />
           <div
@@ -517,6 +518,9 @@ function updateToolCallError(msg: any, errorMessage: string): void {
 const isListenerMode = computed(() => userPreferences.roleId === "listener");
 const lastSpeechStartedTime = ref<number | null>(null);
 
+// LLM audio playback state (for avatar lip-sync, visual feedback, etc.)
+const isAudioPlaying = ref(false);
+
 registerEventHandlers({
   onToolCall: async (msg, id, argStr) => {
     // Track tool call in history for debugging
@@ -563,6 +567,16 @@ registerEventHandlers({
   },
   onError: (error) => {
     console.error("Session error", error);
+  },
+
+  // LLM audio playback events (for avatar lip-sync, visual feedback, etc.)
+  onAudioPlaybackStarted: () => {
+    console.log("[Avatar Debug] HomeView: isAudioPlaying = true");
+    isAudioPlaying.value = true;
+  },
+  onAudioPlaybackStopped: () => {
+    console.log("[Avatar Debug] HomeView: isAudioPlaying = false");
+    isAudioPlaying.value = false;
   },
 });
 

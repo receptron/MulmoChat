@@ -9,6 +9,17 @@ import {
 /**
  * Manages audio capture from microphone and playback for Google Live API
  */
+/**
+ * Audio playback event handlers for external integration
+ * Use these for avatar lip-sync, visual feedback, etc.
+ */
+export interface AudioPlaybackEventHandlers {
+  // Called when LLM audio playback starts
+  onPlaybackStarted?: () => void;
+  // Called when LLM audio playback stops (queue empty and all buffers finished)
+  onPlaybackStopped?: () => void;
+}
+
 export class AudioStreamManager {
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
@@ -20,6 +31,17 @@ export class AudioStreamManager {
   private nextPlaybackTime = 0;
   private playbackGainNode: GainNode | null = null;
   private scheduledBuffersCount = 0;
+
+  // Event handlers for LLM audio playback (for avatar lip-sync, visual feedback)
+  private playbackEventHandlers: AudioPlaybackEventHandlers = {};
+
+  /**
+   * Set event handlers for audio playback events
+   * @param handlers - Callbacks for playback started/stopped events
+   */
+  setPlaybackEventHandlers(handlers: AudioPlaybackEventHandlers): void {
+    this.playbackEventHandlers = handlers;
+  }
 
   /**
    * Start capturing audio from microphone
@@ -124,6 +146,7 @@ export class AudioStreamManager {
 
         // Auto-start playback if not already playing
         if (!this.isPlayingAudio) {
+          console.log("[Avatar Debug] Google: queueAudio triggering startPlayback");
           this.startPlayback();
         }
       }
@@ -155,6 +178,10 @@ export class AudioStreamManager {
     this.isPlayingAudio = true;
     this.nextPlaybackTime = this.audioContext.currentTime;
     this.scheduledBuffersCount = 0;
+
+    // Notify that LLM audio playback has started (for avatar lip-sync, etc.)
+    console.log("[Avatar Debug] Google: Audio playback STARTED");
+    this.playbackEventHandlers.onPlaybackStarted?.();
 
     this.playNextChunk(sampleRate);
   }
@@ -255,6 +282,12 @@ export class AudioStreamManager {
     if (this.playbackQueue.length > 0 || this.scheduledBuffersCount > 0) {
       // Check again after a short delay
       setTimeout(() => this.playNextChunk(sampleRate), 10);
+    } else {
+      // Playback finished: queue empty and all buffers completed
+      // Notify that LLM audio playback has stopped (for avatar lip-sync, etc.)
+      this.isPlayingAudio = false;
+      console.log("[Avatar Debug] Google: Audio playback STOPPED (queue empty)");
+      this.playbackEventHandlers.onPlaybackStopped?.();
     }
   }
 
@@ -262,9 +295,15 @@ export class AudioStreamManager {
    * Stop playback
    */
   stopPlayback(): void {
+    const wasPlaying = this.isPlayingAudio;
     this.isPlayingAudio = false;
     this.playbackQueue = [];
     this.scheduledBuffersCount = 0;
+
+    // Notify that LLM audio playback has stopped (for avatar lip-sync, etc.)
+    if (wasPlaying) {
+      this.playbackEventHandlers.onPlaybackStopped?.();
+    }
 
     if (this.playbackGainNode) {
       this.playbackGainNode.disconnect();
