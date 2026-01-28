@@ -482,14 +482,21 @@ export function useGoogleLiveSession(
       googleLive.audioManager = new AudioStreamManager();
 
       // Set up audio playback event handlers for avatar lip-sync, visual feedback, etc.
-      console.log("[Avatar Debug] Google: Setting up audioManager handlers, onAudioPlaybackStarted exists:", !!handlers.onAudioPlaybackStarted);
+      console.log(
+        "[Avatar Debug] Google: Setting up audioManager handlers, onAudioPlaybackStarted exists:",
+        !!handlers.onAudioPlaybackStarted,
+      );
       googleLive.audioManager.setPlaybackEventHandlers({
         onPlaybackStarted: () => {
-          console.log("[Avatar Debug] Google: audioManager callback onPlaybackStarted called");
+          console.log(
+            "[Avatar Debug] Google: audioManager callback onPlaybackStarted called",
+          );
           handlers.onAudioPlaybackStarted?.();
         },
         onPlaybackStopped: () => {
-          console.log("[Avatar Debug] Google: audioManager callback onPlaybackStopped called");
+          console.log(
+            "[Avatar Debug] Google: audioManager callback onPlaybackStopped called",
+          );
           handlers.onAudioPlaybackStopped?.();
         },
       });

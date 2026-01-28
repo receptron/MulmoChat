@@ -146,7 +146,9 @@ export class AudioStreamManager {
 
         // Auto-start playback if not already playing
         if (!this.isPlayingAudio) {
-          console.log("[Avatar Debug] Google: queueAudio triggering startPlayback");
+          console.log(
+            "[Avatar Debug] Google: queueAudio triggering startPlayback",
+          );
           this.startPlayback();
         }
       }
@@ -286,7 +288,9 @@ export class AudioStreamManager {
       // Playback finished: queue empty and all buffers completed
       // Notify that LLM audio playback has stopped (for avatar lip-sync, etc.)
       this.isPlayingAudio = false;
-      console.log("[Avatar Debug] Google: Audio playback STOPPED (queue empty)");
+      console.log(
+        "[Avatar Debug] Google: Audio playback STOPPED (queue empty)",
+      );
       this.playbackEventHandlers.onPlaybackStopped?.();
     }
   }
