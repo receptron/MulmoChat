@@ -14,8 +14,18 @@ export interface RealtimeSessionEventHandlers {
   onTextCompleted?: () => void;
   onConversationStarted?: () => void;
   onConversationFinished?: () => void;
+
+  // User speech events (microphone input detection)
+  // Fired when the user starts/stops speaking into the microphone
   onSpeechStarted?: () => void;
   onSpeechStopped?: () => void;
+
+  // LLM audio playback events (text-to-speech output)
+  // Fired when the LLM's voice response starts/stops playing
+  // Use these for avatar lip-sync, visual feedback, etc.
+  onAudioPlaybackStarted?: () => void;
+  onAudioPlaybackStopped?: () => void;
+
   onError?: (error: unknown) => void;
 }
 
@@ -78,6 +88,9 @@ export function useRealtimeSession(
   const processedToolCalls = new Map<string, string>();
   const remoteAudioElement = shallowRef<HTMLAudioElement | null>(null);
 
+  // Track LLM audio playback state for lip-sync and visual feedback
+  let isAudioPlaying = false;
+
   const webrtc: WebRtcState = {
     pc: null,
     dc: null,
@@ -113,6 +126,9 @@ export function useRealtimeSession(
       console.warn("Invalid message format:", msg);
       return;
     }
+
+    // Debug: log all message types to see what's coming from OpenAI
+    console.log("[Avatar Debug] OpenAI message type:", msg.type);
 
     const id = msg.id || msg.call_id;
 
@@ -168,6 +184,26 @@ export function useRealtimeSession(
         break;
       case "input_audio_buffer.speech_stopped":
         handlers.onSpeechStopped?.();
+        break;
+
+      // LLM audio playback events (for avatar lip-sync, visual feedback)
+      // output_audio_buffer.started: Audio playback has started
+      // output_audio_buffer.stopped: Audio playback finished (actual end of playback)
+      // output_audio_buffer.cleared: Audio was interrupted (user spoke)
+      case "output_audio_buffer.started":
+        if (!isAudioPlaying) {
+          isAudioPlaying = true;
+          console.log("[Avatar Debug] OpenAI: Audio playback STARTED");
+          handlers.onAudioPlaybackStarted?.();
+        }
+        break;
+      case "output_audio_buffer.stopped":
+      case "output_audio_buffer.cleared":
+        if (isAudioPlaying) {
+          isAudioPlaying = false;
+          console.log("[Avatar Debug] OpenAI: Audio playback STOPPED");
+          handlers.onAudioPlaybackStopped?.();
+        }
         break;
     }
   };
