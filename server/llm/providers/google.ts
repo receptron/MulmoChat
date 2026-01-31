@@ -1,4 +1,12 @@
-import { GoogleGenAI, type GenerateContentParameters } from "@google/genai";
+import {
+  FunctionCallingConfigMode,
+  GoogleGenAI,
+  type FunctionCall,
+  type FunctionDeclaration,
+  type GenerateContentConfig,
+  type GenerateContentParameters,
+  type Schema,
+} from "@google/genai";
 import {
   TextGenerationError,
   type ProviderGenerateParams,
@@ -92,23 +100,6 @@ function toGeminiMessages(messages: TextMessage[]): GeminiContent[] {
   });
 }
 
-function extractTextFromCandidates(candidates: unknown): string {
-  if (!Array.isArray(candidates)) return "";
-  for (const candidate of candidates) {
-    const content = (
-      candidate as { content?: { parts?: Array<{ text?: string }> } }
-    ).content;
-    const parts = content?.parts;
-    if (!Array.isArray(parts)) continue;
-    for (const part of parts) {
-      if (part?.text) {
-        return part.text;
-      }
-    }
-  }
-  return "";
-}
-
 function extractToolCallsFromCandidates(candidates: unknown): ToolCall[] {
   const toolCalls: ToolCall[] = [];
   if (!Array.isArray(candidates)) return toolCalls;
@@ -168,17 +159,19 @@ export async function generateWithGoogle(
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const contents = toGeminiMessages(params.conversationMessages);
+  const contents = toGeminiMessages(params.messages);
 
-  const generationConfigEntries: Array<[string, number]> = [];
+  // Build config object for generation settings, tools, and toolConfig
+  const config: GenerateContentConfig = {};
+
   if (params.maxTokens !== undefined) {
-    generationConfigEntries.push(["maxOutputTokens", params.maxTokens]);
+    config.maxOutputTokens = params.maxTokens;
   }
   if (params.temperature !== undefined) {
-    generationConfigEntries.push(["temperature", params.temperature]);
+    config.temperature = params.temperature;
   }
   if (params.topP !== undefined) {
-    generationConfigEntries.push(["topP", params.topP]);
+    config.topP = params.topP;
   }
 
   const requestBody: GenerateContentParameters = {
@@ -186,51 +179,43 @@ export async function generateWithGoogle(
     contents,
   };
 
-  // Build config object for generation settings, tools, and toolConfig
-  const config: Record<string, unknown> = {};
-
   // Use systemInstruction parameter for system prompts (Gemini-specific)
   if (params.systemPrompt) {
     config.systemInstruction = params.systemPrompt;
   }
 
-  if (generationConfigEntries.length > 0) {
-    config.generationConfig = Object.fromEntries(generationConfigEntries);
-  }
-
   // Add tools if provided - tools and toolConfig go inside config object
   if (params.tools !== undefined && params.tools.length > 0) {
-    config.tools = [
-      {
-        functionDeclarations: params.tools.map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-        })),
-      },
-    ];
+    const functionDeclarations: FunctionDeclaration[] = params.tools.map(
+      (tool) => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters as Schema,
+      }),
+    );
+    config.tools = [{ functionDeclarations: functionDeclarations }];
 
     // Configure tool calling mode
-    const allowedFunctionNames = params.tools.map((tool) => tool.name);
+    const allowedFunctionNames: string[] = params.tools.map(
+      (tool) => tool.name,
+    );
     config.toolConfig = {
       functionCallingConfig: {
-        mode: "ANY", // AUTO, ANY, or NONE
+        mode: FunctionCallingConfigMode.ANY, // AUTO, ANY, or NONE
         allowedFunctionNames, // Explicitly list which functions can be called
       },
     };
   }
 
   // Add config to request body if it has any settings
-  if (Object.keys(config).length > 0) {
-    requestBody.config = config as GenerateContentParameters["config"];
-  }
+  requestBody.config = config;
 
   // generateContent automatically handles thought signatures when full conversation
   // history is provided (SDK v1.33.0+). Thought signatures are preserved in the
   // response and automatically validated on subsequent requests.
   const response = await ai.models.generateContent(requestBody);
 
-  const text = extractTextFromCandidates(response.candidates) ?? "";
+  const text = response.text || "";
   const toolCalls = extractToolCallsFromCandidates(response.candidates);
 
   const usageMetadata = response.usageMetadata;
