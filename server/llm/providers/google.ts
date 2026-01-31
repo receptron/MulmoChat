@@ -1,7 +1,6 @@
 import {
   FunctionCallingConfigMode,
   GoogleGenAI,
-  type FunctionCall,
   type FunctionDeclaration,
   type GenerateContentConfig,
   type GenerateContentParameters,
