@@ -1,7 +1,6 @@
 import {
   FunctionCallingConfigMode,
   GoogleGenAI,
-  type FunctionDeclaration,
   type GenerateContentConfig,
   type GenerateContentParameters,
   type Schema,
@@ -185,14 +184,15 @@ export async function generateWithGoogle(
 
   // Add tools if provided - tools and toolConfig go inside config object
   if (params.tools !== undefined && params.tools.length > 0) {
-    const functionDeclarations: FunctionDeclaration[] = params.tools.map(
-      (tool) => ({
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters as Schema,
-      }),
-    );
-    config.tools = [{ functionDeclarations: functionDeclarations }];
+    config.tools = [
+      {
+        functionDeclarations: params.tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters as Schema,
+        })),
+      },
+    ];
 
     // Configure tool calling mode
     const allowedFunctionNames: string[] = params.tools.map(
