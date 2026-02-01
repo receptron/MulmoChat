@@ -157,7 +157,7 @@ export async function generateWithGoogle(
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const contents = toGeminiMessages(params.messages);
+  const contents = toGeminiMessages(params.conversationMessages);
 
   // Build config object for generation settings, tools, and toolConfig
   const config: GenerateContentConfig = {};
