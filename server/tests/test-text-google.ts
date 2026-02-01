@@ -25,7 +25,7 @@ async function main(): Promise<void> {
         { role: "system", content: "Respond in exactly three numbered items." },
         { role: "user", content: prompt },
       ],
-      maxTokens: 200,
+      maxTokens: 400,
     }),
   });
 
