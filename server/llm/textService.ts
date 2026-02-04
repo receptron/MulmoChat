@@ -53,6 +53,7 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       "nemotron-3-nano",
       "qwen3-coder",
       "glm-4.7-flash",
+      "frob/qwen3-coder-next",
       // "functiongemma",
       // "deepseek-r1:32b", no tools
       // "gemma3:27b", no tools
