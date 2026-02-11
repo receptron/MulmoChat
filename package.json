@@ -87,6 +87,7 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/vite": "^4.1.18",
     "@types/cors": "^2.8.19",
@@ -97,10 +98,11 @@
     "@vitejs/plugin-vue": "^6.0.4",
     "autoprefixer": "^10.4.24",
     "concurrently": "^9.2.1",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-sonarjs": "^3.0.7",
+    "globals": "^17.3.0",
     "postcss": "^8.4.38",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.1.18",
