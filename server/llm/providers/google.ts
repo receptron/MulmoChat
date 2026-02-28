@@ -1,8 +1,10 @@
 import {
   FunctionCallingConfigMode,
   GoogleGenAI,
+  type Content,
   type GenerateContentConfig,
   type GenerateContentParameters,
+  type Part,
   type Schema,
 } from "@google/genai";
 import {
@@ -15,30 +17,14 @@ import {
 
 type GeminiRole = "user" | "model";
 
-type GeminiPart =
-  | { text: string }
-  | {
-      functionCall: { name: string; args: Record<string, unknown> };
-      thoughtSignature?: string; // Gemini 3 thought signature
-    }
-  | {
-      functionResponse: { name: string; response: Record<string, unknown> };
-      thoughtSignature?: string; // Gemini 3 thought signature
-    };
-
-type GeminiContent = {
-  role: GeminiRole;
-  parts: GeminiPart[];
-};
-
 function toGeminiRole(role: TextMessage["role"]): GeminiRole {
   return role === "assistant" ? "model" : "user";
 }
 
-function toGeminiMessages(messages: TextMessage[]): GeminiContent[] {
+function toGeminiMessages(messages: TextMessage[]): Content[] {
   return messages.map((message, index) => {
     const role = toGeminiRole(message.role);
-    const parts: GeminiPart[] = [];
+    const parts: Part[] = [];
 
     // Handle tool result messages
     if (message.role === "tool" && message.tool_call_id) {
@@ -68,7 +54,7 @@ function toGeminiMessages(messages: TextMessage[]): GeminiContent[] {
           response: { result: message.content },
         },
         // Include thought signature if found (critical for Gemini 3 function calling)
-        ...(thoughtSignature ? { thoughtSignature } : {}),
+        thoughtSignature,
       });
     }
     // Handle assistant messages with tool calls
@@ -83,9 +69,7 @@ function toGeminiMessages(messages: TextMessage[]): GeminiContent[] {
             name: toolCall.name,
             args: JSON.parse(toolCall.arguments),
           },
-          ...(toolCall.thoughtSignature
-            ? { thoughtSignature: toolCall.thoughtSignature }
-            : {}),
+          thoughtSignature: toolCall.thoughtSignature,
         });
       }
     }
@@ -106,10 +90,7 @@ function extractToolCallsFromCandidates(candidates: unknown): ToolCall[] {
     const content = (
       candidate as {
         content?: {
-          parts?: Array<{
-            functionCall?: { name: string; args: Record<string, unknown> };
-            thoughtSignature?: string;
-          }>;
+          parts?: Part[];
         };
       }
     ).content;
@@ -120,7 +101,7 @@ function extractToolCallsFromCandidates(candidates: unknown): ToolCall[] {
       if (part?.functionCall) {
         const toolCall: ToolCall = {
           id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          name: part.functionCall.name,
+          name: part.functionCall.name || "",
           arguments: JSON.stringify(part.functionCall.args),
         };
 
@@ -155,10 +136,6 @@ export async function generateWithGoogle(
     );
   }
 
-  const ai = new GoogleGenAI({ apiKey });
-
-  const contents = toGeminiMessages(params.conversationMessages);
-
   // Build config object for generation settings, tools, and toolConfig
   const config: GenerateContentConfig = {};
 
@@ -171,11 +148,6 @@ export async function generateWithGoogle(
   if (params.topP !== undefined) {
     config.topP = params.topP;
   }
-
-  const requestBody: GenerateContentParameters = {
-    model: normalizeModelId(params.model),
-    contents,
-  };
 
   // Use systemInstruction parameter for system prompts (Gemini-specific)
   if (params.systemPrompt) {
@@ -206,12 +178,16 @@ export async function generateWithGoogle(
     };
   }
 
-  // Add config to request body if it has any settings
-  requestBody.config = config;
+  const requestBody: GenerateContentParameters = {
+    model: normalizeModelId(params.model),
+    contents: toGeminiMessages(params.conversationMessages),
+    config,
+  };
 
   // generateContent automatically handles thought signatures when full conversation
   // history is provided (SDK v1.33.0+). Thought signatures are preserved in the
   // response and automatically validated on subsequent requests.
+  const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent(requestBody);
 
   const text = response.text || "";
