@@ -141,7 +141,7 @@ async function getFunctionCallingConfig(
     const toolList = tools
       .map(
         (t, i) =>
-          `{"index":${i},"description":${JSON.stringify(t.description)}}}`,
+          `{"index":${i},"description":${JSON.stringify(t.description)}}`,
       )
       .join("\n");
     const message: TextMessage[] = [
