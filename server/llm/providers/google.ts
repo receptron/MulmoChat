@@ -151,19 +151,20 @@ async function getFunctionCallingConfig(
         content: `Gemini recommends using ${MAX_FUNCTION_CALLINGS} or fewer function callings, but more than that have been passed. Based on the current context, please return the indices of the necessary function callings, ensuring there are ${MAX_FUNCTION_CALLINGS} or fewer.\nList of function callings: [\n${toolList}\n]`,
       },
     ];
-    const response = await ai.models.generateContent({
-      model: normalizeModelId(model),
-      contents: toGeminiMessages(message),
-      config: {
-        ...config,
-        responseMimeType: "application/json",
-        responseJsonSchema: {
-          type: "array",
-          items: { type: "integer" },
-        },
-      },
-    });
     try {
+      const response = await ai.models.generateContent({
+        model: normalizeModelId(model),
+        contents: toGeminiMessages(message),
+        config: {
+          ...config,
+          responseMimeType: "application/json",
+          responseJsonSchema: {
+            type: "array",
+            items: { type: "integer" },
+          },
+        },
+      });
+
       const parsed =
         response.text === undefined ? [] : JSON.parse(response.text);
       // Validate indices: must be numbers within bounds, deduplicated, and limited to max
@@ -174,7 +175,7 @@ async function getFunctionCallingConfig(
         )
         .slice(0, MAX_FUNCTION_CALLINGS);
     } catch {
-      // Fallback to first MAX_FUNCTION_CALLINGS tools if parsing fails
+      // Fallback if selector call or parsing fails
       indices = tools.slice(0, MAX_FUNCTION_CALLINGS).map((_, i) => i);
     }
     console.log(
