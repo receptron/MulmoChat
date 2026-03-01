@@ -90,7 +90,7 @@ router.post(
     const model =
       backend === "claude"
         ? "claude-sonnet-4-20250514"
-        : "models/gemini-3-pro-preview";
+        : "models/gemini-3.1-pro-preview";
     logApiRequest("generate-html", {
       path: "/api/generate-html",
       backend,
@@ -183,7 +183,7 @@ Return ONLY the HTML code, nothing else. Do not include markdown code blocks or 
         const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
         const response = await ai.models.generateContent({
-          model: "models/gemini-3-pro-preview",
+          model: "models/gemini-3.1-pro-preview",
           contents: [{ text: `${systemPrompt}\n\n${userContent}` }],
           config: {
             maxOutputTokens: 8192,
