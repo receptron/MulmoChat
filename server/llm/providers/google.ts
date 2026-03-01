@@ -3,7 +3,6 @@ import {
   GoogleGenAI,
   type Content,
   type GenerateContentConfig,
-  type GenerateContentParameters,
   type Part,
   type Schema,
 } from "@google/genai";
@@ -125,6 +124,60 @@ function normalizeModelId(model: string): string {
   return `models/${model}`;
 }
 
+async function getFunctionCallingConfig(
+  ai: GoogleGenAI,
+  config: GenerateContentConfig,
+  params: ProviderGenerateParams,
+) {
+  const { tools, conversationMessages, model } = params;
+  if (tools === undefined) {
+    return { functionDeclarations: [], allowedFunctionNames: [] };
+  }
+
+  // According to official documentation (https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#native-tools), we should specify no more than 20 function calls.
+  const MAX_FUNCTION_CALLINGS = 20;
+  let indices: number[];
+  if (tools.length > MAX_FUNCTION_CALLINGS) {
+    const toolList = tools
+      .map((t, i) => `{"index":${i},"description":"${t.description}"}`)
+      .join("\n");
+    const message: TextMessage[] = [
+      ...conversationMessages,
+      {
+        role: "user",
+        content: `Gemini recommends using ${MAX_FUNCTION_CALLINGS} or fewer function callings, but more than that have been passed. Based on the current context, please return the indices of the necessary function callings, ensuring there are 20 or fewer.\nList of function callings: [\n${toolList}\n]`,
+      },
+    ];
+    const response = await ai.models.generateContent({
+      model: normalizeModelId(model),
+      contents: toGeminiMessages(message),
+      config: {
+        ...config,
+        responseMimeType: "application/json",
+        responseJsonSchema: {
+          type: "array",
+          items: { type: "integer" },
+        },
+      },
+    });
+    indices = response.text === undefined ? [] : JSON.parse(response.text);
+    console.log(
+      `Gemini recommends using ${MAX_FUNCTION_CALLINGS} or fewer function callings. We use only ${indices.map((i) => tools[i].name)}.`,
+    );
+  } else {
+    indices = tools.map((_, i) => i);
+  }
+
+  return {
+    functionDeclarations: indices.map((i) => ({
+      name: tools[i].name,
+      description: tools[i].description,
+      parameters: tools[i].parameters as Schema,
+    })),
+    allowedFunctionNames: indices.map((i) => tools[i].name),
+  };
+}
+
 export async function generateWithGoogle(
   params: ProviderGenerateParams,
 ): Promise<TextGenerationResult> {
@@ -155,40 +208,28 @@ export async function generateWithGoogle(
   }
 
   // Add tools if provided - tools and toolConfig go inside config object
+  const ai = new GoogleGenAI({ apiKey });
   if (params.tools !== undefined && params.tools.length > 0) {
-    config.tools = [
-      {
-        functionDeclarations: params.tools.map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters as Schema,
-        })),
-      },
-    ];
-
-    // Configure tool calling mode
-    const allowedFunctionNames: string[] = params.tools.map(
-      (tool) => tool.name,
-    );
-    config.toolConfig = {
-      functionCallingConfig: {
-        mode: FunctionCallingConfigMode.ANY, // AUTO, ANY, or NONE
-        allowedFunctionNames, // Explicitly list which functions can be called
-      },
-    };
+    const ret = await getFunctionCallingConfig(ai, config, params);
+    if (ret) {
+      config.tools = [{ functionDeclarations: ret.functionDeclarations }];
+      config.toolConfig = {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.ANY, // AUTO, ANY, or NONE
+          allowedFunctionNames: ret.allowedFunctionNames, // Explicitly list which functions can be called
+        },
+      };
+    }
   }
-
-  const requestBody: GenerateContentParameters = {
-    model: normalizeModelId(params.model),
-    contents: toGeminiMessages(params.conversationMessages),
-    config,
-  };
 
   // generateContent automatically handles thought signatures when full conversation
   // history is provided (SDK v1.33.0+). Thought signatures are preserved in the
   // response and automatically validated on subsequent requests.
-  const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent(requestBody);
+  const response = await ai.models.generateContent({
+    model: normalizeModelId(params.model),
+    contents: toGeminiMessages(params.conversationMessages),
+    config,
+  });
 
   const text = response.text || "";
   const toolCalls = extractToolCallsFromCandidates(response.candidates);
