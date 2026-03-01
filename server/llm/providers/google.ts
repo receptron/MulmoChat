@@ -139,13 +139,16 @@ async function getFunctionCallingConfig(
   let indices: number[];
   if (tools.length > MAX_FUNCTION_CALLINGS) {
     const toolList = tools
-      .map((t, i) => `{"index":${i},"description":"${t.description}"}`)
+      .map(
+        (t, i) =>
+          `{"index":${i},"description":${JSON.stringify(t.description)}}}`,
+      )
       .join("\n");
     const message: TextMessage[] = [
       ...conversationMessages,
       {
         role: "user",
-        content: `Gemini recommends using ${MAX_FUNCTION_CALLINGS} or fewer function callings, but more than that have been passed. Based on the current context, please return the indices of the necessary function callings, ensuring there are 20 or fewer.\nList of function callings: [\n${toolList}\n]`,
+        content: `Gemini recommends using ${MAX_FUNCTION_CALLINGS} or fewer function callings, but more than that have been passed. Based on the current context, please return the indices of the necessary function callings, ensuring there are ${MAX_FUNCTION_CALLINGS} or fewer.\nList of function callings: [\n${toolList}\n]`,
       },
     ];
     const response = await ai.models.generateContent({
