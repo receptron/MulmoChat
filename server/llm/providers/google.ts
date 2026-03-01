@@ -3,7 +3,6 @@ import {
   GoogleGenAI,
   type Content,
   type GenerateContentConfig,
-  type GenerateContentParameters,
   type Part,
   type Schema,
 } from "@google/genai";
@@ -100,7 +99,7 @@ function extractToolCallsFromCandidates(candidates: unknown): ToolCall[] {
     for (const part of parts) {
       if (part?.functionCall) {
         const toolCall: ToolCall = {
-          id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `call_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           name: part.functionCall.name || "",
           arguments: JSON.stringify(part.functionCall.args),
         };
@@ -123,6 +122,77 @@ function normalizeModelId(model: string): string {
     return model;
   }
   return `models/${model}`;
+}
+
+async function getFunctionCallingConfig(
+  ai: GoogleGenAI,
+  config: GenerateContentConfig,
+  params: ProviderGenerateParams,
+) {
+  const { tools, conversationMessages, model } = params;
+  if (tools === undefined) {
+    return { functionDeclarations: [], allowedFunctionNames: [] };
+  }
+
+  // According to official documentation (https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#native-tools), we should specify no more than 20 function calls.
+  const MAX_FUNCTION_CALLINGS = 20;
+  let indices: number[];
+  if (tools.length > MAX_FUNCTION_CALLINGS) {
+    const toolList = tools
+      .map(
+        (t, i) =>
+          `{"index":${i},"description":${JSON.stringify(t.description)}}`,
+      )
+      .join("\n");
+    const message: TextMessage[] = [
+      ...conversationMessages,
+      {
+        role: "user",
+        content: `Gemini recommends using ${MAX_FUNCTION_CALLINGS} or fewer function callings, but more than that have been passed. Based on the current context, please return the indices of the necessary function callings, ensuring there are ${MAX_FUNCTION_CALLINGS} or fewer.\nList of function callings: [\n${toolList}\n]`,
+      },
+    ];
+    try {
+      const response = await ai.models.generateContent({
+        model: normalizeModelId(model),
+        contents: toGeminiMessages(message),
+        config: {
+          ...config,
+          responseMimeType: "application/json",
+          responseJsonSchema: {
+            type: "array",
+            items: { type: "integer" },
+          },
+        },
+      });
+
+      const parsed =
+        response.text === undefined ? [] : JSON.parse(response.text);
+      // Validate indices: must be numbers within bounds, deduplicated, and limited to max
+      indices = [...new Set(parsed)]
+        .filter(
+          (i): i is number =>
+            typeof i === "number" && i >= 0 && i < tools.length,
+        )
+        .slice(0, MAX_FUNCTION_CALLINGS);
+    } catch {
+      // Fallback if selector call or parsing fails
+      indices = tools.slice(0, MAX_FUNCTION_CALLINGS).map((_, i) => i);
+    }
+    console.log(
+      `Gemini recommends using ${MAX_FUNCTION_CALLINGS} or fewer function callings. We use only ${indices.map((i) => tools[i].name)}.`,
+    );
+  } else {
+    indices = tools.map((_, i) => i);
+  }
+
+  return {
+    functionDeclarations: indices.map((i) => ({
+      name: tools[i].name,
+      description: tools[i].description,
+      parameters: tools[i].parameters as Schema,
+    })),
+    allowedFunctionNames: indices.map((i) => tools[i].name),
+  };
 }
 
 export async function generateWithGoogle(
@@ -155,40 +225,28 @@ export async function generateWithGoogle(
   }
 
   // Add tools if provided - tools and toolConfig go inside config object
+  const ai = new GoogleGenAI({ apiKey });
   if (params.tools !== undefined && params.tools.length > 0) {
-    config.tools = [
-      {
-        functionDeclarations: params.tools.map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters as Schema,
-        })),
-      },
-    ];
-
-    // Configure tool calling mode
-    const allowedFunctionNames: string[] = params.tools.map(
-      (tool) => tool.name,
-    );
-    config.toolConfig = {
-      functionCallingConfig: {
-        mode: FunctionCallingConfigMode.ANY, // AUTO, ANY, or NONE
-        allowedFunctionNames, // Explicitly list which functions can be called
-      },
-    };
+    const ret = await getFunctionCallingConfig(ai, config, params);
+    if (ret) {
+      config.tools = [{ functionDeclarations: ret.functionDeclarations }];
+      config.toolConfig = {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.ANY, // AUTO, ANY, or NONE
+          allowedFunctionNames: ret.allowedFunctionNames, // Explicitly list which functions can be called
+        },
+      };
+    }
   }
-
-  const requestBody: GenerateContentParameters = {
-    model: normalizeModelId(params.model),
-    contents: toGeminiMessages(params.conversationMessages),
-    config,
-  };
 
   // generateContent automatically handles thought signatures when full conversation
   // history is provided (SDK v1.33.0+). Thought signatures are preserved in the
   // response and automatically validated on subsequent requests.
-  const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent(requestBody);
+  const response = await ai.models.generateContent({
+    model: normalizeModelId(params.model),
+    contents: toGeminiMessages(params.conversationMessages),
+    config,
+  });
 
   const text = response.text || "";
   const toolCalls = extractToolCallsFromCandidates(response.candidates);
