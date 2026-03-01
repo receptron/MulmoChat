@@ -163,7 +163,20 @@ async function getFunctionCallingConfig(
         },
       },
     });
-    indices = response.text === undefined ? [] : JSON.parse(response.text);
+    try {
+      const parsed =
+        response.text === undefined ? [] : JSON.parse(response.text);
+      // Validate indices: must be numbers within bounds, deduplicated, and limited to max
+      indices = [...new Set(parsed)]
+        .filter(
+          (i): i is number =>
+            typeof i === "number" && i >= 0 && i < tools.length,
+        )
+        .slice(0, MAX_FUNCTION_CALLINGS);
+    } catch {
+      // Fallback to first MAX_FUNCTION_CALLINGS tools if parsing fails
+      indices = tools.slice(0, MAX_FUNCTION_CALLINGS).map((_, i) => i);
+    }
     console.log(
       `Gemini recommends using ${MAX_FUNCTION_CALLINGS} or fewer function callings. We use only ${indices.map((i) => tools[i].name)}.`,
     );
