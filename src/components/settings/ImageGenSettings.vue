@@ -30,6 +30,9 @@
         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       >
         <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image</option>
+        <option value="gemini-3.1-flash-image-preview">
+          Gemini 3.1 Flash Image (Preview)
+        </option>
         <option value="gemini-3-pro-image-preview">
           Gemini 3 Pro Image (Preview)
         </option>
@@ -118,6 +121,7 @@ const handleBackendChange = (event: Event) => {
 const handleGeminiModelChange = (event: Event) => {
   const geminiModel = (event.target as HTMLSelectElement).value as
     | "gemini-2.5-flash-image"
+    | "gemini-3.1-flash-image-preview"
     | "gemini-3-pro-image-preview";
   emit("update:modelValue", {
     ...normalizedConfig.value,

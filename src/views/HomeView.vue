@@ -357,6 +357,8 @@ const statusLine = computed(() => {
       const geminiModel = config.geminiModel || "gemini-2.5-flash-image";
       if (geminiModel === "gemini-3-pro-image-preview") {
         imageModelName = "Gemini 3 Pro Image";
+      } else if (geminiModel === "gemini-3.1-flash-image-preview") {
+        imageModelName = "Gemini 3.1 Flash Image";
       } else {
         imageModelName = "Gemini 2.5 Flash Image";
       }
