@@ -256,6 +256,8 @@ export const ROLES: Role[] = [
       "presentSpreadsheet",
       "showPresentation",
       "generateImage",
+      "searchWeb",
+      "browse",
       "switchRole",
     ],
     prompt:
