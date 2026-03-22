@@ -431,7 +431,6 @@
             </label>
             <p class="text-xs text-gray-500 mb-2">
               This role uses a curated set of plugins optimized for its purpose.
-              Switch to General role to customize plugins.
             </p>
             <div
               class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50"

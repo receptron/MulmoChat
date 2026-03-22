@@ -1,6 +1,6 @@
 import { reactive, watch } from "vue";
 import { DEFAULT_LANGUAGE_CODE, getLanguageName } from "../config/languages";
-import { DEFAULT_ROLE_ID, getRole } from "../config/roles";
+import { DEFAULT_ROLE_ID, getRole, ROLES } from "../config/roles";
 import { pluginTools, getPluginSystemPrompts } from "../tools";
 import {
   DEFAULT_REALTIME_MODEL_ID,
@@ -205,7 +205,14 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     const customInstructionsText = state.customInstructions.trim()
       ? ` ${state.customInstructions}`
       : "";
-    return `${role.prompt}\n${pluginPrompts}\n${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
+    const roleListText =
+      role.id === "general"
+        ? "\n\nAvailable roles you can switch to:\n" +
+          ROLES.filter((r) => r.id !== "general")
+            .map((r) => `- ${r.id}: ${r.name}`)
+            .join("\n")
+        : "";
+    return `${role.prompt}${roleListText}\n${pluginPrompts}\n${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
   };
 
   const buildTools = ({ startResponse }: BuildContext) =>
