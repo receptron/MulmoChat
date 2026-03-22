@@ -206,12 +206,10 @@ export function useUserPreferences(): UseUserPreferencesReturn {
       ? ` ${state.customInstructions}`
       : "";
     const roleListText =
-      role.id === "general"
-        ? "\n\nAvailable roles you can switch to:\n" +
-          ROLES.filter((r) => r.id !== "general")
-            .map((r) => `- ${r.id}: ${r.name}`)
-            .join("\n")
-        : "";
+      `\n\nYour current role is: ${role.id} (${role.name}). Available roles you can switch to:\n` +
+      ROLES.filter((r) => r.id !== role.id)
+        .map((r) => `- ${r.id}: ${r.name}`)
+        .join("\n");
     return `${role.prompt}${roleListText}\n${pluginPrompts}\n${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
   };
 

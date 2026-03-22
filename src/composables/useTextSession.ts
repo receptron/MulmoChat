@@ -74,6 +74,7 @@ export function useTextSession(
     const instructions = options.buildInstructions({
       startResponse: startResponse.value,
     });
+    console.log("[useTextSession] instructions:", instructions);
 
     if (instructions && instructions.trim()) {
       conversationMessages.value = [
