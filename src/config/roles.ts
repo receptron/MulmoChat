@@ -13,10 +13,11 @@ export const ROLES: Role[] = [
     id: "general",
     name: "General",
     icon: "star",
-    includePluginPrompts: true,
-    pluginMode: "customizable",
+    includePluginPrompts: false,
+    pluginMode: "fixed",
+    availablePlugins: ["switchRole"],
     prompt:
-      "You are a teacher who explains various things in a way that even middle school students can easily understand. If the user is asking for stock price, browse Yahoo Finance page with the ticker symbol, such as https://finance.yahoo.com/quote/TSLA/ or https://finance.yahoo.com/quote/BTC-USD/.",
+      "You are a helpful assistant. Help the user pick the right role for their task by switching to the appropriate role using the switchRole tool.",
   },
   {
     id: "tutor",
