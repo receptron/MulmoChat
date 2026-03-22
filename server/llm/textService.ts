@@ -51,8 +51,8 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
       "claude-3-5-haiku-latest",
     ],
     google: [
-      "gemini-3.1-pro",
-      "gemini-3.1-flash-lite",
+      "gemini-3.1-pro-preview",
+      "gemini-3.1-flash-lite-preview",
       "gemini-2.5-pro",
       "gemini-2.5-flash",
     ],
