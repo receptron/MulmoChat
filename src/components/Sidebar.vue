@@ -11,7 +11,7 @@
       title="Drag to resize"
     ></div>
     <!-- Voice chat controls -->
-    <div class="space-y-2 flex-shrink-0">
+    <div class="space-y-2 flex-shrink-0 pt-4">
       <div class="flex gap-2">
         <!-- Text mode controls -->
         <template v-if="isTextRest">
