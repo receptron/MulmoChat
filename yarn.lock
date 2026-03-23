@@ -591,9 +591,9 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/othello/-/othello-0.2.2.tgz#aeb0dd72423a598f945b46ff4b9f42a85a41fa92"
   integrity sha512-q2t9jqTMmKkxsG5Irc9Z/S/BzIOjt3Qn1TRFxGyHELEicstqp9O/yr8l63MrNCCAPnvcFgJDmt+iX3M1Be5hnQ==
 
-"@gui-chat-plugin/piano@github:receptron/GUIChatPluginPiano":
+"@gui-chat-plugin/piano@https://github.com/receptron/GUIChatPluginPiano.git":
   version "0.1.0"
-  resolved "https://codeload.github.com/receptron/GUIChatPluginPiano/tar.gz/166821d095217f7c788ce600048e5cd688751240"
+  resolved "https://github.com/receptron/GUIChatPluginPiano.git#166821d095217f7c788ce600048e5cd688751240"
   dependencies:
     gui-chat-protocol "^0.0.3"
     openai "^4.77.0"
