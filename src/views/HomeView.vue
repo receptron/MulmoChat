@@ -44,6 +44,7 @@
         :is-muted="isMuted"
         :user-language="userPreferences.userLanguage"
         :suppress-instructions="userPreferences.suppressInstructions"
+        :show-role-list="userPreferences.showRoleList"
         :role-id="userPreferences.roleId"
         :is-conversation-active="conversationActive"
         :enabled-plugins="userPreferences.enabledPlugins"
@@ -66,6 +67,7 @@
         @update:suppress-instructions="
           userPreferences.suppressInstructions = $event
         "
+        @update:show-role-list="userPreferences.showRoleList = $event"
         @update:role-id="userPreferences.roleId = $event"
         @update:enabled-plugins="userPreferences.enabledPlugins = $event"
         @update:custom-instructions="

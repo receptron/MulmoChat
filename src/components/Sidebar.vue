@@ -373,6 +373,25 @@
           </div>
 
           <div>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                :checked="showRoleList"
+                @change="
+                  $emit(
+                    'update:showRoleList',
+                    ($event.target as HTMLInputElement).checked,
+                  )
+                "
+                class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+              />
+              <span class="text-sm font-medium text-gray-700">
+                Show Role List in System Prompt
+              </span>
+            </label>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Custom Instructions
             </label>
@@ -544,6 +563,7 @@ const props = defineProps<{
   isMuted: boolean;
   userLanguage: string;
   suppressInstructions: boolean;
+  showRoleList: boolean;
   roleId: string;
   isConversationActive: boolean;
   enabledPlugins: Record<string, boolean>;
@@ -567,6 +587,7 @@ const emit = defineEmits<{
   "update:userInput": [value: string];
   "update:userLanguage": [value: string];
   "update:suppressInstructions": [value: boolean];
+  "update:showRoleList": [value: boolean];
   "update:roleId": [value: string];
   "update:enabledPlugins": [value: Record<string, boolean>];
   "update:customInstructions": [value: string];

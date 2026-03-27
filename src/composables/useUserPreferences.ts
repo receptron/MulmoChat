@@ -14,6 +14,7 @@ import type { SessionTransportKind } from "./useSessionTransport";
 
 const USER_LANGUAGE_KEY = "user_language_v1";
 const SUPPRESS_INSTRUCTIONS_KEY = "suppress_instructions_v1";
+const SHOW_ROLE_LIST_KEY = "show_role_list_v1";
 const ROLE_ID_KEY = "role_id_v1";
 const LEGACY_MODE_ID_KEY = "mode_id_v2"; // For migration from mode to role
 const LEGACY_SYSTEM_PROMPT_ID_KEY = "system_prompt_id_v1"; // For migration
@@ -53,6 +54,7 @@ const setStoredObject = (key: string, value: Record<string, unknown>) => {
 export interface UserPreferencesState extends Record<string, unknown> {
   userLanguage: string;
   suppressInstructions: boolean;
+  showRoleList: boolean;
   roleId: string;
   customInstructions: string;
   enabledPlugins: Record<string, boolean>;
@@ -105,6 +107,7 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   const state = reactive<UserPreferencesState>({
     userLanguage: getStoredValue(USER_LANGUAGE_KEY) || DEFAULT_LANGUAGE_CODE,
     suppressInstructions: getStoredValue(SUPPRESS_INSTRUCTIONS_KEY) === "true",
+    showRoleList: getStoredValue(SHOW_ROLE_LIST_KEY) !== "false",
     roleId:
       getStoredValue(ROLE_ID_KEY) ||
       getStoredValue(LEGACY_MODE_ID_KEY) ||
@@ -141,10 +144,14 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     );
   });
 
-  // Boolean preference
+  // Boolean preferences
   watch(
     () => state.suppressInstructions,
     (val) => setStoredValue(SUPPRESS_INSTRUCTIONS_KEY, String(val)),
+  );
+  watch(
+    () => state.showRoleList,
+    (val) => setStoredValue(SHOW_ROLE_LIST_KEY, String(val)),
   );
 
   // Role with migration cleanup
@@ -205,11 +212,12 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     const customInstructionsText = state.customInstructions.trim()
       ? ` ${state.customInstructions}`
       : "";
-    const roleListText =
-      `\n\nYour current role is: ${role.id} (${role.name}). Available roles you can switch to:\n` +
-      ROLES.filter((r) => r.id !== role.id)
-        .map((r) => `- ${r.id}: ${r.name}`)
-        .join("\n");
+    const roleListText = state.showRoleList
+      ? `\n\nYour current role is: ${role.id} (${role.name}). Available roles you can switch to:\n` +
+        ROLES.filter((r) => r.id !== role.id)
+          .map((r) => `- ${r.id}: ${r.name}`)
+          .join("\n")
+      : "";
     return `${role.prompt}${roleListText}\n${pluginPrompts}\n${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
   };
 
