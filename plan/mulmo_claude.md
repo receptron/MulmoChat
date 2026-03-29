@@ -26,15 +26,79 @@ A next-generation agent app built on **Claude Code** as the LLM core and **gui-c
 
 ### LLM Core: Claude Code Agent SDK
 
-Claude drives the agent loop. It decides autonomously which tools to use — native file tools (read, write, bash, glob, grep) or gui-chat-protocol plugins — based on the task and the active role's constraints.
+**Package**: `@anthropic-ai/claude-agent-sdk`
+
+Claude drives the agent loop via `query()`. It decides autonomously which tools to use — native file tools (read, write, bash, glob, grep) or gui-chat-protocol plugins — based on the task and the active role's constraints. The agent loop runs automatically; no manual tool dispatch needed.
+
+```
+User text input
+      ↓
+query() — Claude Code Agent SDK
+      ↓ agent loop (automatic)
+  ├── Built-in tools (bash, read, write, glob, grep)   ← file system ops
+  └── MCP server (role's gui-chat-protocol plugins)    ← visual output
+            ↓
+      ToolResult → Vue canvas (via reactive state)
+```
 
 ### Plugin Layer: gui-chat-protocol
+
+**Package**: `gui-chat-protocol` (already LLM-agnostic, no changes needed)
 
 All visual output follows the gui-chat-protocol standard:
 - **ToolDefinition**: JSON Schema for Claude's function calling
 - **ToolResult**: Standardized result with `data`, `jsonData`, `instructions`
 - **ViewComponent**: Full canvas view per tool result
 - **PreviewComponent**: Sidebar thumbnail per tool result
+
+Each gui-chat-protocol plugin is wrapped as a Claude Code SDK `tool()` and registered via `createSdkMcpServer`. The tool handler does two things: returns a text response to Claude, and emits the visual `ToolResult` to the frontend canvas.
+
+### MCP Server Per Role Switch
+
+To keep Claude's context lean, only the current role's plugins are registered. Plugin tool definitions exist as plain objects at startup; MCP servers are created fresh on each role switch (in-process, negligible overhead):
+
+```typescript
+// Plugin tool definitions — created once, no server yet
+const pluginDefinitions: Record<string, Tool> = {
+  generateImage: generateImageTool,
+  browse: browseTool,
+  todo: todoTool,
+  // ...
+};
+
+// Role switch → fresh query() with only this role's plugins
+function startRoleSession(role: Role) {
+  const mcpServers = Object.fromEntries(
+    role.availablePlugins.map(name => [
+      name,
+      createSdkMcpServer({ name, tools: [pluginDefinitions[name]] })
+    ])
+  );
+
+  return query({
+    prompt: buildSystemPrompt(role),
+    options: {
+      mcpServers,                 // only this role's plugins — context stays lean
+      allowedTools: [
+        ...BUILTIN_TOOLS,         // bash, read, write, glob, grep — always on
+        ...role.availablePlugins.map(p => `mcp__${p}__*`)
+      ]
+    }
+  });
+}
+```
+
+### ToolContextApp Extension
+
+The new app extends `ToolContextApp` with file system access for file-backed plugins (todo, calendar, contacts). The base interface already supports this via `Record<string, (...args) => any>`:
+
+```typescript
+interface MulmoClaudeToolContextApp extends ToolContextApp {
+  readFile: (path: string) => Promise<string>;
+  writeFile: (path: string, content: string) => Promise<void>;
+  workspacePath: () => string;
+}
+```
 
 ### Workspace
 
@@ -198,11 +262,10 @@ These plugins render file-backed data visually and write changes back to files o
 ## Tech Stack
 
 - **Frontend**: Vue 3 + gui-chat-protocol components
-- **LLM**: Claude via Anthropic SDK (claude-sonnet-4-6 or claude-opus-4-6)
-- **Agent**: Claude Code Agent SDK for multi-step tool use
-- **Server**: Express.js (minimal — mostly Claude API proxy + file serving)
-- **Storage**: Local file system (workspace directory)
-- **Plugin protocol**: gui-chat-protocol (framework-agnostic core)
+- **Agent**: `@anthropic-ai/claude-agent-sdk` — drives the agent loop, built-in file tools
+- **Plugin protocol**: `gui-chat-protocol` — framework-agnostic, LLM-agnostic, no changes needed
+- **Server**: Express.js (minimal — workspace file serving, MCP server bridge)
+- **Storage**: Local file system (workspace directory, plain markdown files)
 
 ---
 
