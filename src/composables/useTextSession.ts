@@ -214,9 +214,20 @@ export function useTextSession(
         );
       }
 
-      // Handle tool calls if present
-      if (toolCalls && toolCalls.length > 0) {
-        for (const toolCall of toolCalls) {
+      // Handle tool calls with follow-up loop
+      // After tool execution, call the LLM again to process results.
+      // Repeat if the LLM makes additional tool calls (e.g., browse → renderHtml).
+      let pendingToolCalls = toolCalls;
+      const MAX_TOOL_ROUNDS = 5;
+      let round = 0;
+
+      while (
+        pendingToolCalls &&
+        pendingToolCalls.length > 0 &&
+        round < MAX_TOOL_ROUNDS
+      ) {
+        round++;
+        for (const toolCall of pendingToolCalls) {
           await handlers.onToolCall?.(
             {
               type: "response.function_call_arguments.done",
@@ -227,6 +238,71 @@ export function useTextSession(
             toolCall.arguments,
           );
         }
+
+        // Follow-up API call so the LLM can process tool results
+        const followUpResponse = await fetch("/api/text/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            provider: resolvedModel.provider,
+            model: resolvedModel.model,
+            messages: conversationMessages.value,
+            tools: tools.length > 0 ? tools : undefined,
+          }),
+        });
+
+        if (!followUpResponse.ok) break;
+
+        const followUpPayload = (await followUpResponse.json()) as {
+          success?: boolean;
+          result?: {
+            text?: string;
+            toolCalls?: Array<{
+              id: string;
+              name: string;
+              arguments: string;
+            }>;
+          };
+        };
+
+        if (!followUpPayload.success) break;
+
+        const followUpText = followUpPayload.result?.text ?? "";
+        const followUpToolCalls = followUpPayload.result?.toolCalls;
+
+        if (followUpText || followUpToolCalls) {
+          conversationMessages.value.push({
+            role: "assistant",
+            content: followUpText || "",
+            ...(followUpToolCalls?.length
+              ? { tool_calls: followUpToolCalls }
+              : {}),
+          });
+        }
+
+        if (followUpText) {
+          handlers.onTextDelta?.(followUpText);
+          handlers.onTextCompleted?.();
+
+          const followUpCallId = createCallId();
+          handlers.onToolCall?.(
+            {
+              type: "response.function_call_arguments.done",
+              name: "text-response",
+            },
+            followUpCallId,
+            JSON.stringify({
+              text: followUpText,
+              role: "assistant",
+              transportKind: "text-rest",
+            }),
+          );
+        }
+
+        // Continue loop if there are more tool calls
+        pendingToolCalls = followUpToolCalls;
       }
 
       return true;

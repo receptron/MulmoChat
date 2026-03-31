@@ -117,6 +117,14 @@ export function useToolResults(
     );
   };
 
+  // Override instructions for plugins that provide too-brief follow-up prompts
+  const INSTRUCTION_OVERRIDES: Record<string, string> = {
+    browse:
+      "The webpage has been successfully browsed and the content is now available. You MUST now provide a THOROUGH and DETAILED explanation of the content. Do NOT give a brief or one-sentence summary. Cover ALL key points, arguments, specific details, examples, and important information comprehensively. Do NOT skip or simplify any part. IMPORTANT: Always clearly state the source — mention the website name, article title, and URL so the user knows exactly where the information comes from.",
+    searchWeb:
+      "The web search was successful. Now provide a DETAILED explanation of the search results. For each relevant result, clearly cite the source (website name, article title, and URL), then summarize the key information from the article text. Do NOT just list links or titles — explain what the articles say and highlight the most important findings. Always make it clear which information comes from which source.",
+  };
+
   const maybeSendInstructions = async (
     pluginName: string,
     plugin: ReturnType<GetToolPluginFn> | undefined,
@@ -126,7 +134,8 @@ export function useToolResults(
       return;
     }
 
-    const instructions = result.instructions;
+    const instructions =
+      INSTRUCTION_OVERRIDES[result.toolName ?? ""] || result.instructions;
     if (!instructions) {
       return;
     }
@@ -231,7 +240,16 @@ export function useToolResults(
       // Note: waitingMessage is only sent for realtime sessions
       // For text sessions, it would cause an error because we need to send
       // tool output before any new LLM generation can happen
-      if (plugin?.waitingMessage && options.isDataChannelOpen()) {
+      // Skip waitingMessage for YouTube URLs (browse should be silent)
+      const isYouTubeBrowse =
+        msg.name === "browse" &&
+        typeof args?.url === "string" &&
+        /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)/.test(args.url);
+      if (
+        plugin?.waitingMessage &&
+        options.isDataChannelOpen() &&
+        !isYouTubeBrowse
+      ) {
         options.sendInstructions(plugin.waitingMessage);
       }
 
@@ -250,11 +268,57 @@ export function useToolResults(
         } else {
           addNewResult(result);
         }
+
+        // Auto-display article HTML when browse returns htmlContent
+        if (result.toolName === "browse") {
+          const browseData = (
+            result.jsonData as {
+              data?: { htmlContent?: string; title?: string; url?: string };
+            }
+          )?.data;
+          if (browseData?.htmlContent) {
+            const styledHtml = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${browseData.title || "Article"}</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.8; color: #333; max-width: 800px; margin: 0 auto; padding: 1rem 2rem; }
+img { max-width: 100%; height: auto; border-radius: 8px; margin: 1em 0; }
+a { color: #2563eb; }
+h1, h2, h3 { margin-top: 1.5em; }
+figure { margin: 1em 0; }
+figcaption { font-size: 0.85em; color: #666; text-align: center; }
+blockquote { border-left: 4px solid #ddd; padding-left: 1em; color: #555; }
+.source-link { background: #f0f7ff; border: 1px solid #bdd5f5; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.9em; }
+.source-link a { word-break: break-all; }
+</style></head><body>
+<div class="source-link">Source: <a href="${browseData.url || ""}" target="_blank">${browseData.url || ""}</a></div>
+<h1>${browseData.title || ""}</h1>
+${browseData.htmlContent}
+</body></html>`;
+
+            const htmlResult: ToolResult = {
+              message: `Article: ${browseData.title || "Web Page"}`,
+              title: browseData.title || "Web Page",
+              data: { html: styledHtml, type: "tailwind" },
+              toolName: "renderHtml",
+              uuid: uuidv4(),
+            };
+            addNewResult(htmlResult);
+          }
+        }
       }
 
+      // Strip htmlContent from LLM payload to save tokens (it's already displayed)
+      let jsonDataForLLM = result.jsonData;
+      if (result.toolName === "browse" && jsonDataForLLM) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { htmlContent, ...rest } =
+          (jsonDataForLLM as { data?: Record<string, unknown> }).data || {};
+        jsonDataForLLM = { data: rest };
+      }
       const outputPayload = {
         status: result.message,
-        data: result.jsonData,
+        data: jsonDataForLLM,
       };
       console.log(`RES:${result.toolName}\n`, outputPayload);
       sendFunctionOutput(msg.call_id, outputPayload);
