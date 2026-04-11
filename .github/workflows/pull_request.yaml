@@ -35,3 +35,4 @@ jobs:
     - run: yarn run typecheck
     - run: yarn run lint
     - run: yarn run build
+    - run: yarn audit
