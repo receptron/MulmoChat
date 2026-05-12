@@ -166,7 +166,7 @@ export async function generateWithOllama(
   if (data.message?.tool_calls && data.message.tool_calls.length > 0) {
     for (const tc of data.message.tool_calls) {
       toolCalls.push({
-        id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `call_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         name: tc.function.name,
         arguments: JSON.stringify(tc.function.arguments),
       });
