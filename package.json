@@ -79,7 +79,7 @@
     "gui-chat-protocol": "^0.0.4",
     "guichat-plugin-akinator": "github:isamu/AkinatorGame",
     "material-icons": "^1.13.14",
-    "uuid": "^13.0.0",
+    "uuid": "^14.0.0",
     "vue": "^3.5.31",
     "vue-drawing-canvas": "^1.0.14",
     "vue-router": "^5.0.4",
