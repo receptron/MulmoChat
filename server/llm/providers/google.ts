@@ -100,7 +100,7 @@ function extractToolCallsFromCandidates(candidates: unknown): ToolCall[] {
     for (const part of parts) {
       if (part?.functionCall) {
         const toolCall: ToolCall = {
-          id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `call_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           name: part.functionCall.name || "",
           arguments: JSON.stringify(part.functionCall.args),
         };
