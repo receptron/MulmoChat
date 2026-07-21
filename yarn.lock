@@ -2402,13 +2402,13 @@ compress-commons@^7.0.0:
     readable-stream "^4.0.0"
 
 concurrently@^9.2.1:
-  version "9.2.1"
-  resolved "https://registry.yarnpkg.com/concurrently/-/concurrently-9.2.1.tgz#248ea21b95754947be2dad9c3e4b60f18ca4e44f"
-  integrity sha512-fsfrO0MxV64Znoy8/l1vVIjjHa29SZyyqPgQBwhiDcaW8wJc2W3XWVOGx4M3oJBnv/zdUZIIp1gDeS98GzP8Ng==
+  version "9.2.4"
+  resolved "https://registry.yarnpkg.com/concurrently/-/concurrently-9.2.4.tgz#4cd9bba735ade2ccb287f000f8706513d2f581f8"
+  integrity sha512-TZ0CEhyzvFjgtAvHTusDMgj7wNdihCh7LLLrzdUOXIhdlnL2JBBGA9eJxR24rtqgmdjh3OA3hrN1rCHj6HM8qA==
   dependencies:
     chalk "4.1.2"
     rxjs "7.8.2"
-    shell-quote "1.8.3"
+    shell-quote "1.9.0"
     supports-color "8.1.1"
     tree-kill "1.2.2"
     yargs "17.7.2"
@@ -5226,10 +5226,10 @@ shebang-regex@^3.0.0:
   resolved "https://registry.yarnpkg.com/shebang-regex/-/shebang-regex-3.0.0.tgz#ae16f1644d873ecad843b0307b143362d4c42172"
   integrity sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==
 
-shell-quote@1.8.3:
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/shell-quote/-/shell-quote-1.8.3.tgz#55e40ef33cf5c689902353a3d8cd1a6725f08b4b"
-  integrity sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==
+shell-quote@1.9.0:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/shell-quote/-/shell-quote-1.9.0.tgz#e108b1a136586d5964edb3300016d4bedba0fe57"
+  integrity sha512-Iov+JwFv/2HcTpcwNMKd8+IWNb8tboQJNQTkAY/LLVK7gGH9jy+LGkVqPxfekHl+yMmiqXszdGWXgkfml7hjqA==
 
 side-channel-list@^1.0.1:
   version "1.0.1"
@@ -5568,10 +5568,10 @@ tar-stream@^3.0.0:
     fast-fifo "^1.2.0"
     streamx "^2.15.0"
 
-tar@7.5.11, tar@^7.5.4:
-  version "7.5.11"
-  resolved "https://registry.yarnpkg.com/tar/-/tar-7.5.11.tgz#1250fae45d98806b36d703b30973fa8e0a6d8868"
-  integrity sha512-ChjMH33/KetonMTAtpYdgUFr0tbz69Fp2v7zWxQfYZX4g5ZN2nOBXm1R2xyA+lMIKrLKIoKAwFj93jE/avX9cQ==
+tar@7.5.18, tar@^7.5.4:
+  version "7.5.18"
+  resolved "https://registry.yarnpkg.com/tar/-/tar-7.5.18.tgz#9157405a9bf186ee060d0755c41e20f92f88388f"
+  integrity sha512-PwA+nJl+AzsS9hRqtNRRq8/kTdNPoOLEPXpz9WBaErNm4+TFedJyQFJLITWdsmIBnwNS/TwXf1NV5Ak1KITc8g==
   dependencies:
     "@isaacs/fs-minipass" "^4.0.0"
     chownr "^3.0.0"

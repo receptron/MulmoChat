@@ -88,7 +88,7 @@
     "yauzl": "^3.2.1"
   },
   "resolutions": {
-    "tar": "7.5.11",
+    "tar": "7.5.18",
     "yauzl": "^3.2.1"
   },
   "devDependencies": {
