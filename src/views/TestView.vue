@@ -53,8 +53,7 @@
                   null,
                   2,
                 )
-              }}</pre
-            >
+              }}</pre>
           </div>
         </div>
       </div>
@@ -128,15 +127,13 @@
               <span class="font-medium">Data:</span>
               <pre
                 class="mt-1 p-2 bg-white rounded border border-gray-300 text-xs overflow-auto max-h-60"
-                >{{ JSON.stringify(result.data, null, 2) }}</pre
-              >
+                >{{ JSON.stringify(result.data, null, 2) }}</pre>
             </div>
             <div v-if="result.jsonData">
               <span class="font-medium">JSON Data:</span>
               <pre
                 class="mt-1 p-2 bg-white rounded border border-gray-300 text-xs overflow-auto max-h-60"
-                >{{ JSON.stringify(result.jsonData, null, 2) }}</pre
-              >
+                >{{ JSON.stringify(result.jsonData, null, 2) }}</pre>
             </div>
           </div>
         </div>

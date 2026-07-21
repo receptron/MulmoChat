@@ -109,9 +109,7 @@ const normalizedConfig = computed<Required<ImageGenerationConfigValue>>(() => {
 
 const handleBackendChange = (event: Event) => {
   const backend = (event.target as HTMLSelectElement).value as
-    | "gemini"
-    | "openai"
-    | "comfyui";
+    "gemini" | "openai" | "comfyui";
   emit("update:modelValue", {
     ...normalizedConfig.value,
     backend,
@@ -131,9 +129,7 @@ const handleGeminiModelChange = (event: Event) => {
 
 const handleOpenAIModelChange = (event: Event) => {
   const openaiModel = (event.target as HTMLSelectElement).value as
-    | "gpt-image-1"
-    | "gpt-image-1.5"
-    | "gpt-image-1-mini";
+    "gpt-image-1" | "gpt-image-1.5" | "gpt-image-1-mini";
   emit("update:modelValue", {
     ...normalizedConfig.value,
     openaiModel,
