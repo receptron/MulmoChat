@@ -151,8 +151,7 @@ export function useToolResults(
       // Config accessor functions
       const getConfig = <T = unknown>(key: string): T | undefined => {
         return options.userPreferences.value?.pluginConfigs?.[key] as
-          | T
-          | undefined;
+          T | undefined;
       };
 
       const setConfig = (key: string, value: unknown): void => {
