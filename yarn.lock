@@ -604,9 +604,9 @@
 
 "@gui-chat-plugin/piano@github:receptron/GUIChatPluginPiano":
   version "0.1.0"
-  resolved "https://codeload.github.com/receptron/GUIChatPluginPiano/tar.gz/166821d095217f7c788ce600048e5cd688751240"
+  resolved "https://codeload.github.com/receptron/GUIChatPluginPiano/tar.gz/58cf06d5746474da9f2c2ff5fdef2db02fb5810f"
   dependencies:
-    gui-chat-protocol "^0.0.3"
+    gui-chat-protocol "^1.2.0"
     openai "^4.77.0"
     soundfont-player "^0.12.0"
 
@@ -3485,11 +3485,6 @@ gui-chat-protocol@^0.0.1:
   resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-0.0.1.tgz#d0770d03a6669b075473a0d8753ca9506f718dcd"
   integrity sha512-FStQbzQ7gvjDugWAmf4IOsvhqxe8/DUdA9VK9PgXwi44J2lZyEd1ww1bhThoHXpXT4djFpayQ2uMO1YMtQhCqA==
 
-gui-chat-protocol@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-0.0.3.tgz#0e86a15ade6c46ed698abaa6ae6aed5edfdd8dde"
-  integrity sha512-usoH2h4rONFl4E54y1Cl9O3WXS73q3XVs5aiCTAxJa+462nW6QVGPPOGyeeieFqMmjCHNWBfvtHAklg+D+eFRA==
-
 gui-chat-protocol@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-1.2.0.tgz#8bc7f8d4e31a625aff94fa2c79951b5b80c30145"
@@ -3497,7 +3492,7 @@ gui-chat-protocol@^1.2.0:
 
 "guichat-plugin-akinator@github:isamu/AkinatorGame":
   version "0.1.0"
-  resolved "https://codeload.github.com/isamu/AkinatorGame/tar.gz/f03d843a39bb247ba5167b3b35508720bf3d14ab"
+  resolved "https://codeload.github.com/isamu/AkinatorGame/tar.gz/5e8c26da1750485556b41af753d5e0758ad0621b"
   dependencies:
     gui-chat-protocol "^0.0.1"
     openai "^4.77.0"
