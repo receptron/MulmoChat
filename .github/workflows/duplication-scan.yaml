@@ -1,0 +1,66 @@
+name: duplication-scan
+
+# Copy/paste duplication detection (jscpd), reported to GitHub code scanning.
+# Report-only: no --threshold is set, so jscpd never fails the job. The findings
+# surface as SARIF annotations for a human to judge, not as a gate.
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "plans/**"
+      - "**/*.md"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  duplication-scan:
+    name: Duplication Scan (jscpd)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write # required to upload SARIF to code scanning
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install jscpd
+        env:
+          JSCPD_VERSION: 5.0.12
+          # SHA256 of jscpd-linux-x64-gnu.tar.gz (jscpd ships no checksums.txt, so this is
+          # computed by hand). Update it together with JSCPD_VERSION on any bump.
+          JSCPD_SHA256: c1107547ee52bc83131d6e62d1fc9c156d194c593a4532876cdb1584b4e1dc3b
+        run: |
+          set -euo pipefail
+          ARCHIVE="jscpd-linux-x64-gnu.tar.gz"
+          curl -sSfL -o "$ARCHIVE" \
+            "https://github.com/kucherenko/jscpd/releases/download/v${JSCPD_VERSION}/${ARCHIVE}"
+          echo "${JSCPD_SHA256}  ${ARCHIVE}" | sha256sum -c -
+          sudo tar -xz -C /usr/local/bin -f "$ARCHIVE" jscpd
+          rm -f "$ARCHIVE"
+          jscpd --version
+
+      - name: Run jscpd
+        run: |
+          set -euo pipefail
+          # dist/ is Vite/tsc build output (a duplicate of src by construction) and test/ + tests/
+          # hold standalone runner scripts, so all are excluded to keep the scan on real source.
+          jscpd . \
+            --format "typescript,vue" \
+            --ignore "**/node_modules/**,**/dist/**,**/*.d.ts,**/test/**,**/tests/**" \
+            --reporters console,sarif \
+            --output report
+
+      - name: Upload SARIF to Code Scanning
+        uses: github/codeql-action/upload-sarif@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3.37.1
+        continue-on-error: true
+        with:
+          sarif_file: report/jscpd-report.sarif
+          category: jscpd
