@@ -1,0 +1,68 @@
+name: dead-code-scan
+
+# Unused-export / unused-file / unused-dependency detection (knip), reported to the PR job
+# summary. The gap this fills: eslint's no-unused-vars only sees WITHIN a file, and the
+# duplication scan only sees copy/paste — neither catches an export nobody imports, an
+# orphaned file, or a dependency whose last import was removed.
+#
+# Report-only (warn mode): knip.jsonc sets every rule to "warn" or "off", so `knip` exits 0,
+# and this job additionally forces `exit 0` so it can never gate CI regardless of future rule
+# changes. Findings are for a human to judge; promote a rule to "error" in knip.jsonc (and drop
+# the forced exit 0) if a class of finding becomes trustworthy enough to block.
+#
+# Config lives in knip.jsonc; run it locally with `yarn knip`.
+
+on:
+  pull_request:
+    branches: [main]
+    # Dead code can only change when an analyzed input changes. Keep in sync with knip.jsonc's
+    # project globs and tsconfig (module resolution). package.json and yarn.lock are included
+    # too: knip auto-detects entry points from package.json / index.html and resolves imports
+    # through the installed dependency graph.
+    paths:
+      - "**/*.ts"
+      - "**/*.vue"
+      - "**/tsconfig*.json"
+      - "knip.jsonc"
+      - "package.json"
+      - "yarn.lock"
+      - ".github/workflows/dead-code-scan.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dead-code-scan:
+    name: Dead Code Scan (knip)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      # knip resolves imports through the real dependency graph, so node_modules has to be
+      # installed. --frozen-lockfile keeps CI honest against yarn.lock.
+      - run: yarn install --frozen-lockfile --network-timeout 120000
+
+      # Capture knip's output and write it to the job summary EITHER WAY, then exit 0. A
+      # `{ ... } >> $GITHUB_STEP_SUMMARY` block ends with printf's status, so the trailing
+      # `exit 0` is what actually guarantees report-only.
+      - name: Run knip
+        run: |
+          set -uo pipefail
+          output=$(yarn --silent knip --reporter compact 2>&1) || true
+          {
+            printf '## Dead code scan (knip)\n\n'
+            printf 'Report-only (warn mode): every finding below is for a human to judge; this\n'
+            printf 'job never fails. See .github/workflows/dead-code-scan.yaml.\n\n'
+            printf '```\n'
+            printf '%s\n' "$output"
+            printf '```\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0

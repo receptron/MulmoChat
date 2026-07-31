@@ -7,3 +7,6 @@ output
 logs
 benchmark/results
 *~*.tgz
+
+# jscpd duplication-scan output (see .github/workflows/duplication-scan.yaml)
+report/
