@@ -264,13 +264,20 @@ export function useRealtimeSession(
 
     connecting.value = true;
 
+    const modelId =
+      options.getModelId?.({ startResponse: startResponse.value }) ??
+      DEFAULT_REALTIME_MODEL_ID;
+
     try {
-      const response = await fetch("/api/start", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `/api/start?model=${encodeURIComponent(modelId)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`API error: ${response.statusText}`);
@@ -297,10 +304,6 @@ export function useRealtimeSession(
         const instructions = options.buildInstructions({
           startResponse: startResponse.value,
         });
-        const modelId =
-          options.getModelId?.({
-            startResponse: startResponse.value,
-          }) ?? DEFAULT_REALTIME_MODEL_ID;
         console.log(`INSTRUCTIONS:\n${instructions}`);
         const tools = options.buildTools({
           startResponse: startResponse.value,

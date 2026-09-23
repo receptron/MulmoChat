@@ -33,7 +33,7 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
 - Plugin policy changes must also be reflected in `docs/plugin-development-guide.md` and `docs/plugin-development-guide.ja.md`.
 
 ## Server APIs (all under `/api`)
-- `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key. It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`).
+- `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key, issued for the model in `?model=` (default `gpt-realtime-2.1`). It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`).
 - `/text/providers`, `/text/generate` — text LLM. `/text/session/...` is a server-side session API; the current client doesn't use it.
 - `/generate-image` (Gemini), `/generate-image/openai`, `/generate-image/comfy` (ComfyUI).
 - `/generate-html`.
