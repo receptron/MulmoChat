@@ -13,7 +13,10 @@ import {
   convertToGoogleToolFormat,
   type OpenAITool,
 } from "../utils/toolConverter";
-import { DEFAULT_GOOGLE_LIVE_MODEL_ID } from "../config/models";
+import {
+  DEFAULT_GOOGLE_LIVE_MODEL_ID,
+  GOOGLE_LIVE_MODELS,
+} from "../config/models";
 
 // Types for Google Live API
 interface GoogleLiveState {
@@ -69,6 +72,7 @@ interface GoogleWebSocketMessage {
 
 interface GoogleGenerationConfig {
   responseModalities: string[];
+  thinkingConfig?: { thinkingLevel: string };
 }
 
 interface GoogleSystemInstruction {
@@ -335,12 +339,22 @@ export function useGoogleLiveSession(
     // Convert tools to Google format
     const googleTools = convertToGoogleToolFormat(tools);
 
+    const generationConfig: GoogleGenerationConfig = {
+      responseModalities: ["AUDIO"],
+    };
+
+    // Thinking models reject the setup unless a thinking level is given
+    const thinkingLevel = GOOGLE_LIVE_MODELS.find(
+      (m) => m.id === modelId.replace(/^models\//, ""),
+    )?.thinkingLevel;
+    if (thinkingLevel) {
+      generationConfig.thinkingConfig = { thinkingLevel };
+    }
+
     // Build setup config
     const setupConfig: GoogleSetupConfig = {
       model: modelId.startsWith("models/") ? modelId : `models/${modelId}`,
-      generationConfig: {
-        responseModalities: ["AUDIO"],
-      },
+      generationConfig,
     };
 
     // Add system instruction if provided
@@ -370,14 +384,13 @@ export function useGoogleLiveSession(
         (pcmChunk) => {
           // Only send if WebSocket is still open
           if (googleLive.ws?.readyState === WebSocket.OPEN) {
+            // realtimeInput.mediaChunks is deprecated; Gemini 3.8 Live ignores it
             sendWebSocketMessage({
               realtimeInput: {
-                mediaChunks: [
-                  {
-                    data: pcmChunk,
-                    mimeType: "audio/pcm",
-                  },
-                ],
+                audio: {
+                  data: pcmChunk,
+                  mimeType: "audio/pcm;rate=16000",
+                },
               },
             });
           }
@@ -502,7 +515,7 @@ export function useGoogleLiveSession(
       });
 
       // NOW establish WebSocket connection (after mic is ready)
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${startResponse.value.googleApiKey}`;
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${startResponse.value.googleApiKey}`;
 
       googleLive.ws = new WebSocket(wsUrl);
 
