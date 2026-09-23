@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Vue 3 application called "MulmoChat" that provides a multi-modal voice chat interface with OpenAI's GPT-4 Realtime API. The application features a comprehensive plugin system with various AI-powered tools including image generation, web browsing, search, mapping, and interactive games.
+MulmoChat is a Vue 3 + Express application for multi-modal chat with LLMs. The user can talk by voice (OpenAI Realtime or Google Gemini Live) or type (text chat through several LLM providers). Tool calls are handled by ~30 plugins that render visual, interactive results — image generation, web browsing, search, maps, games, spreadsheets, presentations and more.
 
 ## Philosophy
 
@@ -26,109 +26,99 @@ GUIChatPluginTemplate provides a starting point for creating new plugins that fo
 
 ## Key Commands
 
-- **Development server**: `npm run dev` (runs both client and server concurrently)
+The project uses yarn (`yarn.lock`); `npm run <script>` also works.
+
+- **Development server**: `npm run dev` (runs both client and server concurrently; Vite client, `tsx server/index.ts` on port 3001)
 - **Client only**: `npm run dev:client`
 - **Server only**: `npm run dev:server` or `npm run server`
+- **Type check**: `npm run typecheck` (`vue-tsc --noEmit`)
 - **Lint**: `npm run lint`
 - **Format code**: `npm run format`
+- **Dead code scan**: `npm run knip`
+- **Provider smoke tests** (call real APIs, need keys in `.env`): `npm run test:text:<openai|anthropic|google|ollama>`, `npm run test:tools:<provider>`, `npm run test:image:<comfy|openai>`
+- **Benchmark**: `npm run benchmark:llm` (see `benchmark/README.md`)
+
+There is no unit test suite. CI (`.github/workflows/pull_request.yaml`) runs typecheck, lint and build on every PR.
 
 **IMPORTANT**: Do NOT run build commands (`npm run build`, `npm run build:server`, `npm run preview`, `npm run start`) as they create unnecessary build artifacts.
 
 ## Architecture
 
-### Core Components
+### Directory Layout
 
-- **App.vue** (src/App.vue): Main application component that orchestrates the UI and coordinates between composables. Handles routing between sidebar and main canvas view components based on selected tool results.
-- **Sidebar.vue** (src/components/Sidebar.vue): Left panel with voice controls, tool results display, and text input
-- **GoogleMap.vue** (src/components/GoogleMap.vue): Google Maps integration component
+- `src/` — Vue 3 + TypeScript client
+  - `main.ts`, `App.vue` (just a `<router-view>`), `router/index.ts` (`/` → `HomeView`, `/test` → `TestView`)
+  - `views/HomeView.vue` — the main screen; wires all composables together
+  - `components/` — `Sidebar.vue` (controls, result previews, text input, settings), `RightSidebar.vue`, `TextSelectionMenu.vue`, `settings/` (backend settings panels)
+  - `composables/` — session transports, tool results, user preferences, scrolling
+  - `config/` — roles, languages, realtime/live models, text models, session constants
+  - `tools/` — plugin registry (`index.ts`), MulmoChat `ToolPlugin` type (`types.ts`), `backend/` (client helpers that call server APIs), `utils/`
+  - `utils/` — audio codec/streaming helpers, `toolConverter.ts`
+- `server/` — Express server (`index.ts`), routes in `routes/`, LLM providers in `llm/`, logger in `utils/logger.ts`, shared types in `types.ts`
+- `benchmark/` — LLM benchmark harness (prompts, expected outputs, runner, verifier)
+- `docs/` — plugin architecture/development guides and design notes; `plans/`, `plan/` — historical planning notes
 
-### Composables Architecture
+### Main View (src/views/HomeView.vue)
 
-The application uses Vue 3 composables to separate concerns and manage complex state:
+HomeView orchestrates the UI: it creates `useUserPreferences`, `useSessionTransport`, `useToolResults` and `useScrolling`, routes tool calls from the session to `useToolResults`, and renders the selected result on the main canvas with `getToolPlugin(toolName).viewComponent`. The sidebar renders each result with the plugin's `previewComponent`. Listener-mode audio gating also lives here.
 
-#### useRealtimeSession (src/composables/useRealtimeSession.ts)
-Manages WebRTC connection and OpenAI Realtime API communication:
-- **WebRTC Management**: Creates RTCPeerConnection, data channels, and manages audio streams
-- **Session Lifecycle**: Start/stop chat, connection state tracking
-- **Message Handling**: Processes incoming messages (tool calls, text deltas, speech events)
-- **Audio Control**: Mute/unmute, local audio enable/disable
-- **Event System**: Registers event handlers for tool calls, text updates, conversation events, and speech detection
-- **Data Channel Communication**: Sends user messages, function call outputs, and instructions
+### Session Transports
 
-Key features:
-- Ephemeral key management via `/api/start` endpoint
-- Bidirectional audio streaming with getUserMedia
-- Function call argument accumulation and deduplication
-- Conversation state tracking (active/inactive)
-- Speech start/stop detection for listener mode
+`useSessionTransport` (src/composables/useSessionTransport.ts) holds all three sessions and exposes the active one through a common interface (`UseRealtimeSessionReturn`) plus a `capabilities` object. The transport is chosen by the user's model kind preference:
 
-#### useToolResults (src/composables/useToolResults.ts)
-Manages plugin/tool execution and results state:
-- **Result Management**: Maintains array of tool execution results with selection state
-- **Tool Execution**: Handles incoming tool calls from OpenAI, executes plugins with context
-- **Result Updates**: Updates existing results vs. adding new ones based on plugin's `updating` flag
-- **Instructions**: Conditionally sends follow-up instructions based on plugin configuration and user preferences
-- **File Uploads**: Processes uploaded files as tool results
-- **UI Coordination**: Triggers sidebar scrolling and canvas updates
+- **`voice-realtime`** — `useVoiceRealtimeSession` → `useRealtimeSession`: OpenAI Realtime over WebRTC. Fetches an ephemeral key from `/api/start`, opens an `oai-events` data channel, streams microphone audio, accumulates function-call arguments and dispatches tool calls. Models in `config/models.ts` (`REALTIME_MODELS`).
+- **`voice-google-live`** — `useGoogleLiveSession`: Gemini Live API over a WebSocket opened directly from the browser with the Gemini key returned by `/api/start`, with PCM encoding/playback via `utils/audioCodec.ts` and `utils/audioStreamManager.ts`. Models in `GOOGLE_LIVE_MODELS`.
+- **`text-rest`** — `useTextSession`: keeps the conversation history on the client and calls the stateless `/api/text/generate` endpoint for each turn. Model IDs are `provider:model` strings (`config/textModels.ts`, default `openai:gpt-4o-mini`).
 
-Key features:
-- Tool result selection and updates
-- Generation status tracking with custom messages per plugin
-- Instruction suppression logic (respects `instructionsRequired` flag)
-- Plugin delay handling after execution
-- Context passing (e.g., current result for updates)
+All three share the same event handler contract (`onToolCall`, `onTextDelta`, conversation start/stop, speech start/stop) and send tool outputs and follow-up instructions back through the active session.
 
-#### useUserPreferences (src/composables/useUserPreferences.ts)
-Manages user settings and preferences with localStorage persistence:
-- **Preference State**: User language, system prompt ID, custom instructions, suppress instructions flag, enabled plugins
-- **localStorage Sync**: Automatically persists all preferences to localStorage with watchers
-- **Instruction Building**: Constructs final system prompt from base prompt + plugin prompts + custom instructions + language
-- **Tool Building**: Filters enabled tools based on plugin preferences
+### Tool Results (src/composables/useToolResults.ts)
 
-Storage keys:
-- `user_language_v1`: User's native language code
-- `suppress_instructions_v1`: Whether to suppress plugin follow-up instructions
-- `system_prompt_id_v1`: Selected system prompt (e.g., "default", "listener")
-- `enabled_plugins_v1`: JSON object of plugin enable/disable state
-- `custom_instructions_v1`: User's custom instructions text
+- Maintains the array of results and the selected result
+- Executes plugins via `toolExecute(context, toolName, args)`; the context includes the current result, roles, and `setConfig` (only for plugins in `PLUGINS_WITH_SET_CONFIG`)
+- Replaces the existing result when `result.updating === true` (keeping its UUID), otherwise appends
+- Sends follow-up `instructions` unless suppressed (plugins can force them with `instructionsRequired`)
+- Honors `delayAfterExecution` and shows `generatingMessage` while running
+- On failure, sends a retry instruction back to the model
+- Handles uploaded files and pasted images through plugin input handlers
 
-### Server Architecture
+### User Preferences (src/composables/useUserPreferences.ts)
 
-- **Express.js server** (server/index.ts): Handles API endpoints and serves the client
-- **API routes** (server/routes/api.ts): REST endpoints for starting sessions, Twitter embeds, and search
-- **Types** (server/types.ts): TypeScript interfaces for API responses
+All preferences persist to localStorage. Keys:
+
+- `user_language_v1`, `suppress_instructions_v1`, `show_role_list_v1`, `role_id_v1`
+- `enabled_plugins_v1`, `custom_instructions_v1`, `plugin_configs_v1`
+- `model_id_v1` (voice model), `model_kind_v2` (transport), `text_model_id_v1`
+- `image_generation_backend_v1`, `comfyui_model_v1`
+- Legacy keys migrated on load: `mode_id_v2`, `system_prompt_id_v1`
+
+It also builds the final instructions (role prompt + plugin system prompts + custom instructions + language) and the enabled tool list.
+
+### Roles (src/config/roles.ts)
+
+The old "system prompts"/"modes" are now **roles** (`general`, `tutor`, `listener`, `game`, `office`, `mulmoCaster`, …; default `general`). Each role has a prompt, an icon, `includePluginPrompts`, and a `pluginMode`:
+- `customizable` — all plugins available; the user toggles them
+- `fixed` — only the plugins listed in `availablePlugins`
+
+The model can change role through the `switchRole` plugin, whose tool definition is generated from `ROLES`.
 
 ### Plugin System
 
-The application implements a comprehensive plugin architecture located in `src/tools/`:
+**IMPORTANT**: Keep all plugin-specific code out of HomeView, App.vue and the composables. They only use the centralized plugin interface in `src/tools/index.ts` (`toolExecute`, `getToolPlugin`, `pluginTools`, …).
 
-**IMPORTANT**: Keep all plugin-specific code out of App.vue and composables. The plugin system is designed to be modular and self-contained:
-- **App.vue**: Only orchestrates UI and coordinates between composables using the centralized plugin interface (`toolExecute`, `getToolPlugin`)
-- **Composables**: Handle generic concerns (WebRTC, results management, preferences) without plugin-specific logic
-- **Plugin system**: All plugin-specific behavior lives in `src/tools/`
+Plugins are **external npm packages**, not source files in this repo. Each package exports `{ plugin }` from a `/vue` entry point that implements gui-chat-protocol's `ToolPlugin`: `toolDefinition`, `execute`, `isEnabled(startResponse)`, `viewComponent`, `previewComponent`, and optionally `systemPrompt`, `inputHandlers` (file / clipboard-image), `config` (a settings component with key and default value), `backends`, `generatingMessage`, `delayAfterExecution`.
 
-#### Core Plugin Interface (src/tools/type.ts)
-- **ToolPlugin**: Defines plugin structure with tool definition, execute function, and metadata
-- **ToolResult**: Standardized result format for all plugins
-- **ToolContext**: Provides context like images to plugin execution
+`src/tools/index.ts`:
+- `pluginList` — the registered plugins (from `@gui-chat-plugin/*`, `@mulmochat-plugin/*`, and GitHub packages such as piano and `guichat-plugin-akinator`)
+- `pluginTools()` / `getPluginSystemPrompts()` — filter by `isEnabled` (server keys), then role, then user toggles
+- `toolExecute()` / `getToolPlugin()` — execution and lookup by tool name
+- `getFileInputPlugins()`, `getClipboardImagePlugins()`, `getAcceptedFileTypes()` — input handlers
+- `getPluginsWithConfig()`, `initializePluginConfigs()`, `getPluginConfigValue()` — plugin settings
+- `getEnabledBackends()` — which backend settings panels (text LLM, image gen, mulmocast) to show
 
-#### Available Plugins
-1. **generateImage** (src/tools/generateImage.ts): Google Gemini image generation
-2. **editImage** (src/tools/editImage.ts): Image editing capabilities
-3. **browse** (src/tools/browse.ts): Web browsing and content extraction
-4. **exa** (src/tools/exa.ts): AI-powered search using Exa API
-5. **map** (src/tools/map.ts): Google Maps location and directions
-6. **mulmocast** (src/tools/mulmocast.ts): Podcast/audio content integration
-7. **music** (src/tools/music.ts): Music playback and control
-8. **othello** (src/tools/othello.ts): Interactive Othello game with AI
-9. **quiz** (src/tools/quiz.ts): Interactive quiz functionality
-10. **markdown** (src/tools/markdown.ts): Markdown processing and rendering
-11. **canvas** (src/tools/canvas.ts): Canvas drawing and manipulation
+`src/tools/types.ts` specializes the protocol's `ToolPlugin` with `StartApiResponse` as the server response type.
 
-#### Plugin Components and Previews
-Each plugin has associated Vue components:
-- **Components** (src/tools/views/): Full-view components for displaying tool results
-- **Previews** (src/tools/previews/): Sidebar thumbnail previews of tool results
+To add a plugin: add the package to `package.json`, import its `/vue` entry in `src/tools/index.ts`, and append it to `pluginList`. If it is used by a fixed role, add its tool name to that role's `availablePlugins`.
 
 #### Plugin Documentation Sync (IMPORTANT)
 
@@ -149,68 +139,51 @@ When changing plugin implementation policies or adding new constraints, the foll
 
 These documents are used by developers creating new plugins. Keeping them in sync ensures consistent guidance across all plugin development resources.
 
-### Key Integration Points
 
-The application integrates multiple AI services and APIs:
-1. **OpenAI Realtime API**: Voice chat with WebRTC and function calling
-2. **Google Gemini**: Image generation and editing
-3. **Exa API**: AI-powered web search
-4. **Google Maps API**: Location services and mapping
-5. **Twitter API**: Tweet embedding (server-side)
+### Server Architecture
 
-### State Management
+- **server/index.ts** — Express app on `PORT` (default 3001), JSON body limit 500 MB, `/api/health`, `/api/config`, static `/output` for generated files, serves the client in production
+- **server/routes/api.ts** — `/api/start`, `/api/browse`, `/api/exa-search`, `/api/twitter-embed`; mounts the other routers:
+  - `textLLM.ts` — `/api/text/providers`, `/api/text/generate`, and server-side sessions under `/api/text/session…` (not used by the current client)
+  - `image.ts` — `/api/generate-image` (Gemini), `/api/generate-image/openai`
+  - `comfyui.ts` — `/api/generate-image/comfy`
+  - `html.ts` — `/api/generate-html`
+  - `pdf.ts` — `/api/check-pdf`, `/api/summarize-pdf`, `/api/generate-pdf`, `/api/save-pdf`, `/api/download-pdf`
+  - `movie.ts` — `/api/generate-movie`, `/api/save-images`, `/api/download-movie`, `/api/viewer-json` (mulmocast)
+- **server/llm/** — `textService.ts` sends text generation to providers in `providers/` (OpenAI, Anthropic, Google, Grok, Ollama) with per-provider default models; `textSessionStore.ts` stores server-side sessions
+- **server/utils/logger.ts** — winston logger with daily rotating files in `logs/`; use `logger` / `logApiError` instead of `console.*` for new server code
 
-State is now distributed across composables rather than centralized:
-- **User Preferences** (useUserPreferences): System prompt, language, custom instructions, plugin settings - persisted to localStorage
-- **Session State** (useRealtimeSession): WebRTC connection, audio streams, data channels, mute state, conversation active status
-- **Tool Results** (useToolResults): Array of plugin execution results, selected result, generation status
-- **App-level State** (App.vue): User input text, messages array, current text accumulation
+`/api/start` returns a `StartApiResponse` with the OpenAI ephemeral key and feature flags (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`). Plugins read these in `isEnabled()`.
+
+### Environment Variables (.env)
+
+- `OPENAI_API_KEY` — required by `/api/start` (all transports call it)
+- `GEMINI_API_KEY` — Gemini image generation, Gemini Live, Google text models
+- `ANTHROPIC_API_KEY`, `XAI_API_KEY` — Anthropic / Grok text models
+- `EXA_API_KEY` — Exa search; `GOOGLE_MAP_API_KEY` — map plugin
+- `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends
+- `PORT`, `NODE_ENV`
 
 ### Data Flow
 
-#### Session Initialization Flow
-1. User clicks start chat in Sidebar
-2. App.vue calls `startChat()` which invokes `useRealtimeSession.startChat()`
-3. `useRealtimeSession` fetches ephemeral key from `/api/start` endpoint
-4. Creates RTCPeerConnection with data channel named "oai-events"
-5. Requests microphone access via getUserMedia
-6. Creates WebRTC offer and exchanges SDP with OpenAI's realtime endpoint
-7. On data channel open, sends `session.update` with instructions (from useUserPreferences) and tools
+#### Session Start
+1. User clicks start in the Sidebar; HomeView calls `session.startChat()`
+2. The active transport fetches `/api/start`
+3. Voice-realtime: creates RTCPeerConnection + `oai-events` data channel, gets microphone, exchanges SDP with OpenAI, then sends `session.update` with instructions and tools. Google Live: opens the Live WebSocket and sends the same instructions and tools. Text: stores instructions and tools for the next request.
 
-#### Message Flow (WebRTC → Tool Execution)
-1. OpenAI sends message through WebRTC data channel
-2. `useRealtimeSession` receives message in `handleMessage` handler
-3. Different message types trigger different handlers:
-   - `response.function_call_arguments.delta`: Accumulates function arguments
-   - `response.function_call_arguments.done`: Calls registered `onToolCall` handler
-   - `response.text.delta`: Calls `onTextDelta` for streaming text
-   - `response.created`/`response.done`: Updates conversation active state
-   - `input_audio_buffer.speech_started/stopped`: Triggers speech event handlers
-4. App.vue's registered `onToolCall` handler forwards to `useToolResults.handleToolCall()`
-5. `useToolResults` executes the plugin via `toolExecute(context, toolName, args)`
-6. Result is added to `toolResults` array (or updates existing if `result.updating === true`)
-7. Result displayed in sidebar preview and selected for main canvas
-8. Function output sent back to OpenAI via `sendFunctionCallOutput()`
-9. Optional follow-up instructions sent via `sendInstructions()` if plugin defines them
+#### Tool Call
+1. The transport receives a function call (Realtime `response.function_call_arguments.done`, a Live tool call, or `toolCalls` from `/api/text/generate`) and calls `onToolCall`
+2. HomeView forwards it to `useToolResults.handleToolCall()`
+3. The plugin runs via `toolExecute`; the result is appended or updates the selected result, is previewed in the sidebar and shown on the canvas
+4. The function output is sent back through the transport, followed by optional `instructions`
 
-#### User Text Message Flow
-1. User types in sidebar text input and presses send
-2. Sidebar emits `send-text-message` event
-3. App.vue's `sendTextMessage()` waits for conversation to be inactive (max 5 seconds)
-4. Calls `useRealtimeSession.sendUserMessage(text)`
-5. Sends two data channel messages:
-   - `conversation.item.create` with user message content
-   - `response.create` to trigger model response
+#### User Text Message
+1. Sidebar emits `send-text-message`
+2. HomeView waits for the conversation to be inactive (`SESSION_CONFIG.MESSAGE_SEND_RETRY_ATTEMPTS` × `MESSAGE_SEND_RETRY_DELAY_MS`)
+3. Calls `session.sendUserMessage(text)` on the active transport
 
-#### Listener Mode Flow (Special System Prompt)
-When `systemPromptId === "listener"`:
-1. Speech starts → Updates `lastSpeechStartedTime`
-2. Speech stops → Checks if speech duration exceeded threshold (15 seconds)
-3. If threshold exceeded:
-   - Disables local audio via `setLocalAudioEnabled(false)`
-   - Waits for audio gap (2 seconds)
-   - Re-enables audio based on current mute state
-   - Resets speech start timer
+#### Listener Role
+When `roleId === "listener"`: if the user has been speaking longer than `LISTENER_MODE_SPEECH_THRESHOLD_MS` (15 s) when speech stops, HomeView disables local audio for `LISTENER_MODE_AUDIO_GAP_MS` (2 s) and then restores it according to the mute state, so the model gets a chance to generate images.
 
 ## Mulmocast NPM Package API
 
