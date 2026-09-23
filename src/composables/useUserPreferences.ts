@@ -120,9 +120,7 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     textModelId: getStoredValue(TEXT_MODEL_ID_KEY) || DEFAULT_TEXT_MODEL.rawId,
     imageGenerationBackend:
       (getStoredValue(IMAGE_GENERATION_BACKEND_KEY) as
-        | "gemini"
-        | "openai"
-        | "comfyui") || "gemini",
+        "gemini" | "openai" | "comfyui") || "gemini",
     comfyuiModel:
       getStoredValue(COMFYUI_MODEL_KEY) || "flux1-schnell-fp8.safetensors",
     pluginConfigs: initPluginConfigs(),

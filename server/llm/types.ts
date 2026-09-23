@@ -1,9 +1,5 @@
 export type TextLLMProviderId =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "ollama"
-  | "grok";
+  "openai" | "anthropic" | "google" | "ollama" | "grok";
 
 export interface TextMessage {
   role: "system" | "user" | "assistant" | "tool";
