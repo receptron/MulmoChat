@@ -1,56 +1,69 @@
 # MulmoChat Agent Guide
 
+For the full architecture description see `CLAUDE.md`. This file is the short version.
+
 ## Overview
-- Voice-driven multi-modal chat client that connects to OpenAI's Realtime API by WebRTC and renders tool outputs in the main canvas.
-- Sidebar lists tool invocations (images, browsing, search, games) and lets the user start/stop voice chat or send text messages.
-- Tool executions are coordinated through `src/tools/type.ts`; results flow back into `App.vue` to update the UI and inform the model.
+- Multi-modal chat client and reference implementation of [gui-chat-protocol](https://github.com/receptron/gui-chat-protocol).
+- Three session transports: OpenAI Realtime (voice, WebRTC), Google Gemini Live (voice, WebSocket), and text chat through the server (OpenAI, Anthropic, Google, Grok, Ollama).
+- Tool calls are executed by ~30 plugins from npm packages; each plugin supplies a view (main canvas) and a preview (sidebar).
 
 ## Repository Layout
-- `src/` — Vue 3 + TypeScript client. Entry: `src/main.ts`; root component: `src/App.vue`; sidebar UI: `src/components/Sidebar.vue`.
-- `src/tools/` — Tool plugins (`generateImage`, `editImage`, `browse`, `mulmocast`, `presentMap`, `exaSearch`, `playOthello`) plus result views under `src/tools/views/` and previews under `src/tools/previews/`.
-- `server/` — Express server in TypeScript. Entry: `server/index.ts`; REST endpoints live in `server/routes/api.ts`; shared types in `server/types.ts`.
-- Builds and configs: `vite.config.ts`, `tailwind.config.cjs`, `postcss.config.cjs`, `tsconfig*.json`, `eslint.config.mjs`.
-- `dist/` — Vite build output (client). Do not edit.
+- `src/` — Vue 3 + TypeScript client.
+  - Entry `src/main.ts`; `src/App.vue` only holds `<router-view>`.
+  - `src/views/HomeView.vue` is the main screen and wires the composables together.
+  - `src/components/Sidebar.vue` has the controls, result previews, text input and settings. `src/components/settings/` holds the backend settings panels.
+- `src/composables/` — `useSessionTransport` picks one of `useVoiceRealtimeSession`/`useRealtimeSession`, `useGoogleLiveSession`, `useTextSession`. Also `useToolResults`, `useUserPreferences` (localStorage), `useScrolling`.
+- `src/config/` — roles (`roles.ts`), languages, realtime/live models (`models.ts`), text models (`textModels.ts`), session constants.
+- `src/tools/` — plugin registry and filtering (`index.ts`), MulmoChat `ToolPlugin` type (`types.ts`), client helpers for server APIs (`backend/`).
+- `server/` — Express server in TypeScript. Entry `server/index.ts` (port 3001). Routes in `server/routes/`, text LLM providers in `server/llm/`, winston logger in `server/utils/logger.ts`, shared types in `server/types.ts`.
+- `benchmark/` — LLM benchmark harness. `docs/` — plugin guides and design notes.
+- `dist/`, `build/`, `output/`, `logs/` — generated. Do not edit.
 
-## Client Architecture
-- `App.vue` manages WebRTC setup, receives the `/api/start` payload, and registers tools returned by `pluginTools(startResponse)`.
-- Outgoing tool calls stream arguments through the data channel; `processToolCall` dispatches to `pluginExecute` with any cached image context.
-- Views in `src/tools/views/*.vue` render the active tool result (images, browse summaries, Exa hits, MulmoCast HTML, map, Othello board) based on the `ToolResult` payload.
-- `Sidebar.vue` shows the execution history, exposes audio playback for remote audio, and provides a text input that sends conversation items via the same data channel.
-- Tool enablement is dynamic: `presentMap` requires a Google Maps key; `exaSearch` is available only when `EXA_API_KEY` is configured; all others are always enabled.
+## Plugins
+- Plugins are npm packages (`@gui-chat-plugin/*`, `@mulmochat-plugin/*`, and a few GitHub packages). Each exports `{ plugin }` from its `/vue` entry.
+- To add one:
+  1. Add the package to `package.json`.
+  2. Import it in `src/tools/index.ts` and append it to `pluginList`.
+  3. If a fixed role should use it, add the tool name to that role's `availablePlugins` in `src/config/roles.ts`.
+- A plugin is enabled when all of these hold:
+  - its `isEnabled(startResponse)` returns true, which depends on the server keys;
+  - the current role allows it (`pluginMode` `fixed` vs `customizable`);
+  - the user has not switched it off (customizable roles only).
+- Keep plugin-specific code out of `HomeView.vue`, `App.vue` and the composables. Use `toolExecute` / `getToolPlugin` / `pluginTools` from `src/tools/index.ts`.
+- Plugin policy changes must also be reflected in `docs/plugin-development-guide.md` and `docs/plugin-development-guide.ja.md`.
 
-## Server APIs
-- `/api/start` — Exchanges the long-lived OpenAI API key for a short-lived Realtime client secret; returns feature flags (`hasExaApiKey`) and the optional Google Maps key.
-- `/api/generate-image` — Uses Google Gemini `gemini-2.5-flash-image-preview` to create or edit images (edits receive the previous image bytes).
-- `/api/browse` — Delegates to `mulmocast.puppeteerCrawlerAgent` for structured web-page captures.
-- `/api/exa-search` — Wraps `exa-js` `search`/`searchAndContents` depending on payload flags.
-- `/api/twitter-embed` — Proxy around Twitter/X oEmbed so the client can safely inject embeds.
-- Health/config helpers: `/api/health`, `/api/config` for service diagnostics.
+## Server APIs (all under `/api`)
+- `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key. It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`).
+- `/text/providers`, `/text/generate` — text LLM. `/text/session/...` is a server-side session API; the current client doesn't use it.
+- `/generate-image` (Gemini), `/generate-image/openai`, `/generate-image/comfy` (ComfyUI).
+- `/generate-html`.
+- `/check-pdf`, `/summarize-pdf`, `/generate-pdf`, `/save-pdf`, `/download-pdf`.
+- `/generate-movie`, `/save-images`, `/download-movie`, `/viewer-json` (mulmocast).
+- `/browse`, `/exa-search`, `/twitter-embed`, plus `/health` and `/config`.
 
 ## Scripts
-- `yarn dev` — Run the server (`tsx server/index.ts`) and Vite dev server concurrently.
-- `yarn dev:server` / `yarn dev:client` — Start either side in isolation (`yarn server` is an alias for the server script).
-- `yarn build` — Type-check (`vue-tsc -b`), build the client, and compile the server (`yarn build:server`).
-- `yarn preview` — Serve the Vite production build.
-- `yarn start` — Run the compiled server (`server/dist/index.js`).
-- `yarn lint` / `yarn format` — ESLint across `src` and `server`; Prettier for `{src,server}/**/*.{ts,json,yaml,vue}`.
+- `yarn dev` runs the server (`tsx server/index.ts`) and Vite together. `yarn dev:server` / `yarn dev:client` start one side only (`yarn server` is the same as `yarn dev:server`).
+- `yarn typecheck` (`vue-tsc --noEmit`), `yarn lint` (ESLint on `src` and `server`), `yarn format` (Prettier), `yarn knip` (dead code).
+- `yarn test:text:<provider>`, `yarn test:tools:<provider>` and `yarn test:image:<comfy|openai>` are smoke tests. They call real APIs.
+- `yarn benchmark:llm` runs the LLM benchmark.
+- Avoid `yarn build` / `yarn preview` / `yarn start` during development; they create build artifacts.
 
 ## Environment Variables
-- Required: `OPENAI_API_KEY` (Realtime client secret exchange), `GEMINI_API_KEY` (image generation).
-- Optional: `GOOGLE_MAP_API_KEY` (enables the map tool), `EXA_API_KEY` (enables Exa search). Optional keys are surfaced to the client via `/api/start`; `.env` is ignored by git.
-- Missing optional keys log warnings and gracefully disable the dependent tool.
+- `OPENAI_API_KEY` — required; `/api/start` fails without it.
+- `GEMINI_API_KEY` — Gemini images, Gemini Live and Google text models.
+- `ANTHROPIC_API_KEY`, `XAI_API_KEY` — Anthropic and Grok text models.
+- `EXA_API_KEY` (Exa search) and `GOOGLE_MAP_API_KEY` (map). Plugins that need a missing key are disabled.
+- `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends.
+- `PORT` and `NODE_ENV`. `.env` is ignored by git.
 
 ## Development Guidelines
-- TypeScript strict mode, Vue SFCs with `<script setup lang="ts">`, 2-space indentation, Unix line endings, semicolons required.
-- Prefer the existing structured logging pattern (minimal `console.*` already in place); avoid introducing noisy logs in committed code.
-- Keep tool definitions in `src/tools` declarative and update both the plugin module and any corresponding view/preview when adding new capabilities.
-- Client/server communication assumes JSON payloads under 500 MB (see Express body parser limits).
+- Code style:
+  - TypeScript strict mode.
+  - Vue SFCs use `<script setup lang="ts">`.
+  - 2-space indentation, semicolons, Unix line endings.
+- On the server, use `logger` / `logApiError` from `server/utils/logger.ts`. Don't add new `console.*` calls.
+- Request bodies can be up to 500 MB (the Express body parser limit).
 
-## Testing
-- No automated tests today. If you add tests, use Vitest for both client and server (`*.spec.ts` adjacent to source) and cover new tool behaviors or API routes.
-
-## Release Checklist
-- Run `yarn lint` and `yarn format` before committing.
-- Verify `.env` contains the needed keys for any new feature paths.
-- For UI/API changes, capture screenshots or logs when preparing a PR.
-- Avoid shipping the temporary `/api/start` key-exchange flow to production without hardening.
+## Testing and CI
+- There are no unit tests. CI (`.github/workflows/pull_request.yaml`) runs `typecheck`, `lint` and `build` on every PR. Separate workflows scan for dead code and duplicated code.
+- Before committing, run `yarn typecheck`, `yarn lint` and `yarn format`.
