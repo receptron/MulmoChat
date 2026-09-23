@@ -66,7 +66,7 @@ HomeView orchestrates the UI: it creates `useUserPreferences`, `useSessionTransp
 
 `useSessionTransport` (src/composables/useSessionTransport.ts) holds all three sessions and exposes the active one through a common interface (`UseRealtimeSessionReturn`) plus a `capabilities` object. The transport is chosen by the user's model kind preference:
 
-- **`voice-realtime`** — `useVoiceRealtimeSession` → `useRealtimeSession`: OpenAI Realtime over WebRTC. Fetches an ephemeral key from `/api/start`, opens an `oai-events` data channel, streams microphone audio, accumulates function-call arguments and dispatches tool calls. Models in `config/models.ts` (`REALTIME_MODELS`).
+- **`voice-realtime`** — `useVoiceRealtimeSession` → `useRealtimeSession`: OpenAI Realtime over WebRTC. Fetches an ephemeral key from `/api/start?model=<id>` (the key is bound to that model), opens an `oai-events` data channel, streams microphone audio, accumulates function-call arguments and dispatches tool calls. Models in `config/models.ts` (`REALTIME_MODELS`).
 - **`voice-google-live`** — `useGoogleLiveSession`: Gemini Live API over a WebSocket opened directly from the browser with the Gemini key returned by `/api/start`, with PCM encoding/playback via `utils/audioCodec.ts` and `utils/audioStreamManager.ts`. Models in `GOOGLE_LIVE_MODELS`.
 - **`text-rest`** — `useTextSession`: keeps the conversation history on the client and calls the stateless `/api/text/generate` endpoint for each turn. Model IDs are `provider:model` strings (`config/textModels.ts`, default `openai:gpt-4o-mini`).
 
@@ -153,7 +153,7 @@ These documents are used by developers creating new plugins. Keeping them in syn
 - **server/llm/** — `textService.ts` sends text generation to providers in `providers/` (OpenAI, Anthropic, Google, Grok, Ollama) with per-provider default models; `textSessionStore.ts` stores server-side sessions
 - **server/utils/logger.ts** — winston logger with daily rotating files in `logs/`; use `logger` / `logApiError` instead of `console.*` for new server code
 
-`/api/start` returns a `StartApiResponse` with the OpenAI ephemeral key and feature flags (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`). Plugins read these in `isEnabled()`.
+`/api/start` returns a `StartApiResponse` with the OpenAI ephemeral key (minted for the `model` query parameter if it matches `gpt-realtime*`, otherwise `gpt-realtime-2.1`) and feature flags (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`). Plugins read these in `isEnabled()`.
 
 ### Environment Variables (.env)
 

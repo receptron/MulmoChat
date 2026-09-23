@@ -6,13 +6,14 @@ export interface RealtimeModelOption {
 
 export const REALTIME_MODELS: RealtimeModelOption[] = [
   {
-    id: "gpt-realtime",
-    label: "GPT Realtime",
+    id: "gpt-realtime-2.1",
+    label: "GPT Realtime 2.1",
+    description: "Realtime voice model with reasoning",
   },
   {
-    id: "gpt-realtime-mini",
-    label: "GPT Realtime Mini",
-    description: "Lower-latency, lower-cost realtime model",
+    id: "gpt-realtime-2.1-mini",
+    label: "GPT Realtime 2.1 Mini",
+    description: "Faster, lower-cost distilled version of GPT Realtime 2.1",
   },
 ];
 

@@ -100,6 +100,24 @@ const resolveStoredModelKind = (
   return "voice-realtime";
 };
 
+// Fall back to the default when the stored model is no longer offered
+// (e.g. a retired model saved by an earlier version)
+const resolveStoredModelId = (
+  modelKind: SessionTransportKind,
+  storedModelId: string | null,
+): string => {
+  if (modelKind === "voice-google-live") {
+    return (
+      GOOGLE_LIVE_MODELS.find((m) => m.id === storedModelId)?.id ??
+      DEFAULT_GOOGLE_LIVE_MODEL_ID
+    );
+  }
+  return (
+    REALTIME_MODELS.find((m) => m.id === storedModelId)?.id ??
+    DEFAULT_REALTIME_MODEL_ID
+  );
+};
+
 export function useUserPreferences(): UseUserPreferencesReturn {
   const storedModelKind = resolveStoredModelKind(
     getStoredValue(MODEL_KIND_KEY),
@@ -115,7 +133,10 @@ export function useUserPreferences(): UseUserPreferencesReturn {
       DEFAULT_ROLE_ID,
     customInstructions: getStoredValue(CUSTOM_INSTRUCTIONS_KEY) || "",
     enabledPlugins: initEnabledPlugins(),
-    modelId: getStoredValue(MODEL_ID_KEY) || DEFAULT_REALTIME_MODEL_ID,
+    modelId: resolveStoredModelId(
+      storedModelKind,
+      getStoredValue(MODEL_ID_KEY),
+    ),
     modelKind: storedModelKind,
     textModelId: getStoredValue(TEXT_MODEL_ID_KEY) || DEFAULT_TEXT_MODEL.rawId,
     imageGenerationBackend:

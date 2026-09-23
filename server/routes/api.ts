@@ -33,6 +33,15 @@ router.use(comfyRouter);
 // Mount image routes
 router.use(imageRouter);
 
+const DEFAULT_REALTIME_MODEL = "gpt-realtime-2.1";
+const REALTIME_MODEL_PATTERN = /^gpt-realtime[a-z0-9.-]*$/;
+
+// The ephemeral key is bound to a model, so mint it for the one the client selected
+const resolveRealtimeModel = (model: unknown): string =>
+  typeof model === "string" && REALTIME_MODEL_PATTERN.test(model)
+    ? model
+    : DEFAULT_REALTIME_MODEL;
+
 // Session start endpoint
 router.get("/start", async (req: Request, res: Response): Promise<void> => {
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -51,7 +60,7 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
     const sessionConfig = JSON.stringify({
       session: {
         type: "realtime",
-        model: "gpt-realtime",
+        model: resolveRealtimeModel(req.query.model),
         audio: {
           output: { voice: "shimmer" },
         },
