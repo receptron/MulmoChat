@@ -48,9 +48,12 @@ export const OPENAI_IMAGE_MODELS = [
 export type GeminiImageModelId = (typeof GEMINI_IMAGE_MODELS)[number]["id"];
 export type OpenAIImageModelId = (typeof OPENAI_IMAGE_MODELS)[number]["id"];
 
+// Used when the user has not picked a model. Keep in sync with
+// server/utils/imageModelDefaults.ts.
 export const DEFAULT_GEMINI_IMAGE_MODEL: GeminiImageModelId =
-  "gemini-2.5-flash-image";
-export const DEFAULT_OPENAI_IMAGE_MODEL: OpenAIImageModelId = "gpt-image-1";
+  "gemini-3.1-flash-image";
+export const DEFAULT_OPENAI_IMAGE_MODEL: OpenAIImageModelId =
+  "gpt-image-2.5-flare";
 
 // Preview IDs saved by earlier versions, mapped to their stable releases
 const RENAMED_GEMINI_IMAGE_MODELS: Readonly<
