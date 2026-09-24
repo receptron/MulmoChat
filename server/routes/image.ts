@@ -5,6 +5,10 @@ import OpenAI, { toFile } from "openai";
 import { Buffer } from "node:buffer";
 import { sendApiError, logApiRequest } from "../utils/logger";
 import {
+  DEFAULT_GEMINI_IMAGE_MODEL,
+  DEFAULT_OPENAI_IMAGE_MODEL,
+} from "../utils/imageModelDefaults";
+import {
   ImageGenerationError,
   errorMessageOf,
 } from "../utils/imageGenerationError";
@@ -48,7 +52,7 @@ export async function generateGeminiImage({
   }
 
   const ai = new GoogleGenAI({ apiKey: geminiKey });
-  const modelName = model || "gemini-2.5-flash-image";
+  const modelName = model || DEFAULT_GEMINI_IMAGE_MODEL;
 
   // Log API call with backend settings
   logApiRequest("generate-image", {
@@ -153,7 +157,7 @@ export async function generateOpenAIImage({
     );
   }
 
-  const modelName = model || "gpt-image-1";
+  const modelName = model || DEFAULT_OPENAI_IMAGE_MODEL;
   // Only DALL-E accepts response_format; GPT Image models always return
   // base64 and reject the parameter
   const shouldIncludeResponseFormat = modelName.startsWith("dall-e");

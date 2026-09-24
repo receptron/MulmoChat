@@ -7,7 +7,7 @@ const BASE_URL = process.env.TEST_SERVER_URL ?? "http://localhost:3001";
 const DEFAULT_PROMPT =
   process.env.OPENAI_IMAGE_TEST_PROMPT ??
   "A watercolor of a serene mountain lake";
-const MODEL = process.env.OPENAI_IMAGE_TEST_MODEL ?? "gpt-image-1";
+const MODEL = process.env.OPENAI_IMAGE_TEST_MODEL ?? "gpt-image-2.5-flare";
 const SHOULD_SAVE = (
   process.env.OPENAI_IMAGE_TEST_SAVE ?? "false"
 ).toLowerCase();
