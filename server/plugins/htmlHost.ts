@@ -25,7 +25,10 @@ import {
   type PackHtmlResult,
 } from "@mulmoclaude/html-plugin";
 import { artifactsFileOps } from "./workspace";
-import { requireLocalClient } from "../utils/trustedOrigin";
+import {
+  requireLocalClient,
+  requireLoopbackHost,
+} from "../utils/trustedOrigin";
 
 // A page can only load inline content and the CDNs below (the preview route
 // serves nothing else from the workspace), so the zip holds just the page.
@@ -83,32 +86,13 @@ const HTML_PREVIEW_CSP = [
   "connect-src 'none'",
 ].join("; ");
 
-const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
-
-// The request must name this machine. A DNS-rebinding page sends its own
-// domain as Host, so it is refused. The Vite dev proxy rewrites Host to
-// localhost, so the dev app works (also from other devices).
-function isLoopbackHost(host: string | undefined): boolean {
-  if (!host) return false;
-  try {
-    return LOOPBACK_HOSTNAMES.has(new URL(`http://${host}`).hostname);
-  } catch {
-    return false;
-  }
-}
-
 export const htmlPreviewRouter: Router = express.Router();
 
 htmlPreviewRouter.get(
   /^\/artifacts\/html\/(.+)/,
   requireLocalClient,
+  requireLoopbackHost,
   async (req: Request, res: Response): Promise<void> => {
-    // cors() runs on every route; a page must not be readable cross-site.
-    res.removeHeader("Access-Control-Allow-Origin");
-    if (!isLoopbackHost(req.get("host"))) {
-      res.status(403).json({ error: "Host not allowed" });
-      return;
-    }
     const rest = String(req.params[0] ?? "");
     if (!/\.html$/i.test(rest)) {
       res.status(404).json({ error: "not found" });

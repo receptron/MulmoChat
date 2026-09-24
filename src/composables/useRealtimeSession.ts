@@ -48,6 +48,9 @@ export interface UseRealtimeSessionReturn {
   sendUserMessage: (text: string) => Promise<boolean>;
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
   sendInstructions: (instructions: string) => boolean | Promise<boolean>;
+  /** Show the model images a tool returned (image data URLs), after that
+   *  tool's output and before its instructions. */
+  sendImagesToModel: (images: string[], caption: string) => boolean;
   setMute: (muted: boolean) => void;
   setLocalAudioEnabled: (enabled: boolean) => void;
   attachRemoteAudioElement: (audio: HTMLAudioElement | null) => void;
@@ -427,6 +430,22 @@ export function useRealtimeSession(
     });
   };
 
+  // A user message with the images; the model answers in the response that
+  // the tool's instructions start.
+  const sendImagesToModel = (images: string[], caption: string) => {
+    return sendDataChannelMessage({
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "user",
+        content: [
+          { type: "input_text", text: caption },
+          ...images.map((url) => ({ type: "input_image", image_url: url })),
+        ],
+      },
+    });
+  };
+
   const isDataChannelOpen = () => webrtc.dc?.readyState === "open";
 
   return {
@@ -441,6 +460,7 @@ export function useRealtimeSession(
     sendUserMessage,
     sendFunctionCallOutput,
     sendInstructions,
+    sendImagesToModel,
     setMute,
     setLocalAudioEnabled,
     attachRemoteAudioElement,

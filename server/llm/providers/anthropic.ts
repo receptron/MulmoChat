@@ -7,6 +7,7 @@ import {
   type TextMessage,
   type ToolCall,
 } from "../types";
+import { parseImageDataUrl } from "../images";
 
 // Room for a long tool argument such as a full HTML page (presentHtml). The
 // SDK refuses non-streaming requests it expects to run over 10 minutes, which
@@ -62,6 +63,21 @@ function toAnthropicMessages(messages: TextMessage[]) {
       };
     }
 
+    const images = (message.images ?? []).flatMap((url) => {
+      const image = parseImageDataUrl(url);
+      return image
+        ? [
+            {
+              type: "image" as const,
+              source: {
+                type: "base64" as const,
+                media_type: image.mediaType,
+                data: image.data,
+              },
+            },
+          ]
+        : [];
+    });
     return {
       role,
       content: [
@@ -69,6 +85,7 @@ function toAnthropicMessages(messages: TextMessage[]) {
           type: "text" as const,
           text: message.content,
         },
+        ...images,
       ],
     };
   });

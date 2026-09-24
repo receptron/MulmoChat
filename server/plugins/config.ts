@@ -6,4 +6,6 @@ export const PLUGIN_PACKAGES: readonly string[] = [
   "@mulmoclaude/chart-plugin",
   "@mulmoclaude/markdown-plugin",
   "@mulmoclaude/html-plugin",
+  "@mulmoclaude/shapescript-plugin",
+  "@mulmoclaude/mulmoscript-plugin",
 ];

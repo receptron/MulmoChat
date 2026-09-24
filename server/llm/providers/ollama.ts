@@ -4,6 +4,7 @@ import {
   type TextGenerationResult,
   type ToolCall,
 } from "../types";
+import { parseImageDataUrl } from "../images";
 
 interface OllamaToolCall {
   function: {
@@ -102,6 +103,14 @@ export async function generateWithOllama(
         role: message.role,
         content: message.content,
       };
+
+      // Images for the model, as base64 without the data URL prefix
+      if (message.images?.length) {
+        baseMessage.images = message.images.flatMap((url) => {
+          const image = parseImageDataUrl(url);
+          return image ? [image.data] : [];
+        });
+      }
 
       // Include tool_call_id for tool messages
       if (message.role === "tool" && message.tool_call_id) {

@@ -6,7 +6,8 @@
 // setup). Plugins get its artifacts/ area through a rooted FileOps, and
 // presentDocument can also read and overwrite `.md` files anywhere inside it
 // (markdownHost.ts).
-// Only presentHtml pages are served over HTTP (htmlHost.ts).
+// Over HTTP, only presentHtml pages (htmlHost.ts) and presentMulmoScript movies
+// and PDFs (mulmoscriptHost.ts) are served.
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";

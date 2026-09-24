@@ -24,6 +24,7 @@ import type { HtmlGenerationParams } from "../tools/backend";
 import type { ImageToolData } from "../tools/utils/imageTypes";
 import type { ToolExecuteFn, GetToolPluginFn } from "../tools/types";
 import { ROLES } from "../config/roles";
+import { getImagesForModel } from "../tools";
 
 // Plugins that are allowed to use setConfig
 const PLUGINS_WITH_SET_CONFIG = ["setImageStyle"];
@@ -36,6 +37,7 @@ interface UseToolResultsOptions {
   sleep: (milliseconds: number) => Promise<void>;
   sendInstructions: (instructions: string) => boolean | Promise<boolean>;
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
+  sendImagesToModel: (images: string[], caption: string) => boolean;
   conversationActive: Ref<boolean>;
   isDataChannelOpen: () => boolean;
   scrollToBottomOfSideBar: () => void;
@@ -259,6 +261,13 @@ export function useToolResults(
       };
       console.log(`RES:${result.toolName}\n`, outputPayload);
       sendFunctionOutput(msg.call_id, outputPayload);
+      const images = getImagesForModel(result);
+      if (msg.call_id && images.length > 0) {
+        options.sendImagesToModel(
+          images,
+          `[Image returned by ${result.toolName}]`,
+        );
+      }
       await maybeSendInstructions(result.toolName, plugin, result);
     } catch (e) {
       const errorMessage = `Tool execution failed: ${e}`;

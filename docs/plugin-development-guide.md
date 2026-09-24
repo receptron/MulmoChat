@@ -197,6 +197,7 @@ A host can run a plugin's `execute()` on its server instead of in the browser. M
 - **Export a framework-free core entry.** The package's main entry (or `./core`) must export `TOOL_DEFINITION` and `pluginCore` with `execute`, and must not import Vue. The server imports it directly.
 - **Reach backends only through `context`.** In `execute()`, call host backends such as `context.app.generateImage(prompt)` instead of `fetch`ing host routes or touching browser APIs (`window`, `localStorage`). On the server, `context.app` holds server-side implementations. To save files, use `context.files.artifacts` (read/write relative to the host's artifacts folder); paths outside that folder are refused.
 - **Return plain, JSON-serializable results.** The `ToolResult` goes back to the browser over HTTP, so `data` and `jsonData` must survive `JSON.stringify`. Images should be data URLs or URLs, not `Blob`s.
+- **Show the model an image with `imagesForModel`** (a MulmoChat extension of `ToolResult`). Set it to an array of image data URLs (PNG, JPEG, WebP or GIF, up to 4), and MulmoChat sends them to the model after the tool's output, in every transport. In text chat the model then gets another turn to look at them (at most 3 in a row). `renderShapeScript` uses this so the model can check a 3D model it wrote.
 - **`definePlugin` factory packages are not supported yet** by MulmoChat's server registry. Use the plain `pluginCore` form.
 
 Views and previews are unchanged: they still render in the browser from the returned `ToolResult`.
@@ -209,7 +210,7 @@ MulmoChat provides gui-chat-protocol's `BrowserPluginRuntime` to every plugin's 
 - **`dispatch(args)`** posts `{ args, config }` to `POST /api/plugin/<toolName>`, so it only reaches plugins that run on the server. `config` carries the user's settings, so backends such as `context.app.generateImage` use the model the user picked. The server calls the plugin's `execute(context, args)`, so a View action is usually an `args` object with a `kind` field that `execute` switches on (see `@mulmoclaude/markdown-plugin`).
 - **`openUrl(url)`** opens http(s) URLs in a new tab and ignores other schemes.
 - **`log`** writes to the browser console, tagged with the tool name.
-- **`pubsub.subscribe`** delivers `file:<path>` events, with `{ mtimeMs }`, for workspace files that a plugin request wrote (for example through `context.files.artifacts`). A View that shows a file can subscribe to reload it after a save. `useFileWatch` from `@mulmoclaude/core/plugin-vue` does this. MulmoChat publishes no other events.
+- **`pubsub.subscribe`** delivers `file:<path>` events, with `{ mtimeMs }`, for workspace files that a plugin request wrote (for example through `context.files.artifacts`). A View that shows a file can subscribe to reload it after a save. `useFileWatch` from `@mulmoclaude/core/plugin-vue` does this. Any other event name is the plugin's own: the server side of the host publishes it for that tool (MulmoChat streams these over `GET /api/plugin-events`), and only that plugin's Views receive it. `presentMulmoScript` uses this for generation progress (`generation`) and for scripts the model edited (`scriptChanged`).
 
 ### Difference Between View and Preview
 
