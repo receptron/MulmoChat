@@ -187,7 +187,7 @@ npm run test:tools:openai "What's the weather in Tokyo? Also calculate 123 + 456
 ### Model Selection
 - `OPENAI_TEST_MODEL` - Default: `gpt-4o-mini`
 - `ANTHROPIC_TEST_MODEL` - Default: `claude-3-5-sonnet-latest`
-- `GEMINI_TEST_MODEL` - Default: `gemini-2.5-flash`
+- `GEMINI_TEST_MODEL` - Default: `gemini-3.6-flash`
 - `OLLAMA_TEST_MODEL` - Default: `gpt-oss:20b`
 
 ### Ollama Configuration

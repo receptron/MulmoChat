@@ -9,7 +9,9 @@
 //                server-run plugins use (server/routes/plugins.ts). `config`
 //                carries the user's settings (setPluginDispatchConfig), so
 //                server backends such as image generation use them.
-//   - pubsub   → no-op: MulmoChat has no server push channel yet
+//   - pubsub   → an in-page bus. The only events are `file:<path>` for
+//                workspace files a plugin request wrote (publishFileChanges),
+//                which @mulmoclaude Views use to reload
 //   - openUrl  → http(s) only, in a new tab
 //   - log      → console, tagged with the tool name
 import {
@@ -71,7 +73,9 @@ function makeDispatch(toolName: string): BrowserPluginRuntime["dispatch"] {
         `plugin/${toolName} dispatch failed (${response.status}): ${detail || response.statusText}`,
       );
     }
-    return response.json();
+    const raw: unknown = await response.json();
+    publishFileChanges(response);
+    return raw;
   }
 
   async function dispatch(args: object): Promise<unknown>;
@@ -88,7 +92,21 @@ function makeDispatch(toolName: string): BrowserPluginRuntime["dispatch"] {
 
 type PluginSubscribe = BrowserPluginRuntime["pubsub"]["subscribe"];
 
-// Nothing is ever published, so subscribing only returns an unsubscribe.
+// Shared by every plugin: a file-change event is about the file, not about
+// the plugin that wrote it (a document can be open in two Views).
+const channels = new Map<string, Set<(payload: unknown) => void>>();
+
+// One failing subscriber (e.g. a `parse` that throws) must not stop the rest.
+function publish(eventName: string, payload: unknown): void {
+  for (const handler of channels.get(eventName) ?? []) {
+    try {
+      handler(payload);
+    } catch (error) {
+      console.warn(`[plugin] subscriber to ${eventName} failed`, error);
+    }
+  }
+}
+
 function subscribe(
   eventName: string,
   handler: (payload: unknown) => void,
@@ -98,15 +116,53 @@ function subscribe<T>(
   opts: SubscribeOptions<T>,
   handler: (payload: T) => void,
 ): () => void;
-function subscribe(): () => void {
-  return () => {};
+function subscribe<T>(
+  eventName: string,
+  ...rest:
+    | [handler: (payload: unknown) => void]
+    | [opts: SubscribeOptions<T>, handler: (payload: T) => void]
+): () => void {
+  let listener: (payload: unknown) => void;
+  if (rest.length === 1) {
+    listener = rest[0];
+  } else {
+    const [opts, handler] = rest;
+    listener = (raw) => {
+      const payload = opts.parse(raw);
+      if (payload !== null) handler(payload);
+    };
+  }
+  const handlers = channels.get(eventName) ?? new Set();
+  handlers.add(listener);
+  channels.set(eventName, handlers);
+  return () => handlers.delete(listener);
 }
-const noopSubscribe: PluginSubscribe = subscribe;
+const pluginSubscribe: PluginSubscribe = subscribe;
+
+const FILES_CHANGED_HEADER = "X-Workspace-Files-Changed";
+
+/** Tell open Views that a plugin request wrote these workspace files
+ *  (server/plugins/fileChanges.ts). */
+export function publishFileChanges(response: Response): void {
+  const header = response.headers.get(FILES_CHANGED_HEADER);
+  if (!header) return;
+  let paths: unknown;
+  try {
+    paths = JSON.parse(decodeURIComponent(header));
+  } catch {
+    return;
+  }
+  if (!Array.isArray(paths)) return;
+  const mtimeMs = Date.now();
+  for (const filePath of paths) {
+    if (typeof filePath === "string") publish(`file:${filePath}`, { mtimeMs });
+  }
+}
 
 function makeBrowserPluginRuntime(toolName: string): BrowserPluginRuntime {
   const tag = `[plugin/${toolName}]`;
   return {
-    pubsub: { subscribe: noopSubscribe },
+    pubsub: { subscribe: pluginSubscribe },
     locale: pluginLocale,
     log: {
       debug: (msg, data) => console.debug(tag, msg, data),

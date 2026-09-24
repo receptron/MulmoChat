@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import apiRoutes from "./routes/api.js";
+import { htmlPreviewRouter } from "./plugins/htmlHost.js";
 import { logger, logApiError } from "./utils/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,6 +33,9 @@ app.get("/api/config", (req: Request, res: Response) => {
 
 // API Routes
 app.use("/api", apiRoutes);
+
+// presentHtml pages for the View's iframe (sandboxed; see plugins/htmlHost.ts)
+app.use(htmlPreviewRouter);
 
 // Serve output directory for generated files
 app.use("/output", express.static(path.join(process.cwd(), "output")));

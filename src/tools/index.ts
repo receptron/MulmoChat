@@ -4,6 +4,7 @@ import type {
   FileInputHandler,
   ClipboardImageInputHandler,
   InputHandler,
+  ToolDefinition,
 } from "gui-chat-protocol/vue";
 import { v4 as uuidv4 } from "uuid";
 import { getRole, ROLES } from "../config/roles";
@@ -32,7 +33,7 @@ import MulmocastPlugin from "@gui-chat-plugin/mulmocast/vue";
 import Present3DPlugin from "@gui-chat-plugin/present3d/vue";
 import CameraPlugin from "@gui-chat-plugin/camera/vue";
 import CanvasPlugin from "@gui-chat-plugin/canvas/vue";
-import HtmlPlugin from "@gui-chat-plugin/html/vue";
+import HtmlPlugin from "@mulmoclaude/html-plugin/vue";
 import GenerateHtmlPlugin from "@gui-chat-plugin/generate-html/vue";
 import EditHtmlPlugin from "@gui-chat-plugin/edit-html/vue";
 import SwitchRolePlugin from "@gui-chat-plugin/switch-role/vue";
@@ -89,6 +90,19 @@ const ServerMarkdownPlugin = {
   ),
 };
 
+// presentHtml runs on the server, which saves pages under the shared
+// workspace's artifacts/html/ and serves them to the View's sandboxed iframe
+// (server/plugins/htmlHost.ts). The package's prompt also describes paths
+// outside artifacts/html/, which MulmoChat doesn't open, so it gets its own.
+const PRESENT_HTML_PROMPT = `Use presentHtml when the user asks for HTML output, dashboards, custom layouts, or interactive content. Provide EITHER \`html\` OR \`path\`, not both. \`html\` is a full self-contained document (\`<!DOCTYPE html>\`, \`<html>\`, \`<body>\`) with all CSS and JavaScript inlined or loaded from a CDN (cdn.jsdelivr.net, unpkg.com, cdnjs.cloudflare.com, cdn.plot.ly, Google Fonts); the page cannot make network requests (fetch/XHR). It is saved to \`artifacts/html/<YYYY>/<MM>/...\`. \`path\` presents a page you saved earlier (\`artifacts/html/...\`) without re-saving it; the user's edits in the view overwrite that file.`;
+
+const ServerHtmlPlugin = {
+  plugin: runOnServer(
+    { ...HtmlPlugin.plugin, systemPrompt: PRESENT_HTML_PROMPT },
+    () => ({}),
+  ),
+};
+
 const registeredPlugins = [
   // External plugins from npm packages
   QuizPlugin,
@@ -112,7 +126,7 @@ const registeredPlugins = [
   Present3DPlugin,
   CameraPlugin,
   CanvasPlugin,
-  HtmlPlugin,
+  ServerHtmlPlugin,
   GenerateHtmlPlugin,
   EditHtmlPlugin,
   SwitchRolePlugin,
@@ -212,6 +226,13 @@ const switchRoleToolDefinition = createSwitchRoleToolDefinition(
   ROLES.map((r) => ({ id: r.id, name: r.name })),
 );
 
+// gui-chat-protocol's ToolDefinition.prompt is for the host's system prompt
+// (see getPluginSystemPrompts), not a field the model APIs accept.
+const toolDefinitionForModel = ({
+  prompt: __prompt,
+  ...definition
+}: ToolDefinition): ToolDefinition => definition;
+
 export const pluginTools = (
   startResponse?: StartApiResponse | null,
   enabledPlugins?: Record<string, boolean>,
@@ -250,7 +271,7 @@ export const pluginTools = (
       if (plugin.plugin.toolDefinition.name === "switchRole") {
         return switchRoleToolDefinition;
       }
-      return plugin.plugin.toolDefinition;
+      return toolDefinitionForModel(plugin.plugin.toolDefinition);
     });
 };
 
@@ -283,7 +304,10 @@ export const getPluginSystemPrompts = (
 
       return true;
     })
-    .map((plugin) => plugin.plugin.systemPrompt)
+    .map(
+      (plugin) =>
+        plugin.plugin.systemPrompt ?? plugin.plugin.toolDefinition.prompt,
+    )
     .filter((prompt): prompt is string => !!prompt);
 
   return prompts.length > 0 ? ` ${prompts.join("\n")}` : "";

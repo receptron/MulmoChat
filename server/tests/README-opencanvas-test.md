@@ -16,7 +16,7 @@ The tests **do not execute** the actual `openCanvas` API - they only verify that
 
 - `test-opencanvas.ts` - OpenAI (gpt-4o-mini, gpt-4o, etc.)
 - `test-opencanvas-anthropic.ts` - Anthropic Claude (claude-3-5-sonnet, etc.)
-- `test-opencanvas-google.ts` - Google Gemini (gemini-2.5-flash, etc.)
+- `test-opencanvas-google.ts` - Google Gemini (gemini-3.6-flash, etc.)
 - `test-opencanvas-ollama.ts` - Ollama (llama3.1, qwen2.5, etc.)
 
 ## Prerequisites
@@ -47,7 +47,7 @@ ANTHROPIC_TEST_MODEL=claude-3-5-sonnet-latest  # optional
 
 ```bash
 GEMINI_API_KEY=...
-GEMINI_TEST_MODEL=gemini-2.5-flash  # optional
+GEMINI_TEST_MODEL=gemini-3.6-flash  # optional
 ```
 
 ### Ollama
@@ -188,7 +188,7 @@ Try a different model that supports function calling (e.g., llama3.1, qwen2.5).
 ```typescript
 // Correct structure for Google GenAI SDK
 {
-  model: "gemini-2.5-flash",
+  model: "gemini-3.6-flash",
   contents: [...],
   config: {           // Tools go inside config
     tools: [...],
@@ -261,7 +261,7 @@ If the LLM returns text instead of a tool call:
 - **Model doesn't support function calling**: Try a newer/larger model
 - **OpenAI**: Use gpt-4o or gpt-4o-mini
 - **Anthropic**: Use claude-3-5-sonnet-latest
-- **Google**: Use gemini-2.5-flash or gemini-2.5-pro
+- **Google**: Use gemini-3.6-flash or gemini-3.1-pro-preview
 - **Ollama**: Use llama3.1, qwen2.5, or other function-calling capable models
 
 ## Related Files

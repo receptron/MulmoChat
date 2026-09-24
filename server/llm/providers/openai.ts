@@ -4,6 +4,10 @@ import {
   type TextGenerationResult,
 } from "../types";
 
+// gpt-5.6-* and gpt-6-* (except gpt-6-astra, which needs /v1/responses for
+// tools and isn't offered)
+const NO_REASONING_WITH_TOOLS = /^gpt-(5\.6|6)-/;
+
 const OPENAI_CHAT_COMPLETIONS_URL =
   "https://api.openai.com/v1/chat/completions";
 
@@ -90,8 +94,16 @@ export async function generateWithOpenAI(
         parameters: tool.parameters,
       },
     }));
-    // Enable parallel tool calling
-    requestBody.parallel_tool_calls = true;
+    // Enable parallel tool calling (o-series models reject the parameter)
+    if (!/^o\d/.test(params.model)) {
+      requestBody.parallel_tool_calls = true;
+    }
+    // These models only take function tools on /v1/chat/completions with
+    // reasoning off (reasoning plus tools needs /v1/responses). Older models
+    // reject the field, so it is sent only to them.
+    if (NO_REASONING_WITH_TOOLS.test(params.model)) {
+      requestBody.reasoning_effort = "none";
+    }
   }
 
   const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {

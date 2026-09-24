@@ -209,7 +209,7 @@ MulmoChat は、すべてのプラグインの View と Preview に gui-chat-pro
 - **`dispatch(args)`** は `{ args, config }` を `POST /api/plugin/<toolName>` に送ります。そのため、サーバーで動くプラグインにしか届きません。`config` にはユーザーの設定が入っているため、`context.app.generateImage` などのバックエンドはユーザーが選んだモデルを使います。サーバーはプラグインの `execute(context, args)` を呼び出します。そのため、View からの操作は、`execute` が振り分けに使う `kind` フィールドを持つ `args` オブジェクトにするのが一般的です（`@mulmoclaude/markdown-plugin` を参照）。
 - **`openUrl(url)`** は http(s) の URL を新しいタブで開きます。それ以外のスキームは無視します。
 - **`log`** はツール名を付けてブラウザのコンソールに出力します。
-- **`pubsub.subscribe`** は呼び出せますが、MulmoChat はまだイベントを発行しません。
+- **`pubsub.subscribe`** は、プラグインのリクエストが書き込んだワークスペースのファイル（`context.files.artifacts` 経由など）について、`file:<path>` イベントを `{ mtimeMs }` 付きで届けます。ファイルを表示する View はこれを購読すると、保存後に再読み込みできます。`@mulmoclaude/core/plugin-vue` の `useFileWatch` がこれを行います。MulmoChat がこれ以外のイベントを発行することはありません。
 
 ### View と Preview の違い
 
