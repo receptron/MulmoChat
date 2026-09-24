@@ -201,6 +201,16 @@ A host can run a plugin's `execute()` on its server instead of in the browser. M
 
 Views and previews are unchanged: they still render in the browser from the returned `ToolResult`.
 
+### Plugin Runtime and Language in Views
+
+MulmoChat provides gui-chat-protocol's `BrowserPluginRuntime` to every plugin's View and Preview, so components can call `useRuntime()` from `gui-chat-protocol/vue`:
+
+- **`locale`** is the user's language setting, as a reactive ref (`en`, `ja`, `zh`, `pt-BR`, …; MulmoChat's `pt` is passed as `pt-BR`). The easiest way to translate a plugin's text is `createUseT({ en, ja, … })`, which reads this locale and falls back to `en` for languages you have no table for.
+- **`dispatch(args)`** posts `{ args }` to `POST /api/plugin/<toolName>`, so it only reaches plugins that run on the server.
+- **`openUrl(url)`** opens http(s) URLs in a new tab and ignores other schemes.
+- **`log`** writes to the browser console, tagged with the tool name.
+- **`pubsub.subscribe`** is accepted, but MulmoChat never publishes events yet.
+
 ### Difference Between View and Preview
 
 ```

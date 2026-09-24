@@ -45,6 +45,7 @@ import AkinatorPlugin from "guichat-plugin-akinator/vue";
 import AvatarPlugin from "@gui-chat-plugin/avatar/vue";
 import ChartPlugin from "@mulmoclaude/chart-plugin/vue";
 import { runOnServer } from "./serverPlugin";
+import { wrapWithPluginRuntime } from "./pluginRuntime";
 
 // generateImage runs on the server (server/plugins/), with the user's image
 // settings sent along so the server-side context.app.generateImage uses them.
@@ -60,7 +61,7 @@ const ServerChartPlugin = {
   plugin: runOnServer(ChartPlugin.plugin, () => ({})),
 };
 
-const pluginList = [
+const registeredPlugins = [
   // External plugins from npm packages
   QuizPlugin,
   ServerGenerateImagePlugin,
@@ -96,6 +97,27 @@ const pluginList = [
   AvatarPlugin,
   ServerChartPlugin,
 ];
+
+// Every plugin's views get the browser plugin runtime (useRuntime()), which
+// carries the user's language among other host capabilities.
+const pluginList = registeredPlugins.map((entry) => {
+  const { plugin } = entry;
+  const toolName = plugin.toolDefinition.name;
+  return {
+    ...entry,
+    plugin: {
+      ...plugin,
+      viewComponent:
+        plugin.viewComponent &&
+        wrapWithPluginRuntime(toolName, plugin.viewComponent),
+      previewComponent:
+        plugin.previewComponent &&
+        wrapWithPluginRuntime(toolName, plugin.previewComponent),
+    },
+  };
+});
+
+export { setPluginLocale } from "./pluginRuntime";
 
 export const getPluginList = () => pluginList;
 

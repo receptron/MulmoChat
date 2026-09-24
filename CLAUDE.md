@@ -129,6 +129,10 @@ Some plugins run their `execute()` on the server instead of in the browser. The 
 - **Files:** plugins get `context.files.artifacts`, a rooted `FileOps` over `<workspace>/artifacts` (`server/plugins/fileOps.ts`, copied from MulmoTerminal). Paths that escape the root, including through symlinks, are refused. The workspace (`server/plugins/workspace.ts`) is `MULMOCHAT_WORKSPACE`, else the `~/mulmoclaude` workspace shared with MulmoClaude and MulmoTerminal if it exists, else `output/workspace`. MulmoChat never creates or seeds the shared workspace and serves nothing from it.
 - **Adding one:** add the package to `server/plugins/config.ts`, add any backend it calls to `createAppContext`, and wrap its `pluginList` entry with `runOnServer`. `definePlugin` factory packages are not supported yet. For `@mulmoclaude/*` packages, their stylesheets are picked up by the glob in `src/main.ts`.
 
+#### Plugin runtime
+
+Every plugin's View and Preview is wrapped by `wrapWithPluginRuntime` (`src/tools/pluginRuntime.ts`, adapted from MulmoTerminal), which provides gui-chat-protocol's `BrowserPluginRuntime` under `PLUGIN_RUNTIME_KEY`, so components can call `useRuntime()`. `locale` follows the user's language (HomeView calls `setPluginLocale`; `pt` becomes `pt-BR`), which is how `createUseT()` plugins such as form and chart show translated text. `dispatch` posts `{ args }` to `/api/plugin/<toolName>`, `openUrl` opens http(s) only, and `pubsub` is a no-op (no server push yet).
+
 #### Plugin Documentation Sync (IMPORTANT)
 
 When changing plugin implementation policies or adding new constraints, the following documentation must be updated:
