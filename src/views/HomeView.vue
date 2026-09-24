@@ -123,7 +123,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import type { ToolResult } from "gui-chat-protocol/vue";
-import { toolExecute, getToolPlugin } from "../tools";
+import { toolExecute, getToolPlugin, setPluginLocale } from "../tools";
 import Sidebar from "../components/Sidebar.vue";
 import RightSidebar from "../components/RightSidebar.vue";
 import { useSessionTransport } from "../composables/useSessionTransport";
@@ -153,6 +153,11 @@ const {
   buildInstructions: buildPreferenceInstructions,
   buildTools: buildPreferenceTools,
 } = preferences;
+
+// Plugin views show their text in the user's language
+watch(() => userPreferences.userLanguage, setPluginLocale, {
+  immediate: true,
+});
 
 async function sleep(milliseconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, milliseconds));

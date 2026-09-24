@@ -35,6 +35,7 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
   - The browser wraps the plugin with `runOnServer` (`src/tools/serverPlugin.ts`) and POSTs `{ args, config }` to `/api/plugin/<toolName>`.
   - `server/plugins/` loads the package and builds `context.app` per request.
   - The mechanism is adapted from MulmoTerminal's plugin registry. See `CLAUDE.md` for how to add a plugin this way.
+- Plugin runtime: every plugin view gets gui-chat-protocol's `BrowserPluginRuntime` (`src/tools/pluginRuntime.ts`), so it can call `useRuntime()`. Its `locale` follows the user's language, which translates `createUseT()` plugins such as form and chart.
 
 ## Server APIs (all under `/api`)
 - `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key, issued for the model in `?model=` (default `gpt-realtime-2.1`). It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`).

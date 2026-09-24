@@ -174,8 +174,17 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import type { ToolResultComplete } from "gui-chat-protocol/vue";
-import { getPluginList, toolExecute, getToolPlugin } from "../tools";
+import {
+  getPluginList,
+  toolExecute,
+  getToolPlugin,
+  setPluginLocale,
+} from "../tools";
+import { getStoredUserLanguage } from "../composables/useUserPreferences";
 import type { ToolPlugin } from "../tools/types";
+
+// Plugin views show their text in the saved language, as on the main screen
+setPluginLocale(getStoredUserLanguage());
 
 const plugins = computed(() => {
   return getPluginList()

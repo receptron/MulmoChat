@@ -16,7 +16,7 @@ export default [
   sonarjs.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/utils/markdown.ts', '**/composables/*.ts'],
+    files: ['**/utils/markdown.ts', '**/composables/*.ts', '**/tools/pluginRuntime.ts'],
     languageOptions: {
       globals: {
         ...globals.browser,
