@@ -13,7 +13,7 @@ import { createToolDefinition as createSwitchRoleToolDefinition } from "@gui-cha
 // External plugins from npm packages
 import QuizPlugin from "@mulmochat-plugin/quiz/vue";
 import GenerateImagePlugin from "@mulmochat-plugin/generate-image/vue";
-import FormPlugin from "@mulmochat-plugin/form/vue";
+import FormPlugin from "@mulmoclaude/form-plugin/vue";
 import SummarizePdfPlugin from "@mulmochat-plugin/summarize-pdf/vue";
 import SpreadsheetPlugin from "@gui-chat-plugin/spreadsheet/vue";
 import TodoPlugin from "@gui-chat-plugin/todo/vue";
