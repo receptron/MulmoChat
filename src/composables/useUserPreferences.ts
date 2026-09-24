@@ -118,12 +118,16 @@ const resolveStoredModelId = (
   );
 };
 
+/** The saved language, for views that read it without the full preferences. */
+export const getStoredUserLanguage = (): string =>
+  getStoredValue(USER_LANGUAGE_KEY) || DEFAULT_LANGUAGE_CODE;
+
 export function useUserPreferences(): UseUserPreferencesReturn {
   const storedModelKind = resolveStoredModelKind(
     getStoredValue(MODEL_KIND_KEY),
   );
   const state = reactive<UserPreferencesState>({
-    userLanguage: getStoredValue(USER_LANGUAGE_KEY) || DEFAULT_LANGUAGE_CODE,
+    userLanguage: getStoredUserLanguage(),
     suppressInstructions: getStoredValue(SUPPRESS_INSTRUCTIONS_KEY) === "true",
     showRoleList: getStoredValue(SHOW_ROLE_LIST_KEY) !== "false",
     roleId:

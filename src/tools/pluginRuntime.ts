@@ -6,7 +6,9 @@
 //
 //   - locale   → the user's language setting (setPluginLocale)
 //   - dispatch → POST /api/plugin/<toolName> with { args }, the route
-//                server-run plugins use (server/routes/plugins.ts)
+//                server-run plugins use (server/routes/plugins.ts). It sends
+//                no per-user config, so server backends such as image
+//                generation use their defaults, not the user's settings.
 //   - pubsub   → no-op: MulmoChat has no server push channel yet
 //   - openUrl  → http(s) only, in a new tab
 //   - log      → console, tagged with the tool name

@@ -131,7 +131,7 @@ Some plugins run their `execute()` on the server instead of in the browser. The 
 
 #### Plugin runtime
 
-Every plugin's View and Preview is wrapped by `wrapWithPluginRuntime` (`src/tools/pluginRuntime.ts`, adapted from MulmoTerminal), which provides gui-chat-protocol's `BrowserPluginRuntime` under `PLUGIN_RUNTIME_KEY`, so components can call `useRuntime()`. `locale` follows the user's language (HomeView calls `setPluginLocale`; `pt` becomes `pt-BR`), which is how `createUseT()` plugins such as form and chart show translated text. `dispatch` posts `{ args }` to `/api/plugin/<toolName>`, `openUrl` opens http(s) only, and `pubsub` is a no-op (no server push yet).
+Every plugin's View and Preview is wrapped by `wrapWithPluginRuntime` (`src/tools/pluginRuntime.ts`, adapted from MulmoTerminal), which provides gui-chat-protocol's `BrowserPluginRuntime` under `PLUGIN_RUNTIME_KEY`, so components can call `useRuntime()`. `locale` follows the user's language (HomeView calls `setPluginLocale`; `pt` becomes `pt-BR`), which is how `createUseT()` plugins such as form and chart show translated text. `dispatch` posts `{ args }` to `/api/plugin/<toolName>` (no per-user config, so server backends use their defaults), `openUrl` opens http(s) only, and `pubsub` is a no-op (no server push yet).
 
 #### Plugin Documentation Sync (IMPORTANT)
 
