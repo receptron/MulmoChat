@@ -6,6 +6,10 @@ import { generateGeminiImage, generateOpenAIImage } from "../routes/image";
 import { generateComfyImage } from "../routes/comfyui";
 import { logger } from "../utils/logger";
 import {
+  DEFAULT_GEMINI_IMAGE_MODEL,
+  DEFAULT_OPENAI_IMAGE_MODEL,
+} from "../utils/imageModelDefaults";
+import {
   ImageGenerationError,
   errorMessageOf,
 } from "../utils/imageGenerationError";
@@ -40,8 +44,8 @@ function parseImageSettings(raw: unknown): ImageGenerationSettings {
     backend: backend ?? "gemini",
     styleModifier:
       typeof settings.styleModifier === "string" ? settings.styleModifier : "",
-    geminiModel: stringOr(settings.geminiModel, "gemini-2.5-flash-image"),
-    openaiModel: stringOr(settings.openaiModel, "gpt-image-1"),
+    geminiModel: stringOr(settings.geminiModel, DEFAULT_GEMINI_IMAGE_MODEL),
+    openaiModel: stringOr(settings.openaiModel, DEFAULT_OPENAI_IMAGE_MODEL),
     comfyuiModel: stringOr(
       settings.comfyuiModel,
       "flux1-schnell-fp8.safetensors",

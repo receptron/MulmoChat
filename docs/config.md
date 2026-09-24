@@ -181,15 +181,17 @@ export function normalizeImageConfig(
     return {
       backend: config as ImageBackend,
       styleModifier: "",
-      geminiModel: "gemini-2.5-flash-image",
-      openaiModel: "gpt-image-1",
+      geminiModel: DEFAULT_GEMINI_IMAGE_MODEL, // "gemini-3.1-flash-image"
+      openaiModel: DEFAULT_OPENAI_IMAGE_MODEL, // "gpt-image-2.5-flare"
     };
   }
   return {
     backend: config?.backend || "gemini",
     styleModifier: config?.styleModifier || "",
-    geminiModel: config?.geminiModel || "gemini-2.5-flash-image",
-    openaiModel: config?.openaiModel || "gpt-image-1",
+    // Resolve saved IDs against src/config/imageModels.ts; retired preview IDs
+    // map to their stable releases, anything else falls back to the default
+    geminiModel: resolveGeminiImageModel(config?.geminiModel),
+    openaiModel: resolveOpenAIImageModel(config?.openaiModel),
   };
 }
 ```
