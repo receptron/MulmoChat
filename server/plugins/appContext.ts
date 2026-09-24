@@ -5,6 +5,10 @@ import type { ToolContextApp, ToolResult } from "gui-chat-protocol";
 import { generateGeminiImage, generateOpenAIImage } from "../routes/image";
 import { generateComfyImage } from "../routes/comfyui";
 import { logger } from "../utils/logger";
+import {
+  ImageGenerationError,
+  errorMessageOf,
+} from "../utils/imageGenerationError";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";
 
@@ -98,13 +102,20 @@ async function generateImage(
       instructions: "Acknowledge that the image generation failed.",
     };
   } catch (error) {
+    // Keep the reason (e.g. a missing API key, or a content-policy rejection in
+    // `details`) so the model can tell the user what to fix.
+    const reason =
+      error instanceof ImageGenerationError && error.details
+        ? `${error.message}: ${error.details}`
+        : errorMessageOf(error);
     logger.error("Image generation for plugin failed", {
       backend: settings.backend,
-      error: error instanceof Error ? error.message : String(error),
+      error: reason,
     });
     return {
-      message: "image generation failed",
-      instructions: "Acknowledge that the image generation failed.",
+      message: `image generation failed: ${reason}`,
+      instructions:
+        "Acknowledge that the image generation failed and briefly tell the user the reason.",
     };
   }
 }

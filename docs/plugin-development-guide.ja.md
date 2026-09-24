@@ -190,6 +190,17 @@ ToolPlugin<T, J, A>
      └──────────────── instructions で LLM に指示 ←──────────────────┘
 ```
 
+### execute() をサーバーで実行する
+
+ホストは、プラグインの `execute()` をブラウザではなくサーバーで実行することがあります。MulmoTerminal はすべてのプラグインをこの方式で実行しています。MulmoChat では `generateImage` がこの方式です。ブラウザは呼び出しを `POST /api/plugin/<toolName>` に転送し、サーバーが自身の `context.app` を渡して `execute()` を実行します。この方式で動かすには、次の条件を満たしてください。
+
+- **フレームワークに依存しない core エントリーを用意する。** パッケージのメインエントリー（または `./core`）で `TOOL_DEFINITION` と、`execute` を持つ `pluginCore` を export し、Vue を import しないでください。サーバーはこのエントリーを直接 import します。
+- **バックエンドには `context` 経由でのみアクセスする。** `execute()` の中では、ホストのルートを `fetch` したり、ブラウザの API（`window`、`localStorage`）に触れたりせず、`context.app.generateImage(prompt)` のようなホストのバックエンドを呼び出してください。サーバー上では、`context.app` にサーバー側の実装が入ります。
+- **JSON にシリアライズできる結果を返す。** `ToolResult` は HTTP でブラウザに返されるため、`data` と `jsonData` は `JSON.stringify` で失われない値にしてください。画像は `Blob` ではなく、データ URL か URL で返してください。
+- **`definePlugin` のファクトリー形式のパッケージは、MulmoChat のサーバー側レジストリではまだサポートしていません。** 通常の `pluginCore` 形式を使ってください。
+
+View と Preview は変わりません。返された `ToolResult` をもとに、引き続きブラウザで表示されます。
+
 ### View と Preview の違い
 
 ```
