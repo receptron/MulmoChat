@@ -75,9 +75,20 @@ async function exportPdf(
   const browser = await puppeteer.launch({ headless: true });
   try {
     const page = await browser.newPage();
-    // The markdown is model-written and may carry raw HTML; the PDF needs no
-    // scripts, so none run.
+    // The markdown is model-written and may carry raw HTML. The PDF needs no
+    // scripts, and its images are data URLs, so no scripts run and nothing is
+    // fetched: an <img>, <iframe> or CSS url() can't reach this machine or the
+    // local network from the server.
     await page.setJavaScriptEnabled(false);
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      const url = request.url();
+      if (url.startsWith("data:") || url === "about:blank") {
+        void request.continue();
+      } else {
+        void request.abort();
+      }
+    });
     let pdf: Uint8Array;
     if (options.marp) {
       const { html, css, slideWidth, slideHeight } = await renderMarpDeck(
