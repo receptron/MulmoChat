@@ -8,6 +8,11 @@ import {
   type ToolCall,
 } from "../types";
 
+// Room for a long tool argument such as a full HTML page (presentHtml). The
+// SDK refuses non-streaming requests it expects to run over 10 minutes, which
+// is about 21,000 output tokens, so this stays below that.
+const DEFAULT_MAX_TOKENS = 16384;
+
 type AnthropicRole = "user" | "assistant";
 
 function toAnthropicMessages(messages: TextMessage[]) {
@@ -84,7 +89,7 @@ export async function generateWithAnthropic(
 
   const messageParams: MessageCreateParamsNonStreaming = {
     model: params.model,
-    max_tokens: params.maxTokens ?? 8192,
+    max_tokens: params.maxTokens ?? DEFAULT_MAX_TOKENS,
     messages: toAnthropicMessages(
       params.conversationMessages,
     ) as MessageCreateParamsNonStreaming["messages"],
@@ -113,14 +118,27 @@ export async function generateWithAnthropic(
 
   const response = await client.messages.create(messageParams);
 
-  const text = response.content
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("");
+  // At the output limit the last block is unfinished. For a tool call that
+  // means its input holds only the fields that completed (a long `html`
+  // string is simply missing), so it is dropped instead of being run with the
+  // wrong arguments, and the model is told why.
+  let content = response.content;
+  let truncationNote = "";
+  const lastBlock = content[content.length - 1];
+  if (response.stop_reason === "max_tokens" && lastBlock?.type === "tool_use") {
+    content = content.slice(0, -1);
+    truncationNote = `\n\n[The response reached the output limit (${messageParams.max_tokens} tokens) before the ${lastBlock.name} call was complete, so it was not run. Try again with shorter content.]`;
+  }
+
+  const text =
+    content
+      .filter((part) => part.type === "text")
+      .map((part) => part.text)
+      .join("") + truncationNote;
 
   // Extract tool calls from response
   const toolCalls: ToolCall[] = [];
-  for (const block of response.content) {
+  for (const block of content) {
     if (block.type === "tool_use") {
       toolCalls.push({
         id: block.id,

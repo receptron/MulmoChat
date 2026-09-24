@@ -14,6 +14,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true
+      },
+      // presentHtml pages, served by the API server for the View's iframe
+      '/artifacts/html': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
       }
     }
   }

@@ -2,8 +2,22 @@
   <div
     class="w-80 flex-shrink-0 bg-gray-50 border border-gray-300 rounded p-4 flex flex-col space-y-4"
   >
-    <div class="flex-shrink-0">
+    <div class="flex-shrink-0 flex items-center justify-between gap-2">
       <h2 class="text-lg font-semibold text-gray-700">Tool Call History</h2>
+      <button
+        type="button"
+        class="h-8 w-8 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        :class="{ '!text-green-600': copied }"
+        data-testid="copy-tool-call-history"
+        :disabled="filteredToolCallHistory.length === 0"
+        :title="copied ? 'Copied!' : 'Copy tool call history'"
+        :aria-label="copied ? 'Copied!' : 'Copy tool call history'"
+        @click="onCopyHistory"
+      >
+        <span class="material-icons text-lg" aria-hidden="true">{{
+          copied ? "check" : "content_copy"
+        }}</span>
+      </button>
     </div>
 
     <div
@@ -72,6 +86,7 @@
 <script setup lang="ts">
 import { ref, nextTick, computed } from "vue";
 import type { ToolResult } from "gui-chat-protocol/vue";
+import { useClipboardCopy } from "@mulmoclaude/core/plugin-vue";
 
 interface ToolCallHistoryItem {
   toolName: string;
@@ -93,6 +108,27 @@ const filteredToolCallHistory = computed(() => {
     (call) => call.toolName !== "text-response",
   );
 });
+
+const { copied, copy } = useClipboardCopy();
+
+// Images are kept as base64 data URLs, both as values and inside HTML
+// arguments (`<img src="data:...">`), so one image would put megabytes on the
+// clipboard. The copy keeps each one's type and length instead.
+const LONG_DATA_URL =
+  /(data:[\w.+-]+\/[\w.+-]+(?:;[\w=.+-]+)*;base64,)[A-Za-z0-9+/=]{200,}/g;
+
+function shortenDataUrls(key: string, value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  return value.replace(
+    LONG_DATA_URL,
+    (match, prefix: string) => `${prefix}… (${match.length} characters)`,
+  );
+}
+
+// Same as MulmoClaude's copy button: the history as JSON
+async function onCopyHistory(): Promise<void> {
+  await copy(JSON.stringify(filteredToolCallHistory.value, shortenDataUrls, 2));
+}
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);

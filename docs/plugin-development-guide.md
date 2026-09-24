@@ -209,7 +209,7 @@ MulmoChat provides gui-chat-protocol's `BrowserPluginRuntime` to every plugin's 
 - **`dispatch(args)`** posts `{ args, config }` to `POST /api/plugin/<toolName>`, so it only reaches plugins that run on the server. `config` carries the user's settings, so backends such as `context.app.generateImage` use the model the user picked. The server calls the plugin's `execute(context, args)`, so a View action is usually an `args` object with a `kind` field that `execute` switches on (see `@mulmoclaude/markdown-plugin`).
 - **`openUrl(url)`** opens http(s) URLs in a new tab and ignores other schemes.
 - **`log`** writes to the browser console, tagged with the tool name.
-- **`pubsub.subscribe`** is accepted, but MulmoChat never publishes events yet.
+- **`pubsub.subscribe`** delivers `file:<path>` events, with `{ mtimeMs }`, for workspace files that a plugin request wrote (for example through `context.files.artifacts`). A View that shows a file can subscribe to reload it after a save. `useFileWatch` from `@mulmoclaude/core/plugin-vue` does this. MulmoChat publishes no other events.
 
 ### Difference Between View and Preview
 

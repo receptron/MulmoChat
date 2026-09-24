@@ -1,5 +1,6 @@
 import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
 import type { ToolPlugin } from "./types";
+import { publishFileChanges } from "./pluginRuntime";
 
 /** Per-user settings the server needs to build the plugin's context.app. */
 export type ServerPluginConfigBuilder = (
@@ -41,6 +42,7 @@ export function runOnServer<T, J, A extends object>(
         );
       }
       const result: unknown = await response.json();
+      publishFileChanges(response);
       if (!isToolResult(result)) {
         throw new Error(`Server plugin ${toolName} returned an invalid result`);
       }

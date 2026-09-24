@@ -22,6 +22,7 @@ import {
   type MarkdownHostApp,
 } from "@mulmoclaude/markdown-plugin";
 import { createFileOps } from "./fileOps";
+import { trackFileChanges } from "./fileChanges";
 import { workspaceRoot } from "./workspace";
 
 const DOCS_DIR = "artifacts/documents";
@@ -31,7 +32,10 @@ const DOC_CREATE_ATTEMPTS = 5;
 
 // Rooted at the workspace: paths that escape it, including through symlinks,
 // are refused.
-const workspaceFiles = createFileOps(() => workspaceRoot(), "workspace");
+const workspaceFiles = trackFileChanges(
+  createFileOps(() => workspaceRoot(), "workspace"),
+  "",
+);
 
 /** A workspace-relative `.md` path, or an error the model can act on. */
 function documentPath(rel: string): string {

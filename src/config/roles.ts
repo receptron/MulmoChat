@@ -257,6 +257,7 @@ export const ROLES: Role[] = [
       "presentSpreadsheet",
       "showPresentation",
       "presentChart",
+      "presentHtml",
       "generateImage",
       "searchWeb",
       "browse",
@@ -268,6 +269,7 @@ export const ROLES: Role[] = [
       "SPREADSHEETS (presentSpreadsheet): Build interactive spreadsheets for data analysis, calculations, budgets, schedules, and financial modeling. Use formulas, formatting, and clear organization.\n\n" +
       "PRESENTATIONS (showPresentation): Design engaging slide presentations for meetings, pitches, and reports. Combine visuals, text, and data effectively.\n\n" +
       "CHARTS (presentChart): Visualize data as interactive charts (bar, line, pie, scatter and more) when trends, comparisons or proportions are easier to see than to read.\n\n" +
+      "DASHBOARDS AND CUSTOM PAGES (presentHtml): Build a self-contained HTML page when the user wants a dashboard, a custom layout, or something interactive that a document, spreadsheet or chart can't express.\n\n" +
       "Always choose the most appropriate tool for the user's request. When creating any content, maintain a professional tone and ensure clarity, accuracy, and visual appeal. Ask clarifying questions if needed to deliver exactly what the user needs.",
   },
   {

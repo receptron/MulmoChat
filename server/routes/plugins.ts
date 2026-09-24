@@ -5,6 +5,11 @@ import {
   parsePluginRequestConfig,
 } from "../plugins/appContext";
 import { artifactsFileOps } from "../plugins/workspace";
+import { pluginDispatchHandlers } from "../plugins/dispatch";
+import {
+  collectFileChanges,
+  FILES_CHANGED_HEADER,
+} from "../plugins/fileChanges";
 import { sendApiError } from "../utils/logger";
 import {
   requireLocalClient,
@@ -50,13 +55,29 @@ router.post(
     }
 
     try {
-      const app = createAppContext(parsePluginRequestConfig(config));
-      res.json(
-        await plugin.execute(
-          { app, files: { artifacts: artifactsFileOps } },
-          args,
-        ),
-      );
+      const dispatch = Object.hasOwn(pluginDispatchHandlers, toolName)
+        ? pluginDispatchHandlers[toolName]
+        : undefined;
+      const run =
+        dispatch && typeof args.kind === "string"
+          ? () => dispatch(args)
+          : () =>
+              plugin.execute(
+                {
+                  app: createAppContext(parsePluginRequestConfig(config)),
+                  files: { artifacts: artifactsFileOps },
+                },
+                args,
+              );
+      const { result, changed } = await collectFileChanges(run);
+      // Lets the browser refresh open Views of these files (see fileChanges.ts)
+      if (changed.length > 0) {
+        res.setHeader(
+          FILES_CHANGED_HEADER,
+          encodeURIComponent(JSON.stringify(changed)),
+        );
+      }
+      res.json(result);
     } catch (error: unknown) {
       sendApiError(
         res,

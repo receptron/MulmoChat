@@ -31,11 +31,12 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
   - the user has not switched it off (customizable roles only).
 - Keep plugin-specific code out of `HomeView.vue`, `App.vue` and the composables. Use `toolExecute` / `getToolPlugin` / `pluginTools` from `src/tools/index.ts`.
 - Plugin policy changes must also be reflected in `docs/plugin-development-guide.md` and `docs/plugin-development-guide.ja.md`.
-- Server-run plugins: `generateImage`, `presentChart` (`@mulmoclaude/chart-plugin`) and `presentDocument` (`@mulmoclaude/markdown-plugin`) run their `execute()` on the server. Plugins write files only through `context.files.artifacts`, rooted at `<workspace>/artifacts`, and presentDocument's host backends (`server/plugins/markdownHost.ts`), limited to `.md` files inside the workspace.
+- Server-run plugins: `generateImage`, `presentChart` (`@mulmoclaude/chart-plugin`), `presentDocument` (`@mulmoclaude/markdown-plugin`) and `presentHtml` (`@mulmoclaude/html-plugin`) run their `execute()` on the server. Plugins write files only through `context.files.artifacts`, rooted at `<workspace>/artifacts`, and presentDocument's host backends (`server/plugins/markdownHost.ts`), limited to `.md` files inside the workspace.
   - The browser wraps the plugin with `runOnServer` (`src/tools/serverPlugin.ts`) and POSTs `{ args, config }` to `/api/plugin/<toolName>`.
   - `server/plugins/` loads the package and builds `context.app` per request.
   - The mechanism is adapted from MulmoTerminal's plugin registry. See `CLAUDE.md` for how to add a plugin this way.
 - Plugin runtime: every plugin view gets gui-chat-protocol's `BrowserPluginRuntime` (`src/tools/pluginRuntime.ts`), so it can call `useRuntime()`. Its `locale` follows the user's language, which translates `createUseT()` plugins such as form and chart.
+- presentHtml pages are served at `GET /artifacts/html/<path>` (`server/plugins/htmlHost.ts`) with a sandboxing CSP (opaque origin, no network requests), to loopback clients only. See `CLAUDE.md`.
 
 ## Server APIs (all under `/api`)
 - `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key, issued for the model in `?model=` (default `gpt-realtime-2.1`). It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`).

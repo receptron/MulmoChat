@@ -34,7 +34,7 @@ const openCanvasTool = {
 };
 
 async function main(): Promise<void> {
-  const model = process.env.GEMINI_TEST_MODEL ?? "gemini-2.5-flash";
+  const model = process.env.GEMINI_TEST_MODEL ?? "gemini-3.6-flash";
 
   if (!process.env.GEMINI_API_KEY) {
     console.error("GEMINI_API_KEY is required to run this test.");

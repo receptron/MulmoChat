@@ -6,12 +6,13 @@
 // setup). Plugins get its artifacts/ area through a rooted FileOps, and
 // presentDocument can also read and overwrite `.md` files anywhere inside it
 // (markdownHost.ts).
-// Nothing here is served over HTTP.
+// Only presentHtml pages are served over HTTP (htmlHost.ts).
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { FileOps } from "gui-chat-protocol";
 import { createFileOps } from "./fileOps";
+import { trackFileChanges } from "./fileChanges";
 import { logger } from "../utils/logger";
 
 const SHARED_WORKSPACE = path.join(os.homedir(), "mulmoclaude");
@@ -38,7 +39,7 @@ export function workspaceRoot(): string {
 }
 
 /** gui-chat-protocol ToolContext.files.artifacts: <workspace>/artifacts. */
-export const artifactsFileOps: FileOps = createFileOps(
-  () => path.join(workspaceRoot(), "artifacts"),
+export const artifactsFileOps: FileOps = trackFileChanges(
+  createFileOps(() => path.join(workspaceRoot(), "artifacts"), "artifacts"),
   "artifacts",
 );
