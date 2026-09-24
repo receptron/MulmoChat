@@ -29,12 +29,12 @@
         @change="handleGeminiModelChange"
         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       >
-        <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image</option>
-        <option value="gemini-3.1-flash-image-preview">
-          Gemini 3.1 Flash Image (Preview)
-        </option>
-        <option value="gemini-3-pro-image-preview">
-          Gemini 3 Pro Image (Preview)
+        <option
+          v-for="model in GEMINI_IMAGE_MODELS"
+          :key="model.id"
+          :value="model.id"
+        >
+          {{ model.label }}
         </option>
       </select>
     </div>
@@ -49,9 +49,13 @@
         @change="handleOpenAIModelChange"
         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       >
-        <option value="gpt-image-1">GPT Image 1</option>
-        <option value="gpt-image-1.5">GPT Image 1.5</option>
-        <option value="gpt-image-1-mini">GPT Image 1 Mini</option>
+        <option
+          v-for="model in OPENAI_IMAGE_MODELS"
+          :key="model.id"
+          :value="model.id"
+        >
+          {{ model.label }}
+        </option>
       </select>
     </div>
 
@@ -78,6 +82,13 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ImageGenerationConfigValue } from "../../tools/backend/types";
+import { normalizeImageConfig } from "../../tools/backend/imageGeneration";
+import {
+  GEMINI_IMAGE_MODELS,
+  OPENAI_IMAGE_MODELS,
+  resolveGeminiImageModel,
+  resolveOpenAIImageModel,
+} from "../../config/imageModels";
 
 export type { ImageGenerationConfigValue };
 
@@ -89,23 +100,8 @@ const emit = defineEmits<{
   "update:modelValue": [value: ImageGenerationConfigValue];
 }>();
 
-// Normalize legacy string values to object format
-const normalizedConfig = computed<Required<ImageGenerationConfigValue>>(() => {
-  if (typeof props.modelValue === "string") {
-    return {
-      backend: props.modelValue as "gemini" | "openai" | "comfyui",
-      styleModifier: "",
-      geminiModel: "gemini-2.5-flash-image",
-      openaiModel: "gpt-image-1",
-    };
-  }
-  return {
-    backend: props.modelValue.backend || "gemini",
-    styleModifier: props.modelValue.styleModifier || "",
-    geminiModel: props.modelValue.geminiModel || "gemini-2.5-flash-image",
-    openaiModel: props.modelValue.openaiModel || "gpt-image-1",
-  };
-});
+// Normalize legacy string values and retired model IDs
+const normalizedConfig = computed(() => normalizeImageConfig(props.modelValue));
 
 const handleBackendChange = (event: Event) => {
   const backend = (event.target as HTMLSelectElement).value as
@@ -117,10 +113,9 @@ const handleBackendChange = (event: Event) => {
 };
 
 const handleGeminiModelChange = (event: Event) => {
-  const geminiModel = (event.target as HTMLSelectElement).value as
-    | "gemini-2.5-flash-image"
-    | "gemini-3.1-flash-image-preview"
-    | "gemini-3-pro-image-preview";
+  const geminiModel = resolveGeminiImageModel(
+    (event.target as HTMLSelectElement).value,
+  );
   emit("update:modelValue", {
     ...normalizedConfig.value,
     geminiModel,
@@ -128,8 +123,9 @@ const handleGeminiModelChange = (event: Event) => {
 };
 
 const handleOpenAIModelChange = (event: Event) => {
-  const openaiModel = (event.target as HTMLSelectElement).value as
-    "gpt-image-1" | "gpt-image-1.5" | "gpt-image-1-mini";
+  const openaiModel = resolveOpenAIImageModel(
+    (event.target as HTMLSelectElement).value,
+  );
   emit("update:modelValue", {
     ...normalizedConfig.value,
     openaiModel,

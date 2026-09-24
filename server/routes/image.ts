@@ -1,6 +1,7 @@
 import express, { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import OpenAI, { toFile } from "openai";
 import { Buffer } from "node:buffer";
 import { sendApiError, logApiRequest } from "../utils/logger";
 import {
@@ -153,8 +154,9 @@ export async function generateOpenAIImage({
   }
 
   const modelName = model || "gpt-image-1";
-  const shouldIncludeResponseFormat =
-    !modelName.startsWith("gpt-image-1") && modelName !== "gpt-image-latest";
+  // Only DALL-E accepts response_format; GPT Image models always return
+  // base64 and reject the parameter
+  const shouldIncludeResponseFormat = modelName.startsWith("dall-e");
 
   // Log API call with backend settings
   logApiRequest("generate-image/openai", {
@@ -163,67 +165,41 @@ export async function generateOpenAIImage({
     model: modelName,
   });
 
+  const client = new OpenAI({ apiKey: openaiKey });
   const hasEditImage = Array.isArray(images) && images.length > 0;
-  const endpoint = hasEditImage
-    ? "https://api.openai.com/v1/images/edits"
-    : "https://api.openai.com/v1/images/generations";
+  const responseFormat = shouldIncludeResponseFormat
+    ? { response_format: "b64_json" as const }
+    : {};
 
-  let fetchResponse: globalThis.Response;
-
-  if (hasEditImage) {
-    const firstImage = images[0];
-    const buffer = Buffer.from(firstImage, "base64");
-    const blob = new Blob([buffer], { type: "image/png" });
-    const formData = new FormData();
-    formData.append("prompt", prompt);
-    formData.append("model", modelName);
-    formData.append("size", size);
-    if (shouldIncludeResponseFormat) {
-      formData.append("response_format", "b64_json");
+  let data: OpenAI.Images.ImagesResponse;
+  try {
+    data = hasEditImage
+      ? await client.images.edit({
+          model: modelName,
+          prompt,
+          size,
+          image: await toFile(Buffer.from(images[0], "base64"), "image.png", {
+            type: "image/png",
+          }),
+          ...responseFormat,
+        })
+      : await client.images.generate({
+          model: modelName,
+          prompt,
+          size,
+          ...responseFormat,
+        });
+  } catch (error: unknown) {
+    if (error instanceof OpenAI.APIError) {
+      console.error("*** OpenAI image generation failed", error.message);
+      throw new ImageGenerationError(
+        error.status ?? 500,
+        "Failed to generate image with OpenAI",
+        error.message,
+      );
     }
-    formData.append("image", blob, "image.png");
-
-    fetchResponse = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openaiKey}`,
-      },
-      body: formData,
-    });
-  } else {
-    fetchResponse = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openaiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        model: modelName,
-        size,
-        ...(shouldIncludeResponseFormat ? { response_format: "b64_json" } : {}),
-      }),
-    });
+    throw error;
   }
-
-  if (!fetchResponse.ok) {
-    const errorText = await fetchResponse.text();
-    console.error("*** OpenAI image generation failed", errorText);
-    throw new ImageGenerationError(
-      fetchResponse.status,
-      "Failed to generate image with OpenAI",
-      errorText,
-    );
-  }
-
-  const data = (await fetchResponse.json()) as {
-    data?: Array<{
-      b64_json?: string;
-      url?: string;
-      revised_prompt?: string;
-    }>;
-    error?: { message?: string };
-  };
 
   let imageData = data.data?.[0]?.b64_json;
   const firstItem = data.data?.[0];
@@ -249,11 +225,7 @@ export async function generateOpenAIImage({
   }
 
   if (!imageData) {
-    throw new ImageGenerationError(
-      500,
-      "No image data returned from OpenAI",
-      data.error?.message,
-    );
+    throw new ImageGenerationError(500, "No image data returned from OpenAI");
   }
 
   return {

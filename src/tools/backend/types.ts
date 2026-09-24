@@ -1,3 +1,7 @@
+import type {
+  GeminiImageModelId,
+  OpenAIImageModelId,
+} from "../../config/imageModels";
 /**
  * Backend type definitions for plugin architecture
  * These types define what backend services are available and their settings
@@ -22,11 +26,8 @@ export interface ImageGenBackendSettings {
 export interface ImageGenerationConfigValue {
   backend: "gemini" | "openai" | "comfyui";
   styleModifier?: string;
-  geminiModel?:
-    | "gemini-2.5-flash-image"
-    | "gemini-3.1-flash-image-preview"
-    | "gemini-3-pro-image-preview";
-  openaiModel?: "gpt-image-1" | "gpt-image-1.5" | "gpt-image-1-mini";
+  geminiModel?: GeminiImageModelId;
+  openaiModel?: OpenAIImageModelId;
 }
 
 // Union type for all backend settings
