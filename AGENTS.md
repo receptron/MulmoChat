@@ -31,7 +31,7 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
   - the user has not switched it off (customizable roles only).
 - Keep plugin-specific code out of `HomeView.vue`, `App.vue` and the composables. Use `toolExecute` / `getToolPlugin` / `pluginTools` from `src/tools/index.ts`.
 - Plugin policy changes must also be reflected in `docs/plugin-development-guide.md` and `docs/plugin-development-guide.ja.md`.
-- Server-run plugins: `generateImage` and `presentChart` (`@mulmoclaude/chart-plugin`) run their `execute()` on the server. Plugins write files only through `context.files.artifacts`, rooted at `<workspace>/artifacts`.
+- Server-run plugins: `generateImage`, `presentChart` (`@mulmoclaude/chart-plugin`) and `presentDocument` (`@mulmoclaude/markdown-plugin`) run their `execute()` on the server. Plugins write files only through `context.files.artifacts`, rooted at `<workspace>/artifacts`, and presentDocument's host backends (`server/plugins/markdownHost.ts`), limited to `.md` files inside the workspace.
   - The browser wraps the plugin with `runOnServer` (`src/tools/serverPlugin.ts`) and POSTs `{ args, config }` to `/api/plugin/<toolName>`.
   - `server/plugins/` loads the package and builds `context.app` per request.
   - The mechanism is adapted from MulmoTerminal's plugin registry. See `CLAUDE.md` for how to add a plugin this way.

@@ -206,7 +206,7 @@ View と Preview は変わりません。返された `ToolResult` をもとに�
 MulmoChat は、すべてのプラグインの View と Preview に gui-chat-protocol の `BrowserPluginRuntime` を渡しています。コンポーネントの中で `gui-chat-protocol/vue` の `useRuntime()` を呼び出せます。
 
 - **`locale`** はユーザーの言語設定で、リアクティブな ref です（`en`、`ja`、`zh`、`pt-BR` など。MulmoChat の `pt` は `pt-BR` として渡されます）。プラグインの文言を翻訳するには `createUseT({ en, ja, … })` を使うのが簡単です。この locale を読み取り、訳がない言語では `en` にフォールバックします。
-- **`dispatch(args)`** は `{ args }` を `POST /api/plugin/<toolName>` に送ります。そのため、サーバーで動くプラグインにしか届きません。ユーザーごとの設定は送られないため、画像生成などのサーバー側のバックエンドは、ユーザーが選んだモデルではなくデフォルトの設定で動きます。
+- **`dispatch(args)`** は `{ args, config }` を `POST /api/plugin/<toolName>` に送ります。そのため、サーバーで動くプラグインにしか届きません。`config` にはユーザーの設定が入っているため、`context.app.generateImage` などのバックエンドはユーザーが選んだモデルを使います。サーバーはプラグインの `execute(context, args)` を呼び出します。そのため、View からの操作は、`execute` が振り分けに使う `kind` フィールドを持つ `args` オブジェクトにするのが一般的です（`@mulmoclaude/markdown-plugin` を参照）。
 - **`openUrl(url)`** は http(s) の URL を新しいタブで開きます。それ以外のスキームは無視します。
 - **`log`** はツール名を付けてブラウザのコンソールに出力します。
 - **`pubsub.subscribe`** は呼び出せますが、MulmoChat はまだイベントを発行しません。

@@ -3,7 +3,9 @@
 // and other artifacts made in MulmoChat show up in those apps too.
 //
 // MulmoChat never creates or seeds that workspace (MulmoClaude does its own
-// setup), and plugins only get its artifacts/ area through a rooted FileOps.
+// setup). Plugins get its artifacts/ area through a rooted FileOps, and
+// presentDocument can also read and overwrite `.md` files anywhere inside it
+// (markdownHost.ts).
 // Nothing here is served over HTTP.
 import { existsSync } from "node:fs";
 import os from "node:os";

@@ -206,7 +206,7 @@ Views and previews are unchanged: they still render in the browser from the retu
 MulmoChat provides gui-chat-protocol's `BrowserPluginRuntime` to every plugin's View and Preview, so components can call `useRuntime()` from `gui-chat-protocol/vue`:
 
 - **`locale`** is the user's language setting, as a reactive ref (`en`, `ja`, `zh`, `pt-BR`, …; MulmoChat's `pt` is passed as `pt-BR`). The easiest way to translate a plugin's text is `createUseT({ en, ja, … })`, which reads this locale and falls back to `en` for languages you have no table for.
-- **`dispatch(args)`** posts `{ args }` to `POST /api/plugin/<toolName>`, so it only reaches plugins that run on the server. It carries no per-user settings: server backends it reaches, such as image generation, use their defaults rather than the model the user picked.
+- **`dispatch(args)`** posts `{ args, config }` to `POST /api/plugin/<toolName>`, so it only reaches plugins that run on the server. `config` carries the user's settings, so backends such as `context.app.generateImage` use the model the user picked. The server calls the plugin's `execute(context, args)`, so a View action is usually an `args` object with a `kind` field that `execute` switches on (see `@mulmoclaude/markdown-plugin`).
 - **`openUrl(url)`** opens http(s) URLs in a new tab and ignores other schemes.
 - **`log`** writes to the browser console, tagged with the tool name.
 - **`pubsub.subscribe`** is accepted, but MulmoChat never publishes events yet.

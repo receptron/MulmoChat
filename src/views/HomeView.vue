@@ -123,7 +123,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import type { ToolResult } from "gui-chat-protocol/vue";
-import { toolExecute, getToolPlugin, setPluginLocale } from "../tools";
+import {
+  toolExecute,
+  getToolPlugin,
+  setPluginLocale,
+  setPluginDispatchConfig,
+} from "../tools";
 import Sidebar from "../components/Sidebar.vue";
 import RightSidebar from "../components/RightSidebar.vue";
 import { useSessionTransport } from "../composables/useSessionTransport";
@@ -158,6 +163,23 @@ const {
 watch(() => userPreferences.userLanguage, setPluginLocale, {
   immediate: true,
 });
+
+// Plugin views that call the server (useRuntime().dispatch) use the user's
+// image settings, the same ones tool calls send (see useToolResults)
+watch(
+  () => ({
+    imageGeneration: {
+      ...normalizeImageConfig(
+        userPreferences.pluginConfigs.imageGenerationBackend as
+          string | ImageGenerationConfigValue | undefined,
+      ),
+      comfyuiModel:
+        userPreferences.comfyuiModel || "flux1-schnell-fp8.safetensors",
+    },
+  }),
+  setPluginDispatchConfig,
+  { immediate: true, deep: true },
+);
 
 async function sleep(milliseconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, milliseconds));

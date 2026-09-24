@@ -122,7 +122,9 @@ To add a plugin: add the package to `package.json`, import its `/vue` entry in `
 
 #### Server-run plugins
 
-Some plugins run their `execute()` on the server instead of in the browser. The mechanism is adapted from MulmoTerminal's plugin registry, so the same npm packages run the same way in MulmoChat, MulmoTerminal and MulmoClaude. Currently `generateImage` (`@mulmochat-plugin/generate-image`) and `presentChart` (`@mulmoclaude/chart-plugin`, available in the Office role) run this way.
+Some plugins run their `execute()` on the server instead of in the browser. The mechanism is adapted from MulmoTerminal's plugin registry, so the same npm packages run the same way in MulmoChat, MulmoTerminal and MulmoClaude. Currently `generateImage` (`@mulmochat-plugin/generate-image`), `presentChart` (`@mulmoclaude/chart-plugin`, available in the Office role) and `presentDocument` (`@mulmoclaude/markdown-plugin`) run this way.
+
+`presentDocument` saves each document as `<workspace>/artifacts/documents/YYYY/MM/<prefix>-<id>.md` and stores only that path in the result, so its View loads, edits and exports the file through `useRuntime().dispatch`. The host backends it calls (`loadDoc`, `saveDoc`, `saveNewDoc`, `fillImages`, `exportPdf`, `marpThemes`) are in `server/plugins/markdownHost.ts`. They only touch `.md` files inside the workspace (MulmoTerminal also opens absolute paths; MulmoChat doesn't). Images are inlined as data URLs, and PDFs are rendered with puppeteer with JavaScript disabled. MulmoChat keeps its previous system prompt for the tool, since the package has none.
 
 - **Browser:** `runOnServer(plugin, buildConfig)` (`src/tools/serverPlugin.ts`) keeps the plugin's views, input handlers and system prompt, and replaces `execute` with `POST /api/plugin/<toolName>` carrying `{ args, config }`. `config` holds per-user settings the server needs. For images it comes from `context.app.getImageGenerationSettings()`.
 - **Server:** `server/plugins/config.ts` lists the packages. `server/plugins/registry.ts` loads each package's core entry (`TOOL_DEFINITION` + `pluginCore.execute`). `server/routes/plugins.ts` runs `execute` with a `context.app` built per request by `server/plugins/appContext.ts`.
@@ -131,7 +133,7 @@ Some plugins run their `execute()` on the server instead of in the browser. The 
 
 #### Plugin runtime
 
-Every plugin's View and Preview is wrapped by `wrapWithPluginRuntime` (`src/tools/pluginRuntime.ts`, adapted from MulmoTerminal), which provides gui-chat-protocol's `BrowserPluginRuntime` under `PLUGIN_RUNTIME_KEY`, so components can call `useRuntime()`. `locale` follows the user's language (HomeView calls `setPluginLocale`; `pt` becomes `pt-BR`), which is how `createUseT()` plugins such as form and chart show translated text. `dispatch` posts `{ args }` to `/api/plugin/<toolName>` (no per-user config, so server backends use their defaults), `openUrl` opens http(s) only, and `pubsub` is a no-op (no server push yet).
+Every plugin's View and Preview is wrapped by `wrapWithPluginRuntime` (`src/tools/pluginRuntime.ts`, adapted from MulmoTerminal), which provides gui-chat-protocol's `BrowserPluginRuntime` under `PLUGIN_RUNTIME_KEY`, so components can call `useRuntime()`. `locale` follows the user's language (HomeView calls `setPluginLocale`; `pt` becomes `pt-BR`), which is how `createUseT()` plugins such as form and chart show translated text. `dispatch` posts `{ args, config }` to `/api/plugin/<toolName>`, where `config` is the user's image settings (HomeView calls `setPluginDispatchConfig`), `openUrl` opens http(s) only, and `pubsub` is a no-op (no server push yet).
 
 #### Plugin Documentation Sync (IMPORTANT)
 
