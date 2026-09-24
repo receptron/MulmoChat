@@ -5,10 +5,10 @@
 // MIT License, Copyright (c) 2026 Receptron).
 //
 //   - locale   → the user's language setting (setPluginLocale)
-//   - dispatch → POST /api/plugin/<toolName> with { args }, the route
-//                server-run plugins use (server/routes/plugins.ts). It sends
-//                no per-user config, so server backends such as image
-//                generation use their defaults, not the user's settings.
+//   - dispatch → POST /api/plugin/<toolName> with { args, config }, the route
+//                server-run plugins use (server/routes/plugins.ts). `config`
+//                carries the user's settings (setPluginDispatchConfig), so
+//                server backends such as image generation use them.
 //   - pubsub   → no-op: MulmoChat has no server push channel yet
 //   - openUrl  → http(s) only, in a new tab
 //   - log      → console, tagged with the tool name
@@ -39,6 +39,14 @@ export function setPluginLocale(languageCode: string): void {
   pluginLocale.value = LOCALE_TAGS[languageCode] ?? languageCode;
 }
 
+// Per-user settings sent with every dispatch, like runOnServer's config.
+let dispatchConfig: Record<string, unknown> = {};
+
+/** Set the settings dispatch sends (e.g. { imageGeneration }). */
+export function setPluginDispatchConfig(config: Record<string, unknown>): void {
+  dispatchConfig = config;
+}
+
 const isOpenableUrl = (url: string): boolean => {
   try {
     const { protocol } = new URL(url);
@@ -55,7 +63,7 @@ function makeDispatch(toolName: string): BrowserPluginRuntime["dispatch"] {
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ args: args ?? {} }),
+      body: JSON.stringify({ args: args ?? {}, config: dispatchConfig }),
     });
     if (!response.ok) {
       const detail = await response.text().catch(() => "");

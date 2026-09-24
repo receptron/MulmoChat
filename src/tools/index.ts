@@ -26,7 +26,7 @@ import MusicPlugin from "@gui-chat-plugin/music/vue";
 import BrowsePlugin from "@gui-chat-plugin/browse/vue";
 import GoogleMapPlugin from "@gui-chat-plugin/google-map/vue";
 import ExaPlugin from "@gui-chat-plugin/exa/vue";
-import MarkdownPlugin from "@gui-chat-plugin/markdown/vue";
+import MarkdownPlugin from "@mulmoclaude/markdown-plugin/vue";
 import EditImagePlugin from "@gui-chat-plugin/edit-image/vue";
 import MulmocastPlugin from "@gui-chat-plugin/mulmocast/vue";
 import Present3DPlugin from "@gui-chat-plugin/present3d/vue";
@@ -61,6 +61,34 @@ const ServerChartPlugin = {
   plugin: runOnServer(ChartPlugin.plugin, () => ({})),
 };
 
+// presentDocument runs on the server, which saves documents into the shared
+// workspace (artifacts/documents/) and fills image placeholders with the
+// user's image settings. The package has no system prompt, so MulmoChat keeps
+// the one from its previous markdown plugin.
+const PRESENT_DOCUMENT_PROMPT = `Use the presentDocument tool to create structured documents with text and embedded images. This tool is ideal for:
+- Guides, tutorials, and how-to content ("create a guide about...", "explain how to...")
+- Educational content (lessons, explanations, timelines, concept visualizations)
+- Reports and presentations (business reports, data analysis, infographics)
+- Articles and blog posts with illustrations
+- Documentation with diagrams or screenshots
+- Recipes with step-by-step photos
+- Travel guides with location images
+- Product presentations or lookbooks
+- Any content that combines written information with supporting visuals
+
+IMPORTANT: Use this tool instead of just generating standalone images when the user wants informational or educational content with visuals. This creates a cohesive document with formatted text (markdown) AND images embedded at appropriate locations. For example, if asked to "create a guide about photosynthesis with a diagram", use presentDocument to create a full guide with explanatory text and the diagram embedded, rather than just generating the diagram image alone.
+
+Format embedded images as: ![Detailed image prompt](__too_be_replaced_image_path__)`;
+
+const ServerMarkdownPlugin = {
+  plugin: runOnServer(
+    { ...MarkdownPlugin.plugin, systemPrompt: PRESENT_DOCUMENT_PROMPT },
+    (context) => ({
+      imageGeneration: context.app?.getImageGenerationSettings?.(),
+    }),
+  ),
+};
+
 const registeredPlugins = [
   // External plugins from npm packages
   QuizPlugin,
@@ -78,7 +106,7 @@ const registeredPlugins = [
   BrowsePlugin,
   GoogleMapPlugin,
   ExaPlugin,
-  MarkdownPlugin,
+  ServerMarkdownPlugin,
   EditImagePlugin,
   MulmocastPlugin,
   Present3DPlugin,
@@ -117,7 +145,7 @@ const pluginList = registeredPlugins.map((entry) => {
   };
 });
 
-export { setPluginLocale } from "./pluginRuntime";
+export { setPluginLocale, setPluginDispatchConfig } from "./pluginRuntime";
 
 export const getPluginList = () => pluginList;
 

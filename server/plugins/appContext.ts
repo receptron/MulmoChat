@@ -5,6 +5,7 @@ import type { ToolContextApp, ToolResult } from "gui-chat-protocol";
 import { generateGeminiImage, generateOpenAIImage } from "../routes/image";
 import { generateComfyImage } from "../routes/comfyui";
 import { logger } from "../utils/logger";
+import { createMarkdownHostApp } from "./markdownHost";
 import {
   DEFAULT_GEMINI_IMAGE_MODEL,
   DEFAULT_OPENAI_IMAGE_MODEL,
@@ -125,12 +126,15 @@ async function generateImage(
 }
 
 export function createAppContext(config: PluginRequestConfig): ToolContextApp {
+  const generate = (prompt: string) =>
+    generateImage(prompt, config.imageGeneration);
   return {
     // No server-run plugin reads or writes host config yet; settings arrive
     // per request, and user preferences stay owned by the browser.
     getConfig: () => undefined,
     setConfig: () => {},
-    generateImage: (prompt: string) =>
-      generateImage(prompt, config.imageGeneration),
+    generateImage: generate,
+    // presentDocument: load/save/create documents, PDF export, image fill
+    ...createMarkdownHostApp(generate),
   };
 }
