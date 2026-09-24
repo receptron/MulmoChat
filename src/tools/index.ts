@@ -94,7 +94,7 @@ const ServerMarkdownPlugin = {
 // workspace's artifacts/html/ and serves them to the View's sandboxed iframe
 // (server/plugins/htmlHost.ts). The package's prompt also describes paths
 // outside artifacts/html/, which MulmoChat doesn't open, so it gets its own.
-const PRESENT_HTML_PROMPT = `Use presentHtml when the user asks for HTML output, dashboards, custom layouts, or interactive content. Provide EITHER \`html\` OR \`path\`, not both. \`html\` is a full self-contained document (\`<!DOCTYPE html>\`, \`<html>\`, \`<body>\`) with all CSS and JavaScript inlined or loaded from a CDN (cdn.jsdelivr.net, unpkg.com, cdnjs.cloudflare.com, cdn.plot.ly, Google Fonts); the page cannot make network requests (fetch/XHR). It is saved to \`artifacts/html/<YYYY>/<MM>/...\`. \`path\` presents a page you saved earlier (\`artifacts/html/...\`) without re-saving it; the user's edits in the view overwrite that file.`;
+const PRESENT_HTML_PROMPT = `Use presentHtml when the user asks for HTML output, dashboards, custom layouts, or interactive content. Provide EITHER \`html\` OR \`path\`, not both. \`html\` is a full self-contained document (\`<!DOCTYPE html>\`, \`<html>\`, \`<body>\`) with all CSS and JavaScript inlined or loaded from a CDN (cdn.jsdelivr.net, unpkg.com, cdnjs.cloudflare.com, cdn.plot.ly, Google Fonts); the page cannot make network requests (fetch/XHR) or load images from other sites, so use inline SVG, canvas, or data: URLs for images. It is saved to \`artifacts/html/<YYYY>/<MM>/...\`. \`path\` presents a page you saved earlier (\`artifacts/html/...\`) without re-saving it; the user's edits in the view overwrite that file.`;
 
 const ServerHtmlPlugin = {
   plugin: runOnServer(
@@ -228,10 +228,11 @@ const switchRoleToolDefinition = createSwitchRoleToolDefinition(
 
 // gui-chat-protocol's ToolDefinition.prompt is for the host's system prompt
 // (see getPluginSystemPrompts), not a field the model APIs accept.
-const toolDefinitionForModel = ({
-  prompt: __prompt,
-  ...definition
-}: ToolDefinition): ToolDefinition => definition;
+const toolDefinitionForModel = (tool: ToolDefinition): ToolDefinition => {
+  const definition = { ...tool };
+  delete definition.prompt;
+  return definition;
+};
 
 export const pluginTools = (
   startResponse?: StartApiResponse | null,

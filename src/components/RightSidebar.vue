@@ -111,19 +111,18 @@ const filteredToolCallHistory = computed(() => {
 
 const { copied, copy } = useClipboardCopy();
 
-// Images are kept as base64 data URLs, so one generated image would put
-// megabytes on the clipboard. The copy keeps their type and size instead.
-const MAX_DATA_URL_LENGTH = 200;
+// Images are kept as base64 data URLs, both as values and inside HTML
+// arguments (`<img src="data:...">`), so one image would put megabytes on the
+// clipboard. The copy keeps each one's type and length instead.
+const LONG_DATA_URL =
+  /(data:[\w.+-]+\/[\w.+-]+(?:;[\w=.+-]+)*;base64,)[A-Za-z0-9+/=]{200,}/g;
 
 function shortenDataUrls(key: string, value: unknown): unknown {
-  if (
-    typeof value === "string" &&
-    value.startsWith("data:") &&
-    value.length > MAX_DATA_URL_LENGTH
-  ) {
-    return `${value.slice(0, value.indexOf(",") + 1)}… (${value.length} characters)`;
-  }
-  return value;
+  if (typeof value !== "string") return value;
+  return value.replace(
+    LONG_DATA_URL,
+    (match, prefix: string) => `${prefix}… (${match.length} characters)`,
+  );
 }
 
 // Same as MulmoClaude's copy button: the history as JSON

@@ -55,7 +55,10 @@ export async function dispatchHtml(args: object): Promise<unknown> {
 // `sandbox allow-scripts` without allow-same-origin gives the document an
 // opaque origin even when opened directly, so its scripts can't reach the
 // app's /api or storage, and `connect-src 'none'` stops fetch/XHR. Inline
-// scripts, the curated CDNs below and images are allowed.
+// scripts and the curated CDNs below are allowed. Images and media are limited
+// to those CDNs and data:/blob: URLs too: with any https: source, a script
+// could send the page's content out in an image URL. (A sandboxed page can
+// still navigate its own frame, which CSP can't block.)
 //
 // The CDNs are @mulmoclaude/core's SANDBOXED_VIEW_CDN_ALLOWLIST, copied because
 // that subpath export doesn't resolve under the server's moduleResolution.
@@ -75,8 +78,8 @@ const HTML_PREVIEW_CSP = [
   `script-src 'unsafe-inline' ${ALLOWED_CDNS}`,
   `style-src 'unsafe-inline' ${ALLOWED_CDNS}`,
   `font-src ${ALLOWED_CDNS}`,
-  `img-src 'self' ${ALLOWED_CDNS} data: blob: https:`,
-  `media-src 'self' https: data: blob:`,
+  `img-src ${ALLOWED_CDNS} data: blob:`,
+  `media-src ${ALLOWED_CDNS} data: blob:`,
   "connect-src 'none'",
 ].join("; ");
 
