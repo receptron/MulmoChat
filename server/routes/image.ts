@@ -3,9 +3,106 @@ import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { Buffer } from "node:buffer";
 import { sendApiError, logApiRequest } from "../utils/logger";
+import {
+  ImageGenerationError,
+  errorMessageOf,
+} from "../utils/imageGenerationError";
 dotenv.config({ quiet: true });
 
 const router: Router = express.Router();
+
+export interface GeminiImageResult {
+  success: boolean;
+  message: string | undefined;
+  imageData: string | undefined;
+}
+
+export interface OpenAIImageResult {
+  success: true;
+  imageData: string;
+  message: string | undefined;
+}
+
+interface ImageRequest {
+  prompt: string;
+  images?: string[];
+  model?: string;
+}
+
+/**
+ * Generate (or edit, when images are given) an image with Gemini.
+ * Throws ImageGenerationError for configuration errors; other errors propagate.
+ */
+export async function generateGeminiImage({
+  prompt,
+  images,
+  model,
+}: ImageRequest): Promise<GeminiImageResult> {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
+    throw new ImageGenerationError(
+      500,
+      "GEMINI_API_KEY environment variable not set",
+    );
+  }
+
+  const ai = new GoogleGenAI({ apiKey: geminiKey });
+  const modelName = model || "gemini-2.5-flash-image";
+
+  // Log API call with backend settings
+  logApiRequest("generate-image", {
+    path: "/api/generate-image",
+    backend: "gemini",
+    model: modelName,
+  });
+
+  const contents: {
+    text?: string;
+    inlineData?: { mimeType: string; data: string };
+  }[] = [{ text: prompt }];
+  for (const image of images ?? []) {
+    contents.push({ inlineData: { mimeType: "image/png", data: image } });
+  }
+
+  const response = await ai.models.generateContent({
+    model: modelName,
+    contents,
+  });
+  const parts = response.candidates?.[0]?.content?.parts ?? [];
+  const returnValue: GeminiImageResult = {
+    success: false,
+    message: undefined,
+    imageData: undefined,
+  };
+  console.log(
+    "*** Gemini image generation response parts:",
+    parts.length,
+    prompt,
+  );
+
+  for (const part of parts) {
+    if (part.text) {
+      console.log("*** Gemini image generation response:", part.text);
+      returnValue.message = part.text;
+    }
+    if (part.inlineData) {
+      const imageData = part.inlineData.data;
+      if (imageData) {
+        console.log("*** Image generation succeeded");
+        returnValue.success = true;
+        returnValue.imageData = imageData;
+      } else {
+        console.log("*** the part has inlineData, but no image data", part);
+      }
+    }
+  }
+  if (!returnValue.message) {
+    returnValue.message = returnValue.imageData
+      ? "image generation succeeded"
+      : "no image data found in response";
+  }
+  return returnValue;
+}
 
 // Generate image endpoint
 router.post(
@@ -18,243 +115,179 @@ router.post(
       return;
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
-
-    if (!geminiKey) {
+    try {
+      res.json(await generateGeminiImage({ prompt, images, model }));
+    } catch (error: unknown) {
+      if (error instanceof ImageGenerationError) {
+        sendApiError(res, req, error.status, error.message, error.details);
+        return;
+      }
+      console.error("*** Image generation failed", error);
       sendApiError(
         res,
         req,
         500,
-        "GEMINI_API_KEY environment variable not set",
+        "Failed to generate image",
+        errorMessageOf(error),
       );
-      return;
-    }
-
-    try {
-      const ai = new GoogleGenAI({ apiKey: geminiKey });
-      const modelName = model || "gemini-2.5-flash-image";
-
-      // Log API call with backend settings
-      logApiRequest("generate-image", {
-        path: "/api/generate-image",
-        backend: "gemini",
-        model: modelName,
-      });
-      const contents: {
-        text?: string;
-        inlineData?: { mimeType: string; data: string };
-      }[] = [{ text: prompt }];
-      for (const image of images ?? []) {
-        contents.push({ inlineData: { mimeType: "image/png", data: image } });
-      }
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents,
-      });
-      const parts = response.candidates?.[0]?.content?.parts ?? [];
-      const returnValue: {
-        success: boolean;
-        message: string | undefined;
-        imageData: string | undefined;
-      } = {
-        success: false,
-        message: undefined,
-        imageData: undefined,
-      };
-
-      console.log(
-        "*** Gemini image generation response parts:",
-        parts.length,
-        prompt,
-      );
-
-      for (const part of parts) {
-        if (part.text) {
-          console.log("*** Gemini image generation response:", part.text);
-          returnValue.message = part.text;
-        }
-        if (part.inlineData) {
-          const imageData = part.inlineData.data;
-          if (imageData) {
-            console.log("*** Image generation succeeded");
-            returnValue.success = true;
-            returnValue.imageData = imageData;
-          } else {
-            console.log("*** the part has inlineData, but no image data", part);
-          }
-        }
-      }
-      if (!returnValue.message) {
-        returnValue.message = returnValue.imageData
-          ? "image generation succeeded"
-          : "no image data found in response";
-      }
-
-      res.json(returnValue);
-    } catch (error: unknown) {
-      console.error("*** Image generation failed", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      sendApiError(res, req, 500, "Failed to generate image", errorMessage);
     }
   },
 );
+
+/**
+ * Generate (or edit, when images are given) an image with the OpenAI Images API.
+ * Throws ImageGenerationError for configuration and API errors; other errors propagate.
+ */
+export async function generateOpenAIImage({
+  prompt,
+  images = [],
+  model,
+  size = "1024x1024",
+}: ImageRequest & { size?: string }): Promise<OpenAIImageResult> {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey) {
+    throw new ImageGenerationError(
+      500,
+      "OPENAI_API_KEY environment variable not set",
+    );
+  }
+
+  const modelName = model || "gpt-image-1";
+  const shouldIncludeResponseFormat =
+    !modelName.startsWith("gpt-image-1") && modelName !== "gpt-image-latest";
+
+  // Log API call with backend settings
+  logApiRequest("generate-image/openai", {
+    path: "/api/generate-image/openai",
+    backend: "openai",
+    model: modelName,
+  });
+
+  const hasEditImage = Array.isArray(images) && images.length > 0;
+  const endpoint = hasEditImage
+    ? "https://api.openai.com/v1/images/edits"
+    : "https://api.openai.com/v1/images/generations";
+
+  let fetchResponse: globalThis.Response;
+
+  if (hasEditImage) {
+    const firstImage = images[0];
+    const buffer = Buffer.from(firstImage, "base64");
+    const blob = new Blob([buffer], { type: "image/png" });
+    const formData = new FormData();
+    formData.append("prompt", prompt);
+    formData.append("model", modelName);
+    formData.append("size", size);
+    if (shouldIncludeResponseFormat) {
+      formData.append("response_format", "b64_json");
+    }
+    formData.append("image", blob, "image.png");
+
+    fetchResponse = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+      },
+      body: formData,
+    });
+  } else {
+    fetchResponse = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        model: modelName,
+        size,
+        ...(shouldIncludeResponseFormat ? { response_format: "b64_json" } : {}),
+      }),
+    });
+  }
+
+  if (!fetchResponse.ok) {
+    const errorText = await fetchResponse.text();
+    console.error("*** OpenAI image generation failed", errorText);
+    throw new ImageGenerationError(
+      fetchResponse.status,
+      "Failed to generate image with OpenAI",
+      errorText,
+    );
+  }
+
+  const data = (await fetchResponse.json()) as {
+    data?: Array<{
+      b64_json?: string;
+      url?: string;
+      revised_prompt?: string;
+    }>;
+    error?: { message?: string };
+  };
+
+  let imageData = data.data?.[0]?.b64_json;
+  const firstItem = data.data?.[0];
+
+  if (!imageData && firstItem?.url) {
+    try {
+      const imageResponse = await fetch(firstItem.url);
+      if (!imageResponse.ok) {
+        throw new Error(
+          `Failed to fetch image URL: ${imageResponse.status} ${imageResponse.statusText}`,
+        );
+      }
+      const arrayBuffer = await imageResponse.arrayBuffer();
+      imageData = Buffer.from(arrayBuffer).toString("base64");
+    } catch (fetchError) {
+      console.error("*** Failed to download image URL", fetchError);
+      throw new ImageGenerationError(
+        500,
+        "Failed to download image provided by OpenAI",
+        errorMessageOf(fetchError),
+      );
+    }
+  }
+
+  if (!imageData) {
+    throw new ImageGenerationError(
+      500,
+      "No image data returned from OpenAI",
+      data.error?.message,
+    );
+  }
+
+  return {
+    success: true,
+    imageData,
+    message: firstItem?.revised_prompt,
+  };
+}
 
 // OpenAI image generation endpoint
 router.post(
   "/generate-image/openai",
   async (req: Request, res: Response): Promise<void> => {
-    const { prompt, images = [], model, size = "1024x1024" } = req.body;
+    const { prompt, images, model, size } = req.body;
 
     if (!prompt) {
       sendApiError(res, req, 400, "Prompt is required");
       return;
     }
 
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (!openaiKey) {
-      sendApiError(
-        res,
-        req,
-        500,
-        "OPENAI_API_KEY environment variable not set",
-      );
-      return;
-    }
-
-    const modelName = (model as string) || "gpt-image-1";
-    const shouldIncludeResponseFormat =
-      !modelName.startsWith("gpt-image-1") && modelName !== "gpt-image-latest";
-
-    // Log API call with backend settings
-    logApiRequest("generate-image/openai", {
-      path: "/api/generate-image/openai",
-      backend: "openai",
-      model: modelName,
-    });
-
     try {
-      const hasEditImage = Array.isArray(images) && images.length > 0;
-      const endpoint = hasEditImage
-        ? "https://api.openai.com/v1/images/edits"
-        : "https://api.openai.com/v1/images/generations";
-
-      let fetchResponse: globalThis.Response;
-
-      if (hasEditImage) {
-        const firstImage = images[0];
-        const buffer = Buffer.from(firstImage, "base64");
-        const blob = new Blob([buffer], { type: "image/png" });
-        const formData = new FormData();
-        formData.append("prompt", prompt);
-        formData.append("model", modelName);
-        formData.append("size", size);
-        if (shouldIncludeResponseFormat) {
-          formData.append("response_format", "b64_json");
-        }
-        formData.append("image", blob, "image.png");
-
-        fetchResponse = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-          },
-          body: formData,
-        });
-      } else {
-        fetchResponse = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt,
-            model: modelName,
-            size,
-            ...(shouldIncludeResponseFormat
-              ? { response_format: "b64_json" }
-              : {}),
-          }),
-        });
-      }
-
-      if (!fetchResponse.ok) {
-        const errorText = await fetchResponse.text();
-        console.error("*** OpenAI image generation failed", errorText);
-        sendApiError(
-          res,
-          req,
-          fetchResponse.status,
-          "Failed to generate image with OpenAI",
-          errorText,
-        );
-        return;
-      }
-
-      const data = (await fetchResponse.json()) as {
-        data?: Array<{
-          b64_json?: string;
-          url?: string;
-          revised_prompt?: string;
-        }>;
-        error?: { message?: string };
-      };
-
-      let imageData = data.data?.[0]?.b64_json;
-      const firstItem = data.data?.[0];
-
-      if (!imageData && firstItem?.url) {
-        try {
-          const imageResponse = await fetch(firstItem.url);
-          if (!imageResponse.ok) {
-            throw new Error(
-              `Failed to fetch image URL: ${imageResponse.status} ${imageResponse.statusText}`,
-            );
-          }
-          const arrayBuffer = await imageResponse.arrayBuffer();
-          imageData = Buffer.from(arrayBuffer).toString("base64");
-        } catch (fetchError) {
-          console.error("*** Failed to download image URL", fetchError);
-          const fetchErrorMessage =
-            fetchError instanceof Error ? fetchError.message : "Unknown error";
-          sendApiError(
-            res,
-            req,
-            500,
-            "Failed to download image provided by OpenAI",
-            fetchErrorMessage,
-          );
-          return;
-        }
-      }
-
-      if (!imageData) {
-        sendApiError(
-          res,
-          req,
-          500,
-          "No image data returned from OpenAI",
-          data.error?.message,
-        );
-        return;
-      }
-
-      res.json({
-        success: true,
-        imageData,
-        message: firstItem?.revised_prompt,
-      });
+      res.json(await generateOpenAIImage({ prompt, images, model, size }));
     } catch (error: unknown) {
+      if (error instanceof ImageGenerationError) {
+        sendApiError(res, req, error.status, error.message, error.details);
+        return;
+      }
       console.error("*** OpenAI image generation encountered an error", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
       sendApiError(
         res,
         req,
         500,
         "Failed to generate image with OpenAI",
-        errorMessage,
+        errorMessageOf(error),
       );
     }
   },

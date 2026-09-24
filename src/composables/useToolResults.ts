@@ -216,6 +216,8 @@ export function useToolResults(
         saveImages,
         // Config accessors for plugins that need to read/modify config
         getImageConfig: () => imageConfig,
+        // Image settings sent to server-run image plugins (see runOnServer)
+        getImageGenerationSettings: () => ({ ...imageConfig, comfyuiModel }),
 
         // Role management for switchRole plugin
         getRoles: () => ROLES.map((r) => ({ id: r.id, name: r.name })),

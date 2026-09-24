@@ -43,11 +43,20 @@ import PianoPlugin from "@gui-chat-plugin/piano/vue";
 import DrawingGamePlugin from "@gui-chat-plugin/drawing-game/vue";
 import AkinatorPlugin from "guichat-plugin-akinator/vue";
 import AvatarPlugin from "@gui-chat-plugin/avatar/vue";
+import { runOnServer } from "./serverPlugin";
+
+// generateImage runs on the server (server/plugins/), with the user's image
+// settings sent along so the server-side context.app.generateImage uses them.
+const ServerGenerateImagePlugin = {
+  plugin: runOnServer(GenerateImagePlugin.plugin, (context) => ({
+    imageGeneration: context.app?.getImageGenerationSettings?.(),
+  })),
+};
 
 const pluginList = [
   // External plugins from npm packages
   QuizPlugin,
-  GenerateImagePlugin,
+  ServerGenerateImagePlugin,
   FormPlugin,
   SummarizePdfPlugin,
   SpreadsheetPlugin,

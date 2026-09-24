@@ -120,6 +120,14 @@ Plugins are **external npm packages**, not source files in this repo. Each packa
 
 To add a plugin: add the package to `package.json`, import its `/vue` entry in `src/tools/index.ts`, and append it to `pluginList`. If it is used by a fixed role, add its tool name to that role's `availablePlugins`.
 
+#### Server-run plugins
+
+Some plugins run their `execute()` on the server instead of in the browser. The mechanism is adapted from MulmoTerminal's plugin registry, so the same npm packages run the same way in MulmoChat, MulmoTerminal and MulmoClaude. Currently only `generateImage` (`@mulmochat-plugin/generate-image`) runs this way.
+
+- **Browser:** `runOnServer(plugin, buildConfig)` (`src/tools/serverPlugin.ts`) keeps the plugin's views, input handlers and system prompt, and replaces `execute` with `POST /api/plugin/<toolName>` carrying `{ args, config }`. `config` holds per-user settings the server needs. For images it comes from `context.app.getImageGenerationSettings()`.
+- **Server:** `server/plugins/config.ts` lists the packages. `server/plugins/registry.ts` loads each package's core entry (`TOOL_DEFINITION` + `pluginCore.execute`). `server/routes/plugins.ts` runs `execute` with a `context.app` built per request by `server/plugins/appContext.ts`.
+- **Adding one:** add the package to `server/plugins/config.ts`, add any backend it calls to `createAppContext`, and wrap its `pluginList` entry with `runOnServer`. `definePlugin` factory packages are not supported yet.
+
 #### Plugin Documentation Sync (IMPORTANT)
 
 When changing plugin implementation policies or adding new constraints, the following documentation must be updated:
@@ -147,6 +155,8 @@ These documents are used by developers creating new plugins. Keeping them in syn
   - `textLLM.ts` — `/api/text/providers`, `/api/text/generate`, and server-side sessions under `/api/text/session…` (not used by the current client)
   - `image.ts` — `/api/generate-image` (Gemini), `/api/generate-image/openai`
   - `comfyui.ts` — `/api/generate-image/comfy`
+  - `plugins.ts` — `/api/plugin/:toolName` (server-run plugins; see Plugin System)
+  - The image routes are thin wrappers around `generateGeminiImage`, `generateOpenAIImage` and `generateComfyImage`. The server-side `context.app.generateImage` reuses them. Failures are thrown as `ImageGenerationError` with the HTTP status to send back (`server/utils/imageGenerationError.ts`).
   - `html.ts` — `/api/generate-html`
   - `pdf.ts` — `/api/check-pdf`, `/api/summarize-pdf`, `/api/generate-pdf`, `/api/save-pdf`, `/api/download-pdf`
   - `movie.ts` — `/api/generate-movie`, `/api/save-images`, `/api/download-movie`, `/api/viewer-json` (mulmocast)

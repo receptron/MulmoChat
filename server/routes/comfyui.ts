@@ -1,6 +1,10 @@
 import express, { Request, Response, Router } from "express";
 import { randomUUID } from "crypto";
 import { sendApiError, logApiRequest } from "../utils/logger";
+import {
+  ImageGenerationError,
+  errorMessageOf,
+} from "../utils/imageGenerationError";
 
 const router: Router = express.Router();
 
@@ -183,187 +187,204 @@ const toNumber = (value: unknown, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+export interface ComfyImageRequest {
+  prompt?: unknown;
+  negativePrompt?: unknown;
+  model?: unknown;
+  width?: unknown;
+  height?: unknown;
+  steps?: unknown;
+  cfgScale?: unknown;
+  seed?: unknown;
+  sampler?: unknown;
+  scheduler?: unknown;
+  denoise?: unknown;
+  filenamePrefix?: unknown;
+}
+
+// Detect model type from the model name
+const isFluxModel = (modelName: string): boolean => {
+  return modelName.toLowerCase().includes("flux");
+};
+
+const isTurboModel = (modelName: string): boolean => {
+  return modelName.toLowerCase().includes("turbo");
+};
+
+/**
+ * Generate images with a local ComfyUI server.
+ * Throws ImageGenerationError for invalid requests and empty results; other errors propagate.
+ */
+export async function generateComfyImage(body: ComfyImageRequest) {
+  const { prompt } = body;
+
+  const negativePrompt =
+    typeof body.negativePrompt === "string" ? body.negativePrompt : "";
+
+  // Get model name early to determine defaults
+  let modelValue =
+    typeof body.model === "string" && body.model.trim().length > 0
+      ? body.model
+      : DEFAULT_COMFY_MODEL;
+
+  // Log API call with backend settings
+  logApiRequest("generate-image/comfy", {
+    path: "/api/generate-image/comfy",
+    backend: "comfyui",
+    model: modelValue,
+  });
+
+  // Set optimal defaults based on model type
+  const isFlux = isFluxModel(modelValue);
+  const isTurbo = isTurboModel(modelValue);
+
+  const defaultWidth = 512; // isFlux ? 1024 : 512;
+  const defaultHeight = 512; // isFlux ? 1024 : 512;
+  const defaultSteps = isFlux ? 4 : isTurbo ? 8 : 20;
+  const defaultCfg = isFlux ? 1.0 : isTurbo ? 1.5 : 8.0;
+  const defaultSampler = isFlux ? "euler" : "dpmpp_2m_sde";
+  const defaultScheduler = isFlux ? "simple" : "karras";
+
+  const widthValue = toNumber(body.width, defaultWidth);
+  const heightValue = toNumber(body.height, defaultHeight);
+
+  const stepsValue = toNumber(body.steps, defaultSteps);
+  const cfgScaleValue = toNumber(body.cfgScale, defaultCfg);
+  const defaultSeed = Math.floor(Math.random() * 2 ** 32);
+  const seedValue = toNumber(body.seed, defaultSeed);
+  const samplerValue =
+    typeof body.sampler === "string" && body.sampler.trim().length > 0
+      ? body.sampler
+      : defaultSampler;
+  const schedulerValue =
+    typeof body.scheduler === "string" && body.scheduler.trim().length > 0
+      ? body.scheduler
+      : defaultScheduler;
+  const denoiseValue = toNumber(body.denoise, 1);
+
+  if (!modelValue || modelValue.trim().length === 0) {
+    throw new ImageGenerationError(
+      400,
+      "Model is required",
+      "Set COMFYUI_DEFAULT_MODEL or pass model in the request body.",
+    );
+  }
+  modelValue = modelValue.trim();
+  const filenamePrefix =
+    typeof body.filenamePrefix === "string" &&
+    body.filenamePrefix.trim().length > 0
+      ? body.filenamePrefix
+      : "ComfyUI";
+
+  if (!prompt || typeof prompt !== "string") {
+    throw new ImageGenerationError(400, "Prompt is required");
+  }
+
+  console.log(
+    `ComfyUI generation: ${modelValue} (${widthValue}x${heightValue}, steps=${stepsValue}, cfg=${cfgScaleValue}, sampler=${samplerValue}, scheduler=${schedulerValue})`,
+  );
+
+  const workflow = buildSDXLTurboWorkflow({
+    prompt,
+    negativePrompt,
+    width: widthValue,
+    height: heightValue,
+    steps: stepsValue,
+    cfgScale: cfgScaleValue,
+    seed: seedValue,
+    sampler: samplerValue,
+    scheduler: schedulerValue,
+    denoise: denoiseValue,
+    model: modelValue,
+    filenamePrefix,
+  });
+
+  const clientId = randomUUID();
+  const queueResponse = await fetch(`${COMFY_BASE_URL}/prompt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: workflow,
+      client_id: clientId,
+    }),
+  });
+
+  if (!queueResponse.ok) {
+    const errorText = await queueResponse.text();
+    throw new Error(
+      `ComfyUI prompt submission failed: ${queueResponse.status} ${queueResponse.statusText} - ${errorText}`,
+    );
+  }
+
+  const { prompt_id: promptId } = (await queueResponse.json()) as {
+    prompt_id: string;
+  };
+
+  if (!promptId) {
+    throw new Error("ComfyUI did not return a prompt_id");
+  }
+
+  const result = await waitForComfyResult(
+    COMFY_BASE_URL,
+    promptId,
+    COMFY_REQUEST_TIMEOUT_MS,
+    COMFY_POLL_INTERVAL_MS,
+  );
+
+  const images: string[] = [];
+  const outputs = result?.outputs ?? {};
+  for (const nodeId of Object.keys(outputs)) {
+    const node = outputs[nodeId];
+    for (const image of node.images ?? []) {
+      const imageData = await loadComfyImageAsBase64(COMFY_BASE_URL, image);
+      images.push(imageData);
+    }
+  }
+
+  if (images.length === 0) {
+    throw new ImageGenerationError(
+      502,
+      "No images returned by ComfyUI",
+      "Workflow completed without producing images",
+    );
+  }
+
+  return {
+    success: true,
+    images,
+    promptId,
+    model: modelValue,
+    metadata: {
+      width: widthValue,
+      height: heightValue,
+      steps: stepsValue,
+      cfgScale: cfgScaleValue,
+      sampler: samplerValue,
+      scheduler: schedulerValue,
+      denoise: denoiseValue,
+      filenamePrefix,
+      clientId,
+    },
+  };
+}
+
 router.post(
   "/generate-image/comfy",
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body ?? {};
-    const { prompt } = body;
-
-    const negativePrompt =
-      typeof body.negativePrompt === "string" ? body.negativePrompt : "";
-
-    // Detect model type from the model name
-    const isFluxModel = (modelName: string): boolean => {
-      return modelName.toLowerCase().includes("flux");
-    };
-
-    const isTurboModel = (modelName: string): boolean => {
-      return modelName.toLowerCase().includes("turbo");
-    };
-
-    // Get model name early to determine defaults
-    let modelValue =
-      typeof body.model === "string" && body.model.trim().length > 0
-        ? body.model
-        : DEFAULT_COMFY_MODEL;
-
-    // Log API call with backend settings
-    logApiRequest("generate-image/comfy", {
-      path: "/api/generate-image/comfy",
-      backend: "comfyui",
-      model: modelValue,
-    });
-
-    // Set optimal defaults based on model type
-    const isFlux = isFluxModel(modelValue);
-    const isTurbo = isTurboModel(modelValue);
-
-    const defaultWidth = 512; // isFlux ? 1024 : 512;
-    const defaultHeight = 512; // isFlux ? 1024 : 512;
-    const defaultSteps = isFlux ? 4 : isTurbo ? 8 : 20;
-    const defaultCfg = isFlux ? 1.0 : isTurbo ? 1.5 : 8.0;
-    const defaultSampler = isFlux ? "euler" : "dpmpp_2m_sde";
-    const defaultScheduler = isFlux ? "simple" : "karras";
-
-    const widthValue = toNumber(body.width, defaultWidth);
-    const heightValue = toNumber(body.height, defaultHeight);
-
-    const stepsValue = toNumber(body.steps, defaultSteps);
-    const cfgScaleValue = toNumber(body.cfgScale, defaultCfg);
-    const defaultSeed = Math.floor(Math.random() * 2 ** 32);
-    const seedValue = toNumber(body.seed, defaultSeed);
-    const samplerValue =
-      typeof body.sampler === "string" && body.sampler.trim().length > 0
-        ? body.sampler
-        : defaultSampler;
-    const schedulerValue =
-      typeof body.scheduler === "string" && body.scheduler.trim().length > 0
-        ? body.scheduler
-        : defaultScheduler;
-    const denoiseValue = toNumber(body.denoise, 1);
-
-    if (!modelValue || modelValue.trim().length === 0) {
-      sendApiError(
-        res,
-        req,
-        400,
-        "Model is required",
-        "Set COMFYUI_DEFAULT_MODEL or pass model in the request body.",
-      );
-      return;
-    }
-    modelValue = modelValue.trim();
-    const filenamePrefix =
-      typeof body.filenamePrefix === "string" &&
-      body.filenamePrefix.trim().length > 0
-        ? body.filenamePrefix
-        : "ComfyUI";
-
-    if (!prompt) {
-      sendApiError(res, req, 400, "Prompt is required");
-      return;
-    }
-
-    console.log(
-      `ComfyUI generation: ${modelValue} (${widthValue}x${heightValue}, steps=${stepsValue}, cfg=${cfgScaleValue}, sampler=${samplerValue}, scheduler=${schedulerValue})`,
-    );
-
     try {
-      const workflow = buildSDXLTurboWorkflow({
-        prompt,
-        negativePrompt,
-        width: widthValue,
-        height: heightValue,
-        steps: stepsValue,
-        cfgScale: cfgScaleValue,
-        seed: seedValue,
-        sampler: samplerValue,
-        scheduler: schedulerValue,
-        denoise: denoiseValue,
-        model: modelValue,
-        filenamePrefix,
-      });
-
-      const clientId = randomUUID();
-      const queueResponse = await fetch(`${COMFY_BASE_URL}/prompt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: workflow,
-          client_id: clientId,
-        }),
-      });
-
-      if (!queueResponse.ok) {
-        const errorText = await queueResponse.text();
-        throw new Error(
-          `ComfyUI prompt submission failed: ${queueResponse.status} ${queueResponse.statusText} - ${errorText}`,
-        );
-      }
-
-      const { prompt_id: promptId } = (await queueResponse.json()) as {
-        prompt_id: string;
-      };
-
-      if (!promptId) {
-        throw new Error("ComfyUI did not return a prompt_id");
-      }
-
-      const result = await waitForComfyResult(
-        COMFY_BASE_URL,
-        promptId,
-        COMFY_REQUEST_TIMEOUT_MS,
-        COMFY_POLL_INTERVAL_MS,
-      );
-
-      const images: string[] = [];
-      const outputs = result?.outputs ?? {};
-      for (const nodeId of Object.keys(outputs)) {
-        const node = outputs[nodeId];
-        for (const image of node.images ?? []) {
-          const imageData = await loadComfyImageAsBase64(COMFY_BASE_URL, image);
-          images.push(imageData);
-        }
-      }
-
-      if (images.length === 0) {
-        sendApiError(
-          res,
-          req,
-          502,
-          "No images returned by ComfyUI",
-          "Workflow completed without producing images",
-        );
+      res.json(await generateComfyImage(req.body ?? {}));
+    } catch (error: unknown) {
+      if (error instanceof ImageGenerationError) {
+        sendApiError(res, req, error.status, error.message, error.details);
         return;
       }
-
-      res.json({
-        success: true,
-        images,
-        promptId,
-        model: modelValue,
-        metadata: {
-          width: widthValue,
-          height: heightValue,
-          steps: stepsValue,
-          cfgScale: cfgScaleValue,
-          sampler: samplerValue,
-          scheduler: schedulerValue,
-          denoise: denoiseValue,
-          filenamePrefix,
-          clientId,
-        },
-      });
-    } catch (error: unknown) {
       console.error("ComfyUI image generation failed:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
       sendApiError(
         res,
         req,
         500,
         "Failed to generate image with ComfyUI",
-        errorMessage,
+        errorMessageOf(error),
       );
     }
   },

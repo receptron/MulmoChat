@@ -11,6 +11,7 @@ import htmlRouter from "./html";
 import textRouter from "./textLLM";
 import comfyRouter from "./comfyui";
 import imageRouter from "./image";
+import pluginRouter from "./plugins";
 dotenv.config({ quiet: true });
 
 const router: Router = express.Router();
@@ -32,6 +33,9 @@ router.use(comfyRouter);
 
 // Mount image routes
 router.use(imageRouter);
+
+// Mount server-side plugin execution route
+router.use(pluginRouter);
 
 const DEFAULT_REALTIME_MODEL = "gpt-realtime-2.1";
 const REALTIME_MODEL_PATTERN = /^gpt-realtime[a-z0-9.-]*$/;
