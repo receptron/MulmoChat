@@ -173,6 +173,7 @@ These documents are used by developers creating new plugins. Keeping them in syn
 - `ANTHROPIC_API_KEY`, `XAI_API_KEY` — Anthropic / Grok text models
 - `EXA_API_KEY` — Exa search; `GOOGLE_MAP_API_KEY` — map plugin
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends
+- `MULMOCHAT_ALLOWED_ORIGINS` — extra browser origins (comma-separated) allowed to call `/api/plugin/*`, e.g. `http://mac.local:5173` when opening the dev server from another device. Loopback origins are always allowed; the Host header is not trusted (DNS rebinding). Requests must be JSON (`server/utils/trustedOrigin.ts`).
 - `MULMOCHAT_WORKSPACE` — workspace for server-run plugins' files (default: `~/mulmoclaude` if it exists, else `output/workspace`). Point it at a scratch folder when testing.
 - `PORT`, `NODE_ENV`
 

@@ -6,6 +6,7 @@ import {
 } from "../plugins/appContext";
 import { artifactsFileOps } from "../plugins/workspace";
 import { sendApiError } from "../utils/logger";
+import { requireTrustedOrigin } from "../utils/trustedOrigin";
 import { errorMessageOf } from "../utils/imageGenerationError";
 
 const router: Router = express.Router();
@@ -15,6 +16,7 @@ const router: Router = express.Router();
 // ToolResult envelope.
 router.post(
   "/plugin/:toolName",
+  requireTrustedOrigin,
   async (req: Request, res: Response): Promise<void> => {
     let plugins;
     try {
