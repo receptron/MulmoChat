@@ -4,6 +4,7 @@ import {
   createAppContext,
   parsePluginRequestConfig,
 } from "../plugins/appContext";
+import { artifactsFileOps } from "../plugins/workspace";
 import { sendApiError } from "../utils/logger";
 import { errorMessageOf } from "../utils/imageGenerationError";
 
@@ -44,7 +45,12 @@ router.post(
 
     try {
       const app = createAppContext(parsePluginRequestConfig(config));
-      res.json(await plugin.execute({ app }, args));
+      res.json(
+        await plugin.execute(
+          { app, files: { artifacts: artifactsFileOps } },
+          args,
+        ),
+      );
     } catch (error: unknown) {
       sendApiError(
         res,

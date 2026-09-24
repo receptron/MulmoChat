@@ -122,11 +122,12 @@ To add a plugin: add the package to `package.json`, import its `/vue` entry in `
 
 #### Server-run plugins
 
-Some plugins run their `execute()` on the server instead of in the browser. The mechanism is adapted from MulmoTerminal's plugin registry, so the same npm packages run the same way in MulmoChat, MulmoTerminal and MulmoClaude. Currently only `generateImage` (`@mulmochat-plugin/generate-image`) runs this way.
+Some plugins run their `execute()` on the server instead of in the browser. The mechanism is adapted from MulmoTerminal's plugin registry, so the same npm packages run the same way in MulmoChat, MulmoTerminal and MulmoClaude. Currently `generateImage` (`@mulmochat-plugin/generate-image`) and `presentChart` (`@mulmoclaude/chart-plugin`, available in the Office role) run this way.
 
 - **Browser:** `runOnServer(plugin, buildConfig)` (`src/tools/serverPlugin.ts`) keeps the plugin's views, input handlers and system prompt, and replaces `execute` with `POST /api/plugin/<toolName>` carrying `{ args, config }`. `config` holds per-user settings the server needs. For images it comes from `context.app.getImageGenerationSettings()`.
 - **Server:** `server/plugins/config.ts` lists the packages. `server/plugins/registry.ts` loads each package's core entry (`TOOL_DEFINITION` + `pluginCore.execute`). `server/routes/plugins.ts` runs `execute` with a `context.app` built per request by `server/plugins/appContext.ts`.
-- **Adding one:** add the package to `server/plugins/config.ts`, add any backend it calls to `createAppContext`, and wrap its `pluginList` entry with `runOnServer`. `definePlugin` factory packages are not supported yet.
+- **Files:** plugins get `context.files.artifacts`, a rooted `FileOps` over `<workspace>/artifacts` (`server/plugins/fileOps.ts`, copied from MulmoTerminal). Paths that escape the root, including through symlinks, are refused. The workspace (`server/plugins/workspace.ts`) is `MULMOCHAT_WORKSPACE`, else the `~/mulmoclaude` workspace shared with MulmoClaude and MulmoTerminal if it exists, else `output/workspace`. MulmoChat never creates or seeds the shared workspace and serves nothing from it.
+- **Adding one:** add the package to `server/plugins/config.ts`, add any backend it calls to `createAppContext`, and wrap its `pluginList` entry with `runOnServer`. `definePlugin` factory packages are not supported yet. For `@mulmoclaude/*` packages, their stylesheets are picked up by the glob in `src/main.ts`.
 
 #### Plugin Documentation Sync (IMPORTANT)
 
@@ -172,6 +173,7 @@ These documents are used by developers creating new plugins. Keeping them in syn
 - `ANTHROPIC_API_KEY`, `XAI_API_KEY` — Anthropic / Grok text models
 - `EXA_API_KEY` — Exa search; `GOOGLE_MAP_API_KEY` — map plugin
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends
+- `MULMOCHAT_WORKSPACE` — workspace for server-run plugins' files (default: `~/mulmoclaude` if it exists, else `output/workspace`). Point it at a scratch folder when testing.
 - `PORT`, `NODE_ENV`
 
 ### Data Flow

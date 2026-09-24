@@ -12,16 +12,25 @@
 //     are supported. definePlugin factories need the server-side PluginRuntime,
 //     which will be added with the first plugin that uses one.
 import { isPluginFactory } from "gui-chat-protocol";
-import type { ToolContext, ToolDefinition } from "gui-chat-protocol";
+import type { FileOps, ToolContext, ToolDefinition } from "gui-chat-protocol";
 import { logger } from "../utils/logger";
 import { PLUGIN_PACKAGES } from "./config";
 
 type Executor = (...args: unknown[]) => unknown;
 
+// gui-chat-protocol ToolContext plus the generic file capabilities a server-run
+// plugin may use (e.g. @mulmoclaude/chart-plugin writes context.files.artifacts).
+export interface ServerToolContext extends ToolContext {
+  files: { artifacts: FileOps };
+}
+
 export interface LoadedPlugin {
   toolName: string;
   definition: ToolDefinition;
-  execute: (context: ToolContext, args: Record<string, unknown>) => unknown;
+  execute: (
+    context: ServerToolContext,
+    args: Record<string, unknown>,
+  ) => unknown;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

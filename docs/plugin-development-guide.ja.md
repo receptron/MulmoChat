@@ -195,7 +195,7 @@ ToolPlugin<T, J, A>
 ホストは、プラグインの `execute()` をブラウザではなくサーバーで実行することがあります。MulmoTerminal はすべてのプラグインをこの方式で実行しています。MulmoChat では `generateImage` がこの方式です。ブラウザは呼び出しを `POST /api/plugin/<toolName>` に転送し、サーバーが自身の `context.app` を渡して `execute()` を実行します。この方式で動かすには、次の条件を満たしてください。
 
 - **フレームワークに依存しない core エントリーを用意する。** パッケージのメインエントリー（または `./core`）で `TOOL_DEFINITION` と、`execute` を持つ `pluginCore` を export し、Vue を import しないでください。サーバーはこのエントリーを直接 import します。
-- **バックエンドには `context` 経由でのみアクセスする。** `execute()` の中では、ホストのルートを `fetch` したり、ブラウザの API（`window`、`localStorage`）に触れたりせず、`context.app.generateImage(prompt)` のようなホストのバックエンドを呼び出してください。サーバー上では、`context.app` にサーバー側の実装が入ります。
+- **バックエンドには `context` 経由でのみアクセスする。** `execute()` の中では、ホストのルートを `fetch` したり、ブラウザの API（`window`、`localStorage`）に触れたりせず、`context.app.generateImage(prompt)` のようなホストのバックエンドを呼び出してください。サーバー上では、`context.app` にサーバー側の実装が入ります。ファイルを保存するときは `context.files.artifacts` を使ってください（ホストの artifacts フォルダーからの相対パスで読み書きします）。フォルダーの外を指すパスは拒否されます。
 - **JSON にシリアライズできる結果を返す。** `ToolResult` は HTTP でブラウザに返されるため、`data` と `jsonData` は `JSON.stringify` で失われない値にしてください。画像は `Blob` ではなく、データ URL か URL で返してください。
 - **`definePlugin` のファクトリー形式のパッケージは、MulmoChat のサーバー側レジストリではまだサポートしていません。** 通常の `pluginCore` 形式を使ってください。
 

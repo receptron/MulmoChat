@@ -10,6 +10,7 @@ import.meta.glob(
     "../node_modules/@gui-chat-plugin/*/dist/style.css",
     "../node_modules/@mulmochat-plugin/*/dist/style.css",
     "../node_modules/guichat-plugin-*/dist/style.css",
+    "../node_modules/@mulmoclaude/*-plugin/dist/style.css",
   ],
   { eager: true },
 );

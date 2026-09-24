@@ -31,7 +31,7 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
   - the user has not switched it off (customizable roles only).
 - Keep plugin-specific code out of `HomeView.vue`, `App.vue` and the composables. Use `toolExecute` / `getToolPlugin` / `pluginTools` from `src/tools/index.ts`.
 - Plugin policy changes must also be reflected in `docs/plugin-development-guide.md` and `docs/plugin-development-guide.ja.md`.
-- Server-run plugins: `generateImage` runs its `execute()` on the server.
+- Server-run plugins: `generateImage` and `presentChart` (`@mulmoclaude/chart-plugin`) run their `execute()` on the server. Plugins write files only through `context.files.artifacts`, rooted at `<workspace>/artifacts`.
   - The browser wraps the plugin with `runOnServer` (`src/tools/serverPlugin.ts`) and POSTs `{ args, config }` to `/api/plugin/<toolName>`.
   - `server/plugins/` loads the package and builds `context.app` per request.
   - The mechanism is adapted from MulmoTerminal's plugin registry. See `CLAUDE.md` for how to add a plugin this way.
@@ -59,6 +59,7 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
 - `ANTHROPIC_API_KEY`, `XAI_API_KEY` — Anthropic and Grok text models.
 - `EXA_API_KEY` (Exa search) and `GOOGLE_MAP_API_KEY` (map). Plugins that need a missing key are disabled.
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends.
+- `MULMOCHAT_WORKSPACE` — workspace for plugin files. Defaults to `~/mulmoclaude`, which is shared with MulmoClaude and MulmoTerminal, when it exists; otherwise `output/workspace`. Use a scratch folder for tests.
 - `PORT` and `NODE_ENV`. `.env` is ignored by git.
 
 ## Development Guidelines

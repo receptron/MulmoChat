@@ -195,7 +195,7 @@ User Input → LLM → Tool Call → execute() → ToolResult → View/Preview
 A host can run a plugin's `execute()` on its server instead of in the browser. MulmoTerminal does this for all its plugins. MulmoChat does it for `generateImage`: the browser forwards the call to `POST /api/plugin/<toolName>`, and the server runs `execute()` with its own `context.app`. For a plugin to run this way:
 
 - **Export a framework-free core entry.** The package's main entry (or `./core`) must export `TOOL_DEFINITION` and `pluginCore` with `execute`, and must not import Vue. The server imports it directly.
-- **Reach backends only through `context`.** In `execute()`, call host backends such as `context.app.generateImage(prompt)` instead of `fetch`ing host routes or touching browser APIs (`window`, `localStorage`). On the server, `context.app` holds server-side implementations.
+- **Reach backends only through `context`.** In `execute()`, call host backends such as `context.app.generateImage(prompt)` instead of `fetch`ing host routes or touching browser APIs (`window`, `localStorage`). On the server, `context.app` holds server-side implementations. To save files, use `context.files.artifacts` (read/write relative to the host's artifacts folder); paths outside that folder are refused.
 - **Return plain, JSON-serializable results.** The `ToolResult` goes back to the browser over HTTP, so `data` and `jsonData` must survive `JSON.stringify`. Images should be data URLs or URLs, not `Blob`s.
 - **`definePlugin` factory packages are not supported yet** by MulmoChat's server registry. Use the plain `pluginCore` form.
 
