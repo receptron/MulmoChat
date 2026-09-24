@@ -6,6 +6,12 @@ import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
 import type { ImageToolData } from "../utils/imageTypes";
 import type { ImageGenerationConfigValue } from "./types";
 import { getRawPluginConfig } from "./config";
+import {
+  DEFAULT_GEMINI_IMAGE_MODEL,
+  DEFAULT_OPENAI_IMAGE_MODEL,
+  resolveGeminiImageModel,
+  resolveOpenAIImageModel,
+} from "../../config/imageModels";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";
 
@@ -24,15 +30,15 @@ export function normalizeImageConfig(
     return {
       backend: config as ImageBackend,
       styleModifier: "",
-      geminiModel: "gemini-2.5-flash-image",
-      openaiModel: "gpt-image-1",
+      geminiModel: DEFAULT_GEMINI_IMAGE_MODEL,
+      openaiModel: DEFAULT_OPENAI_IMAGE_MODEL,
     };
   }
   return {
     backend: config?.backend || "gemini",
     styleModifier: config?.styleModifier || "",
-    geminiModel: config?.geminiModel || "gemini-2.5-flash-image",
-    openaiModel: config?.openaiModel || "gpt-image-1",
+    geminiModel: resolveGeminiImageModel(config?.geminiModel),
+    openaiModel: resolveOpenAIImageModel(config?.openaiModel),
   };
 }
 

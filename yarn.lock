@@ -645,7 +645,7 @@
   version "0.1.0"
   resolved "https://codeload.github.com/receptron/GUIChatPluginPiano/tar.gz/58cf06d5746474da9f2c2ff5fdef2db02fb5810f"
   dependencies:
-    gui-chat-protocol "^1.2.0"
+    gui-chat-protocol "^0.0.3"
     openai "^4.77.0"
     soundfont-player "^0.12.0"
 
@@ -3848,8 +3848,8 @@ gui-chat-protocol@^2.0.0:
   version "0.1.0"
   resolved "https://codeload.github.com/isamu/AkinatorGame/tar.gz/6412aaf6a4b81801ea93c1403a45c32306246ed8"
   dependencies:
-    gui-chat-protocol "^1.2.0"
-    openai "^4.104.0"
+    gui-chat-protocol "^0.0.1"
+    openai "^4.77.0"
 
 has-symbols@^1.0.3, has-symbols@^1.1.0:
   version "1.1.0"
@@ -4982,6 +4982,11 @@ openai@^6.16.0:
   version "6.49.0"
   resolved "https://registry.yarnpkg.com/openai/-/openai-6.49.0.tgz#6e9f798e146935ed38d955b43d57d6796cee5e6b"
   integrity sha512-aYCc0C6L864eR6WSYIwQGyXriw/nIyZx0ObvhzOEVuk0zoBDpynjSbrionWI7q65B5H8jJX0DXR9snEzM6bfPg==
+
+openai@^7.23.0:
+  version "7.23.0"
+  resolved "https://registry.yarnpkg.com/openai/-/openai-7.23.0.tgz#fcecfda17aff300228304096bc073838220096f9"
+  integrity sha512-0ecOXnFSMNWZq6cUBcTV6Lf93y+fm8BH/+QzFvpoP1UGNOE5pnytRa6HAPGCw+3IS9SIAW7rc1M8yyzN1PiBAQ==
 
 opensheetmusicdisplay@^2.0.0:
   version "2.1.1"

@@ -138,15 +138,12 @@ import {
   REALTIME_MODELS,
 } from "../config/models";
 import { getRole } from "../config/roles";
+import { imageModelShortLabel } from "../config/imageModels";
+import { normalizeImageConfig } from "../tools/backend/imageGeneration";
+import type { ImageGenerationConfigValue } from "../tools/backend/types";
 import { getLanguageName } from "../config/languages";
 import type { TextProvidersResponse } from "../../server/types";
 import { v4 as uuidv4 } from "uuid";
-
-interface ImageGenerationConfigObject {
-  backend?: string;
-  geminiModel?: string;
-  openaiModel?: string;
-}
 
 const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
 const rightSidebarRef = ref<InstanceType<typeof RightSidebar> | null>(null);
@@ -339,44 +336,13 @@ const statusLine = computed(() => {
     }
   }
 
-  // Get image model name
-  let imageModelName = "Unknown";
-  const imageConfig = userPreferences.pluginConfigs.imageGenerationBackend;
-  if (typeof imageConfig === "string") {
-    // Legacy format - just the backend name
-    if (imageConfig === "gemini") {
-      imageModelName = "Gemini 2.5 Flash Image";
-    } else if (imageConfig === "openai") {
-      imageModelName = "GPT Image 1";
-    } else if (imageConfig === "comfyui") {
-      imageModelName = "ComfyUI";
-    }
-  } else if (imageConfig && typeof imageConfig === "object") {
-    // New format with backend and model
-    const config = imageConfig as ImageGenerationConfigObject;
-    const backend = config.backend;
-    if (backend === "gemini") {
-      const geminiModel = config.geminiModel || "gemini-2.5-flash-image";
-      if (geminiModel === "gemini-3-pro-image-preview") {
-        imageModelName = "Gemini 3 Pro Image";
-      } else if (geminiModel === "gemini-3.1-flash-image-preview") {
-        imageModelName = "Gemini 3.1 Flash Image";
-      } else {
-        imageModelName = "Gemini 2.5 Flash Image";
-      }
-    } else if (backend === "openai") {
-      const openaiModel = config.openaiModel || "gpt-image-1";
-      if (openaiModel === "gpt-image-1.5") {
-        imageModelName = "GPT Image 1.5";
-      } else if (openaiModel === "gpt-image-1-mini") {
-        imageModelName = "GPT Image 1 Mini";
-      } else {
-        imageModelName = "GPT Image 1";
-      }
-    } else if (backend === "comfyui") {
-      imageModelName = "ComfyUI";
-    }
-  }
+  // Get image model name (handles the legacy string format and renamed IDs)
+  const imageModelName = imageModelShortLabel(
+    normalizeImageConfig(
+      userPreferences.pluginConfigs.imageGenerationBackend as
+        string | ImageGenerationConfigValue | undefined,
+    ),
+  );
 
   // Get role name
   const role = getRole(userPreferences.roleId);
