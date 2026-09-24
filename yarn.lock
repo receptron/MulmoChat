@@ -996,11 +996,6 @@
     "@mulmocast/deck" "^0.7.0"
     zod "^4.4.3"
 
-"@mulmochat-plugin/form@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@mulmochat-plugin/form/-/form-2.0.0.tgz#6b2b19bf5e2bd3e3379873ea0514a20efd62ad77"
-  integrity sha512-l62ETV9l2qOXFkEpSUadR8y6r4J2qEK4XEYnUekE//8ORK8lwkVV1HFyw32WFaicgFkeZzb9C2L2aiNvMgIomw==
-
 "@mulmochat-plugin/generate-image@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@mulmochat-plugin/generate-image/-/generate-image-2.0.0.tgz#8af58e813eafe664e8c7ad15946b2be4a2de55a1"
@@ -1045,6 +1040,11 @@
     iconv-lite "^0.7.3"
     js-yaml "^5.4.2"
     zod "^4.6.5"
+
+"@mulmoclaude/form-plugin@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@mulmoclaude/form-plugin/-/form-plugin-2.0.0.tgz#bdd7f65afa2d121caeac8978d81db5875516113e"
+  integrity sha512-5bcCzVFf0om4A/Xv7bsDKcdX9RW1i5OpzQ86m4jY+3UUowmUDwujeO9RkgH/iTdYp6gTR5qdmRIjAVNeqcuKrQ==
 
 "@mulmoclaude/markdown-utils@^3.0.0":
   version "3.0.1"
