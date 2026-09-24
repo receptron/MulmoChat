@@ -78,7 +78,7 @@
     "exa-js": "^2.16.3",
     "express": "^5.2.1",
     "gui-chat-protocol": "^2.0.0",
-    "guichat-plugin-akinator": "git+https://github.com/isamu/AkinatorGame.git",
+    "guichat-plugin-akinator": "github:isamu/AkinatorGame",
     "material-icons": "^1.13.14",
     "openai": "^7.23.0",
     "uuid": "^14.0.2",

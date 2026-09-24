@@ -3764,9 +3764,9 @@ gui-chat-protocol@^2.0.0:
   resolved "https://registry.yarnpkg.com/gui-chat-protocol/-/gui-chat-protocol-2.0.0.tgz#96f0f0a115c92f8567b68b9c74a53514e1f3253f"
   integrity sha512-E02kPSXKH2bX4WAp6TuMjSx4Ftzr2n8XEQtPhZxRCKCBO9ss3Qkx4G5xWeZ6bVUCZtyhB+N8V8Jlv+YRPQJQ9w==
 
-"guichat-plugin-akinator@git+https://github.com/isamu/AkinatorGame.git":
+"guichat-plugin-akinator@github:isamu/AkinatorGame":
   version "1.0.0"
-  resolved "git+https://github.com/isamu/AkinatorGame.git#ce33a827f5e429707764b1bfd135ec860e3cd4d3"
+  resolved "https://codeload.github.com/isamu/AkinatorGame/tar.gz/98c27ac0798e397f14e5fbe1eef78772f0e30244"
   dependencies:
     gui-chat-protocol "^2.0.0"
     openai "^4.104.0"
