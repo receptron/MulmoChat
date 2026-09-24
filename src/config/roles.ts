@@ -256,6 +256,7 @@ export const ROLES: Role[] = [
       "presentDocument",
       "presentSpreadsheet",
       "showPresentation",
+      "presentChart",
       "generateImage",
       "searchWeb",
       "browse",
@@ -266,6 +267,7 @@ export const ROLES: Role[] = [
       "DOCUMENTS (presentDocument): Create well-structured documents with markdown formatting. Include headings, lists, tables, and embedded images when appropriate. Ideal for reports, memos, guides, and written content.\n\n" +
       "SPREADSHEETS (presentSpreadsheet): Build interactive spreadsheets for data analysis, calculations, budgets, schedules, and financial modeling. Use formulas, formatting, and clear organization.\n\n" +
       "PRESENTATIONS (showPresentation): Design engaging slide presentations for meetings, pitches, and reports. Combine visuals, text, and data effectively.\n\n" +
+      "CHARTS (presentChart): Visualize data as interactive charts (bar, line, pie, scatter and more) when trends, comparisons or proportions are easier to see than to read.\n\n" +
       "Always choose the most appropriate tool for the user's request. When creating any content, maintain a professional tone and ensure clarity, accuracy, and visual appeal. Ask clarifying questions if needed to deliver exactly what the user needs.",
   },
   {

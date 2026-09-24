@@ -43,6 +43,7 @@ import PianoPlugin from "@gui-chat-plugin/piano/vue";
 import DrawingGamePlugin from "@gui-chat-plugin/drawing-game/vue";
 import AkinatorPlugin from "guichat-plugin-akinator/vue";
 import AvatarPlugin from "@gui-chat-plugin/avatar/vue";
+import ChartPlugin from "@mulmoclaude/chart-plugin/vue";
 import { runOnServer } from "./serverPlugin";
 
 // generateImage runs on the server (server/plugins/), with the user's image
@@ -51,6 +52,12 @@ const ServerGenerateImagePlugin = {
   plugin: runOnServer(GenerateImagePlugin.plugin, (context) => ({
     imageGeneration: context.app?.getImageGenerationSettings?.(),
   })),
+};
+
+// presentChart runs on the server, which saves the chart document into the
+// shared workspace's artifacts/ area (context.files.artifacts).
+const ServerChartPlugin = {
+  plugin: runOnServer(ChartPlugin.plugin, () => ({})),
 };
 
 const pluginList = [
@@ -87,6 +94,7 @@ const pluginList = [
   DrawingGamePlugin,
   AkinatorPlugin,
   AvatarPlugin,
+  ServerChartPlugin,
 ];
 
 export const getPluginList = () => pluginList;
