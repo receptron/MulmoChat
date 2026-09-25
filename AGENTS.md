@@ -1,6 +1,6 @@
 # MulmoChat Agent Guide
 
-For the full architecture description see `CLAUDE.md`. This file is the short version.
+The architecture is described in `docs/architecture.md`; the rules and traps are in `CLAUDE.md`. This file is the short version of both.
 
 ## Overview
 - Multi-modal chat client and reference implementation of [gui-chat-protocol](https://github.com/receptron/gui-chat-protocol).
@@ -34,11 +34,11 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
 - Server-run plugins: `generateImage`, `presentChart` (`@mulmoclaude/chart-plugin`), `presentDocument` (`@mulmoclaude/markdown-plugin`), `presentHtml` (`@mulmoclaude/html-plugin`), `presentShapeScript` (`@mulmoclaude/shapescript-plugin`) and `presentMulmoScript` (`@mulmoclaude/mulmoscript-plugin`) run their `execute()` on the server. Plugins write files only through `context.files.artifacts`, rooted at `<workspace>/artifacts`, and presentDocument's host backends (`server/plugins/markdownHost.ts`), limited to `.md` files inside the workspace.
   - The browser wraps the plugin with `runOnServer` (`src/tools/serverPlugin.ts`) and POSTs `{ args, config }` to `/api/plugin/<toolName>`.
   - `server/plugins/` loads the package and builds `context.app` per request.
-  - The mechanism is adapted from MulmoTerminal's plugin registry. See `CLAUDE.md` for how to add a plugin this way.
+  - The mechanism is adapted from MulmoTerminal's plugin registry. See `CLAUDE.md` ("A server-run plugin is registered in two lists") for how to add a plugin this way.
 - Plugin runtime: every plugin view gets gui-chat-protocol's `BrowserPluginRuntime` (`src/tools/pluginRuntime.ts`), so it can call `useRuntime()`. Its `locale` follows the user's language, which translates `createUseT()` plugins such as form and chart. Its `pubsub` carries file-change events and the events server-side plugin backends publish (`GET /api/plugin-events`, `server/plugins/events.ts`).
 - renderShapeScript is a host tool (`server/plugins/shapeRenderHost.ts`, definition served at `GET /api/plugin-host-tools`) that renders a ShapeScript model to a PNG sheet. Its result sets `imagesForModel`, which MulmoChat sends to the model after the tool output in every transport; in text chat that gives the model a follow-up turn (`useTextSession`, at most 3 in a row).
 - presentMulmoScript (`server/plugins/mulmoscriptHost.ts`) keeps storyboards in `<workspace>/artifacts/stories/` and generates images, audio, movies and PDFs with mulmocast (needs ffmpeg, and the API keys in `.env`). Movies and PDFs download from `GET /api/mulmoscript/media`.
-- presentHtml pages are served at `GET /artifacts/html/<path>` (`server/plugins/htmlHost.ts`) with a sandboxing CSP (opaque origin, no network requests), to loopback clients only. See `CLAUDE.md`.
+- presentHtml pages are served at `GET /artifacts/html/<path>` (`server/plugins/htmlHost.ts`) with a sandboxing CSP (opaque origin, no network requests), to loopback clients only. See `docs/architecture.md`.
 
 ## Server APIs (all under `/api`)
 - `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key, issued for the model in `?model=` (default `gpt-realtime-2.1`). It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `hasXaiApiKey`, `googleMapKey`, `googleApiKey`). With `?voice=grok` it mints an xAI client secret (`grokClientSecret`) instead of the OpenAI key.
