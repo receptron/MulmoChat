@@ -99,3 +99,34 @@ export function requireLocalClient(
   }
   next();
 }
+
+// The request must name this machine. A DNS-rebinding page sends its own
+// domain as Host, so it is refused. The Vite dev proxy rewrites Host to
+// localhost, so the dev app works (also from other devices).
+function isLoopbackHost(host: string | undefined): boolean {
+  if (!host) return false;
+  try {
+    return LOOPBACK_HOSTS.has(new URL(`http://${host}`).hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * For GET routes that return workspace content (presentHtml pages, plugin
+ * media, plugin events): a loopback Host, and no CORS header, so no other
+ * site can read the response. Use after requireLocalClient.
+ */
+export function requireLoopbackHost(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  // cors() runs on every route; this content must not be readable cross-site.
+  res.removeHeader("Access-Control-Allow-Origin");
+  if (!isLoopbackHost(req.get("host"))) {
+    res.status(403).json({ error: "Host not allowed" });
+    return;
+  }
+  next();
+}

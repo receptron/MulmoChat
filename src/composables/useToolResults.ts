@@ -24,6 +24,7 @@ import type { HtmlGenerationParams } from "../tools/backend";
 import type { ImageToolData } from "../tools/utils/imageTypes";
 import type { ToolExecuteFn, GetToolPluginFn } from "../tools/types";
 import { ROLES } from "../config/roles";
+import { getImagesForModel } from "../tools";
 
 // Plugins that are allowed to use setConfig
 const PLUGINS_WITH_SET_CONFIG = ["setImageStyle"];
@@ -36,6 +37,7 @@ interface UseToolResultsOptions {
   sleep: (milliseconds: number) => Promise<void>;
   sendInstructions: (instructions: string) => boolean | Promise<boolean>;
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
+  sendImagesToModel: (images: string[], caption: string) => boolean;
   conversationActive: Ref<boolean>;
   isDataChannelOpen: () => boolean;
   scrollToBottomOfSideBar: () => void;
@@ -121,14 +123,14 @@ export function useToolResults(
     pluginName: string,
     plugin: ReturnType<GetToolPluginFn> | undefined,
     result: ToolResult,
-  ) => {
+  ): Promise<boolean> => {
     if (!shouldSendInstructions(result)) {
-      return;
+      return false;
     }
 
     const instructions = result.instructions;
     if (!instructions) {
-      return;
+      return false;
     }
 
     const delay = plugin?.delayAfterExecution;
@@ -137,6 +139,7 @@ export function useToolResults(
     }
     console.log(`INS:${pluginName}\n${instructions}`);
     options.sendInstructions(instructions);
+    return true;
   };
 
   const handleToolCall = async ({ msg, rawArgs }: HandleToolCallArgs) => {
@@ -259,7 +262,27 @@ export function useToolResults(
       };
       console.log(`RES:${result.toolName}\n`, outputPayload);
       sendFunctionOutput(msg.call_id, outputPayload);
-      await maybeSendInstructions(result.toolName, plugin, result);
+      const images = getImagesForModel(result);
+      const imagesSent =
+        !!msg.call_id &&
+        images.length > 0 &&
+        options.sendImagesToModel(
+          images,
+          `[Image returned by ${result.toolName}]`,
+        );
+      const instructed = await maybeSendInstructions(
+        result.toolName,
+        plugin,
+        result,
+      );
+      // The model needs a turn to look at the images. Instructions start one
+      // (Realtime response.create, the Live turn's completion); without them,
+      // ask for it here.
+      if (imagesSent && !instructed) {
+        options.sendInstructions(
+          `Look at the image ${result.toolName} returned.`,
+        );
+      }
     } catch (e) {
       const errorMessage = `Tool execution failed: ${e}`;
       console.error(`MSG: ${errorMessage}`);

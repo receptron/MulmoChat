@@ -12,11 +12,13 @@ import textRouter from "./textLLM";
 import comfyRouter from "./comfyui";
 import imageRouter from "./image";
 import pluginRouter from "./plugins";
+import { pluginEventsRouter } from "../plugins/events";
+import { mulmoScriptMediaRouter } from "../plugins/mulmoscriptHost";
 dotenv.config({ quiet: true });
 
 const router: Router = express.Router();
 
-// Mount movie routes
+// Mount image saving route (/save-images)
 router.use(movieRouter);
 
 // Mount PDF routes
@@ -34,8 +36,10 @@ router.use(comfyRouter);
 // Mount image routes
 router.use(imageRouter);
 
-// Mount server-side plugin execution route
+// Mount server-side plugin routes (execution, events, mulmoscript media)
 router.use(pluginRouter);
+router.use(pluginEventsRouter);
+router.use(mulmoScriptMediaRouter);
 
 const DEFAULT_REALTIME_MODEL = "gpt-realtime-2.1";
 const REALTIME_MODEL_PATTERN = /^gpt-realtime[a-z0-9.-]*$/;

@@ -592,6 +592,24 @@ export function useGoogleLiveSession(
     return sendUserMessage(instructions);
   };
 
+  // The images as a user turn left open (turnComplete: false); the tool's
+  // instructions, sent as a user message, complete it.
+  const sendImagesToModel = (images: string[], caption: string) => {
+    const parts: Array<Record<string, unknown>> = [{ text: caption }];
+    for (const url of images) {
+      const match = /^data:(image\/[\w.+-]+);base64,(.+)$/.exec(url);
+      if (match) {
+        parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+      }
+    }
+    return sendWebSocketMessage({
+      clientContent: {
+        turns: [{ role: "user", parts }],
+        turnComplete: false,
+      },
+    });
+  };
+
   const isDataChannelOpen = () => googleLive.ws?.readyState === WebSocket.OPEN;
 
   return {
@@ -606,6 +624,7 @@ export function useGoogleLiveSession(
     sendUserMessage,
     sendFunctionCallOutput,
     sendInstructions,
+    sendImagesToModel,
     setMute,
     setLocalAudioEnabled,
     attachRemoteAudioElement,

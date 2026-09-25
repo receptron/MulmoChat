@@ -16,6 +16,7 @@ import {
   updateSessionDefaults,
 } from "../llm/textSessionStore";
 import { sendApiError } from "../utils/logger";
+import { MAX_MESSAGE_IMAGES, parseImageDataUrl } from "../llm/images";
 
 const router = Router();
 
@@ -27,6 +28,24 @@ function isProviderId(value: unknown): value is TextLLMProviderId {
     value === "ollama" ||
     value === "grok"
   );
+}
+
+// Only user messages carry images, and only as image data URLs.
+function parseMessageImages(role: string, images: unknown): string[] {
+  if (
+    role !== "user" ||
+    !Array.isArray(images) ||
+    images.length > MAX_MESSAGE_IMAGES ||
+    !images.every(
+      (image) => typeof image === "string" && parseImageDataUrl(image),
+    )
+  ) {
+    throw new TextGenerationError(
+      `images must be up to ${MAX_MESSAGE_IMAGES} image data URLs on a user message`,
+      400,
+    );
+  }
+  return images;
 }
 
 function parseMessages(value: unknown): TextMessage[] {
@@ -43,6 +62,7 @@ function parseMessages(value: unknown): TextMessage[] {
     const content = (message as { content?: unknown }).content;
     const tool_call_id = (message as { tool_call_id?: unknown }).tool_call_id;
     const tool_calls = (message as { tool_calls?: unknown }).tool_calls;
+    const images = (message as { images?: unknown }).images;
 
     if (typeof role !== "string" || typeof content !== "string") {
       throw new TextGenerationError(
@@ -73,6 +93,10 @@ function parseMessages(value: unknown): TextMessage[] {
     // Add tool_calls for assistant messages
     if (role === "assistant" && Array.isArray(tool_calls)) {
       baseMessage.tool_calls = tool_calls;
+    }
+
+    if (images !== undefined) {
+      baseMessage.images = parseMessageImages(role, images);
     }
 
     return baseMessage;

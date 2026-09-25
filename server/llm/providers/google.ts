@@ -14,6 +14,7 @@ import {
   type TextMessage,
   type ToolCall,
 } from "../types";
+import { parseImageDataUrl } from "../images";
 
 type GeminiRole = "user" | "model";
 
@@ -73,9 +74,17 @@ function toGeminiMessages(messages: TextMessage[]): Content[] {
         });
       }
     }
-    // Regular text messages
+    // Regular text messages, with any images for the model
     else {
       parts.push({ text: message.content });
+      for (const url of message.images ?? []) {
+        const image = parseImageDataUrl(url);
+        if (image) {
+          parts.push({
+            inlineData: { mimeType: image.mediaType, data: image.data },
+          });
+        }
+      }
     }
 
     return { role, parts };

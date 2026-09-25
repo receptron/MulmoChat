@@ -9,9 +9,12 @@
 //                server-run plugins use (server/routes/plugins.ts). `config`
 //                carries the user's settings (setPluginDispatchConfig), so
 //                server backends such as image generation use them.
-//   - pubsub   → an in-page bus. The only events are `file:<path>` for
-//                workspace files a plugin request wrote (publishFileChanges),
-//                which @mulmoclaude Views use to reload
+//   - pubsub   → an in-page bus. `file:<path>` events are for workspace files
+//                a plugin request wrote (publishFileChanges), which
+//                @mulmoclaude Views use to reload, and are shared by all
+//                plugins. Other events come from the server's plugin event
+//                stream (GET /api/plugin-events, server/plugins/events.ts)
+//                and reach only the Views of the tool that sent them.
 //   - openUrl  → http(s) only, in a new tab
 //   - log      → console, tagged with the tool name
 import {
@@ -92,52 +95,92 @@ function makeDispatch(toolName: string): BrowserPluginRuntime["dispatch"] {
 
 type PluginSubscribe = BrowserPluginRuntime["pubsub"]["subscribe"];
 
-// Shared by every plugin: a file-change event is about the file, not about
-// the plugin that wrote it (a document can be open in two Views).
 const channels = new Map<string, Set<(payload: unknown) => void>>();
 
 // One failing subscriber (e.g. a `parse` that throws) must not stop the rest.
-function publish(eventName: string, payload: unknown): void {
-  for (const handler of channels.get(eventName) ?? []) {
+function publish(channel: string, payload: unknown): void {
+  for (const handler of channels.get(channel) ?? []) {
     try {
       handler(payload);
     } catch (error) {
-      console.warn(`[plugin] subscriber to ${eventName} failed`, error);
+      console.warn(`[plugin] subscriber to ${channel} failed`, error);
     }
   }
 }
 
-function subscribe(
-  eventName: string,
-  handler: (payload: unknown) => void,
-): () => void;
-function subscribe<T>(
-  eventName: string,
-  opts: SubscribeOptions<T>,
-  handler: (payload: T) => void,
-): () => void;
-function subscribe<T>(
-  eventName: string,
-  ...rest:
-    | [handler: (payload: unknown) => void]
-    | [opts: SubscribeOptions<T>, handler: (payload: T) => void]
-): () => void {
-  let listener: (payload: unknown) => void;
-  if (rest.length === 1) {
-    listener = rest[0];
-  } else {
-    const [opts, handler] = rest;
-    listener = (raw) => {
-      const payload = opts.parse(raw);
-      if (payload !== null) handler(payload);
-    };
-  }
-  const handlers = channels.get(eventName) ?? new Set();
-  handlers.add(listener);
-  channels.set(eventName, handlers);
-  return () => handlers.delete(listener);
+// A file-change event is about the file, not about the plugin that wrote it
+// (a document can be open in two Views), so every plugin shares it. Any other
+// event name belongs to the plugin that subscribes to it.
+const isFileEvent = (eventName: string): boolean =>
+  eventName.startsWith("file:");
+
+const pluginChannel = (toolName: string, eventName: string): string =>
+  `plugin:${toolName}:${eventName}`;
+
+let eventSource: EventSource | null = null;
+
+// Opened on the first subscription to a plugin event and kept open; it
+// reconnects by itself after a server restart.
+function connectPluginEvents(): void {
+  if (eventSource) return;
+  eventSource = new EventSource("/api/plugin-events");
+  eventSource.onmessage = (message) => {
+    let event: unknown;
+    try {
+      event = JSON.parse(message.data);
+    } catch {
+      return;
+    }
+    if (typeof event !== "object" || event === null) return;
+    const {
+      toolName,
+      event: eventName,
+      data,
+    } = event as Record<string, unknown>;
+    if (typeof toolName === "string" && typeof eventName === "string") {
+      publish(pluginChannel(toolName, eventName), data);
+    }
+  };
 }
-const pluginSubscribe: PluginSubscribe = subscribe;
+
+function makeSubscribe(toolName: string): PluginSubscribe {
+  function subscribe(
+    eventName: string,
+    handler: (payload: unknown) => void,
+  ): () => void;
+  function subscribe<T>(
+    eventName: string,
+    opts: SubscribeOptions<T>,
+    handler: (payload: T) => void,
+  ): () => void;
+  function subscribe<T>(
+    eventName: string,
+    ...rest:
+      | [handler: (payload: unknown) => void]
+      | [opts: SubscribeOptions<T>, handler: (payload: T) => void]
+  ): () => void {
+    let listener: (payload: unknown) => void;
+    if (rest.length === 1) {
+      listener = rest[0];
+    } else {
+      const [opts, handler] = rest;
+      listener = (raw) => {
+        const payload = opts.parse(raw);
+        if (payload !== null) handler(payload);
+      };
+    }
+    let channel = eventName;
+    if (!isFileEvent(eventName)) {
+      channel = pluginChannel(toolName, eventName);
+      connectPluginEvents();
+    }
+    const handlers = channels.get(channel) ?? new Set();
+    handlers.add(listener);
+    channels.set(channel, handlers);
+    return () => handlers.delete(listener);
+  }
+  return subscribe;
+}
 
 const FILES_CHANGED_HEADER = "X-Workspace-Files-Changed";
 
@@ -162,7 +205,7 @@ export function publishFileChanges(response: Response): void {
 function makeBrowserPluginRuntime(toolName: string): BrowserPluginRuntime {
   const tag = `[plugin/${toolName}]`;
   return {
-    pubsub: { subscribe: pluginSubscribe },
+    pubsub: { subscribe: makeSubscribe(toolName) },
     locale: pluginLocale,
     log: {
       debug: (msg, data) => console.debug(tag, msg, data),

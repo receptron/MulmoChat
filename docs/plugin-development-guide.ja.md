@@ -197,6 +197,7 @@ ToolPlugin<T, J, A>
 - **フレームワークに依存しない core エントリーを用意する。** パッケージのメインエントリー（または `./core`）で `TOOL_DEFINITION` と、`execute` を持つ `pluginCore` を export し、Vue を import しないでください。サーバーはこのエントリーを直接 import します。
 - **バックエンドには `context` 経由でのみアクセスする。** `execute()` の中では、ホストのルートを `fetch` したり、ブラウザの API（`window`、`localStorage`）に触れたりせず、`context.app.generateImage(prompt)` のようなホストのバックエンドを呼び出してください。サーバー上では、`context.app` にサーバー側の実装が入ります。ファイルを保存するときは `context.files.artifacts` を使ってください（ホストの artifacts フォルダーからの相対パスで読み書きします）。フォルダーの外を指すパスは拒否されます。
 - **JSON にシリアライズできる結果を返す。** `ToolResult` は HTTP でブラウザに返されるため、`data` と `jsonData` は `JSON.stringify` で失われない値にしてください。画像は `Blob` ではなく、データ URL か URL で返してください。
+- **モデルに画像を見せるには `imagesForModel` を使う**（MulmoChat による `ToolResult` の拡張）。画像のデータ URL（PNG・JPEG・WebP・GIF、最大 4 枚）の配列を設定すると、MulmoChat はどのトランスポートでも、ツールの出力のあとにそれをモデルに送ります。テキストチャットでは、モデルがそれを見るための次のターンが自動で続きます（連続 3 回まで）。`renderShapeScript` はこれを使い、モデルが書いた 3D モデルを確認できるようにしています。
 - **`definePlugin` のファクトリー形式のパッケージは、MulmoChat のサーバー側レジストリではまだサポートしていません。** 通常の `pluginCore` 形式を使ってください。
 
 View と Preview は変わりません。返された `ToolResult` をもとに、引き続きブラウザで表示されます。
@@ -209,7 +210,7 @@ MulmoChat は、すべてのプラグインの View と Preview に gui-chat-pro
 - **`dispatch(args)`** は `{ args, config }` を `POST /api/plugin/<toolName>` に送ります。そのため、サーバーで動くプラグインにしか届きません。`config` にはユーザーの設定が入っているため、`context.app.generateImage` などのバックエンドはユーザーが選んだモデルを使います。サーバーはプラグインの `execute(context, args)` を呼び出します。そのため、View からの操作は、`execute` が振り分けに使う `kind` フィールドを持つ `args` オブジェクトにするのが一般的です（`@mulmoclaude/markdown-plugin` を参照）。
 - **`openUrl(url)`** は http(s) の URL を新しいタブで開きます。それ以外のスキームは無視します。
 - **`log`** はツール名を付けてブラウザのコンソールに出力します。
-- **`pubsub.subscribe`** は、プラグインのリクエストが書き込んだワークスペースのファイル（`context.files.artifacts` 経由など）について、`file:<path>` イベントを `{ mtimeMs }` 付きで届けます。ファイルを表示する View はこれを購読すると、保存後に再読み込みできます。`@mulmoclaude/core/plugin-vue` の `useFileWatch` がこれを行います。MulmoChat がこれ以外のイベントを発行することはありません。
+- **`pubsub.subscribe`** は、プラグインのリクエストが書き込んだワークスペースのファイル（`context.files.artifacts` 経由など）について、`file:<path>` イベントを `{ mtimeMs }` 付きで届けます。ファイルを表示する View はこれを購読すると、保存後に再読み込みできます。`@mulmoclaude/core/plugin-vue` の `useFileWatch` がこれを行います。それ以外のイベント名はそのプラグイン専用です。ホストのサーバー側がそのツール宛てに発行し（MulmoChat は `GET /api/plugin-events` で配信します）、そのプラグインの View だけが受け取ります。`presentMulmoScript` は、生成の進行状況（`generation`）と、モデルが編集したスクリプト（`scriptChanged`）の通知にこれを使います。
 
 ### View と Preview の違い
 

@@ -54,6 +54,17 @@ export async function generateWithGrok(
         baseMessage.tool_call_id = message.tool_call_id;
       }
 
+      // Images for the model go in the content as image_url parts
+      if (message.images?.length) {
+        baseMessage.content = [
+          { type: "text", text: message.content },
+          ...message.images.map((url) => ({
+            type: "image_url",
+            image_url: { url },
+          })),
+        ];
+      }
+
       // Include tool_calls for assistant messages
       if (message.role === "assistant" && message.tool_calls) {
         baseMessage.tool_calls = message.tool_calls.map((tc) => ({

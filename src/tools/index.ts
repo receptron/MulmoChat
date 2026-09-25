@@ -29,8 +29,8 @@ import GoogleMapPlugin from "@gui-chat-plugin/google-map/vue";
 import ExaPlugin from "@gui-chat-plugin/exa/vue";
 import MarkdownPlugin from "@mulmoclaude/markdown-plugin/vue";
 import EditImagePlugin from "@gui-chat-plugin/edit-image/vue";
-import MulmocastPlugin from "@gui-chat-plugin/mulmocast/vue";
-import Present3DPlugin from "@gui-chat-plugin/present3d/vue";
+import MulmoScriptPlugin from "@mulmoclaude/mulmoscript-plugin/vue";
+import ShapeScriptPlugin from "@mulmoclaude/shapescript-plugin/vue";
 import CameraPlugin from "@gui-chat-plugin/camera/vue";
 import CanvasPlugin from "@gui-chat-plugin/canvas/vue";
 import HtmlPlugin from "@mulmoclaude/html-plugin/vue";
@@ -47,6 +47,8 @@ import AvatarPlugin from "@gui-chat-plugin/avatar/vue";
 import ChartPlugin from "@mulmoclaude/chart-plugin/vue";
 import { runOnServer } from "./serverPlugin";
 import { wrapWithPluginRuntime } from "./pluginRuntime";
+import { withMulmoScriptHostAdapter } from "./mulmoScriptHost";
+import { RenderShapeScriptPlugin } from "./renderShapeScript";
 
 // generateImage runs on the server (server/plugins/), with the user's image
 // settings sent along so the server-side context.app.generateImage uses them.
@@ -103,6 +105,27 @@ const ServerHtmlPlugin = {
   ),
 };
 
+// presentShapeScript runs on the server, which saves each model as a `.shape`
+// file under artifacts/shapes/. The View loads and saves that file through
+// dispatch (server/plugins/dispatch.ts).
+const ServerShapeScriptPlugin = {
+  plugin: runOnServer(ShapeScriptPlugin.plugin, () => ({})),
+};
+
+// presentMulmoScript runs on the server, which saves the storyboard under
+// artifacts/stories/ and generates images, audio, the movie and PDFs with
+// mulmocast (server/plugins/mulmoscriptHost.ts). Progress reaches the View as
+// plugin events; movie and PDF downloads come from /api/mulmoscript/media.
+const mulmoScriptPlugin = runOnServer(MulmoScriptPlugin.plugin, () => ({}));
+const ServerMulmoScriptPlugin = {
+  plugin: {
+    ...mulmoScriptPlugin,
+    viewComponent:
+      mulmoScriptPlugin.viewComponent &&
+      withMulmoScriptHostAdapter(mulmoScriptPlugin.viewComponent),
+  },
+};
+
 const registeredPlugins = [
   // External plugins from npm packages
   QuizPlugin,
@@ -122,8 +145,9 @@ const registeredPlugins = [
   ExaPlugin,
   ServerMarkdownPlugin,
   EditImagePlugin,
-  MulmocastPlugin,
-  Present3DPlugin,
+  ServerMulmoScriptPlugin,
+  ServerShapeScriptPlugin,
+  RenderShapeScriptPlugin,
   CameraPlugin,
   CanvasPlugin,
   ServerHtmlPlugin,
@@ -160,6 +184,26 @@ const pluginList = registeredPlugins.map((entry) => {
 });
 
 export { setPluginLocale, setPluginDispatchConfig } from "./pluginRuntime";
+export { loadHostToolDefinitions } from "./renderShapeScript";
+
+/**
+ * Images a tool result shows the model, as image data URLs. A MulmoChat
+ * extension of gui-chat-protocol's ToolResult: `imagesForModel` is sent to the
+ * model after the tool's output (renderShapeScript's render of a 3D model).
+ */
+// The formats the text providers accept (server/llm/images.ts).
+const MODEL_IMAGE_DATA_URL =
+  /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
+
+export const getImagesForModel = (result: object): string[] => {
+  const images = (result as { imagesForModel?: unknown }).imagesForModel;
+  return Array.isArray(images)
+    ? images.filter(
+        (image): image is string =>
+          typeof image === "string" && MODEL_IMAGE_DATA_URL.test(image),
+      )
+    : [];
+};
 
 export const getPluginList = () => pluginList;
 

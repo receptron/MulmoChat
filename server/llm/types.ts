@@ -6,6 +6,7 @@ export interface TextMessage {
   content: string;
   tool_call_id?: string; // Required when role is "tool"
   tool_calls?: ToolCall[]; // Present when assistant makes tool calls
+  images?: string[]; // User messages only: image data URLs for the model (llm/images.ts)
 }
 
 export interface ToolDefinition {
