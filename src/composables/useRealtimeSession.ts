@@ -121,6 +121,48 @@ export function useRealtimeSession(
     return true;
   };
 
+  // OpenAI refuses a response.create while a response is running
+  // (conversation_already_has_active_response), and a tool's follow-up often
+  // arrives while the model is still talking, or while another tool of the
+  // same reply runs. So a request in that window is held and sent after
+  // response.done, once, with the held instructions joined (as in
+  // useGrokVoiceSession, and MulmoGlass's openaiRealtime.ts).
+  let responseActive = false;
+  // response.create sent, response.created not seen yet. If OpenAI refuses
+  // it with an error, no response.done follows.
+  let responseRequested = false;
+  let heldResponse: { instructions: string[] } | null = null;
+  // The instructions of the response.create awaiting response.created.
+  let requestedInstructions: string | undefined;
+
+  const requestResponse = (instructions?: string): boolean => {
+    if (responseActive) {
+      heldResponse ??= { instructions: [] };
+      if (instructions) heldResponse.instructions.push(instructions);
+      return true;
+    }
+    responseActive = true;
+    responseRequested = true;
+    requestedInstructions = instructions;
+    return sendDataChannelMessage({
+      type: "response.create",
+      response: instructions ? { instructions } : {},
+    });
+  };
+
+  const releaseHeldResponse = () => {
+    const held = heldResponse;
+    heldResponse = null;
+    if (held) requestResponse(held.instructions.join("\n\n") || undefined);
+  };
+
+  const resetResponseState = () => {
+    responseActive = false;
+    responseRequested = false;
+    heldResponse = null;
+    requestedInstructions = undefined;
+  };
+
   const handleMessage = async (event: MessageEvent) => {
     let msg: ToolCallMessage;
 
@@ -145,6 +187,26 @@ export function useRealtimeSession(
     switch (msg.type) {
       case "error":
         console.error("Error", msg.error);
+        // A response.create that raced a response the server started itself
+        // (the user's own turn): hold it again.
+        if (
+          (msg.error as { code?: unknown } | undefined)?.code ===
+          "conversation_already_has_active_response"
+        ) {
+          responseActive = true;
+          responseRequested = false;
+          heldResponse ??= { instructions: [] };
+          if (requestedInstructions) {
+            heldResponse.instructions.unshift(requestedInstructions);
+          }
+          requestedInstructions = undefined;
+          break;
+        }
+        // Refused outright: no response.done will follow.
+        if (responseRequested) {
+          responseRequested = false;
+          responseActive = false;
+        }
         handlers.onError?.(msg.error);
         break;
       case "response.text.delta":
@@ -182,12 +244,17 @@ export function useRealtimeSession(
         break;
       }
       case "response.created":
+        responseActive = true;
+        responseRequested = false;
+        requestedInstructions = undefined;
         conversationActive.value = true;
         handlers.onConversationStarted?.();
         break;
       case "response.done":
+        responseActive = false;
         conversationActive.value = false;
         handlers.onConversationFinished?.();
+        releaseHeldResponse();
         break;
       case "input_audio_buffer.speech_started":
         handlers.onSpeechStarted?.();
@@ -264,6 +331,7 @@ export function useRealtimeSession(
     if (remoteAudioElement.value) {
       remoteAudioElement.value.srcObject = null;
     }
+    resetResponseState();
     chatActive.value = false;
     conversationActive.value = false;
     setMute(false);
@@ -409,12 +477,7 @@ export function useRealtimeSession(
       return false;
     }
 
-    const responseSuccess = sendDataChannelMessage({
-      type: "response.create",
-      response: {},
-    });
-
-    return responseSuccess;
+    return requestResponse();
   };
 
   const sendFunctionCallOutput = (callId: string, output: string) => {
@@ -428,14 +491,8 @@ export function useRealtimeSession(
     });
   };
 
-  const sendInstructions = (instructions: string) => {
-    return sendDataChannelMessage({
-      type: "response.create",
-      response: {
-        instructions,
-      },
-    });
-  };
+  const sendInstructions = (instructions: string) =>
+    requestResponse(instructions);
 
   // A user message with the images; the model answers in the response that
   // the tool's instructions start.

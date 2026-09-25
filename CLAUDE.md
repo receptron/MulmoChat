@@ -133,7 +133,7 @@ the same call in different ways. Check the row before assuming a feature works e
 |---|---|---|---|---|
 | Key in the browser | ephemeral key from `/api/start` | the raw `GEMINI_API_KEY` | client secret (`?voice=grok`) | none (server calls providers) |
 | Follow-up instructions | `response.create` with `instructions` (replaces the session prompt for that reply) | a user turn | a user message + `response.create` | a `[System instruction]` user message, sent with the next request; `instructionsRequired` ones get a follow-up turn right away (with images, at most 3 in a row) |
-| Overlapping replies | **not handled**: a follow-up sent while a reply runs is rejected with `conversation_already_has_active_response` | n/a | held until `response.done`, once | n/a (turn-based) |
+| Overlapping replies | held until `response.done`, once, with the held instructions joined; re-held on `conversation_already_has_active_response` | n/a | held until `response.done`, once | n/a (turn-based) |
 | Images to the model | `input_image` | `inlineData` (open turn) | **none**: the API drops `input_image` silently | per provider in `server/llm/providers/`; Ollama untested |
 | Text shown as it streams | `response.text.delta` only (no audio transcript) | `part.text` | none | yes |
 
