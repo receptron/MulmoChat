@@ -261,6 +261,8 @@ export const ROLES: Role[] = [
       "generateImage",
       "searchWeb",
       "browse",
+      "readXPost",
+      "searchX",
       "switchRole",
     ],
     prompt:
@@ -314,6 +316,8 @@ export const ROLES: Role[] = [
       "presentDocument",
       "searchWeb",
       "browse",
+      "readXPost",
+      "searchX",
       "switchRole",
     ],
     prompt:

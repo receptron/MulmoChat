@@ -37,6 +37,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
   - The mechanism is adapted from MulmoTerminal's plugin registry. See `CLAUDE.md` ("A server-run plugin is registered in two lists") for how to add a plugin this way.
 - Plugin runtime: every plugin view gets gui-chat-protocol's `BrowserPluginRuntime` (`src/tools/pluginRuntime.ts`), so it can call `useRuntime()`. Its `locale` follows the user's language, which translates `createUseT()` plugins such as form and chart. Its `pubsub` carries file-change events and the events server-side plugin backends publish (`GET /api/plugin-events`, `server/plugins/events.ts`).
 - renderShapeScript is a host tool (`server/plugins/shapeRenderHost.ts`, definition served at `GET /api/plugin-host-tools`) that renders a ShapeScript model to a PNG sheet. Its result sets `imagesForModel`, which MulmoChat sends to the model after the tool output in every transport; in text chat that gives the model a follow-up turn (`useTextSession`, at most 3 in a row).
+- readXPost and searchX are host tools too (`server/plugins/xHost.ts`, `@mulmoclaude/x-plugin`), offered only when `X_BEARER_TOKEN` is set.
 - presentMulmoScript (`server/plugins/mulmoscriptHost.ts`) keeps storyboards in `<workspace>/artifacts/stories/` and generates images, audio, movies and PDFs with mulmocast (needs ffmpeg, and the API keys in `.env`). Movies and PDFs download from `GET /api/mulmoscript/media`.
 - presentHtml pages are served at `GET /artifacts/html/<path>` (`server/plugins/htmlHost.ts`) with a sandboxing CSP (opaque origin, no network requests), to loopback clients only. See `docs/architecture.md`.
 
@@ -61,7 +62,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 - `OPENAI_API_KEY` — required; `/api/start` fails without it (except for Grok voice).
 - `GEMINI_API_KEY` — Gemini images, Gemini Live and Google text models.
 - `ANTHROPIC_API_KEY` — Anthropic text models. `XAI_API_KEY` — Grok voice and Grok text models.
-- `EXA_API_KEY` (Exa search) and `GOOGLE_MAP_API_KEY` (map). Plugins that need a missing key are disabled.
+- `EXA_API_KEY` (Exa search), `GOOGLE_MAP_API_KEY` (map) and `X_BEARER_TOKEN` (readXPost, searchX). Plugins that need a missing key are disabled.
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends.
 - `MULMOCHAT_ALLOWED_ORIGINS` — extra browser origins allowed to call `/api/plugin/*`. Loopback origins are always allowed, and requests must be JSON.
 - `MULMOCHAT_ALLOW_REMOTE_PLUGINS` — set to `true` to let other machines call `/api/plugin/*`, which by default only accepts loopback connections.

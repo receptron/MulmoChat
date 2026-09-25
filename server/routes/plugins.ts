@@ -5,7 +5,7 @@ import {
   parsePluginRequestConfig,
 } from "../plugins/appContext";
 import { artifactsFileOps } from "../plugins/workspace";
-import { HOST_TOOL_DEFINITIONS, pluginHostHandlers } from "../plugins/dispatch";
+import { hostToolDefinitions, pluginHostHandlers } from "../plugins/dispatch";
 import {
   collectFileChanges,
   FILES_CHANGED_HEADER,
@@ -19,10 +19,10 @@ import { errorMessageOf } from "../utils/imageGenerationError";
 
 const router: Router = express.Router();
 
-// Definitions of the tools the host provides itself (renderShapeScript), for
-// the browser's tool list. See HOST_TOOL_DEFINITIONS.
+// Definitions of the tools the host provides itself (renderShapeScript and the
+// X tools), for the browser's tool list. See hostToolDefinitions.
 router.get("/plugin-host-tools", (_req: Request, res: Response): void => {
-  res.json({ tools: HOST_TOOL_DEFINITIONS });
+  res.json({ tools: hostToolDefinitions() });
 });
 
 // Run a server-side plugin's execute(). Body: { args, config }, where `config`

@@ -47,7 +47,14 @@ export interface UseRealtimeSessionReturn {
   stopChat: () => void;
   sendUserMessage: (text: string) => Promise<boolean>;
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
-  sendInstructions: (instructions: string) => boolean | Promise<boolean>;
+  /** Ask the model to respond now, following `instructions`. `required` marks
+   *  instructions the model must act on (a tool's `instructionsRequired`): the
+   *  text transport takes a follow-up turn for them; the voice transports
+   *  answer every instruction anyway. */
+  sendInstructions: (
+    instructions: string,
+    required?: boolean,
+  ) => boolean | Promise<boolean>;
   /** Show the model images a tool returned (image data URLs), after that
    *  tool's output and before its instructions. */
   sendImagesToModel: (images: string[], caption: string) => boolean;

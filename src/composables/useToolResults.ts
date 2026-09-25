@@ -5,6 +5,7 @@ import type {
   ToolContextApp,
 } from "gui-chat-protocol/vue";
 import type { UserPreferencesState } from "./useUserPreferences";
+import type { UseRealtimeSessionReturn } from "./useRealtimeSession";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -35,7 +36,7 @@ interface UseToolResultsOptions {
   suppressInstructions: Ref<boolean>;
   userPreferences: Ref<UserPreferencesState>;
   sleep: (milliseconds: number) => Promise<void>;
-  sendInstructions: (instructions: string) => boolean | Promise<boolean>;
+  sendInstructions: UseRealtimeSessionReturn["sendInstructions"];
   sendFunctionCallOutput: (callId: string, output: string) => boolean;
   sendImagesToModel: (images: string[], caption: string) => boolean;
   conversationActive: Ref<boolean>;
@@ -138,7 +139,7 @@ export function useToolResults(
       await options.sleep(delay);
     }
     console.log(`INS:${pluginName}\n${instructions}`);
-    options.sendInstructions(instructions);
+    options.sendInstructions(instructions, result.instructionsRequired);
     return true;
   };
 

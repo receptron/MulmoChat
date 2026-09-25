@@ -99,8 +99,8 @@ export function useSessionTransport(
       activeSession.value.sendUserMessage(text),
     sendFunctionCallOutput: (callId: string, output: string) =>
       activeSession.value.sendFunctionCallOutput(callId, output),
-    sendInstructions: (instructions: string) =>
-      activeSession.value.sendInstructions(instructions),
+    sendInstructions: (instructions: string, required?: boolean) =>
+      activeSession.value.sendInstructions(instructions, required),
     sendImagesToModel: (images: string[], caption: string) =>
       activeSession.value.sendImagesToModel(images, caption),
     setMute: (muted: boolean) => activeSession.value.setMute(muted),

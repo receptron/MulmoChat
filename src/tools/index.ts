@@ -49,6 +49,7 @@ import { runOnServer } from "./serverPlugin";
 import { wrapWithPluginRuntime } from "./pluginRuntime";
 import { withMulmoScriptHostAdapter } from "./mulmoScriptHost";
 import { RenderShapeScriptPlugin } from "./renderShapeScript";
+import { ReadXPostPlugin, SearchXPlugin } from "./xTools";
 
 // generateImage runs on the server (server/plugins/), with the user's image
 // settings sent along so the server-side context.app.generateImage uses them.
@@ -148,6 +149,8 @@ const registeredPlugins = [
   ServerMulmoScriptPlugin,
   ServerShapeScriptPlugin,
   RenderShapeScriptPlugin,
+  ReadXPostPlugin,
+  SearchXPlugin,
   CameraPlugin,
   CanvasPlugin,
   ServerHtmlPlugin,
@@ -184,7 +187,7 @@ const pluginList = registeredPlugins.map((entry) => {
 });
 
 export { setPluginLocale, setPluginDispatchConfig } from "./pluginRuntime";
-export { loadHostToolDefinitions } from "./renderShapeScript";
+export { loadHostToolDefinitions } from "./hostTools";
 
 /**
  * Images a tool result shows the model, as image data URLs. A MulmoChat
