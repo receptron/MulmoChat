@@ -27,6 +27,9 @@ export interface UseSessionTransportOptions extends RealtimeSessionOptions {
 export interface UseSessionTransportReturn extends UseRealtimeSessionReturn {
   transportKind: ComputedRef<SessionTransportKind>;
   capabilities: ComputedRef<SessionTransportCapabilities>;
+  /** Stop one transport's session, active or not (after a transport switch,
+   *  the previous one is no longer the active session). */
+  stopChatFor: (kind: SessionTransportKind) => void;
 }
 
 export function useSessionTransport(
@@ -44,12 +47,14 @@ export function useSessionTransport(
   const googleLiveSession = useGoogleLiveSession(realtimeOptions);
   const grokVoiceSession = useGrokVoiceSession(realtimeOptions);
 
-  const activeSession = computed(() => {
-    if (transportKind.value === "text-rest") return textSession;
-    if (transportKind.value === "voice-google-live") return googleLiveSession;
-    if (transportKind.value === "voice-grok") return grokVoiceSession;
+  const sessionFor = (kind: SessionTransportKind) => {
+    if (kind === "text-rest") return textSession;
+    if (kind === "voice-google-live") return googleLiveSession;
+    if (kind === "voice-grok") return grokVoiceSession;
     return voiceSession;
-  });
+  };
+
+  const activeSession = computed(() => sessionFor(transportKind.value));
 
   const capabilities = computed<SessionTransportCapabilities>(() => {
     if (
@@ -89,6 +94,7 @@ export function useSessionTransport(
     isDataChannelOpen: () => activeSession.value.isDataChannelOpen(),
     startChat: () => activeSession.value.startChat(),
     stopChat: () => activeSession.value.stopChat(),
+    stopChatFor: (kind: SessionTransportKind) => sessionFor(kind).stopChat(),
     sendUserMessage: (text: string) =>
       activeSession.value.sendUserMessage(text),
     sendFunctionCallOutput: (callId: string, output: string) =>

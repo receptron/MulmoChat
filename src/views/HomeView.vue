@@ -320,6 +320,7 @@ const {
   isDataChannelOpen,
   startChat: startTransportChat,
   stopChat: stopTransportChat,
+  stopChatFor: stopTransportChatFor,
   sendUserMessage: sendUserMessageInternal,
   sendFunctionCallOutput,
   sendInstructions,
@@ -695,8 +696,10 @@ switchRoleCallback.value = switchRole;
 watch(
   () => userPreferences.modelKind,
   (newKind, previousKind) => {
-    if (newKind !== previousKind && chatActive.value) {
-      stopChat();
+    // The active session already follows newKind, so stop the previous one
+    // by kind (a still-open voice connection would keep the microphone).
+    if (newKind !== previousKind) {
+      stopTransportChatFor(previousKind);
     }
   },
 );

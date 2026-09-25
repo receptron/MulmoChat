@@ -215,17 +215,15 @@ export function useGrokVoiceSession(
     handlers.onError?.(error);
   };
 
-  const handleWebSocketClose = (event: CloseEvent) => {
+  // Bound to its socket: a close from a socket stopChat already replaced
+  // (startChat awaits before opening the next one) must not end the new chat.
+  const handleWebSocketClose = (ws: WebSocket) => (event: CloseEvent) => {
     console.log(
       `Grok WebSocket closed - Code: ${event.code}, Reason: ${event.reason}`,
     );
-    grok.audioManager?.stopCapture();
-    grok.ws = null;
-    responseActive = false;
-    responseHeld = false;
-    responseRequested = false;
-    chatActive.value = false;
-    conversationActive.value = false;
+    if (grok.ws !== ws) return;
+    // An unexpected close: release the microphone and audio as a stop would.
+    stopChat();
   };
 
   const attachRemoteAudioElement = (__audio: HTMLAudioElement | null) => {
@@ -248,9 +246,14 @@ export function useGrokVoiceSession(
   };
 
   const stopChat = () => {
-    if (grok.ws) {
-      grok.ws.close();
+    const ws = grok.ws;
+    if (ws) {
       grok.ws = null;
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onerror = null;
+      ws.onclose = null;
+      ws.close();
     }
     if (grok.audioManager) {
       grok.audioManager.destroy();
@@ -319,14 +322,15 @@ export function useGrokVoiceSession(
 
       // Browsers can't set an Authorization header on a WebSocket; xAI takes
       // the client secret as a subprotocol instead.
-      grok.ws = new WebSocket(
+      const ws = new WebSocket(
         `${GROK_REALTIME_URL}?model=${encodeURIComponent(modelId)}`,
         [`xai-client-secret.${clientSecret}`],
       );
-      grok.ws.onopen = () => handleWebSocketOpen(instructions, tools);
-      grok.ws.onmessage = handleWebSocketMessage;
-      grok.ws.onerror = handleWebSocketError;
-      grok.ws.onclose = handleWebSocketClose;
+      grok.ws = ws;
+      ws.onopen = () => handleWebSocketOpen(instructions, tools);
+      ws.onmessage = handleWebSocketMessage;
+      ws.onerror = handleWebSocketError;
+      ws.onclose = handleWebSocketClose(ws);
 
       chatActive.value = true;
     } catch (err) {
