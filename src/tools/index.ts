@@ -191,12 +191,16 @@ export { loadHostToolDefinitions } from "./renderShapeScript";
  * extension of gui-chat-protocol's ToolResult: `imagesForModel` is sent to the
  * model after the tool's output (renderShapeScript's render of a 3D model).
  */
+// The formats the text providers accept (server/llm/images.ts).
+const MODEL_IMAGE_DATA_URL =
+  /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
+
 export const getImagesForModel = (result: object): string[] => {
   const images = (result as { imagesForModel?: unknown }).imagesForModel;
   return Array.isArray(images)
     ? images.filter(
         (image): image is string =>
-          typeof image === "string" && image.startsWith("data:image/"),
+          typeof image === "string" && MODEL_IMAGE_DATA_URL.test(image),
       )
     : [];
 };

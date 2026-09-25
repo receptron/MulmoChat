@@ -109,6 +109,11 @@ export function useTextSession(
     }
   };
 
+  // Bumped when a chat starts or stops. A turn still waiting on the model or a
+  // tool when that happens stops, so it can't write into the next chat.
+  let chatGeneration = 0;
+  const isCurrentChat = (generation: number) => generation === chatGeneration;
+
   const startChat = async () => {
     if (chatActive.value || connecting.value) return;
 
@@ -116,6 +121,7 @@ export function useTextSession(
     try {
       await ensureStartResponse();
       initializeConversation();
+      chatGeneration++;
       chatActive.value = true;
     } catch (error) {
       handlers.onError?.(error);
@@ -125,6 +131,7 @@ export function useTextSession(
   };
 
   const stopChat = () => {
+    chatGeneration++;
     chatActive.value = false;
     conversationActive.value = false;
     conversationMessages.value = [];
@@ -134,6 +141,7 @@ export function useTextSession(
   // One request to the model, then its text and tool calls. Throws on failure.
   const runTurn = async (
     resolvedModel: ReturnType<typeof resolveTextModelId>,
+    generation: number,
   ) => {
     const tools = options.buildTools({
       startResponse: startResponse.value,
@@ -175,6 +183,8 @@ export function useTextSession(
       );
     }
 
+    if (!isCurrentChat(generation)) return;
+
     const assistantText = payload.result?.text ?? "";
     const toolCalls = payload.result?.toolCalls;
 
@@ -212,6 +222,7 @@ export function useTextSession(
     // Handle tool calls if present
     if (toolCalls && toolCalls.length > 0) {
       for (const toolCall of toolCalls) {
+        if (!isCurrentChat(generation)) return;
         await handlers.onToolCall?.(
           {
             type: "response.function_call_arguments.done",
@@ -255,25 +266,28 @@ export function useTextSession(
 
     conversationActive.value = true;
     handlers.onConversationStarted?.();
+    const generation = chatGeneration;
 
     try {
-      await runTurn(resolvedModel);
+      await runTurn(resolvedModel, generation);
       // A tool that showed the model an image gets the model another turn to
       // look at it (renderShapeScript: check the model, fix it, render again).
       for (
         let turn = 0;
         turn < MAX_FOLLOW_UP_TURNS &&
         pendingImages.length > 0 &&
-        chatActive.value;
+        isCurrentChat(generation);
         turn++
       ) {
         flushPendingImages();
-        await runTurn(resolvedModel);
+        await runTurn(resolvedModel, generation);
       }
       // Past the limit, the images go with the user's next message.
-      flushPendingImages();
+      if (isCurrentChat(generation)) flushPendingImages();
       return true;
     } catch (error) {
+      // Images from a failed turn would reach the model out of context.
+      pendingImages.length = 0;
       console.error("Text session request failed", error);
       handlers.onError?.(error);
       return false;

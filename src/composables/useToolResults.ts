@@ -123,14 +123,14 @@ export function useToolResults(
     pluginName: string,
     plugin: ReturnType<GetToolPluginFn> | undefined,
     result: ToolResult,
-  ) => {
+  ): Promise<boolean> => {
     if (!shouldSendInstructions(result)) {
-      return;
+      return false;
     }
 
     const instructions = result.instructions;
     if (!instructions) {
-      return;
+      return false;
     }
 
     const delay = plugin?.delayAfterExecution;
@@ -139,6 +139,7 @@ export function useToolResults(
     }
     console.log(`INS:${pluginName}\n${instructions}`);
     options.sendInstructions(instructions);
+    return true;
   };
 
   const handleToolCall = async ({ msg, rawArgs }: HandleToolCallArgs) => {
@@ -262,13 +263,26 @@ export function useToolResults(
       console.log(`RES:${result.toolName}\n`, outputPayload);
       sendFunctionOutput(msg.call_id, outputPayload);
       const images = getImagesForModel(result);
-      if (msg.call_id && images.length > 0) {
+      const imagesSent =
+        !!msg.call_id &&
+        images.length > 0 &&
         options.sendImagesToModel(
           images,
           `[Image returned by ${result.toolName}]`,
         );
+      const instructed = await maybeSendInstructions(
+        result.toolName,
+        plugin,
+        result,
+      );
+      // The model needs a turn to look at the images. Instructions start one
+      // (Realtime response.create, the Live turn's completion); without them,
+      // ask for it here.
+      if (imagesSent && !instructed) {
+        options.sendInstructions(
+          `Look at the image ${result.toolName} returned.`,
+        );
       }
-      await maybeSendInstructions(result.toolName, plugin, result);
     } catch (e) {
       const errorMessage = `Tool execution failed: ${e}`;
       console.error(`MSG: ${errorMessage}`);
