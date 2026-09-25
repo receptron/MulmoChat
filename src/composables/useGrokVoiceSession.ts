@@ -176,6 +176,9 @@ export function useGrokVoiceSession(
     instructions: string,
     tools: unknown[],
   ): void => {
+    // Connected only now: text sent before the socket opens would be lost.
+    chatActive.value = true;
+    connecting.value = false;
     sendWebSocketMessage({
       type: "session.update",
       session: {
@@ -245,7 +248,12 @@ export function useGrokVoiceSession(
     setTracksEnabled(enabled);
   };
 
+  // Bumped by stopChat, so a startChat still awaiting the server or the
+  // microphone gives up instead of connecting after it was stopped.
+  let startGeneration = 0;
+
   const stopChat = () => {
+    startGeneration++;
     const ws = grok.ws;
     if (ws) {
       grok.ws = null;
@@ -269,6 +277,7 @@ export function useGrokVoiceSession(
     responseRequested = false;
     chatActive.value = false;
     conversationActive.value = false;
+    connecting.value = false;
     setMute(false);
   };
 
@@ -276,6 +285,8 @@ export function useGrokVoiceSession(
     if (chatActive.value || connecting.value) return;
 
     connecting.value = true;
+    const generation = ++startGeneration;
+    const stopped = () => generation !== startGeneration;
 
     try {
       const response = await fetch("/api/start?voice=grok", {
@@ -287,7 +298,9 @@ export function useGrokVoiceSession(
       if (!response.ok) {
         throw new Error(`API error: ${response.statusText}`);
       }
-      startResponse.value = await response.json();
+      const start = (await response.json()) as StartApiResponse;
+      if (stopped()) return;
+      startResponse.value = start;
 
       const clientSecret = startResponse.value?.grokClientSecret;
       if (!clientSecret) {
@@ -305,7 +318,7 @@ export function useGrokVoiceSession(
         DEFAULT_GROK_VOICE_MODEL_ID;
 
       // Microphone first, so the WebSocket opens with audio ready to send.
-      grok.localStream = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: INPUT_SAMPLE_RATE,
           channelCount: 1,
@@ -313,6 +326,11 @@ export function useGrokVoiceSession(
           noiseSuppression: true,
         },
       });
+      if (stopped()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      grok.localStream = stream;
 
       grok.audioManager = new AudioStreamManager();
       grok.audioManager.setPlaybackEventHandlers({
@@ -331,14 +349,12 @@ export function useGrokVoiceSession(
       ws.onmessage = handleWebSocketMessage;
       ws.onerror = handleWebSocketError;
       ws.onclose = handleWebSocketClose(ws);
-
-      chatActive.value = true;
+      // chatActive and connecting change in handleWebSocketOpen.
     } catch (err) {
       console.error("Failed to start Grok voice session:", err);
+      if (stopped()) return;
       stopChat();
       alert("Failed to start Grok voice session. Check console for details.");
-    } finally {
-      connecting.value = false;
     }
   };
 
