@@ -4,7 +4,7 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
 
 ## Overview
 - Multi-modal chat client and reference implementation of [gui-chat-protocol](https://github.com/receptron/gui-chat-protocol).
-- Three session transports: OpenAI Realtime (voice, WebRTC), Google Gemini Live (voice, WebSocket), and text chat through the server (OpenAI, Anthropic, Google, Grok, Ollama).
+- Four session transports: OpenAI Realtime (voice, WebRTC), Google Gemini Live (voice, WebSocket), Grok voice (xAI, WebSocket), and text chat through the server (OpenAI, Anthropic, Google, Grok, Ollama).
 - Tool calls are executed by ~30 plugins from npm packages; each plugin supplies a view (main canvas) and a preview (sidebar).
 
 ## Repository Layout
@@ -41,7 +41,7 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
 - presentHtml pages are served at `GET /artifacts/html/<path>` (`server/plugins/htmlHost.ts`) with a sandboxing CSP (opaque origin, no network requests), to loopback clients only. See `CLAUDE.md`.
 
 ## Server APIs (all under `/api`)
-- `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key, issued for the model in `?model=` (default `gpt-realtime-2.1`). It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`).
+- `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key, issued for the model in `?model=` (default `gpt-realtime-2.1`). It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `hasXaiApiKey`, `googleMapKey`, `googleApiKey`). With `?voice=grok` it mints an xAI client secret (`grokClientSecret`) instead of the OpenAI key.
 - `/text/providers`, `/text/generate` — text LLM. `/text/session/...` is a server-side session API; the current client doesn't use it.
 - `/generate-image` (Gemini), `/generate-image/openai`, `/generate-image/comfy` (ComfyUI).
 - `/plugin/:toolName` — runs a server-run plugin's `execute()`. `/plugin-events` — server-sent events for plugin Views. `/plugin-host-tools` — definitions of host tools. `/mulmoscript/media` — presentMulmoScript movies and PDFs.
@@ -58,9 +58,9 @@ For the full architecture description see `CLAUDE.md`. This file is the short ve
 - Avoid `yarn build` / `yarn preview` / `yarn start` during development; they create build artifacts.
 
 ## Environment Variables
-- `OPENAI_API_KEY` — required; `/api/start` fails without it.
+- `OPENAI_API_KEY` — required; `/api/start` fails without it (except for Grok voice).
 - `GEMINI_API_KEY` — Gemini images, Gemini Live and Google text models.
-- `ANTHROPIC_API_KEY`, `XAI_API_KEY` — Anthropic and Grok text models.
+- `ANTHROPIC_API_KEY` — Anthropic text models. `XAI_API_KEY` — Grok voice and Grok text models.
 - `EXA_API_KEY` (Exa search) and `GOOGLE_MAP_API_KEY` (map). Plugins that need a missing key are disabled.
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends.
 - `MULMOCHAT_ALLOWED_ORIGINS` — extra browser origins allowed to call `/api/plugin/*`. Loopback origins are always allowed, and requests must be JSON.

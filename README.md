@@ -36,6 +36,7 @@ GEMINI_API_KEY=...
 GOOGLE_MAP_API_KEY=... (optional, required for map features)
 EXA_API_KEY=... (optional, required for AI-powered search)
 ANTHROPIC_API_KEY=... (optional, required for HTML generation)
+XAI_API_KEY=... (optional, required for Grok voice and Grok text models)
 OLLAMA_BASE_URL=... (optional, defaults to http://127.0.0.1:11434)
 COMFYUI_BASE_URL=... (optional, defaults to http://127.0.0.1:8000)
 COMFYUI_DEFAULT_MODEL=... (optional, defaults to flux1-schnell-fp8.safetensors)

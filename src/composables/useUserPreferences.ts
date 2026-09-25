@@ -5,7 +5,9 @@ import { pluginTools, getPluginSystemPrompts } from "../tools";
 import {
   DEFAULT_REALTIME_MODEL_ID,
   DEFAULT_GOOGLE_LIVE_MODEL_ID,
+  DEFAULT_GROK_VOICE_MODEL_ID,
   GOOGLE_LIVE_MODELS,
+  GROK_VOICE_MODELS,
   REALTIME_MODELS,
 } from "../config/models";
 import { DEFAULT_TEXT_MODEL } from "../config/textModels";
@@ -97,6 +99,7 @@ const resolveStoredModelKind = (
 ): SessionTransportKind => {
   if (stored === "text-rest") return "text-rest";
   if (stored === "voice-google-live") return "voice-google-live";
+  if (stored === "voice-grok") return "voice-grok";
   return "voice-realtime";
 };
 
@@ -110,6 +113,12 @@ const resolveStoredModelId = (
     return (
       GOOGLE_LIVE_MODELS.find((m) => m.id === storedModelId)?.id ??
       DEFAULT_GOOGLE_LIVE_MODEL_ID
+    );
+  }
+  if (modelKind === "voice-grok") {
+    return (
+      GROK_VOICE_MODELS.find((m) => m.id === storedModelId)?.id ??
+      DEFAULT_GROK_VOICE_MODEL_ID
     );
   }
   return (
@@ -206,6 +215,9 @@ export function useUserPreferences(): UseUserPreferencesReturn {
             (m) => m.id === state.modelId,
           );
           if (!isValid) state.modelId = DEFAULT_GOOGLE_LIVE_MODEL_ID;
+        } else if (val === "voice-grok") {
+          const isValid = GROK_VOICE_MODELS.some((m) => m.id === state.modelId);
+          if (!isValid) state.modelId = DEFAULT_GROK_VOICE_MODEL_ID;
         }
       }
     },

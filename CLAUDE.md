@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MulmoChat is a Vue 3 + Express application for multi-modal chat with LLMs. The user can talk by voice (OpenAI Realtime or Google Gemini Live) or type (text chat through several LLM providers). Tool calls are handled by ~30 plugins that render visual, interactive results — image generation, web browsing, search, maps, games, spreadsheets, presentations and more.
+MulmoChat is a Vue 3 + Express application for multi-modal chat with LLMs. The user can talk by voice (OpenAI Realtime, Google Gemini Live or xAI Grok) or type (text chat through several LLM providers). Tool calls are handled by ~30 plugins that render visual, interactive results — image generation, web browsing, search, maps, games, spreadsheets, presentations and more.
 
 ## Philosophy
 
@@ -64,13 +64,14 @@ HomeView orchestrates the UI: it creates `useUserPreferences`, `useSessionTransp
 
 ### Session Transports
 
-`useSessionTransport` (src/composables/useSessionTransport.ts) holds all three sessions and exposes the active one through a common interface (`UseRealtimeSessionReturn`) plus a `capabilities` object. The transport is chosen by the user's model kind preference:
+`useSessionTransport` (src/composables/useSessionTransport.ts) holds all four sessions and exposes the active one through a common interface (`UseRealtimeSessionReturn`) plus a `capabilities` object. The transport is chosen by the user's model kind preference:
 
 - **`voice-realtime`** — `useVoiceRealtimeSession` → `useRealtimeSession`: OpenAI Realtime over WebRTC. Fetches an ephemeral key from `/api/start?model=<id>` (the key is bound to that model), opens an `oai-events` data channel, streams microphone audio, accumulates function-call arguments and dispatches tool calls. Models in `config/models.ts` (`REALTIME_MODELS`).
 - **`voice-google-live`** — `useGoogleLiveSession`: Gemini Live API over a WebSocket opened directly from the browser with the Gemini key returned by `/api/start`, with PCM encoding/playback via `utils/audioCodec.ts` and `utils/audioStreamManager.ts`. Models in `GOOGLE_LIVE_MODELS`.
+- **`voice-grok`** — `useGrokVoiceSession`: xAI's Voice Agent API over a WebSocket opened from the browser. The events are OpenAI Realtime's; the audio is PCM16 through `AudioStreamManager`, like Gemini Live. The server mints a short-lived client secret (`/api/start?voice=grok`, from `XAI_API_KEY`), which the browser passes as the `xai-client-secret.<secret>` subprotocol. Follow-up instructions go in as user messages (a `response.create` with `instructions` would replace the system prompt), and a `response.create` asked for while a response runs is sent after it. Grok takes no image input, so `sendImagesToModel` returns false. Models in `GROK_VOICE_MODELS`.
 - **`text-rest`** — `useTextSession`: keeps the conversation history on the client and calls the stateless `/api/text/generate` endpoint for each turn. Model IDs are `provider:model` strings (`config/textModels.ts`, default `openai:gpt-4o-mini`).
 
-All three share the same event handler contract (`onToolCall`, `onTextDelta`, conversation start/stop, speech start/stop) and send tool outputs and follow-up instructions back through the active session.
+All four share the same event handler contract (`onToolCall`, `onTextDelta`, conversation start/stop, speech start/stop) and send tool outputs and follow-up instructions back through the active session.
 
 ### Tool Results (src/composables/useToolResults.ts)
 
@@ -132,7 +133,7 @@ Some plugins run their `execute()` on the server instead of in the browser. The 
 - **View actions:** a View's `useRuntime().dispatch({ kind, … })` reaches the same route. Most packages handle it in `execute()`; a package that handles it in a separate function is listed in `server/plugins/dispatch.ts` (presentHtml's `loadHtml` / `saveHtml` / `packHtml` in `server/plugins/htmlHost.ts`, presentShapeScript's `loadShape` / `saveShape`, and presentMulmoScript's kinds). `dispatch.ts` can also replace a tool call's `execute()` when the host must do more (presentMulmoScript).
 - **Plugin events:** a server backend can send events to its plugin's Views outside a request with `publishPluginEvent(toolName, event, data)` (`server/plugins/events.ts`). They stream to the browser as server-sent events at `GET /api/plugin-events` (loopback only, like the other plugin routes), and the runtime delivers each one only to that tool's `pubsub.subscribe(event)`.
 - **renderShapeScript:** a host tool (no package registers it) that renders a ShapeScript model to a PNG sheet of four camera angles with puppeteer, so the model can check its 3D model before presenting it. `server/plugins/shapeRenderHost.ts` wraps `@mulmoclaude/shapescript-plugin/render`, saves the sheet under `artifacts/renders/`, and reads sources only from `artifacts/shapes/`. That entry is Node-only, so the server sends the definition (`GET /api/plugin-host-tools`, `HOST_TOOL_DEFINITIONS` in `dispatch.ts`) and `src/tools/renderShapeScript.ts` fills it in at startup; the result shows with generateImage's image View.
-- **Images for the model:** a result can set `imagesForModel` (image data URLs, a MulmoChat extension of `ToolResult`; `getImagesForModel` in `src/tools/index.ts`). `useToolResults` passes them to the transport's `sendImagesToModel` after the tool output: Realtime adds a user message with `input_image`, Gemini Live an open user turn with `inlineData`, and text chat a user message with `images` (converted per provider in `server/llm/providers/`, validated by `server/llm/images.ts`). Text chat holds them until the turn's tool outputs are all in, then gives the model a follow-up turn to look (at most 3 in a row).
+- **Images for the model:** a result can set `imagesForModel` (image data URLs, a MulmoChat extension of `ToolResult`; `getImagesForModel` in `src/tools/index.ts`). `useToolResults` passes them to the transport's `sendImagesToModel` after the tool output: Realtime adds a user message with `input_image`, Gemini Live an open user turn with `inlineData` (Grok voice takes no images), and text chat a user message with `images` (converted per provider in `server/llm/providers/`, validated by `server/llm/images.ts`). Text chat holds them until the turn's tool outputs are all in, then gives the model a follow-up turn to look (at most 3 in a row).
 - **presentMulmoScript:** `server/plugins/mulmoscriptHost.ts` gives the package's `./server` ops MulmoChat's backend. Storyboards are saved in `<workspace>/artifacts/stories/`, and mulmocast writes images, audio, movies and PDFs next to them. Generation needs ffmpeg and reads `OPENAI_API_KEY` / `GEMINI_API_KEY` from the server's environment. Progress (`generation`) and model edits (`scriptChanged`) reach open Views as plugin events. The View downloads movies and PDFs from `GET /api/mulmoscript/media` through a host adapter (`src/tools/mulmoScriptHost.ts`). Unlike MulmoTerminal, scripts can't be opened by absolute path or from other directories.
 - **File changes:** the workspace `FileOps` record what a request wrote (`server/plugins/fileChanges.ts`), and the route returns the list in the `X-Workspace-Files-Changed` header. The browser runtime publishes `file:<path>` on its pubsub, so open Views of those files reload (MulmoTerminal and MulmoClaude push the same event over a socket).
 - **presentHtml pages:** `GET /artifacts/html/<path>` (`htmlPreviewRouter`, proxied by Vite in dev) serves pages to the View's iframe with a CSP of `sandbox allow-scripts` and `connect-src 'none'`: the model-written page gets an opaque origin, so it can't reach `/api` or the app's storage, and can't send requests. Scripts, styles, fonts, images and media only load from a small CDN allowlist (plus `data:`/`blob:` for images and media), so a script can't send data out in an image URL either. The route only accepts loopback connections and a loopback `Host` (DNS rebinding), and drops the CORS header. Unlike MulmoTerminal there is no `/htmlfile` mount, so pages stay inside `artifacts/html/`.
@@ -179,13 +180,13 @@ These documents are used by developers creating new plugins. Keeping them in syn
 - **server/llm/** — `textService.ts` sends text generation to providers in `providers/` (OpenAI, Anthropic, Google, Grok, Ollama) with per-provider default models; `textSessionStore.ts` stores server-side sessions
 - **server/utils/logger.ts** — winston logger with daily rotating files in `logs/`; use `logger` / `logApiError` instead of `console.*` for new server code
 
-`/api/start` returns a `StartApiResponse` with the OpenAI ephemeral key (minted for the `model` query parameter if it matches `gpt-realtime*`, otherwise `gpt-realtime-2.1`) and feature flags (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `googleMapKey`, `googleApiKey`). Plugins read these in `isEnabled()`.
+`/api/start` returns a `StartApiResponse` with the OpenAI ephemeral key (minted for the `model` query parameter if it matches `gpt-realtime*`, otherwise `gpt-realtime-2.1`) and feature flags (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `hasXaiApiKey`, `googleMapKey`, `googleApiKey`). With `?voice=grok` it mints an xAI client secret (`grokClientSecret`) instead of the OpenAI key. Plugins read these in `isEnabled()`.
 
 ### Environment Variables (.env)
 
-- `OPENAI_API_KEY` — required by `/api/start` (all transports call it)
+- `OPENAI_API_KEY` — required by `/api/start` (all transports call it; Grok voice doesn't need it)
 - `GEMINI_API_KEY` — Gemini image generation, Gemini Live, Google text models
-- `ANTHROPIC_API_KEY`, `XAI_API_KEY` — Anthropic / Grok text models
+- `ANTHROPIC_API_KEY` — Anthropic text models; `XAI_API_KEY` — Grok voice and Grok text models
 - `EXA_API_KEY` — Exa search; `GOOGLE_MAP_API_KEY` — map plugin
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends
 - `MULMOCHAT_ALLOWED_ORIGINS` — extra browser origins (comma-separated) allowed to call `/api/plugin/*`, e.g. `http://mac.local:5173` when opening the dev server from another device. Loopback origins are always allowed; the Host header is not trusted (DNS rebinding). Requests must be JSON (`server/utils/trustedOrigin.ts`).
@@ -198,7 +199,7 @@ These documents are used by developers creating new plugins. Keeping them in syn
 #### Session Start
 1. User clicks start in the Sidebar; HomeView calls `session.startChat()`
 2. The active transport fetches `/api/start`
-3. Voice-realtime: creates RTCPeerConnection + `oai-events` data channel, gets microphone, exchanges SDP with OpenAI, then sends `session.update` with instructions and tools. Google Live: opens the Live WebSocket and sends the same instructions and tools. Text: stores instructions and tools for the next request.
+3. Voice-realtime: creates RTCPeerConnection + `oai-events` data channel, gets microphone, exchanges SDP with OpenAI, then sends `session.update` with instructions and tools. Google Live: opens the Live WebSocket and sends the same instructions and tools. Grok voice: opens the xAI WebSocket with the client secret and sends `session.update`. Text: stores instructions and tools for the next request.
 
 #### Tool Call
 1. The transport receives a function call (Realtime `response.function_call_arguments.done`, a Live tool call, or `toolCalls` from `/api/text/generate`) and calls `onToolCall`

@@ -139,7 +139,9 @@ import { SESSION_CONFIG } from "../config/session";
 import { DEFAULT_TEXT_MODEL } from "../config/textModels";
 import {
   DEFAULT_GOOGLE_LIVE_MODEL_ID,
+  DEFAULT_GROK_VOICE_MODEL_ID,
   GOOGLE_LIVE_MODELS,
+  GROK_VOICE_MODELS,
   REALTIME_MODELS,
 } from "../config/models";
 import { getRole } from "../config/roles";
@@ -300,6 +302,11 @@ const session = useSessionTransport({
         ? userPreferences.modelId
         : DEFAULT_GOOGLE_LIVE_MODEL_ID;
     }
+    if (userPreferences.modelKind === "voice-grok") {
+      return GROK_VOICE_MODELS.some((m) => m.id === userPreferences.modelId)
+        ? userPreferences.modelId
+        : DEFAULT_GROK_VOICE_MODEL_ID;
+    }
     return userPreferences.textModelId;
   },
 });
@@ -345,6 +352,11 @@ const statusLine = computed(() => {
     );
     const label = model?.label || "Gemini Live";
     modelName = label;
+  } else if (userPreferences.modelKind === "voice-grok") {
+    const model = GROK_VOICE_MODELS.find(
+      (m) => m.id === userPreferences.modelId,
+    );
+    modelName = model?.label || "Grok Voice";
   } else if (userPreferences.modelKind === "text-rest") {
     // For text models, extract the model name from textModelId
     const textModelId = userPreferences.textModelId;

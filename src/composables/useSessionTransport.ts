@@ -7,11 +7,12 @@ import {
 import { useVoiceRealtimeSession } from "./useVoiceRealtimeSession";
 import { useTextSession } from "./useTextSession";
 import { useGoogleLiveSession } from "./useGoogleLiveSession";
+import { useGrokVoiceSession } from "./useGrokVoiceSession";
 
 type MaybeRef<T> = T | Ref<T>;
 
 export type SessionTransportKind =
-  "voice-realtime" | "text-rest" | "voice-google-live";
+  "voice-realtime" | "text-rest" | "voice-google-live" | "voice-grok";
 
 export interface SessionTransportCapabilities {
   supportsAudioInput: boolean;
@@ -41,15 +42,20 @@ export function useSessionTransport(
   const voiceSession = useVoiceRealtimeSession(realtimeOptions);
   const textSession = useTextSession(realtimeOptions);
   const googleLiveSession = useGoogleLiveSession(realtimeOptions);
+  const grokVoiceSession = useGrokVoiceSession(realtimeOptions);
 
   const activeSession = computed(() => {
     if (transportKind.value === "text-rest") return textSession;
     if (transportKind.value === "voice-google-live") return googleLiveSession;
+    if (transportKind.value === "voice-grok") return grokVoiceSession;
     return voiceSession;
   });
 
   const capabilities = computed<SessionTransportCapabilities>(() => {
-    if (transportKind.value === "voice-realtime") {
+    if (
+      transportKind.value === "voice-realtime" ||
+      transportKind.value === "voice-grok"
+    ) {
       return {
         supportsAudioInput: true,
         supportsAudioOutput: true,
@@ -103,6 +109,7 @@ export function useSessionTransport(
       voiceSession.registerEventHandlers(handlers);
       textSession.registerEventHandlers(handlers);
       googleLiveSession.registerEventHandlers(handlers);
+      grokVoiceSession.registerEventHandlers(handlers);
     },
     transportKind,
     capabilities,
