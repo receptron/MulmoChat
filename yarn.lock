@@ -1175,6 +1175,11 @@
     three-bvh-csg "^0.0.18"
     three-mesh-bvh "0.9.15"
 
+"@mulmoclaude/x-plugin@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@mulmoclaude/x-plugin/-/x-plugin-1.0.4.tgz#c652655eb4b64133e71e7315bdb1d4a307e4a408"
+  integrity sha512-0AZk+PtQ9aZr449xntBlAzi26OEkDb4Dk/mJeAOuP7Aw6CTz8DeCY7t7sMnhm801VuDqG7I39zMWoCunEXc23Q==
+
 "@napi-rs/wasm-runtime@^1.1.4", "@napi-rs/wasm-runtime@^1.1.6":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@napi-rs/wasm-runtime/-/wasm-runtime-1.2.1.tgz#9657eaa103c1cedd9411012595faf8f476608f15"

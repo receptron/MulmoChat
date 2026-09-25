@@ -3,12 +3,10 @@
 // model, so the model can check a 3D model before presenting it.
 //
 // Its definition comes from @mulmoclaude/shapescript-plugin/render, a
-// Node-only entry the browser can't import, so the server sends it
-// (GET /api/plugin-host-tools) and loadHostToolDefinitions() fills it in at
-// startup. Until then the tool stays disabled. The result is an image, shown
+// Node-only entry the browser can't import, so the server sends it (see
+// hostTools.ts). Until then the tool stays disabled. The result is an image, shown
 // with the same View as generateImage.
 import { defineComponent, h, markRaw, type PropType } from "vue";
-import type { ToolDefinition } from "gui-chat-protocol/vue";
 import {
   ImagePreview,
   ImageView,
@@ -17,37 +15,14 @@ import {
 } from "@mulmochat-plugin/ui-image";
 import type { ToolPlugin } from "./types";
 import { runOnServer } from "./serverPlugin";
+import { hostToolDefinition } from "./hostTools";
 
 const TOOL_NAME = "renderShapeScript";
 
-// Filled from the server; the fields here are placeholders until then.
-const toolDefinition: ToolDefinition = {
-  type: "function",
-  name: TOOL_NAME,
-  description: "Render a ShapeScript model to an image.",
-  parameters: { type: "object", properties: {}, required: [] },
-};
-let definitionLoaded = false;
-
-/** Fetch the definitions of the tools the server provides itself. */
-export async function loadHostToolDefinitions(): Promise<void> {
-  try {
-    const response = await fetch("/api/plugin-host-tools");
-    if (!response.ok) return;
-    const { tools } = (await response.json()) as { tools?: unknown };
-    if (!Array.isArray(tools)) return;
-    const definition = tools.find(
-      (tool): tool is ToolDefinition =>
-        typeof tool === "object" && tool !== null && tool.name === TOOL_NAME,
-    );
-    if (definition) {
-      Object.assign(toolDefinition, definition);
-      definitionLoaded = true;
-    }
-  } catch (error) {
-    console.warn("[renderShapeScript] tool definition unavailable", error);
-  }
-}
+const { toolDefinition, isLoaded } = hostToolDefinition(
+  TOOL_NAME,
+  "Render a ShapeScript model to an image.",
+);
 
 // The render as an image, with the View and Preview generateImage uses.
 const View = markRaw(
@@ -86,7 +61,7 @@ const plugin: ToolPlugin = {
     throw new Error("renderShapeScript runs on the server");
   },
   generatingMessage: "Rendering the 3D model...",
-  isEnabled: () => definitionLoaded,
+  isEnabled: isLoaded,
   viewComponent: View,
   previewComponent: Preview,
 };

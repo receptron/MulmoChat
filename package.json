@@ -79,6 +79,7 @@
     "@mulmoclaude/markdown-plugin": "^5.1.0",
     "@mulmoclaude/mulmoscript-plugin": "^5.0.1",
     "@mulmoclaude/shapescript-plugin": "^7.1.0",
+    "@mulmoclaude/x-plugin": "^1.0.4",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "echarts": "^6.0.0",

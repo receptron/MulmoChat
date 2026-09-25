@@ -49,13 +49,27 @@ import { runOnServer } from "./serverPlugin";
 import { wrapWithPluginRuntime } from "./pluginRuntime";
 import { withMulmoScriptHostAdapter } from "./mulmoScriptHost";
 import { RenderShapeScriptPlugin } from "./renderShapeScript";
+import { ReadXPostPlugin, SearchXPlugin } from "./xTools";
+
+// generateImage's own prompt says the model MUST draw whenever it talks about
+// places, objects, people, movies or books. Every role that includes plugin
+// prompts got it, so a model that follows it literally (Gemini Live in the
+// Office role) drew a picture for almost every reply. A role that wants
+// pictures all the time says so in its own prompt (Listener, Brainstorm).
+// MulmoGlass replaced it for the same reason ("Tokyo's weather" drawn as an
+// image instead of looked up).
+const GENERATE_IMAGE_PROMPT =
+  "Use generateImage when the user asks for a picture, or when an illustration clearly helps explain what you are talking about. Never use an image in place of information you don't have: an image can't show today's weather, the news or a price.";
 
 // generateImage runs on the server (server/plugins/), with the user's image
 // settings sent along so the server-side context.app.generateImage uses them.
 const ServerGenerateImagePlugin = {
-  plugin: runOnServer(GenerateImagePlugin.plugin, (context) => ({
-    imageGeneration: context.app?.getImageGenerationSettings?.(),
-  })),
+  plugin: runOnServer(
+    { ...GenerateImagePlugin.plugin, systemPrompt: GENERATE_IMAGE_PROMPT },
+    (context) => ({
+      imageGeneration: context.app?.getImageGenerationSettings?.(),
+    }),
+  ),
 };
 
 // presentChart runs on the server, which saves the chart document into the
@@ -148,6 +162,8 @@ const registeredPlugins = [
   ServerMulmoScriptPlugin,
   ServerShapeScriptPlugin,
   RenderShapeScriptPlugin,
+  ReadXPostPlugin,
+  SearchXPlugin,
   CameraPlugin,
   CanvasPlugin,
   ServerHtmlPlugin,
@@ -184,7 +200,7 @@ const pluginList = registeredPlugins.map((entry) => {
 });
 
 export { setPluginLocale, setPluginDispatchConfig } from "./pluginRuntime";
-export { loadHostToolDefinitions } from "./renderShapeScript";
+export { loadHostToolDefinitions } from "./hostTools";
 
 /**
  * Images a tool result shows the model, as image data URLs. A MulmoChat
