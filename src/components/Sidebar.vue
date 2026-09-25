@@ -151,7 +151,7 @@
             $emit('update:userInput', ($event.target as HTMLInputElement).value)
           "
           @keydown.enter="handleEnterKey"
-          :disabled="!chatActive && isOpenAIRealtime"
+          :disabled="!chatActive && needsConnectionToSend"
           type="text"
           placeholder="Type a message"
           class="flex-1 min-w-0 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
@@ -167,7 +167,7 @@
       />
       <button
         @click="handleSendClick"
-        :disabled="(isOpenAIRealtime && !chatActive) || !userInput.trim()"
+        :disabled="(needsConnectionToSend && !chatActive) || !userInput.trim()"
         class="w-full px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
       >
         Send Message
@@ -211,11 +211,12 @@
             >
               <option value="voice-realtime">Voice (OpenAI Realtime)</option>
               <option value="voice-google-live">Voice (Google Live)</option>
+              <option value="voice-grok">Voice (Grok)</option>
               <option value="text-rest">Text (REST)</option>
             </select>
             <p class="text-xs text-gray-500 mt-1">
-              Choose between OpenAI WebRTC, Google WebSocket, or REST text
-              interface.
+              Choose between OpenAI WebRTC, Google or Grok WebSocket, or REST
+              text interface.
             </p>
           </div>
 
@@ -270,6 +271,34 @@
             </select>
             <p class="text-xs text-gray-500 mt-1">
               Chooses the Google Gemini model used for real-time conversations.
+            </p>
+          </div>
+
+          <div v-if="isGrokVoice">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Grok Voice Model
+            </label>
+            <select
+              :value="modelId"
+              @change="
+                $emit(
+                  'update:modelId',
+                  ($event.target as HTMLSelectElement).value,
+                )
+              "
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option
+                v-for="model in GROK_VOICE_MODELS"
+                :key="model.id"
+                :value="model.id"
+              >
+                {{ model.label }}
+              </option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">
+              Chooses the xAI Grok voice model (needs XAI_API_KEY). Grok doesn't
+              see images tools return.
             </p>
           </div>
 
@@ -543,7 +572,11 @@ import {
 } from "../tools";
 import { LANGUAGES } from "../config/languages";
 import { ROLES } from "../config/roles";
-import { REALTIME_MODELS, GOOGLE_LIVE_MODELS } from "../config/models";
+import {
+  REALTIME_MODELS,
+  GOOGLE_LIVE_MODELS,
+  GROK_VOICE_MODELS,
+} from "../config/models";
 import type { SessionTransportKind } from "../composables/useSessionTransport";
 
 interface TextModelOption {
@@ -670,10 +703,17 @@ const fileInputPlugins = computed(() => getFileInputPlugins());
 const isVoiceMode = computed(
   () =>
     props.modelKind === "voice-realtime" ||
-    props.modelKind === "voice-google-live",
+    props.modelKind === "voice-google-live" ||
+    props.modelKind === "voice-grok",
 );
 const isOpenAIRealtime = computed(() => props.modelKind === "voice-realtime");
 const isGoogleLive = computed(() => props.modelKind === "voice-google-live");
+const isGrokVoice = computed(() => props.modelKind === "voice-grok");
+// Transports whose text messages go over the live connection, so typing is
+// off until it is open.
+const needsConnectionToSend = computed(
+  () => isOpenAIRealtime.value || isGrokVoice.value,
+);
 const isTextRest = computed(() => props.modelKind === "text-rest");
 const connectButtonLabel = computed(() =>
   isVoiceMode.value ? "Connect" : "Start Session",
@@ -779,7 +819,7 @@ function handleEnterKey(event: KeyboardEvent): void {
   }
 
   // In voice mode, don't submit if chat is not active
-  if (isOpenAIRealtime.value && !props.chatActive) {
+  if (needsConnectionToSend.value && !props.chatActive) {
     event.preventDefault();
     return;
   }

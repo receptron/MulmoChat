@@ -7,6 +7,9 @@ export interface StartApiResponse {
   hasAnthropicApiKey: boolean;
   googleApiKey: string | undefined;
   hasGoogleApiKey: boolean;
+  hasXaiApiKey: boolean;
+  /** xAI client secret for the Grok voice WebSocket (`/api/start?voice=grok`). */
+  grokClientSecret?: string;
   [key: string]: unknown;
 }
 

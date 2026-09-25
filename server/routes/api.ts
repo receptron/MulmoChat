@@ -50,14 +50,75 @@ const resolveRealtimeModel = (model: unknown): string =>
     ? model
     : DEFAULT_REALTIME_MODEL;
 
-// Session start endpoint
+// Grok voice: a short-lived client secret, so XAI_API_KEY stays on the server.
+// It only has to last until the browser opens the WebSocket.
+const GROK_CLIENT_SECRET_TTL_SECONDS = 300;
+
+async function mintGrokClientSecret(xaiKey: string): Promise<string> {
+  const response = await fetch("https://api.x.ai/v1/realtime/client_secrets", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${xaiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      expires_after: { seconds: GROK_CLIENT_SECRET_TTL_SECONDS },
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`xAI API error: ${response.statusText}`);
+  }
+  const data = (await response.json()) as { value?: unknown };
+  if (typeof data.value !== "string") {
+    throw new Error("xAI API returned no client secret");
+  }
+  return data.value;
+}
+
+// Session start endpoint. `?voice=grok` mints an xAI client secret for the
+// Grok voice transport instead of the OpenAI ephemeral key.
 router.get("/start", async (req: Request, res: Response): Promise<void> => {
   const openaiKey = process.env.OPENAI_API_KEY;
+  const xaiKey = process.env.XAI_API_KEY;
   const googleMapKey = process.env.GOOGLE_MAP_API_KEY;
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const hasAnthropicApiKey = !!anthropicApiKey;
   const hasGoogleApiKey = !!geminiApiKey;
+  const hasXaiApiKey = !!xaiKey;
+
+  if (req.query.voice === "grok") {
+    if (!xaiKey) {
+      sendApiError(res, req, 500, "XAI_API_KEY environment variable not set");
+      return;
+    }
+    try {
+      const responseData: StartApiResponse = {
+        success: true,
+        message: "Session started",
+        ephemeralKey: "",
+        grokClientSecret: await mintGrokClientSecret(xaiKey),
+        googleMapKey,
+        hasExaApiKey,
+        hasAnthropicApiKey,
+        googleApiKey: geminiApiKey,
+        hasGoogleApiKey,
+        hasXaiApiKey,
+      };
+      res.json(responseData);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      sendApiError(
+        res,
+        req,
+        500,
+        "Failed to generate Grok client secret",
+        errorMessage,
+      );
+    }
+    return;
+  }
 
   if (!openaiKey) {
     sendApiError(res, req, 500, "OPENAI_API_KEY environment variable not set");
@@ -101,6 +162,7 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
       hasAnthropicApiKey,
       googleApiKey: geminiApiKey,
       hasGoogleApiKey,
+      hasXaiApiKey,
     };
     res.json(responseData);
   } catch (error: unknown) {

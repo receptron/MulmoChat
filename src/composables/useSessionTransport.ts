@@ -7,11 +7,12 @@ import {
 import { useVoiceRealtimeSession } from "./useVoiceRealtimeSession";
 import { useTextSession } from "./useTextSession";
 import { useGoogleLiveSession } from "./useGoogleLiveSession";
+import { useGrokVoiceSession } from "./useGrokVoiceSession";
 
 type MaybeRef<T> = T | Ref<T>;
 
 export type SessionTransportKind =
-  "voice-realtime" | "text-rest" | "voice-google-live";
+  "voice-realtime" | "text-rest" | "voice-google-live" | "voice-grok";
 
 export interface SessionTransportCapabilities {
   supportsAudioInput: boolean;
@@ -26,6 +27,9 @@ export interface UseSessionTransportOptions extends RealtimeSessionOptions {
 export interface UseSessionTransportReturn extends UseRealtimeSessionReturn {
   transportKind: ComputedRef<SessionTransportKind>;
   capabilities: ComputedRef<SessionTransportCapabilities>;
+  /** Stop one transport's session, active or not (after a transport switch,
+   *  the previous one is no longer the active session). */
+  stopChatFor: (kind: SessionTransportKind) => void;
 }
 
 export function useSessionTransport(
@@ -41,15 +45,22 @@ export function useSessionTransport(
   const voiceSession = useVoiceRealtimeSession(realtimeOptions);
   const textSession = useTextSession(realtimeOptions);
   const googleLiveSession = useGoogleLiveSession(realtimeOptions);
+  const grokVoiceSession = useGrokVoiceSession(realtimeOptions);
 
-  const activeSession = computed(() => {
-    if (transportKind.value === "text-rest") return textSession;
-    if (transportKind.value === "voice-google-live") return googleLiveSession;
+  const sessionFor = (kind: SessionTransportKind) => {
+    if (kind === "text-rest") return textSession;
+    if (kind === "voice-google-live") return googleLiveSession;
+    if (kind === "voice-grok") return grokVoiceSession;
     return voiceSession;
-  });
+  };
+
+  const activeSession = computed(() => sessionFor(transportKind.value));
 
   const capabilities = computed<SessionTransportCapabilities>(() => {
-    if (transportKind.value === "voice-realtime") {
+    if (
+      transportKind.value === "voice-realtime" ||
+      transportKind.value === "voice-grok"
+    ) {
       return {
         supportsAudioInput: true,
         supportsAudioOutput: true,
@@ -83,6 +94,7 @@ export function useSessionTransport(
     isDataChannelOpen: () => activeSession.value.isDataChannelOpen(),
     startChat: () => activeSession.value.startChat(),
     stopChat: () => activeSession.value.stopChat(),
+    stopChatFor: (kind: SessionTransportKind) => sessionFor(kind).stopChat(),
     sendUserMessage: (text: string) =>
       activeSession.value.sendUserMessage(text),
     sendFunctionCallOutput: (callId: string, output: string) =>
@@ -103,6 +115,7 @@ export function useSessionTransport(
       voiceSession.registerEventHandlers(handlers);
       textSession.registerEventHandlers(handlers);
       googleLiveSession.registerEventHandlers(handlers);
+      grokVoiceSession.registerEventHandlers(handlers);
     },
     transportKind,
     capabilities,

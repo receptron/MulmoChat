@@ -42,3 +42,19 @@ export const GOOGLE_LIVE_MODELS: GoogleLiveModelOption[] = [
 ];
 
 export const DEFAULT_GOOGLE_LIVE_MODEL_ID = GOOGLE_LIVE_MODELS[0].id;
+
+export interface GrokVoiceModelOption {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+export const GROK_VOICE_MODELS: GrokVoiceModelOption[] = [
+  {
+    id: "grok-voice-think-fast-2.0",
+    label: "Grok Voice Think Fast 2.0",
+    description: "xAI's speech-to-speech model with reasoning and tool use",
+  },
+];
+
+export const DEFAULT_GROK_VOICE_MODEL_ID = GROK_VOICE_MODELS[0].id;
