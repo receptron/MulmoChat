@@ -127,40 +127,68 @@ export function useRealtimeSession(
   // same reply runs. So a request in that window is held and sent after
   // response.done, once, with the held instructions joined (as in
   // useGrokVoiceSession, and MulmoGlass's openaiRealtime.ts).
-  let responseActive = false;
-  // response.create sent, response.created not seen yet. If OpenAI refuses
-  // it with an error, no response.done follows.
-  let responseRequested = false;
+  //
+  // The server also starts responses itself (the user's spoken turn), so a
+  // response.created or an error isn't necessarily about our request. Each
+  // request carries an event_id, which an error about it echoes
+  // (error.event_id), and the same id in the response's metadata, which
+  // response.created/done echo; only those settle it.
+  let responseRunning = false;
+  // Our response.create, sent and not yet settled.
+  let pendingRequest: { eventId: string; instructions?: string } | null = null;
   let heldResponse: { instructions: string[] } | null = null;
-  // The instructions of the response.create awaiting response.created.
-  let requestedInstructions: string | undefined;
+  let requestCount = 0;
+
+  const isResponseBusy = () => responseRunning || pendingRequest !== null;
+
+  const holdResponse = (instructions?: string, first = false) => {
+    heldResponse ??= { instructions: [] };
+    if (!instructions) return;
+    if (first) heldResponse.instructions.unshift(instructions);
+    else heldResponse.instructions.push(instructions);
+  };
 
   const requestResponse = (instructions?: string): boolean => {
-    if (responseActive) {
-      heldResponse ??= { instructions: [] };
-      if (instructions) heldResponse.instructions.push(instructions);
+    if (isResponseBusy()) {
+      holdResponse(instructions);
       return true;
     }
-    responseActive = true;
-    responseRequested = true;
-    requestedInstructions = instructions;
-    return sendDataChannelMessage({
+    requestCount += 1;
+    const eventId = `mulmochat_response_${requestCount}`;
+    const sent = sendDataChannelMessage({
       type: "response.create",
-      response: instructions ? { instructions } : {},
+      event_id: eventId,
+      response: {
+        ...(instructions ? { instructions } : {}),
+        metadata: { request_id: eventId },
+      },
     });
+    // A closed channel (a tool finishing after Stop) changes nothing, so the
+    // next session doesn't start out waiting for a response that never ran.
+    if (sent) pendingRequest = { eventId, instructions };
+    return sent;
   };
 
   const releaseHeldResponse = () => {
+    if (isResponseBusy() || !heldResponse) return;
     const held = heldResponse;
     heldResponse = null;
-    if (held) requestResponse(held.instructions.join("\n\n") || undefined);
+    requestResponse(held.instructions.join("\n\n") || undefined);
+  };
+
+  /** Our request's id, when `response` (from response.created/done) is it. */
+  const settlesPendingRequest = (response: unknown): boolean => {
+    const metadata = (response as { metadata?: { request_id?: unknown } })
+      ?.metadata;
+    return (
+      pendingRequest !== null && metadata?.request_id === pendingRequest.eventId
+    );
   };
 
   const resetResponseState = () => {
-    responseActive = false;
-    responseRequested = false;
+    responseRunning = false;
+    pendingRequest = null;
     heldResponse = null;
-    requestedInstructions = undefined;
   };
 
   const handleMessage = async (event: MessageEvent) => {
@@ -187,28 +215,27 @@ export function useRealtimeSession(
     switch (msg.type) {
       case "error":
         console.error("Error", msg.error);
-        // A response.create that raced a response the server started itself
-        // (the user's own turn): hold it again.
-        if (
-          (msg.error as { code?: unknown } | undefined)?.code ===
-          "conversation_already_has_active_response"
-        ) {
-          responseActive = true;
-          responseRequested = false;
-          heldResponse ??= { instructions: [] };
-          if (requestedInstructions) {
-            heldResponse.instructions.unshift(requestedInstructions);
+        {
+          const error = msg.error as
+            { code?: unknown; event_id?: unknown } | undefined;
+          if (pendingRequest && error?.event_id === pendingRequest.eventId) {
+            const refused = pendingRequest;
+            pendingRequest = null;
+            // Our request raced a response the server started itself (the
+            // user's own turn): hold it again, ahead of later ones.
+            if (error.code === "conversation_already_has_active_response") {
+              holdResponse(refused.instructions, true);
+              releaseHeldResponse();
+              break;
+            }
+            // Refused outright: no response follows. Send what was held.
+            handlers.onError?.(msg.error);
+            releaseHeldResponse();
+            break;
           }
-          requestedInstructions = undefined;
+          handlers.onError?.(msg.error);
           break;
         }
-        // Refused outright: no response.done will follow.
-        if (responseRequested) {
-          responseRequested = false;
-          responseActive = false;
-        }
-        handlers.onError?.(msg.error);
-        break;
       case "response.text.delta":
         handlers.onTextDelta?.(msg.delta ?? "");
         break;
@@ -244,14 +271,14 @@ export function useRealtimeSession(
         break;
       }
       case "response.created":
-        responseActive = true;
-        responseRequested = false;
-        requestedInstructions = undefined;
+        responseRunning = true;
+        if (settlesPendingRequest(msg.response)) pendingRequest = null;
         conversationActive.value = true;
         handlers.onConversationStarted?.();
         break;
       case "response.done":
-        responseActive = false;
+        responseRunning = false;
+        if (settlesPendingRequest(msg.response)) pendingRequest = null;
         conversationActive.value = false;
         handlers.onConversationFinished?.();
         releaseHeldResponse();
@@ -341,6 +368,7 @@ export function useRealtimeSession(
     if (chatActive.value || connecting.value) return;
 
     connecting.value = true;
+    resetResponseState();
 
     const modelId =
       options.getModelId?.({ startResponse: startResponse.value }) ??
