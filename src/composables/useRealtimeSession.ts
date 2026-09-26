@@ -121,6 +121,76 @@ export function useRealtimeSession(
     return true;
   };
 
+  // OpenAI refuses a response.create while a response is running
+  // (conversation_already_has_active_response), and a tool's follow-up often
+  // arrives while the model is still talking, or while another tool of the
+  // same reply runs. So a request in that window is held and sent after
+  // response.done, once, with the held instructions joined (as in
+  // useGrokVoiceSession, and MulmoGlass's openaiRealtime.ts).
+  //
+  // The server also starts responses itself (the user's spoken turn), so a
+  // response.created or an error isn't necessarily about our request. Each
+  // request carries an event_id, which an error about it echoes
+  // (error.event_id), and the same id in the response's metadata, which
+  // response.created/done echo; only those settle it.
+  let responseRunning = false;
+  // Our response.create, sent and not yet settled.
+  let pendingRequest: { eventId: string; instructions?: string } | null = null;
+  let heldResponse: { instructions: string[] } | null = null;
+  let requestCount = 0;
+
+  const isResponseBusy = () => responseRunning || pendingRequest !== null;
+
+  const holdResponse = (instructions?: string, first = false) => {
+    heldResponse ??= { instructions: [] };
+    if (!instructions) return;
+    if (first) heldResponse.instructions.unshift(instructions);
+    else heldResponse.instructions.push(instructions);
+  };
+
+  const requestResponse = (instructions?: string): boolean => {
+    if (isResponseBusy()) {
+      holdResponse(instructions);
+      return true;
+    }
+    requestCount += 1;
+    const eventId = `mulmochat_response_${requestCount}`;
+    const sent = sendDataChannelMessage({
+      type: "response.create",
+      event_id: eventId,
+      response: {
+        ...(instructions ? { instructions } : {}),
+        metadata: { request_id: eventId },
+      },
+    });
+    // A closed channel (a tool finishing after Stop) changes nothing, so the
+    // next session doesn't start out waiting for a response that never ran.
+    if (sent) pendingRequest = { eventId, instructions };
+    return sent;
+  };
+
+  const releaseHeldResponse = () => {
+    if (isResponseBusy() || !heldResponse) return;
+    const held = heldResponse;
+    heldResponse = null;
+    requestResponse(held.instructions.join("\n\n") || undefined);
+  };
+
+  /** Our request's id, when `response` (from response.created/done) is it. */
+  const settlesPendingRequest = (response: unknown): boolean => {
+    const metadata = (response as { metadata?: { request_id?: unknown } })
+      ?.metadata;
+    return (
+      pendingRequest !== null && metadata?.request_id === pendingRequest.eventId
+    );
+  };
+
+  const resetResponseState = () => {
+    responseRunning = false;
+    pendingRequest = null;
+    heldResponse = null;
+  };
+
   const handleMessage = async (event: MessageEvent) => {
     let msg: ToolCallMessage;
 
@@ -145,8 +215,27 @@ export function useRealtimeSession(
     switch (msg.type) {
       case "error":
         console.error("Error", msg.error);
-        handlers.onError?.(msg.error);
-        break;
+        {
+          const error = msg.error as
+            { code?: unknown; event_id?: unknown } | undefined;
+          if (pendingRequest && error?.event_id === pendingRequest.eventId) {
+            const refused = pendingRequest;
+            pendingRequest = null;
+            // Our request raced a response the server started itself (the
+            // user's own turn): hold it again, ahead of later ones.
+            if (error.code === "conversation_already_has_active_response") {
+              holdResponse(refused.instructions, true);
+              releaseHeldResponse();
+              break;
+            }
+            // Refused outright: no response follows. Send what was held.
+            handlers.onError?.(msg.error);
+            releaseHeldResponse();
+            break;
+          }
+          handlers.onError?.(msg.error);
+          break;
+        }
       case "response.text.delta":
         handlers.onTextDelta?.(msg.delta ?? "");
         break;
@@ -182,12 +271,17 @@ export function useRealtimeSession(
         break;
       }
       case "response.created":
+        responseRunning = true;
+        if (settlesPendingRequest(msg.response)) pendingRequest = null;
         conversationActive.value = true;
         handlers.onConversationStarted?.();
         break;
       case "response.done":
+        responseRunning = false;
+        if (settlesPendingRequest(msg.response)) pendingRequest = null;
         conversationActive.value = false;
         handlers.onConversationFinished?.();
+        releaseHeldResponse();
         break;
       case "input_audio_buffer.speech_started":
         handlers.onSpeechStarted?.();
@@ -264,6 +358,7 @@ export function useRealtimeSession(
     if (remoteAudioElement.value) {
       remoteAudioElement.value.srcObject = null;
     }
+    resetResponseState();
     chatActive.value = false;
     conversationActive.value = false;
     setMute(false);
@@ -273,6 +368,7 @@ export function useRealtimeSession(
     if (chatActive.value || connecting.value) return;
 
     connecting.value = true;
+    resetResponseState();
 
     const modelId =
       options.getModelId?.({ startResponse: startResponse.value }) ??
@@ -409,12 +505,7 @@ export function useRealtimeSession(
       return false;
     }
 
-    const responseSuccess = sendDataChannelMessage({
-      type: "response.create",
-      response: {},
-    });
-
-    return responseSuccess;
+    return requestResponse();
   };
 
   const sendFunctionCallOutput = (callId: string, output: string) => {
@@ -428,14 +519,8 @@ export function useRealtimeSession(
     });
   };
 
-  const sendInstructions = (instructions: string) => {
-    return sendDataChannelMessage({
-      type: "response.create",
-      response: {
-        instructions,
-      },
-    });
-  };
+  const sendInstructions = (instructions: string) =>
+    requestResponse(instructions);
 
   // A user message with the images; the model answers in the response that
   // the tool's instructions start.
