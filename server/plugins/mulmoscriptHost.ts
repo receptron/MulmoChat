@@ -12,6 +12,12 @@
 //     event for a beat edit, and the `autoGenerateMovie` background trigger.
 //   - mulmoScriptMediaRouter: GET /api/mulmoscript/media, the movie / PDF bytes
 //     for the View's download and clip buttons (host adapter fetchMediaBlob).
+//   - A beat that shows a saved picture (`image` of type "image" with a `path`
+//     source, as makeMovie writes, ./movieHost.ts) has no rendered PNG, which
+//     is all the package's `beatImage` returns, so the View showed it blank.
+//     The host answers `beatImage` for such a beat from the picture itself,
+//     only under artifacts/images/. This belongs in the package (MulmoClaude
+//     shows these beats blank too); until then it is a MulmoChat addition.
 //
 // Adapted from MulmoTerminal's server/backends/mulmoscript.ts
 // (https://github.com/receptron/mulmoterminal, MIT License, Copyright (c) 2026
@@ -38,6 +44,7 @@ import {
 } from "@mulmoclaude/mulmoscript-plugin/server";
 import type { SaveMulmoScriptArgs } from "@mulmoclaude/mulmoscript-plugin";
 import { artifactsFileOps, workspaceRoot } from "./workspace";
+import { imageMimeOfBytes } from "../utils/imageMime";
 import { publishPluginEvent } from "./events";
 import { logger } from "../utils/logger";
 import {
@@ -184,8 +191,79 @@ async function executeTool(body: Record<string, unknown>): Promise<unknown> {
   };
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const PICTURE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+
+/** A beat's saved picture (a `path` source under artifacts/images/) as a
+ *  data URI, or null when the beat has none or it can't be read. */
+async function pathSourcedBeatImage(
+  args: Record<string, unknown>,
+): Promise<string | null> {
+  const { filePath, beatIndex } = args;
+  if (typeof filePath !== "string" || typeof beatIndex !== "number") {
+    return null;
+  }
+  const story = mulmoScript().ops.resolveStory(filePath);
+  if (!story.ok) return null;
+  try {
+    const script: unknown = JSON.parse(
+      await fs.readFile(story.absolutePath, "utf8"),
+    );
+    const beats = isRecord(script) ? script.beats : undefined;
+    const image = Array.isArray(beats) ? beats[beatIndex]?.image : undefined;
+    const source = isRecord(image) ? image.source : undefined;
+    if (
+      !isRecord(image) ||
+      image.type !== "image" ||
+      !isRecord(source) ||
+      source.kind !== "path" ||
+      typeof source.path !== "string"
+    ) {
+      return null;
+    }
+    // Relative to the script, as mulmocast reads it; symlinks resolved.
+    const picture = await fs.realpath(
+      path.resolve(path.dirname(story.absolutePath), source.path),
+    );
+    const imagesRoot = await fs.realpath(
+      path.join(workspaceRoot(), "artifacts", "images"),
+    );
+    if (
+      !picture.startsWith(imagesRoot + path.sep) ||
+      !PICTURE_EXTENSIONS.has(path.extname(picture).toLowerCase())
+    ) {
+      return null;
+    }
+    const bytes = await fs.readFile(picture);
+    const mime = imageMimeOfBytes(new Uint8Array(bytes));
+    return mime ? `data:${mime};base64,${bytes.toString("base64")}` : null;
+  } catch {
+    return null;
+  }
+}
+
+async function dispatchMulmoScript(
+  args: Record<string, unknown>,
+): Promise<unknown> {
+  const answer = await mulmoScript().dispatch(args);
+  // No rendered picture: a beat that shows a saved one has it at its path.
+  if (
+    args.kind === "beatImage" &&
+    args.root === undefined &&
+    isRecord(answer) &&
+    answer.ok === true &&
+    answer.image === null
+  ) {
+    const image = await pathSourcedBeatImage(args);
+    if (image) return { ...answer, image };
+  }
+  return answer;
+}
+
 export const mulmoScriptHandlers = {
-  dispatch: (args: Record<string, unknown>) => mulmoScript().dispatch(args),
+  dispatch: dispatchMulmoScript,
   execute: executeTool,
 };
 

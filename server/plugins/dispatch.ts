@@ -21,6 +21,7 @@ import { artifactsFileOps } from "./workspace";
 import { RENDER_SHAPE_SCRIPT, renderShapeScript } from "./shapeRenderHost";
 import { xToolDefinitions, xToolHandlers } from "./xHost";
 import { sequenceHandlers } from "./sequenceHost";
+import { movieHandlers } from "./movieHost";
 import type { ToolDefinition } from "gui-chat-protocol";
 
 type Handler = (args: Record<string, unknown>) => Promise<unknown>;
@@ -56,6 +57,7 @@ export const pluginHostHandlers: Readonly<Record<string, PluginHostHandlers>> =
     renderShapeScript: { execute: renderShapeScript },
     ...xToolHandlers,
     ...sequenceHandlers,
+    ...movieHandlers,
   };
 
 /** Tools the host provides itself. The browser fetches these definitions

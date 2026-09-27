@@ -29,6 +29,7 @@ export const ROLES: Role[] = [
       "putQuestions",
       "presentDocument",
       "presentSlide",
+      "makeMovie",
       "generateImage",
       "editImage",
       "presentForm",
@@ -260,6 +261,7 @@ export const ROLES: Role[] = [
       "presentChart",
       "presentHtml",
       "presentSlide",
+      "makeMovie",
       "generateImage",
       "editImage",
       "searchWeb",
@@ -318,6 +320,7 @@ export const ROLES: Role[] = [
       "defineStoryboard",
       "presentPanel",
       "presentSlide",
+      "makeMovie",
       "switchRole",
     ],
     prompt:
