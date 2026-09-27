@@ -70,8 +70,12 @@ export function slideSequenceStep(
 // An identical slide asked for twice (Gemini Live) is shown once.
 const repeats = createRepeatGuard();
 
-const slideKey = ({ slide, totalSlides, title, imagePrompt }: SlideArgs) =>
-  JSON.stringify([slide, totalSlides, title, imagePrompt]);
+// With the slideshow's ID: the same slide asked for in a new slideshow is
+// drawn again, so that slideshow's record has it.
+const slideKey = (
+  slideshowId: string,
+  { slide, totalSlides, title, imagePrompt }: SlideArgs,
+) => JSON.stringify([slideshowId, slide, totalSlides, title, imagePrompt]);
 
 // The slideshow being shown. Slides carry no ID, so a slideshow is known by
 // its mode, its length and its first slide's title: slide 1 with another
@@ -164,7 +168,7 @@ async function presentSlide(
       instructions: slideShownInstructions(slide),
     };
   }
-  const key = slideKey(slide);
+  const key = slideKey(show.id, slide);
   if (await repeats.alreadyShown(key)) {
     // Not shown again, and no instructions: the model goes on by itself.
     return {

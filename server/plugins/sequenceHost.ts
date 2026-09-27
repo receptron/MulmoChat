@@ -103,27 +103,33 @@ function oneAtATime<T>(file: string, change: () => Promise<T>): Promise<T> {
   return run;
 }
 
-/** Change a record (null when there is none yet) and save it. */
+/** Change a record (null when there is none yet) and save it. Resolves to
+ *  whether it was saved: one that wasn't still works until the server
+ *  restarts, and the result says so, as for a picture that wasn't saved. */
 function updateRecord<T extends Slideshow | Storyboard>(
   dir: string,
   id: string,
   change: (record: T | null) => T,
-): Promise<void> {
+): Promise<boolean> {
   const file = recordFile(dir, id);
   return oneAtATime(file, async () => {
     const record = change(await readRecord<T>(file));
     records.set(file, record);
     try {
       await artifactsFileOps.write(file, JSON.stringify(record, null, 2));
+      return true;
     } catch (error) {
-      // It still works while the server runs.
       logger.warn("Could not save a sequence record", {
         file,
         error: String(error),
       });
+      return false;
     }
   });
 }
+
+const NOT_SAVED = (what: string) =>
+  `the ${what} could not be saved, so it lasts only until the server restarts`;
 
 /** A saved picture to draw from, or null (logged) when it can't be read. */
 async function loadReference(imagePath: string): Promise<InputImage | null> {
@@ -190,22 +196,26 @@ async function presentSlide(
   // A failure keeps the image host's message and instructions.
   if (!imageData) return image;
 
-  await updateRecord<Slideshow>(SLIDESHOWS_DIR, slideshowId, (saved) => {
-    const slideshow = saved ?? {
-      id: slideshowId,
-      title: "",
-      mode: slide.mode,
-      totalSlides: slide.totalSlides,
-      slides: {},
-    };
-    if (slide.slide === 1) slideshow.title = slide.title;
-    slideshow.slides[String(slide.slide)] = {
-      title: slide.title,
-      imagePrompt: slide.imagePrompt,
-      ...(imagePath && { imagePath }),
-    };
-    return slideshow;
-  });
+  const recorded = await updateRecord<Slideshow>(
+    SLIDESHOWS_DIR,
+    slideshowId,
+    (saved) => {
+      const slideshow = saved ?? {
+        id: slideshowId,
+        title: "",
+        mode: slide.mode,
+        totalSlides: slide.totalSlides,
+        slides: {},
+      };
+      if (slide.slide === 1) slideshow.title = slide.title;
+      slideshow.slides[String(slide.slide)] = {
+        title: slide.title,
+        imagePrompt: slide.imagePrompt,
+        ...(imagePath && { imagePath }),
+      };
+      return slideshow;
+    },
+  );
 
   const data: SlideData = {
     imageData,
@@ -224,6 +234,7 @@ async function presentSlide(
     message: [
       `${noun} ${slide.slide} of ${slide.totalSlides} of slideshow "${slideshowId}" is on the screen`,
       imagePath ? `saved to ${imagePath}` : "",
+      recorded ? "" : NOT_SAVED("slideshow"),
     ]
       .filter(Boolean)
       .join("; "),
@@ -277,7 +288,7 @@ async function defineStoryboard(
     })),
     panels: {},
   };
-  await updateRecord<Storyboard>(
+  const recorded = await updateRecord<Storyboard>(
     STORYBOARDS_DIR,
     storyboard.id,
     () => storyboard,
@@ -311,6 +322,7 @@ async function defineStoryboard(
       missing.length
         ? `no sheet for ${missing.join("; ")}: they will be drawn from their description`
         : "",
+      recorded ? "" : NOT_SAVED("storyboard"),
     ]
       .filter(Boolean)
       .join("; "),
@@ -402,18 +414,22 @@ async function presentPanel(
     parsed.panel < storyboard.totalPanels && parsed.choices.length >= 2
       ? parsed.choices
       : [];
-  await updateRecord<Storyboard>(STORYBOARDS_DIR, storyboard.id, (saved) => {
-    const latest = saved ?? storyboard;
-    if (choices.length) latest.interactive = true;
-    latest.panels[String(parsed.panel)] = {
-      caption: parsed.caption,
-      characters: cast.map(({ character }) => character.name),
-      imagePrompt: parsed.imagePrompt,
-      ...(imagePath && { imagePath }),
-      ...(choices.length && { choices }),
-    };
-    return latest;
-  });
+  const recorded = await updateRecord<Storyboard>(
+    STORYBOARDS_DIR,
+    storyboard.id,
+    (saved) => {
+      const latest = saved ?? storyboard;
+      if (choices.length) latest.interactive = true;
+      latest.panels[String(parsed.panel)] = {
+        caption: parsed.caption,
+        characters: cast.map(({ character }) => character.name),
+        imagePrompt: parsed.imagePrompt,
+        ...(imagePath && { imagePath }),
+        ...(choices.length && { choices }),
+      };
+      return latest;
+    },
+  );
 
   const data: PanelData = {
     imageData,
@@ -434,6 +450,7 @@ async function presentPanel(
       unknown.length
         ? `not in the cast, so drawn from the prompt alone: ${unknown.join(", ")}`
         : "",
+      recorded ? "" : NOT_SAVED("storyboard"),
     ]
       .filter(Boolean)
       .join("; "),
