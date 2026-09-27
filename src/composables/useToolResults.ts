@@ -45,6 +45,15 @@ interface UseToolResultsOptions {
   scrollCurrentResultToTop: () => void;
   onToolCallError?: (toolName: string, error: string) => void;
   switchRole?: (roleId: string) => void;
+  /** Every tool result, with its arguments and when the call started
+   *  (performance.now()). Returns instructions that replace the result's
+   *  (useSequence: a step asked for before the user spoke). */
+  onResult?: (
+    name: string,
+    args: Record<string, unknown>,
+    result: ToolResult,
+    startedAt: number,
+  ) => string | undefined;
 }
 
 interface ToolCallMessage {
@@ -144,6 +153,7 @@ export function useToolResults(
   };
 
   const handleToolCall = async ({ msg, rawArgs }: HandleToolCallArgs) => {
+    const startedAt = performance.now();
     try {
       const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
       isGeneratingImage.value = true;
@@ -240,7 +250,11 @@ export function useToolResults(
         options.sendInstructions(plugin.waitingMessage);
       }
 
-      const result = await options.toolExecute(context, msg.name, args);
+      const executed = await options.toolExecute(context, msg.name, args);
+      const replaced = options.onResult?.(msg.name, args, executed, startedAt);
+      const result = replaced
+        ? { ...executed, instructions: replaced }
+        : executed;
       console.log("TOOL RESULT", result);
 
       // Check if the operation was cancelled by the user

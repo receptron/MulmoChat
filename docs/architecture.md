@@ -18,16 +18,16 @@ The reference description of how MulmoChat is built: directory layout, session t
 
 ## Main View (src/views/HomeView.vue)
 
-HomeView orchestrates the UI: it creates `useUserPreferences`, `useSessionTransport`, `useToolResults` and `useScrolling`, routes tool calls from the session to `useToolResults`, and renders the selected result on the main canvas with `getToolPlugin(toolName).viewComponent`. The sidebar renders each result with the plugin's `previewComponent`. Listener-mode audio gating also lives here.
+HomeView orchestrates the UI: it creates `useUserPreferences`, `useSessionTransport`, `useToolResults`, `useSequence` and `useScrolling`, routes tool calls from the session to `useToolResults`, and renders the selected result on the main canvas with `getToolPlugin(toolName).viewComponent`. The sidebar renders each result with the plugin's `previewComponent`. Listener-mode audio gating also lives here.
 
 ## Session Transports
 
 `useSessionTransport` (src/composables/useSessionTransport.ts) holds all four sessions and exposes the active one through a common interface (`UseRealtimeSessionReturn`) plus a `capabilities` object. The transport is chosen by the user's model kind preference:
 
 - **`voice-realtime`** — `useVoiceRealtimeSession` → `useRealtimeSession`: OpenAI Realtime over WebRTC. Fetches an ephemeral key from `/api/start?model=<id>` (the key is bound to that model), opens an `oai-events` data channel, streams microphone audio, accumulates function-call arguments and dispatches tool calls. A `response.create` (a typed message, a tool's instructions) asked for while a response runs is held and sent after `response.done`, once, with the held instructions joined; OpenAI would reject it with `conversation_already_has_active_response`. Each request carries an `event_id`, also put in the response's `metadata.request_id`, because the server starts responses of its own (the user's spoken turn): only an error with that `event_id` or a `response.created`/`done` with that metadata settles it. Models in `config/models.ts` (`REALTIME_MODELS`).
-- **`voice-google-live`** — `useGoogleLiveSession`: Gemini Live API over a WebSocket opened directly from the browser with the Gemini key returned by `/api/start`, with PCM encoding/playback via `utils/audioCodec.ts` and `utils/audioStreamManager.ts`. Models in `GOOGLE_LIVE_MODELS`.
+- **`voice-google-live`** — `useGoogleLiveSession`: Gemini Live API over a WebSocket opened directly from the browser with the Gemini key returned by `/api/start`, with PCM encoding/playback via `utils/audioCodec.ts` and `utils/audioStreamManager.ts`. Gemini Live sends no speech-started event, so the session asks for a transcript of the user's speech (`inputAudioTranscription`) and reports speech started on its first text in a turn, or on `interrupted`; the transcript can arrive seconds late. Models in `GOOGLE_LIVE_MODELS`.
 - **`voice-grok`** — `useGrokVoiceSession`: xAI's Voice Agent API over a WebSocket opened from the browser. The events are OpenAI Realtime's; the audio is PCM16 through `AudioStreamManager`, like Gemini Live. The server mints a short-lived client secret (`/api/start?voice=grok`, from `XAI_API_KEY`), which the browser passes as the `xai-client-secret.<secret>` subprotocol. Follow-up instructions go in as user messages (a `response.create` with `instructions` would replace the system prompt), and a `response.create` asked for while a response runs is sent after it. Grok takes no image input, so `sendImagesToModel` returns false. Models in `GROK_VOICE_MODELS`.
-- **`text-rest`** — `useTextSession`: keeps the conversation history on the client and calls the stateless `/api/text/generate` endpoint for each turn. Model IDs are `provider:model` strings (`config/textModels.ts`, default `openai:gpt-4o-mini`).
+- **`text-rest`** — `useTextSession`: keeps the conversation history on the client and calls the stateless `/api/text/generate` endpoint for each turn. Model IDs are `provider:model` strings (`config/textModels.ts`, default `openai:gpt-4o-mini`). Required instructions sent while no turn runs (the host asking the model to go on with a slideshow) start a turn of their own.
 
 All four share the same event handler contract (`onToolCall`, `onTextDelta`, conversation start/stop, speech start/stop) and send tool outputs and follow-up instructions back through the active session.
 
@@ -36,7 +36,7 @@ All four share the same event handler contract (`onToolCall`, `onTextDelta`, con
 - Maintains the array of results and the selected result
 - Executes plugins via `toolExecute(context, toolName, args)`; the context includes the current result, roles, and `setConfig` (only for plugins in `PLUGINS_WITH_SET_CONFIG`)
 - Replaces the existing result when `result.updating === true` (keeping its UUID), otherwise appends
-- Sends follow-up `instructions` unless suppressed (plugins can force them with `instructionsRequired`)
+- Sends follow-up `instructions` unless suppressed (plugins can force them with `instructionsRequired`); `onResult` sees every result first and may replace its instructions (`useSequence`)
 - Honors `delayAfterExecution` and shows `generatingMessage` while running
 - On failure, sends a retry instruction back to the model
 - Handles uploaded files and pasted images through plugin input handlers
@@ -60,6 +60,8 @@ The old "system prompts"/"modes" are now **roles** (`general`, `tutor`, `listene
 - `fixed` — only the plugins listed in `availablePlugins`
 
 The model can change role through the `switchRole` plugin, whose tool definition is generated from `ROLES`.
+
+presentSlide is in the Tutor and Office roles; the Storyteller role has the storyboard tools and presentSlide.
 
 ## Plugin System
 
@@ -92,6 +94,7 @@ Some plugins run their `execute()` on the server instead of in the browser. The 
 - **Plugin events:** a server backend can send events to its plugin's Views outside a request with `publishPluginEvent(toolName, event, data)` (`server/plugins/events.ts`). They stream to the browser as server-sent events at `GET /api/plugin-events` (loopback only, like the other plugin routes), and the runtime delivers each one only to that tool's `pubsub.subscribe(event)`.
 - **renderShapeScript:** a host tool (no package registers it) that renders a ShapeScript model to a PNG sheet of four camera angles with puppeteer, so the model can check its 3D model before presenting it. `server/plugins/shapeRenderHost.ts` wraps `@mulmoclaude/shapescript-plugin/render`, saves the sheet under `artifacts/renders/`, and reads sources only from `artifacts/shapes/`. That entry is Node-only, so the server sends the definition (`GET /api/plugin-host-tools`, `hostToolDefinitions()` in `dispatch.ts`) and `src/tools/hostTools.ts` fills it in at startup; the result shows with generateImage's image View.
 - **readXPost / searchX:** host tools from `@mulmoclaude/x-plugin`, the package MulmoClaude and MulmoTerminal register as MCP tools. It is server-only (it reads `X_BEARER_TOKEN` and has no View), so `server/plugins/xHost.ts` sends the definitions, only when the token is set (MulmoClaude's `requiredEnv` rule), and runs the calls. The model gets the package's text as the result message; `src/tools/xTools.ts` shows the same text in the canvas. They are in the Office and Brainstorm roles.
+- **Slideshows and storyboards:** `presentSlide` (a slideshow, or with `mode: "steps"` a step-by-step guide), `defineStoryboard` and `presentPanel` (a story in pictures, interactive when panels offer `choices`) come from MulmoGlass, with the same arguments and files. They are host tools whose definitions the browser has (`server/plugins/sequenceTools.ts`, browser-safe). The server draws and saves (`server/plugins/sequenceHost.ts`, the route passes it the request's `config`): each character's reference sheet, then each panel with the sheets of its characters as input images, and each guide step with the step before it; records go to `artifacts/slideshows/<id>.json` and `artifacts/storyboards/<id>.json`. The browser decides first what depends on the user (`src/tools/presentSlide.ts`, `storyboard.ts`): a guide step or a panel after one with choices is refused until the user has spoken (or typed) since it appeared, or while the one before it is still drawn; going back to a guide step shows the saved result again; a call repeated within a minute is dropped. `useSequence` asks the model once to go on when it ends a reply mid-sequence, and stops when the user speaks; results carry `instructionsRequired` so text chat takes a turn for each.
 - **Images for the model:** a result can set `imagesForModel` (image data URLs, a MulmoChat extension of `ToolResult`; `getImagesForModel` in `src/tools/index.ts`). `useToolResults` passes them to the transport's `sendImagesToModel` after the tool output: Realtime adds a user message with `input_image`, Gemini Live an open user turn with `inlineData` (Grok voice takes no images), and text chat a user message with `images` (converted per provider in `server/llm/providers/`, validated by `server/llm/images.ts`). Text chat holds them until the turn's tool outputs are all in, then gives the model a follow-up turn to look (at most 3 in a row).
 - **Required instructions:** a result with `instructionsRequired` is one the model must answer (readXPost's post, a step to read aloud). Its instructions are sent even with "suppress instructions" on, and `sendInstructions(instructions, required)` tells the text transport to take the same follow-up turn as for images instead of holding the instructions for the user's next message. Voice transports answer every instruction anyway.
 - **presentMulmoScript:** `server/plugins/mulmoscriptHost.ts` gives the package's `./server` ops MulmoChat's backend. Storyboards are saved in `<workspace>/artifacts/stories/`, and mulmocast writes images, audio, movies and PDFs next to them. Generation needs ffmpeg and reads `OPENAI_API_KEY` / `GEMINI_API_KEY` from the server's environment. Progress (`generation`) and model edits (`scriptChanged`) reach open Views as plugin events. The View downloads movies and PDFs from `GET /api/mulmoscript/media` through a host adapter (`src/tools/mulmoScriptHost.ts`). Unlike MulmoTerminal, scripts can't be opened by absolute path or from other directories.
@@ -150,7 +153,7 @@ gui-chat-protocol's `ToolDefinition.prompt` is for the host's system prompt: `pl
 4. The function output is sent back through the transport, followed by optional `instructions`
 
 ### User Text Message
-1. Sidebar emits `send-text-message`
+1. Sidebar emits `send-text-message`; a typed message counts as the user speaking for `useSequence`
 2. HomeView waits for the conversation to be inactive (`SESSION_CONFIG.MESSAGE_SEND_RETRY_ATTEMPTS` × `MESSAGE_SEND_RETRY_DELAY_MS`)
 3. Calls `session.sendUserMessage(text)` on the active transport
 

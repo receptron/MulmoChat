@@ -58,6 +58,7 @@ interface GoogleModelTurn {
 
 interface GoogleServerContent {
   modelTurn?: GoogleModelTurn;
+  inputTranscription?: { text?: string };
   turnComplete?: boolean;
   interrupted?: boolean;
 }
@@ -85,6 +86,9 @@ interface GoogleToolDeclarations {
 
 interface GoogleSetupConfig {
   model: string;
+  // A transcript of the user's speech: Gemini Live sends no speech-started
+  // event, so its first text in a turn is the sign that the user spoke.
+  inputAudioTranscription?: Record<string, never>;
   generationConfig?: GoogleGenerationConfig;
   systemInstruction?: GoogleSystemInstruction;
   tools?: GoogleToolDeclarations[];
@@ -117,6 +121,9 @@ export function useGoogleLiveSession(
   const startResponse = ref<StartApiResponse | null>(null);
   const pendingToolCalls = new Map<string, PendingToolCall>();
   const processedToolCalls = new Set<string>();
+  // Set by the user's first transcribed words in a turn, cleared when the
+  // model's turn starts (onSpeechStarted / onSpeechStopped).
+  let userSpeaking = false;
   const remoteAudioElement = shallowRef<HTMLAudioElement | null>(null);
 
   const googleLive: GoogleLiveState = {
@@ -202,6 +209,12 @@ export function useGoogleLiveSession(
 
     // Handle tool calls (Google's actual format)
     if (data.toolCall) {
+      // A reply can be a tool call alone, with no modelTurn: the user's turn
+      // is over here too, so a "stop" said while the tool runs is new speech.
+      if (userSpeaking) {
+        userSpeaking = false;
+        handlers.onSpeechStopped?.();
+      }
       const functionCalls = data.toolCall.functionCalls || [];
 
       for (const fc of functionCalls) {
@@ -242,8 +255,23 @@ export function useGoogleLiveSession(
     if (data.serverContent) {
       const serverContent = data.serverContent;
 
+      // The user is speaking (see inputAudioTranscription): once per turn.
+      // The transcript can arrive seconds late; `interrupted` (the user
+      // talked over the model) says so sooner when the model was speaking.
+      if (
+        (serverContent.inputTranscription?.text || serverContent.interrupted) &&
+        !userSpeaking
+      ) {
+        userSpeaking = true;
+        handlers.onSpeechStarted?.();
+      }
+
       // Check for model turn
       if (serverContent.modelTurn) {
+        if (userSpeaking) {
+          userSpeaking = false;
+          handlers.onSpeechStopped?.();
+        }
         conversationActive.value = true;
         handlers.onConversationStarted?.();
 
@@ -355,6 +383,7 @@ export function useGoogleLiveSession(
     const setupConfig: GoogleSetupConfig = {
       model: modelId.startsWith("models/") ? modelId : `models/${modelId}`,
       generationConfig,
+      inputAudioTranscription: {},
     };
 
     // Add system instruction if provided
@@ -425,6 +454,7 @@ export function useGoogleLiveSession(
   };
 
   const stopChat = () => {
+    userSpeaking = false;
     if (googleLive.ws) {
       googleLive.ws.close();
       googleLive.ws = null;

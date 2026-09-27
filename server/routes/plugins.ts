@@ -69,7 +69,7 @@ router.post(
       if (dispatch && typeof args.kind === "string") {
         run = () => dispatch(args);
       } else if (execute) {
-        run = () => execute(args);
+        run = () => execute(args, config);
       } else if (plugin) {
         run = () =>
           plugin.execute(

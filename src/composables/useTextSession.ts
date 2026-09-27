@@ -255,11 +255,6 @@ export function useTextSession(
 
     await ensureStartResponse();
 
-    const resolvedModel = resolveTextModelId(
-      options.getModelId?.({ startResponse: startResponse.value }) ??
-        DEFAULT_TEXT_MODEL.rawId,
-    );
-
     console.log("SENDING USER MESSAGE", `"${trimmed}"`);
 
     // Append user message to conversation history
@@ -267,6 +262,16 @@ export function useTextSession(
       role: "user",
       content: trimmed,
     });
+
+    return runConversation();
+  };
+
+  /** Run the model on the conversation so far, with its follow-up turns. */
+  const runConversation = async (): Promise<boolean> => {
+    const resolvedModel = resolveTextModelId(
+      options.getModelId?.({ startResponse: startResponse.value }) ??
+        DEFAULT_TEXT_MODEL.rawId,
+    );
 
     conversationActive.value = true;
     handlers.onConversationStarted?.();
@@ -333,18 +338,22 @@ export function useTextSession(
     if (!trimmed) {
       return false;
     }
-    if (required) followUpRequested = true;
-
-    // For text sessions, we don't make an immediate API call.
     // Instructions are appended to conversation history as a user message
-    // and will be sent with the next API call.
-    // This prevents the "tool_use without tool_result" error when
-    // instructions are sent during tool call processing.
+    // and sent with the next API call, not at once: during a turn that
+    // would put them between an assistant tool call and its outputs, which
+    // the APIs reject.
     console.log("QUEUING INSTRUCTIONS (text session)", `"${trimmed}"`);
     conversationMessages.value.push({
       role: "user",
       content: `[System instruction] ${trimmed}`,
     });
+    if (required) {
+      // Required ones get a turn: a follow-up of the running conversation,
+      // or, when none is running (the host asking the model to go on with a
+      // slideshow, useSequence), one of their own.
+      if (conversationActive.value) followUpRequested = true;
+      else if (chatActive.value) void runConversation();
+    }
 
     return true;
   };
