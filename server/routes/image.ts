@@ -12,6 +12,7 @@ import {
   ImageGenerationError,
   errorMessageOf,
 } from "../utils/imageGenerationError";
+import { IMAGE_EXTENSIONS, toInputImage } from "../utils/imageMime";
 dotenv.config({ quiet: true });
 
 const router: Router = express.Router();
@@ -30,6 +31,8 @@ export interface OpenAIImageResult {
 
 interface ImageRequest {
   prompt: string;
+  /** Input images (base64 or data URLs): the image to edit, or references
+   *  such as a character sheet. */
   images?: string[];
   model?: string;
 }
@@ -61,13 +64,16 @@ export async function generateGeminiImage({
     model: modelName,
   });
 
+  // Input images first, then the instruction, as MulmoClaude's
+  // /api/edit-image sends them; each with its real type (Gemini and xAI
+  // return JPEG, which used to be sent as image/png).
   const contents: {
     text?: string;
     inlineData?: { mimeType: string; data: string };
-  }[] = [{ text: prompt }];
-  for (const image of images ?? []) {
-    contents.push({ inlineData: { mimeType: "image/png", data: image } });
-  }
+  }[] = [
+    ...(images ?? []).map((image) => ({ inlineData: toInputImage(image) })),
+    { text: prompt },
+  ];
 
   const response = await ai.models.generateContent({
     model: modelName,
@@ -175,6 +181,21 @@ export async function generateOpenAIImage({
     ? { response_format: "b64_json" as const }
     : {};
 
+  // Every input image goes to images.edit (GPT Image models take several),
+  // each with its real type.
+  const editImages = hasEditImage
+    ? await Promise.all(
+        images.map((image, i) => {
+          const { mimeType, data } = toInputImage(image);
+          return toFile(
+            Buffer.from(data, "base64"),
+            `image${i}.${IMAGE_EXTENSIONS[mimeType]}`,
+            { type: mimeType },
+          );
+        }),
+      )
+    : [];
+
   let data: OpenAI.Images.ImagesResponse;
   try {
     data = hasEditImage
@@ -182,9 +203,7 @@ export async function generateOpenAIImage({
           model: modelName,
           prompt,
           size,
-          image: await toFile(Buffer.from(images[0], "base64"), "image.png", {
-            type: "image/png",
-          }),
+          image: editImages.length === 1 ? editImages[0] : editImages,
           ...responseFormat,
         })
       : await client.images.generate({

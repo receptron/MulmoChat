@@ -749,8 +749,9 @@ MulmoChat の `context.app` は以下の機能を提供します：
 |------|------|--------|-----------------|
 | `getConfig(key)` | 設定値を取得 | `T \| undefined` | SetImageStyle |
 | `setConfig(key, value)` | 設定値を保存 ※許可されたプラグインのみ | `void` | SetImageStyle |
-| `generateImage(prompt)` | 画像生成 | `Promise<string>` | GenerateImage |
-| `editImage(prompt)` | 画像編集 | `Promise<string>` | EditImage |
+| `generateImage(prompt)` | 画像を生成します。サーバー（サーバーで動くプラグイン）では `artifacts/images/<YYYY>/<MM>/<id>.<ext>` にも保存され、そのパスが `data.imagePath` とメッセージに入ります（保存できた場合のみ。保存できなかった場合は、パスがないことをメッセージで伝えます） | `Promise<ToolResult>` | GenerateImage |
+| `editImage(prompt)` | 画面で選択中の画像を編集します。サーバーでは保存済みのファイル（`data.imagePath`。保存されていない画像は先に保存）を編集し、結果も保存します | `Promise<ToolResult>` | EditImage |
+| `editImages(prompt, imagePaths)` | サーバーのみ。保存済みの画像 1〜8 枚（`artifacts/images/…`、`.png`/`.jpg`/`.webp`）とプロンプトから新しい画像を作ります。1 枚の画像のスタイル変更や、キャラクターシートなどを参照画像にした描画に使います。引数は MulmoClaude の `editImages` と同じです。ComfyUI は画像を使わず、その旨を結果に書きます | `Promise<ToolResult>` | — |
 | `generateHtml({ prompt })` | LLM で HTML 生成 | `Promise<{ success, html?, error? }>` | GenerateHtml, EditHtml |
 | `browseUrl(url)` | Web ページ取得 | `Promise<BrowseResult>` | Browse |
 | `getTwitterEmbed(url)` | Twitter 埋め込み取得 | `Promise<string>` | Browse |

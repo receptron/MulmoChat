@@ -749,8 +749,9 @@ MulmoChat's `context.app` provides the following features:
 |---------|-------------|--------------|-----------------|
 | `getConfig(key)` | Get configuration value | `T \| undefined` | SetImageStyle |
 | `setConfig(key, value)` | Save configuration value *Allowed plugins only | `void` | SetImageStyle |
-| `generateImage(prompt)` | Generate image | `Promise<string>` | GenerateImage |
-| `editImage(prompt)` | Edit image | `Promise<string>` | EditImage |
+| `generateImage(prompt)` | Generate an image. On the server (server-run plugins) it is also saved as `artifacts/images/<YYYY>/<MM>/<id>.<ext>`, with the path in `data.imagePath` and in the message (only when the save worked; otherwise the message says there is no path) | `Promise<ToolResult>` | GenerateImage |
+| `editImage(prompt)` | Edit the image selected on the screen. On the server it edits the saved file (`data.imagePath`; an unsaved image is saved first) and saves the result | `Promise<ToolResult>` | EditImage |
+| `editImages(prompt, imagePaths)` | Server only: a new image from 1 to 8 saved images (`artifacts/images/…`, `.png`/`.jpg`/`.webp`) and a prompt, to restyle one or to draw with references such as character sheets. The same arguments as MulmoClaude's `editImages`. ComfyUI ignores the images and says so | `Promise<ToolResult>` | — |
 | `generateHtml({ prompt })` | Generate HTML with LLM | `Promise<{ success, html?, error? }>` | GenerateHtml, EditHtml |
 | `browseUrl(url)` | Fetch web page | `Promise<BrowseResult>` | Browse |
 | `getTwitterEmbed(url)` | Get Twitter embed | `Promise<string>` | Browse |
