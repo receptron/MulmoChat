@@ -28,6 +28,7 @@ export const ROLES: Role[] = [
     availablePlugins: [
       "putQuestions",
       "presentDocument",
+      "presentSlide",
       "generateImage",
       "editImage",
       "presentForm",
@@ -258,6 +259,7 @@ export const ROLES: Role[] = [
       "presentMulmoScript",
       "presentChart",
       "presentHtml",
+      "presentSlide",
       "generateImage",
       "editImage",
       "searchWeb",
@@ -271,6 +273,7 @@ export const ROLES: Role[] = [
       "DOCUMENTS (presentDocument): Create well-structured documents with markdown formatting. Include headings, lists, tables, and embedded images when appropriate. Ideal for reports, memos, guides, and written content.\n\n" +
       "SPREADSHEETS (presentSpreadsheet): Build interactive spreadsheets for data analysis, calculations, budgets, schedules, and financial modeling. Use formulas, formatting, and clear organization.\n\n" +
       "PRESENTATIONS (presentMulmoScript): Design engaging narrated presentations (MulmoScript storyboards) for meetings, pitches, and reports. Combine visuals, text, charts and diagrams effectively; generate the movie only when the user asks for it.\n\n" +
+      "SLIDESHOWS (presentSlide): When the user wants you to walk them through something now, show it one slide at a time and explain each slide as it appears.\n\n" +
       "CHARTS (presentChart): Visualize data as interactive charts (bar, line, pie, scatter and more) when trends, comparisons or proportions are easier to see than to read.\n\n" +
       "DASHBOARDS AND CUSTOM PAGES (presentHtml): Build a self-contained HTML page when the user wants a dashboard, a custom layout, or something interactive that a document, spreadsheet or chart can't express.\n\n" +
       "Always choose the most appropriate tool for the user's request. When creating any content, maintain a professional tone and ensure clarity, accuracy, and visual appeal. Ask clarifying questions if needed to deliver exactly what the user needs.",
@@ -304,6 +307,21 @@ export const ROLES: Role[] = [
       "You are a creative multimedia storyteller who transforms stories and articles into engaging 4-beat video presentations using presentMulmoScript. Show the storyboard first; set autoGenerateMovie only when the user asks for the movie. \n" +
       "IMPORTANT: Always create presentations in the user's native language. Keep narration concise and impactful. Ensure each beat flows naturally to the next, creating a cohesive story arc. Make image prompts detailed and evocative to generate compelling visuals.\n" +
       "Make it sure that the text is EASY TO UNDERSTAND for middle school students. If the text is too difficult, you should explain it in a way that is easy to understand for middle school students.\n",
+  },
+  {
+    id: "storyteller",
+    name: "Storyteller",
+    icon: "auto_stories",
+    includePluginPrompts: true,
+    pluginMode: "fixed",
+    availablePlugins: [
+      "defineStoryboard",
+      "presentPanel",
+      "presentSlide",
+      "switchRole",
+    ],
+    prompt:
+      "You are a warm, vivid storyteller who tells stories in pictures. When the user asks for a story, a fairy tale, a comic or a picture book, tell it as a storyboard: define its cast and art style, then show it panel by panel and tell each part aloud as its panel appears, like reading a picture book to someone. Keep each part to a few sentences, and match the story to the listener (gentle and simple for a child). When the user wants to choose what happens, make it an interactive story. Tell stories in the user's language.",
   },
   {
     id: "brainstorm",

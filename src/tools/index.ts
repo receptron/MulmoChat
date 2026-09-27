@@ -51,6 +51,8 @@ import { wrapWithPluginRuntime } from "./pluginRuntime";
 import { withMulmoScriptHostAdapter } from "./mulmoScriptHost";
 import { RenderShapeScriptPlugin } from "./renderShapeScript";
 import { ReadXPostPlugin, SearchXPlugin } from "./xTools";
+import { PresentSlidePlugin } from "./presentSlide";
+import { DefineStoryboardPlugin, PresentPanelPlugin } from "./storyboard";
 
 // generateImage's own prompt says the model MUST draw whenever it talks about
 // places, objects, people, movies or books. Every role that includes plugin
@@ -198,6 +200,9 @@ const registeredPlugins = [
   AkinatorPlugin,
   AvatarPlugin,
   ServerChartPlugin,
+  PresentSlidePlugin,
+  DefineStoryboardPlugin,
+  PresentPanelPlugin,
 ];
 
 // Every plugin's views get the browser plugin runtime (useRuntime()), which

@@ -6,8 +6,10 @@
 //   - execute: the tool call, when the host must do more than call the
 //     package's execute() (presentMulmoScript's path guard and movie trigger),
 //     or for a host tool that no registered package provides
-//     (renderShapeScript, readXPost, searchX; their definitions are in
-//     hostToolDefinitions()).
+//     (renderShapeScript, readXPost, searchX, whose definitions are in
+//     hostToolDefinitions(); and the slideshow and storyboard tools, whose
+//     definitions the browser has, ./sequenceTools.ts). It gets the
+//     request's `config` too, the per-user settings runOnServer sends.
 // Anything not listed here goes to the package's execute().
 import {
   executeShapeScriptDispatch,
@@ -18,13 +20,17 @@ import { mulmoScriptHandlers } from "./mulmoscriptHost";
 import { artifactsFileOps } from "./workspace";
 import { RENDER_SHAPE_SCRIPT, renderShapeScript } from "./shapeRenderHost";
 import { xToolDefinitions, xToolHandlers } from "./xHost";
+import { sequenceHandlers } from "./sequenceHost";
 import type { ToolDefinition } from "gui-chat-protocol";
 
 type Handler = (args: Record<string, unknown>) => Promise<unknown>;
 
 export interface PluginHostHandlers {
   dispatch?: Handler;
-  execute?: Handler;
+  execute?: (
+    args: Record<string, unknown>,
+    config: unknown,
+  ) => Promise<unknown>;
 }
 
 // presentShapeScript's View loads and saves its `.shape` source (loadShape /
@@ -49,6 +55,7 @@ export const pluginHostHandlers: Readonly<Record<string, PluginHostHandlers>> =
     presentMulmoScript: mulmoScriptHandlers,
     renderShapeScript: { execute: renderShapeScript },
     ...xToolHandlers,
+    ...sequenceHandlers,
   };
 
 /** Tools the host provides itself. The browser fetches these definitions

@@ -58,6 +58,11 @@ export interface UseRealtimeSessionReturn {
   /** Show the model images a tool returned (image data URLs), after that
    *  tool's output and before its instructions. */
   sendImagesToModel: (images: string[], caption: string) => boolean;
+  /** Give the model a turn for required instructions that are still queued
+   *  unanswered (text chat stopped at its follow-up limit). False when none
+   *  are, which is always the case on the voice transports: they answer
+   *  every instruction when it is sent. */
+  continueConversation: () => boolean;
   setMute: (muted: boolean) => void;
   setLocalAudioEnabled: (enabled: boolean) => void;
   attachRemoteAudioElement: (audio: HTMLAudioElement | null) => void;
@@ -553,6 +558,7 @@ export function useRealtimeSession(
     sendFunctionCallOutput,
     sendInstructions,
     sendImagesToModel,
+    continueConversation: () => false,
     setMute,
     setLocalAudioEnabled,
     attachRemoteAudioElement,

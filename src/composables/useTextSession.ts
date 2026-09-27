@@ -74,6 +74,9 @@ export function useTextSession(
   // A tool's required instructions were queued: the model answers them in a
   // follow-up turn instead of with the user's next message.
   let followUpRequested = false;
+  // Required instructions are queued and no turn has answered them: the
+  // follow-up limit stopped the conversation first (continueConversation).
+  let requiredUnanswered = false;
 
   const flushPendingImages = () => {
     for (const { images, caption } of pendingImages.splice(0)) {
@@ -135,6 +138,7 @@ export function useTextSession(
 
   const stopChat = () => {
     chatGeneration++;
+    requiredUnanswered = false;
     chatActive.value = false;
     conversationActive.value = false;
     conversationMessages.value = [];
@@ -255,11 +259,6 @@ export function useTextSession(
 
     await ensureStartResponse();
 
-    const resolvedModel = resolveTextModelId(
-      options.getModelId?.({ startResponse: startResponse.value }) ??
-        DEFAULT_TEXT_MODEL.rawId,
-    );
-
     console.log("SENDING USER MESSAGE", `"${trimmed}"`);
 
     // Append user message to conversation history
@@ -268,9 +267,21 @@ export function useTextSession(
       content: trimmed,
     });
 
+    return runConversation();
+  };
+
+  /** Run the model on the conversation so far, with its follow-up turns. */
+  const runConversation = async (): Promise<boolean> => {
+    const resolvedModel = resolveTextModelId(
+      options.getModelId?.({ startResponse: startResponse.value }) ??
+        DEFAULT_TEXT_MODEL.rawId,
+    );
+
     conversationActive.value = true;
     handlers.onConversationStarted?.();
     const generation = chatGeneration;
+    // The first turn sends whatever is queued.
+    requiredUnanswered = false;
 
     try {
       followUpRequested = false;
@@ -292,7 +303,8 @@ export function useTextSession(
         await runTurn(resolvedModel, generation);
       }
       // Past the limit, the images and instructions go with the user's next
-      // message.
+      // message, unless the host asks for a turn (continueConversation).
+      requiredUnanswered = followUpRequested && isCurrentChat(generation);
       followUpRequested = false;
       if (isCurrentChat(generation)) flushPendingImages();
       return true;
@@ -333,18 +345,22 @@ export function useTextSession(
     if (!trimmed) {
       return false;
     }
-    if (required) followUpRequested = true;
-
-    // For text sessions, we don't make an immediate API call.
     // Instructions are appended to conversation history as a user message
-    // and will be sent with the next API call.
-    // This prevents the "tool_use without tool_result" error when
-    // instructions are sent during tool call processing.
+    // and sent with the next API call, not at once: during a turn that
+    // would put them between an assistant tool call and its outputs, which
+    // the APIs reject.
     console.log("QUEUING INSTRUCTIONS (text session)", `"${trimmed}"`);
     conversationMessages.value.push({
       role: "user",
       content: `[System instruction] ${trimmed}`,
     });
+    if (required) {
+      // Required ones get a turn: a follow-up of the running conversation,
+      // or, when none is running (the host asking the model to go on with a
+      // slideshow, useSequence), one of their own.
+      if (conversationActive.value) followUpRequested = true;
+      else if (chatActive.value) void runConversation();
+    }
 
     return true;
   };
@@ -380,6 +396,12 @@ export function useTextSession(
     sendFunctionCallOutput,
     sendInstructions,
     sendImagesToModel,
+    continueConversation: () => {
+      if (!requiredUnanswered || conversationActive.value || !chatActive.value)
+        return false;
+      void runConversation();
+      return true;
+    },
     setMute,
     setLocalAudioEnabled,
     attachRemoteAudioElement,

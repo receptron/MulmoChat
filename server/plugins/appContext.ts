@@ -117,9 +117,10 @@ async function runImageBackend(
  * generateImageCommon, with the image as a data URL so the existing ImageView
  * renders it unchanged. The image is also saved (./imageStore.ts), and the
  * result says where (`data.imagePath`, "saved to …"), so a later call can
- * refer to it.
+ * refer to it. Exported for host tools that draw with images they loaded
+ * themselves (./sequenceHost.ts).
  */
-async function generateImage(
+export async function generateImage(
   prompt: string,
   settings: ImageGenerationSettings,
   inputImages: InputImage[] = [],

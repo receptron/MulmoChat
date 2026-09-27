@@ -135,6 +135,7 @@ import { useSessionTransport } from "../composables/useSessionTransport";
 import { useUserPreferences } from "../composables/useUserPreferences";
 import { useToolResults } from "../composables/useToolResults";
 import { useScrolling } from "../composables/useScrolling";
+import { useSequence } from "../composables/useSequence";
 import { SESSION_CONFIG } from "../config/session";
 import { DEFAULT_TEXT_MODEL } from "../config/textModels";
 import {
@@ -325,6 +326,7 @@ const {
   sendFunctionCallOutput,
   sendInstructions,
   sendImagesToModel,
+  continueConversation,
   setMute: sessionSetMute,
   setLocalAudioEnabled,
   attachRemoteAudioElement,
@@ -492,6 +494,20 @@ const {
   switchRole: (roleId: string) => {
     switchRoleCallback.value?.(roleId);
   },
+  onResult: (name, args, result, startedAt) =>
+    sequence.observeToolResult(name, args, result, startedAt),
+});
+
+// Asks the model to go on when it ends a reply mid-slideshow or mid-story.
+const sequence = useSequence({
+  isIdle: () =>
+    chatActive.value &&
+    !conversationActive.value &&
+    !isAudioPlaying.value &&
+    !userSpeaking.value &&
+    !isGeneratingImage.value,
+  sendInstructions,
+  continueConversation,
 });
 
 // Wrapper to track results immediately
@@ -532,6 +548,12 @@ const lastSpeechStartedTime = ref<number | null>(null);
 
 // LLM audio playback state (for avatar lip-sync, visual feedback, etc.)
 const isAudioPlaying = ref(false);
+// Between the voice transport's speech started and stopped events. A session
+// that ends mid-speech (stopped, dropped, switched) sends no stopped event.
+const userSpeaking = ref(false);
+watch(chatActive, (active) => {
+  if (!active) userSpeaking.value = false;
+});
 
 registerEventHandlers({
   onToolCall: async (msg, id, argStr) => {
@@ -555,11 +577,14 @@ registerEventHandlers({
     currentText.value = "";
   },
   onSpeechStarted: () => {
+    userSpeaking.value = true;
+    sequence.userSpoke();
     if (isListenerMode.value) {
       console.log("MSG: Speech started");
     }
   },
   onSpeechStopped: () => {
+    userSpeaking.value = false;
     if (!isListenerMode.value) {
       return;
     }
@@ -577,6 +602,7 @@ registerEventHandlers({
       }, SESSION_CONFIG.LISTENER_MODE_AUDIO_GAP_MS);
     }
   },
+  onConversationFinished: () => sequence.replyEnded(),
   onError: (error) => {
     console.error("Session error", error);
   },
@@ -589,6 +615,7 @@ registerEventHandlers({
   onAudioPlaybackStopped: () => {
     console.log("[Avatar Debug] HomeView: isAudioPlaying = false");
     isAudioPlaying.value = false;
+    sequence.replyEnded();
   },
 });
 
@@ -614,6 +641,9 @@ async function startChat(): Promise<void> {
 async function sendTextMessage(providedText?: string): Promise<void> {
   const text = (providedText || userInput.value).trim();
   if (!text) return;
+  // A typed message is the user speaking: it may be "next" to a step that
+  // waits for them, or "stop".
+  sequence.userSpoke();
 
   // In text-rest mode, auto-start the session if not active
   if (
@@ -658,6 +688,7 @@ async function sendTextMessage(providedText?: string): Promise<void> {
 }
 
 function stopChat(): void {
+  sequence.stop();
   stopTransportChat();
 }
 

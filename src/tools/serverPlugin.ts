@@ -13,6 +13,35 @@ const isToolResult = (value: unknown): value is ToolResult =>
   typeof (value as { message?: unknown }).message === "string";
 
 /**
+ * Run a tool call on the server: POST /api/plugin/:toolName with the tool
+ * arguments and the caller's settings. For a tool that decides something in
+ * the browser first (src/tools/presentSlide.ts); others use runOnServer.
+ */
+export async function postToServer<T = unknown, J = unknown>(
+  toolName: string,
+  args: unknown,
+  config: Record<string, unknown>,
+): Promise<ToolResult<T, J>> {
+  const response = await fetch(`/api/plugin/${encodeURIComponent(toolName)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ args, config }),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(
+      `Server plugin ${toolName} failed: ${response.status} ${detail}`,
+    );
+  }
+  const result: unknown = await response.json();
+  publishFileChanges(response);
+  if (!isToolResult(result)) {
+    throw new Error(`Server plugin ${toolName} returned an invalid result`);
+  }
+  return result as ToolResult<T, J>;
+}
+
+/**
  * Run a plugin's execute() on the server instead of in the browser.
  * The call is forwarded to POST /api/plugin/:toolName with the tool arguments
  * and the settings from `buildConfig`; the server runs the same package's
@@ -26,27 +55,7 @@ export function runOnServer<T, J, A extends object>(
   const toolName = plugin.toolDefinition.name;
   return {
     ...plugin,
-    execute: async (context, args) => {
-      const response = await fetch(
-        `/api/plugin/${encodeURIComponent(toolName)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ args, config: buildConfig(context) }),
-        },
-      );
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(
-          `Server plugin ${toolName} failed: ${response.status} ${detail}`,
-        );
-      }
-      const result: unknown = await response.json();
-      publishFileChanges(response);
-      if (!isToolResult(result)) {
-        throw new Error(`Server plugin ${toolName} returned an invalid result`);
-      }
-      return result as ToolResult<T, J>;
-    },
+    execute: (context, args) =>
+      postToServer<T, J>(toolName, args, buildConfig(context)),
   };
 }
