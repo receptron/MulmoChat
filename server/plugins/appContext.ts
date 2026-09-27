@@ -6,6 +6,8 @@ import { generateGeminiImage, generateOpenAIImage } from "../routes/image";
 import { generateComfyImage } from "../routes/comfyui";
 import { logger } from "../utils/logger";
 import { createMarkdownHostApp } from "./markdownHost";
+import { loadSourceImages, saveGeneratedImage } from "./imageStore";
+import { toInputImage, type InputImage } from "../utils/imageMime";
 import {
   DEFAULT_GEMINI_IMAGE_MODEL,
   DEFAULT_OPENAI_IMAGE_MODEL,
@@ -61,13 +63,19 @@ export function parsePluginRequestConfig(raw: unknown): PluginRequestConfig {
 }
 
 // Returns the raw base64 image (no data URL prefix) or a failure message.
+// `images` are input images (data URLs); ComfyUI's workflow takes none.
 async function runImageBackend(
   prompt: string,
   settings: ImageGenerationSettings,
+  images: string[],
 ): Promise<{ imageData?: string; message?: string }> {
   switch (settings.backend) {
     case "openai":
-      return generateOpenAIImage({ prompt, model: settings.openaiModel });
+      return generateOpenAIImage({
+        prompt,
+        images,
+        model: settings.openaiModel,
+      });
     case "comfyui": {
       const result = await generateComfyImage({
         prompt,
@@ -76,28 +84,54 @@ async function runImageBackend(
       return { imageData: result.images[0] };
     }
     default:
-      return generateGeminiImage({ prompt, model: settings.geminiModel });
+      return generateGeminiImage({
+        prompt,
+        images,
+        model: settings.geminiModel,
+      });
   }
 }
 
 /**
- * gui-chat-protocol ToolContext.app.generateImage contract: (prompt) -> ToolResult.
- * Same result shape as the browser's generateImageCommon, with the image as a
- * data URL so the existing ImageView renders it unchanged.
+ * gui-chat-protocol ToolContext.app.generateImage contract: (prompt) -> ToolResult,
+ * and editImages', with its input images. Same result shape as the browser's
+ * generateImageCommon, with the image as a data URL so the existing ImageView
+ * renders it unchanged. The image is also saved (./imageStore.ts), and the
+ * result says where (`data.imagePath`, "saved to …"), so a later call can
+ * refer to it.
  */
 async function generateImage(
   prompt: string,
   settings: ImageGenerationSettings,
+  inputImages: InputImage[] = [],
 ): Promise<ToolResult> {
   const finalPrompt = settings.styleModifier.trim()
     ? `${prompt}, ${settings.styleModifier}`
     : prompt;
+  // ComfyUI draws from the prompt alone; say so rather than pretend.
+  const ignoredInputs =
+    inputImages.length > 0 && settings.backend === "comfyui"
+      ? "; ComfyUI takes no input images, so it was made from the prompt alone"
+      : "";
   try {
-    const { imageData, message } = await runImageBackend(finalPrompt, settings);
+    const { imageData, message } = await runImageBackend(
+      finalPrompt,
+      settings,
+      inputImages.map(
+        ({ mimeType, data }) => `data:${mimeType};base64,${data}`,
+      ),
+    );
     if (imageData) {
+      const { mimeType } = toInputImage(imageData);
+      const imagePath = await saveGeneratedImage(imageData);
+      const savedTo = imagePath ? `; saved to ${imagePath}` : "";
       return {
-        data: { imageData: `data:image/png;base64,${imageData}`, prompt },
-        message: "image generation succeeded",
+        data: {
+          imageData: `data:${mimeType};base64,${imageData}`,
+          prompt,
+          ...(imagePath && { imagePath }),
+        },
+        message: `image generation succeeded${savedTo}${ignoredInputs}`,
         instructions:
           "Acknowledge that the image was generated and has been already presented to the user.",
       };
@@ -125,6 +159,36 @@ async function generateImage(
   }
 }
 
+/**
+ * context.app.editImages: (prompt, imagePaths) -> ToolResult. A new image from
+ * saved images (artifacts/images/…, at most 8) and a prompt: one image to
+ * restyle, or references such as character sheets to draw with. The same
+ * arguments as MulmoClaude's editImages tool and /api/edit-image, which
+ * sends Gemini only; here every backend but ComfyUI takes them. (Not the
+ * browser's context.app.editImage(prompt), which edits the selected image for
+ * @gui-chat-plugin/edit-image.)
+ */
+async function editImages(
+  prompt: unknown,
+  imagePaths: unknown,
+  settings: ImageGenerationSettings,
+): Promise<ToolResult> {
+  if (typeof prompt !== "string" || !prompt.trim()) {
+    return { message: "image edit failed: prompt is required" };
+  }
+  let inputImages: InputImage[];
+  try {
+    inputImages = await loadSourceImages(imagePaths);
+  } catch (error) {
+    return {
+      message: `image edit failed: ${errorMessageOf(error)}`,
+      instructions:
+        "Acknowledge that the image edit failed and briefly tell the user the reason.",
+    };
+  }
+  return generateImage(prompt, settings, inputImages);
+}
+
 export function createAppContext(config: PluginRequestConfig): ToolContextApp {
   const generate = (prompt: string) =>
     generateImage(prompt, config.imageGeneration);
@@ -134,6 +198,8 @@ export function createAppContext(config: PluginRequestConfig): ToolContextApp {
     getConfig: () => undefined,
     setConfig: () => {},
     generateImage: generate,
+    editImages: (prompt: unknown, imagePaths: unknown) =>
+      editImages(prompt, imagePaths, config.imageGeneration),
     // presentDocument: load/save/create documents, PDF export, image fill
     ...createMarkdownHostApp(generate),
   };
