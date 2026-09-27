@@ -19,7 +19,7 @@
 import path from "node:path";
 import type { ToolResult } from "gui-chat-protocol";
 import { artifactsFileOps } from "./workspace";
-import { mulmoScriptHandlers } from "./mulmoscriptHost";
+import { movieUnavailable, saveScript } from "./mulmoscriptHost";
 import { loadRecord, SLIDESHOWS_DIR, STORYBOARDS_DIR } from "./sequenceHost";
 import {
   MAKE_MOVIE,
@@ -216,6 +216,15 @@ async function makeMovie(
 ): Promise<ToolResult> {
   const parsed = parseMovieArgs(args);
   if (typeof parsed === "string") return { message: parsed };
+  // Before the narration is written: without ffmpeg there is no movie.
+  const unavailable = movieUnavailable();
+  if (unavailable) {
+    return {
+      message: `the movie couldn't be made: ${unavailable}`,
+      instructions:
+        "Tell the user the movie couldn't be made, and briefly why.",
+    };
+  }
   const config = isRecord(rawConfig) ? rawConfig : {};
   const language =
     parsed.language ??
@@ -287,11 +296,11 @@ async function makeMovie(
       },
     })),
   };
-  const shown = (await mulmoScriptHandlers.execute({
+  const { result: shown, movieStarted } = await saveScript({
     script,
     filename: title,
     autoGenerateMovie: true,
-  })) as ToolResult;
+  });
   if (!shown.data) return shown;
   const left = skipped.length
     ? `; left out, with no saved picture: ${skipped.join(", ")}`
@@ -301,8 +310,9 @@ async function makeMovie(
     // Shown with presentMulmoScript's View, which follows the movie.
     toolName: "presentMulmoScript",
     message: `a movie of ${parsed.kind} "${parsed.id}" with ${scenes.length} scenes: ${shown.message}${left}`,
-    instructions:
-      "Tell the user the movie is being made from the pictures they saw, that it takes a few minutes, and that it will play on the screen when it is ready.",
+    instructions: movieStarted
+      ? "Tell the user the movie is being made from the pictures they saw, that it takes a few minutes, and that it will play on the screen when it is ready."
+      : "Tell the user the movie's script is on the screen but the movie didn't start, and briefly why (the message says).",
   };
 }
 

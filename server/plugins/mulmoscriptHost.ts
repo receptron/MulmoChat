@@ -43,6 +43,8 @@ import {
   type MulmoScriptServerOps,
 } from "@mulmoclaude/mulmoscript-plugin/server";
 import type { SaveMulmoScriptArgs } from "@mulmoclaude/mulmoscript-plugin";
+import type { ToolResult } from "gui-chat-protocol";
+import { Buffer } from "node:buffer";
 import { artifactsFileOps, workspaceRoot } from "./workspace";
 import { imageMimeOfBytes } from "../utils/imageMime";
 import { publishPluginEvent } from "./events";
@@ -144,10 +146,14 @@ function saveArgsFrom(body: Record<string, unknown>): SaveMulmoScriptArgs {
 
 // Save a new script, reopen one, or replace one beat. Failures come back as
 // a message (not an HTTP error) so the model can read them and retry.
-async function executeTool(body: Record<string, unknown>): Promise<unknown> {
+// `movieStarted` says whether autoGenerateMovie started a movie (makeMovie,
+// ./movieHost.ts, tells the user only then).
+async function saveScript(
+  body: Record<string, unknown>,
+): Promise<{ result: ToolResult; movieStarted: boolean }> {
   const { ops } = mulmoScript();
   const guard = ops.guardStoryWirePath(body.filePath);
-  if (guard) return { message: guard.error };
+  if (guard) return { result: { message: guard.error }, movieStarted: false };
   const args = saveArgsFrom(body);
   const outcome = await executeMulmoScriptSave(
     { files: { artifacts: ops.backend.artifacts } },
@@ -155,9 +161,12 @@ async function executeTool(body: Record<string, unknown>): Promise<unknown> {
   );
   if (!outcome.ok) {
     return {
-      message: outcome.error,
-      instructions:
-        "Acknowledge the error and retry with a valid `script` (new) or an existing `filePath`.",
+      result: {
+        message: outcome.error,
+        instructions:
+          "Acknowledge the error and retry with a valid `script` (new) or an existing `filePath`.",
+      },
+      movieStarted: false,
     };
   }
   // A beat edit rewrote a script that may already be open; the event is how
@@ -168,6 +177,7 @@ async function executeTool(body: Record<string, unknown>): Promise<unknown> {
   // The package's background trigger skips the ffmpeg check, so check here
   // rather than start a job that can't encode.
   let movieNote = "";
+  let movieStarted = false;
   if (args.autoGenerateMovie === true) {
     const ffmpeg = ops.ffmpegGuard();
     if (ffmpeg) {
@@ -181,15 +191,26 @@ async function executeTool(body: Record<string, unknown>): Promise<unknown> {
           undefined,
         );
         movieNote = " (movie generation started in the background)";
+        movieStarted = true;
       }
     }
   }
   return {
-    data: { script: outcome.script, filePath: outcome.filePath },
-    message: `${outcome.message}${movieNote}`,
-    instructions: "Display the storyboard to the user.",
+    result: {
+      data: { script: outcome.script, filePath: outcome.filePath },
+      message: `${outcome.message}${movieNote}`,
+      instructions: "Display the storyboard to the user.",
+    },
+    movieStarted,
   };
 }
+
+const executeTool = async (body: Record<string, unknown>) =>
+  (await saveScript(body)).result;
+
+/** Why no movie can be made here (ffmpeg missing), or null. */
+export const movieUnavailable = (): string | null =>
+  mulmoScript().ops.ffmpegGuard()?.error ?? null;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -223,22 +244,26 @@ async function pathSourcedBeatImage(
     ) {
       return null;
     }
-    // Relative to the script, as mulmocast reads it; symlinks resolved.
-    const picture = await fs.realpath(
-      path.resolve(path.dirname(story.absolutePath), source.path),
-    );
-    const imagesRoot = await fs.realpath(
-      path.join(workspaceRoot(), "artifacts", "images"),
-    );
+    // Relative to the script, as mulmocast reads it, then read through the
+    // artifacts FileOps, which refuses `..` and symlinks out of artifacts/.
+    const rel = path
+      .relative(
+        path.join(workspaceRoot(), "artifacts"),
+        path.resolve(path.dirname(story.absolutePath), source.path),
+      )
+      .split(path.sep)
+      .join("/");
     if (
-      !picture.startsWith(imagesRoot + path.sep) ||
-      !PICTURE_EXTENSIONS.has(path.extname(picture).toLowerCase())
+      !rel.startsWith("images/") ||
+      !PICTURE_EXTENSIONS.has(path.extname(rel).toLowerCase())
     ) {
       return null;
     }
-    const bytes = await fs.readFile(picture);
-    const mime = imageMimeOfBytes(new Uint8Array(bytes));
-    return mime ? `data:${mime};base64,${bytes.toString("base64")}` : null;
+    const bytes = await artifactsFileOps.readBytes(rel);
+    const mime = imageMimeOfBytes(bytes);
+    return mime
+      ? `data:${mime};base64,${Buffer.from(bytes).toString("base64")}`
+      : null;
   } catch {
     return null;
   }
@@ -266,6 +291,8 @@ export const mulmoScriptHandlers = {
   dispatch: dispatchMulmoScript,
   execute: executeTool,
 };
+
+export { saveScript };
 
 function failureStatus(code: string): number {
   if (code === "not_found") return 404;
