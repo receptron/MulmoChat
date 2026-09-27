@@ -143,7 +143,11 @@ async function generateImage(
     if (imageData) {
       const { mimeType } = toInputImage(imageData);
       const imagePath = await saveImage(imageData);
-      const savedTo = imagePath ? `; saved to ${imagePath}` : "";
+      // A failed save (a full disk, say) still shows the picture; the model
+      // is told there is no path, so it doesn't look for one.
+      const savedTo = imagePath
+        ? `; saved to ${imagePath}`
+        : "; it could not be saved, so it has no path";
       return {
         data: {
           imageData: `data:${mimeType};base64,${imageData}`,

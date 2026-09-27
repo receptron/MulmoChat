@@ -38,7 +38,9 @@ export interface InputImage {
   data: string;
 }
 
-const DATA_URL = /^data:[^;,]+;base64,/;
+// Parameters may come before ";base64" (RFC 2397):
+// data:image/png;charset=utf-8;base64,…
+const DATA_URL = /^data:[^,]*;base64,/;
 
 /**
  * An image the browser or a plugin sent: raw base64 or a data URL. The type
