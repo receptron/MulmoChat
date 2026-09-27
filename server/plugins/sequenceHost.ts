@@ -40,8 +40,8 @@ import {
   type Storyboard,
 } from "./sequenceTools";
 
-const SLIDESHOWS_DIR = "slideshows";
-const STORYBOARDS_DIR = "storyboards";
+export const SLIDESHOWS_DIR = "slideshows";
+export const STORYBOARDS_DIR = "storyboards";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -81,7 +81,7 @@ async function readRecord<T extends Slideshow | Storyboard>(
   }
 }
 
-async function loadRecord<T extends Slideshow | Storyboard>(
+export async function loadRecord<T extends Slideshow | Storyboard>(
   dir: string,
   id: string,
 ): Promise<T | null> {

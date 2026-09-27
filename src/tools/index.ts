@@ -53,6 +53,7 @@ import { RenderShapeScriptPlugin } from "./renderShapeScript";
 import { ReadXPostPlugin, SearchXPlugin } from "./xTools";
 import { PresentSlidePlugin } from "./presentSlide";
 import { DefineStoryboardPlugin, PresentPanelPlugin } from "./storyboard";
+import { MakeMoviePlugin } from "./makeMovie";
 
 // generateImage's own prompt says the model MUST draw whenever it talks about
 // places, objects, people, movies or books. Every role that includes plugin
@@ -203,6 +204,7 @@ const registeredPlugins = [
   PresentSlidePlugin,
   DefineStoryboardPlugin,
   PresentPanelPlugin,
+  MakeMoviePlugin,
 ];
 
 // Every plugin's views get the browser plugin runtime (useRuntime()), which

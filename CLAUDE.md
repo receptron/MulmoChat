@@ -87,6 +87,9 @@ MulmoChat has today, each commented at its site:
   is implemented (MulmoTerminal doesn't).
 - presentDocument has no Marp workspace themes and keeps MulmoChat's own system prompt.
 - renderShapeScript returns the image to the model (`imagesForModel`) instead of a path to read.
+- presentMulmoScript's `beatImage` falls back to a beat's saved picture (an `image` of type "image"
+  with a `path` source under `artifacts/images/`, as makeMovie writes), which the package can't show
+  because it only returns rendered PNGs. The fix belongs in the package.
 
 ## Say where a boundary is enforced, not where it looks enforced
 

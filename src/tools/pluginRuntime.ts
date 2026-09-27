@@ -44,6 +44,9 @@ export function setPluginLocale(languageCode: string): void {
   pluginLocale.value = LOCALE_TAGS[languageCode] ?? languageCode;
 }
 
+/** The user's language as a locale tag (en, ja, pt-BR, …). */
+export const getPluginLocale = (): string => pluginLocale.value;
+
 // Per-user settings sent with every dispatch, like runOnServer's config.
 let dispatchConfig: Record<string, unknown> = {};
 
