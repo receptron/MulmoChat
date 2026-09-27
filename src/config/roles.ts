@@ -259,6 +259,7 @@ export const ROLES: Role[] = [
       "presentChart",
       "presentHtml",
       "generateImage",
+      "editImage",
       "searchWeb",
       "browse",
       "readXPost",

@@ -3,6 +3,7 @@
 // (see src/tools/serverPlugin.ts).
 export const PLUGIN_PACKAGES: readonly string[] = [
   "@mulmochat-plugin/generate-image",
+  "@gui-chat-plugin/edit-image",
   "@mulmoclaude/chart-plugin",
   "@mulmoclaude/markdown-plugin",
   "@mulmoclaude/html-plugin",

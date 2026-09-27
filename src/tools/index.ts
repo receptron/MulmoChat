@@ -4,6 +4,7 @@ import type {
   FileInputHandler,
   ClipboardImageInputHandler,
   InputHandler,
+  ToolContext,
   ToolDefinition,
 } from "gui-chat-protocol/vue";
 import { v4 as uuidv4 } from "uuid";
@@ -70,6 +71,25 @@ const ServerGenerateImagePlugin = {
       imageGeneration: context.app?.getImageGenerationSettings?.(),
     }),
   ),
+};
+
+// editImage runs on the server too, and edits the image selected on the
+// screen from its saved file (artifacts/images/…), not from the picture's
+// data: the result is saved as well, so an edit of an edit works the same
+// way. An image that was never saved (an upload) is sent once to be saved.
+const currentImageOf = (context: ToolContext) => {
+  const data = context.currentResult?.data as
+    { imagePath?: unknown; imageData?: unknown } | undefined;
+  if (typeof data?.imagePath === "string") return { imagePath: data.imagePath };
+  if (typeof data?.imageData === "string") return { imageData: data.imageData };
+  return undefined;
+};
+
+const ServerEditImagePlugin = {
+  plugin: runOnServer(EditImagePlugin.plugin, (context) => ({
+    imageGeneration: context.app?.getImageGenerationSettings?.(),
+    currentImage: currentImageOf(context),
+  })),
 };
 
 // presentChart runs on the server, which saves the chart document into the
@@ -158,7 +178,7 @@ const registeredPlugins = [
   GoogleMapPlugin,
   ExaPlugin,
   ServerMarkdownPlugin,
-  EditImagePlugin,
+  ServerEditImagePlugin,
   ServerMulmoScriptPlugin,
   ServerShapeScriptPlugin,
   RenderShapeScriptPlugin,

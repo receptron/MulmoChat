@@ -6,7 +6,7 @@ import { generateGeminiImage, generateOpenAIImage } from "../routes/image";
 import { generateComfyImage } from "../routes/comfyui";
 import { logger } from "../utils/logger";
 import { createMarkdownHostApp } from "./markdownHost";
-import { loadSourceImages, saveGeneratedImage } from "./imageStore";
+import { loadSourceImages, saveImage } from "./imageStore";
 import { toInputImage, type InputImage } from "../utils/imageMime";
 import {
   DEFAULT_GEMINI_IMAGE_MODEL,
@@ -27,8 +27,16 @@ export interface ImageGenerationSettings {
   comfyuiModel: string;
 }
 
+/** The image selected on the screen, which editImage edits: its saved path,
+ *  or, for one never saved (an upload), its data. */
+export interface CurrentImage {
+  imagePath?: string;
+  imageData?: string;
+}
+
 export interface PluginRequestConfig {
   imageGeneration: ImageGenerationSettings;
+  currentImage?: CurrentImage;
 }
 
 const IMAGE_BACKENDS: readonly ImageBackend[] = ["gemini", "openai", "comfyui"];
@@ -56,10 +64,21 @@ function parseImageSettings(raw: unknown): ImageGenerationSettings {
   };
 }
 
+function parseCurrentImage(raw: unknown): CurrentImage | undefined {
+  if (!isRecord(raw)) return undefined;
+  const { imagePath, imageData } = raw;
+  if (typeof imagePath === "string" && imagePath) return { imagePath };
+  if (typeof imageData === "string" && imageData) return { imageData };
+  return undefined;
+}
+
 /** Parse the untrusted `config` field of a plugin request. */
 export function parsePluginRequestConfig(raw: unknown): PluginRequestConfig {
   const config = isRecord(raw) ? raw : {};
-  return { imageGeneration: parseImageSettings(config.imageGeneration) };
+  return {
+    imageGeneration: parseImageSettings(config.imageGeneration),
+    currentImage: parseCurrentImage(config.currentImage),
+  };
 }
 
 // Returns the raw base64 image (no data URL prefix) or a failure message.
@@ -123,7 +142,7 @@ async function generateImage(
     );
     if (imageData) {
       const { mimeType } = toInputImage(imageData);
-      const imagePath = await saveGeneratedImage(imageData);
+      const imagePath = await saveImage(imageData);
       const savedTo = imagePath ? `; saved to ${imagePath}` : "";
       return {
         data: {
@@ -164,9 +183,7 @@ async function generateImage(
  * saved images (artifacts/images/…, at most 8) and a prompt: one image to
  * restyle, or references such as character sheets to draw with. The same
  * arguments as MulmoClaude's editImages tool and /api/edit-image, which
- * sends Gemini only; here every backend but ComfyUI takes them. (Not the
- * browser's context.app.editImage(prompt), which edits the selected image for
- * @gui-chat-plugin/edit-image.)
+ * sends Gemini only; here every backend but ComfyUI takes them.
  */
 async function editImages(
   prompt: unknown,
@@ -189,6 +206,34 @@ async function editImages(
   return generateImage(prompt, settings, inputImages);
 }
 
+/**
+ * context.app.editImage: (prompt) -> ToolResult, for @gui-chat-plugin/edit-image
+ * ("edit the previously generated image"). It edits the image selected on the
+ * screen from its saved file, and the result is saved too, so an edit of an
+ * edit works the same way. A selected image that was never saved (an upload,
+ * an older result) is saved first, so the edit still starts from a file.
+ */
+async function editCurrentImage(
+  prompt: unknown,
+  current: CurrentImage | undefined,
+  settings: ImageGenerationSettings,
+): Promise<ToolResult> {
+  let imagePath = current?.imagePath;
+  if (!imagePath && current?.imageData) {
+    imagePath = (await saveImage(toInputImage(current.imageData).data)) ?? "";
+    if (!imagePath) {
+      return { message: "image edit failed: the image could not be saved" };
+    }
+  }
+  if (!imagePath) {
+    return {
+      message:
+        "image edit failed: no image is selected on the screen; generate or select one first",
+    };
+  }
+  return editImages(prompt, [imagePath], settings);
+}
+
 export function createAppContext(config: PluginRequestConfig): ToolContextApp {
   const generate = (prompt: string) =>
     generateImage(prompt, config.imageGeneration);
@@ -198,6 +243,8 @@ export function createAppContext(config: PluginRequestConfig): ToolContextApp {
     getConfig: () => undefined,
     setConfig: () => {},
     generateImage: generate,
+    editImage: (prompt: unknown) =>
+      editCurrentImage(prompt, config.currentImage, config.imageGeneration),
     editImages: (prompt: unknown, imagePaths: unknown) =>
       editImages(prompt, imagePaths, config.imageGeneration),
     // presentDocument: load/save/create documents, PDF export, image fill

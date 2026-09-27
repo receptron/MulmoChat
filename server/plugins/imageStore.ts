@@ -1,6 +1,6 @@
-// Generated images in the workspace: every image a server-run plugin makes is
-// saved as artifacts/images/<YYYY>/<MM>/<id>.<ext>, and a plugin can pass
-// saved images back as references (context.app.editImages).
+// Images in the workspace: every image a server-run plugin makes is saved as
+// artifacts/images/<YYYY>/<MM>/<id>.<ext>, and edits start from saved images
+// (context.app.editImages, and editImage for the selected one).
 //
 // Matches MulmoClaude's server/utils/files/image-store.ts and its
 // /api/edit-image route (the same workspace, ~/mulmoclaude, is shared): UTC
@@ -34,13 +34,12 @@ const yearMonthUtc = (now = new Date()): string =>
   `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 
 /**
- * Save a generated image (base64). Returns its workspace path
- * (`artifacts/images/…`), or null when it can't be saved: the picture is
- * still shown, just without a path.
+ * Save an image (base64): one a plugin made, or one to be edited that wasn't
+ * saved yet (an upload). Returns its workspace path (`artifacts/images/…`),
+ * or null when it can't be saved: a new picture is still shown, just without
+ * a path.
  */
-export async function saveGeneratedImage(
-  base64: string,
-): Promise<string | null> {
+export async function saveImage(base64: string): Promise<string | null> {
   try {
     const bytes = new Uint8Array(Buffer.from(base64, "base64"));
     const mime = imageMimeOfBytes(bytes);
