@@ -204,11 +204,17 @@ async function writeNarration(
 // --- The movie -------------------------------------------------------------------
 
 // Gemini's voices when its key is set (as presentMulmoScript's own scripts
-// use), OpenAI's otherwise.
-const narrator = () =>
-  process.env.GEMINI_API_KEY
-    ? { provider: "gemini", voiceId: "Kore" }
-    : { provider: "openai", voiceId: "shimmer" };
+// use), OpenAI's when only its key is; mulmocast reads them from the
+// server's environment. With neither, there is no voice for the narration
+// (a text model may still be set up, such as Grok or Anthropic).
+function narrator() {
+  if (process.env.GEMINI_API_KEY)
+    return { provider: "gemini", voiceId: "Kore" };
+  if (process.env.OPENAI_API_KEY) {
+    return { provider: "openai", voiceId: "shimmer" };
+  }
+  return null;
+}
 
 async function makeMovie(
   args: Record<string, unknown>,
@@ -216,9 +222,15 @@ async function makeMovie(
 ): Promise<ToolResult> {
   const parsed = parseMovieArgs(args);
   if (typeof parsed === "string") return { message: parsed };
-  // Before the narration is written: without ffmpeg there is no movie.
-  const unavailable = movieUnavailable();
-  if (unavailable) {
+  // Before the narration is written: without ffmpeg or a voice there is no
+  // movie.
+  const voice = narrator();
+  const unavailable =
+    movieUnavailable() ??
+    (voice
+      ? null
+      : "there is no voice for the narration (GEMINI_API_KEY or OPENAI_API_KEY)");
+  if (unavailable || !voice) {
     return {
       message: `the movie couldn't be made: ${unavailable}`,
       instructions:
@@ -282,7 +294,7 @@ async function makeMovie(
     speechParams: {
       speakers: {
         Narrator: {
-          ...narrator(),
+          ...voice,
           displayName: { [language]: "Narrator" },
         },
       },
