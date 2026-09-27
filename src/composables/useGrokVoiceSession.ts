@@ -403,6 +403,7 @@ export function useGrokVoiceSession(
     sendFunctionCallOutput,
     sendInstructions,
     sendImagesToModel,
+    continueConversation: () => false,
     setMute,
     setLocalAudioEnabled,
     attachRemoteAudioElement,

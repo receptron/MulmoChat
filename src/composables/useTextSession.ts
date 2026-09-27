@@ -74,6 +74,9 @@ export function useTextSession(
   // A tool's required instructions were queued: the model answers them in a
   // follow-up turn instead of with the user's next message.
   let followUpRequested = false;
+  // Required instructions are queued and no turn has answered them: the
+  // follow-up limit stopped the conversation first (continueConversation).
+  let requiredUnanswered = false;
 
   const flushPendingImages = () => {
     for (const { images, caption } of pendingImages.splice(0)) {
@@ -135,6 +138,7 @@ export function useTextSession(
 
   const stopChat = () => {
     chatGeneration++;
+    requiredUnanswered = false;
     chatActive.value = false;
     conversationActive.value = false;
     conversationMessages.value = [];
@@ -276,6 +280,8 @@ export function useTextSession(
     conversationActive.value = true;
     handlers.onConversationStarted?.();
     const generation = chatGeneration;
+    // The first turn sends whatever is queued.
+    requiredUnanswered = false;
 
     try {
       followUpRequested = false;
@@ -297,7 +303,8 @@ export function useTextSession(
         await runTurn(resolvedModel, generation);
       }
       // Past the limit, the images and instructions go with the user's next
-      // message.
+      // message, unless the host asks for a turn (continueConversation).
+      requiredUnanswered = followUpRequested && isCurrentChat(generation);
       followUpRequested = false;
       if (isCurrentChat(generation)) flushPendingImages();
       return true;
@@ -389,6 +396,12 @@ export function useTextSession(
     sendFunctionCallOutput,
     sendInstructions,
     sendImagesToModel,
+    continueConversation: () => {
+      if (!requiredUnanswered || conversationActive.value || !chatActive.value)
+        return false;
+      void runConversation();
+      return true;
+    },
     setMute,
     setLocalAudioEnabled,
     attachRemoteAudioElement,

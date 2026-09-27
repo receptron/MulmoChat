@@ -6,7 +6,10 @@
 // once to go on. From MulmoGlass (src/composables/useSequence.ts).
 //
 // A step that waits for the user (a how-to step they are doing, a story
-// choice) is not asked about: the model goes on when the user says so.
+// choice), or the last one, is not asked about: the model goes on when the
+// user says so. Every step's own instructions come first, though: text chat
+// can stop at its follow-up limit before answering them, and then gets a turn
+// for them (continueConversation) instead of a request to go on.
 //
 // Asked once per step: a model that still doesn't go on has a reason (it is
 // answering something else), and asking again would loop. The user speaking
@@ -31,6 +34,8 @@ interface UseSequenceOptions {
     instructions: string,
     required: boolean,
   ) => boolean | Promise<boolean>;
+  /** A turn for queued instructions no turn has answered; false if none. */
+  continueConversation: () => boolean;
 }
 
 // After a reply ends, how long to wait for the model to go on by itself.
@@ -72,14 +77,14 @@ export function useSequence(options: UseSequenceOptions) {
     if (startedAt <= stoppedAt) {
       return step ? stepAfterUserSpokeInstructions(step) : undefined;
     }
-    if (!step || step.step >= step.total) {
+    if (!step) {
       stop();
       return undefined;
     }
     // A check set before this step arrived would ask for the step its own
     // instructions are about to ask for.
     cancelCheck();
-    progress = step.waitsForUser ? null : { step, asked: false };
+    progress = { step, asked: false };
     return undefined;
   };
 
@@ -91,8 +96,14 @@ export function useSequence(options: UseSequenceOptions) {
       timer = null;
       if (!progress || progress.asked || !options.isIdle()) return;
       progress.asked = true;
-      console.info(`[sequence] asking to ${progress.step.nextCall}`);
-      void options.sendInstructions(continueInstructions(progress.step), true);
+      const { step } = progress;
+      if (options.continueConversation()) {
+        console.info(`[sequence] a turn for ${step.label}'s instructions`);
+        return;
+      }
+      if (step.step >= step.total || step.waitsForUser) return;
+      console.info(`[sequence] asking to ${step.nextCall}`);
+      void options.sendInstructions(continueInstructions(step), true);
     }, GRACE_MS);
   };
 

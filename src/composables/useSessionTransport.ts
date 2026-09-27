@@ -103,6 +103,7 @@ export function useSessionTransport(
       activeSession.value.sendInstructions(instructions, required),
     sendImagesToModel: (images: string[], caption: string) =>
       activeSession.value.sendImagesToModel(images, caption),
+    continueConversation: () => activeSession.value.continueConversation(),
     setMute: (muted: boolean) => activeSession.value.setMute(muted),
     setLocalAudioEnabled: (enabled: boolean) =>
       activeSession.value.setLocalAudioEnabled(enabled),

@@ -62,32 +62,14 @@ function imageOf(result: ToolResult): {
 
 // --- Records -------------------------------------------------------------------
 
-// Read once, then kept: a record is changed in memory and written whole, so
-// two steps drawn at once don't lose each other's entries.
+// Read once, then kept in memory.
 const records = new Map<string, Slideshow | Storyboard>();
 
 const recordFile = (dir: string, id: string) => `${dir}/${id}.json`;
 
-async function saveRecord(dir: string, record: Slideshow | Storyboard) {
-  const file = recordFile(dir, record.id);
-  records.set(file, record);
-  try {
-    await artifactsFileOps.write(file, JSON.stringify(record, null, 2));
-  } catch (error) {
-    // It still works while the server runs.
-    logger.warn("Could not save a sequence record", {
-      file,
-      error: String(error),
-    });
-  }
-}
-
-async function loadRecord<T extends Slideshow | Storyboard>(
-  dir: string,
-  id: string,
+async function readRecord<T extends Slideshow | Storyboard>(
+  file: string,
 ): Promise<T | null> {
-  if (!SEQUENCE_ID.test(id)) return null;
-  const file = recordFile(dir, id);
   const cached = records.get(file);
   if (cached) return cached as T;
   try {
@@ -97,6 +79,50 @@ async function loadRecord<T extends Slideshow | Storyboard>(
   } catch {
     return null;
   }
+}
+
+async function loadRecord<T extends Slideshow | Storyboard>(
+  dir: string,
+  id: string,
+): Promise<T | null> {
+  return SEQUENCE_ID.test(id) ? readRecord<T>(recordFile(dir, id)) : null;
+}
+
+// One change to a record at a time, from loading it to writing it: two steps
+// drawn at once would otherwise each write their own copy, and the later
+// write could drop the other's entry.
+const pending = new Map<string, Promise<unknown>>();
+
+function oneAtATime<T>(file: string, change: () => Promise<T>): Promise<T> {
+  const run = (pending.get(file) ?? Promise.resolve()).then(change, change);
+  const settled = run.catch(() => undefined);
+  pending.set(file, settled);
+  void settled.then(() => {
+    if (pending.get(file) === settled) pending.delete(file);
+  });
+  return run;
+}
+
+/** Change a record (null when there is none yet) and save it. */
+function updateRecord<T extends Slideshow | Storyboard>(
+  dir: string,
+  id: string,
+  change: (record: T | null) => T,
+): Promise<void> {
+  const file = recordFile(dir, id);
+  return oneAtATime(file, async () => {
+    const record = change(await readRecord<T>(file));
+    records.set(file, record);
+    try {
+      await artifactsFileOps.write(file, JSON.stringify(record, null, 2));
+    } catch (error) {
+      // It still works while the server runs.
+      logger.warn("Could not save a sequence record", {
+        file,
+        error: String(error),
+      });
+    }
+  });
 }
 
 /** A saved picture to draw from, or null (logged) when it can't be read. */
@@ -164,23 +190,22 @@ async function presentSlide(
   // A failure keeps the image host's message and instructions.
   if (!imageData) return image;
 
-  const slideshow = (await loadRecord<Slideshow>(
-    SLIDESHOWS_DIR,
-    slideshowId,
-  )) ?? {
-    id: slideshowId,
-    title: "",
-    mode: slide.mode,
-    totalSlides: slide.totalSlides,
-    slides: {},
-  };
-  if (slide.slide === 1) slideshow.title = slide.title;
-  slideshow.slides[String(slide.slide)] = {
-    title: slide.title,
-    imagePrompt: slide.imagePrompt,
-    ...(imagePath && { imagePath }),
-  };
-  await saveRecord(SLIDESHOWS_DIR, slideshow);
+  await updateRecord<Slideshow>(SLIDESHOWS_DIR, slideshowId, (saved) => {
+    const slideshow = saved ?? {
+      id: slideshowId,
+      title: "",
+      mode: slide.mode,
+      totalSlides: slide.totalSlides,
+      slides: {},
+    };
+    if (slide.slide === 1) slideshow.title = slide.title;
+    slideshow.slides[String(slide.slide)] = {
+      title: slide.title,
+      imagePrompt: slide.imagePrompt,
+      ...(imagePath && { imagePath }),
+    };
+    return slideshow;
+  });
 
   const data: SlideData = {
     imageData,
@@ -252,7 +277,11 @@ async function defineStoryboard(
     })),
     panels: {},
   };
-  await saveRecord(STORYBOARDS_DIR, storyboard);
+  await updateRecord<Storyboard>(
+    STORYBOARDS_DIR,
+    storyboard.id,
+    () => storyboard,
+  );
 
   const saved = storyboard.characters
     .filter((c) => c.imagePath)
@@ -373,15 +402,18 @@ async function presentPanel(
     parsed.panel < storyboard.totalPanels && parsed.choices.length >= 2
       ? parsed.choices
       : [];
-  if (choices.length) storyboard.interactive = true;
-  storyboard.panels[String(parsed.panel)] = {
-    caption: parsed.caption,
-    characters: cast.map(({ character }) => character.name),
-    imagePrompt: parsed.imagePrompt,
-    ...(imagePath && { imagePath }),
-    ...(choices.length && { choices }),
-  };
-  await saveRecord(STORYBOARDS_DIR, storyboard);
+  await updateRecord<Storyboard>(STORYBOARDS_DIR, storyboard.id, (saved) => {
+    const latest = saved ?? storyboard;
+    if (choices.length) latest.interactive = true;
+    latest.panels[String(parsed.panel)] = {
+      caption: parsed.caption,
+      characters: cast.map(({ character }) => character.name),
+      imagePrompt: parsed.imagePrompt,
+      ...(imagePath && { imagePath }),
+      ...(choices.length && { choices }),
+    };
+    return latest;
+  });
 
   const data: PanelData = {
     imageData,

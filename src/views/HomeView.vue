@@ -326,6 +326,7 @@ const {
   sendFunctionCallOutput,
   sendInstructions,
   sendImagesToModel,
+  continueConversation,
   setMute: sessionSetMute,
   setLocalAudioEnabled,
   attachRemoteAudioElement,
@@ -506,6 +507,7 @@ const sequence = useSequence({
     !userSpeaking.value &&
     !isGeneratingImage.value,
   sendInstructions,
+  continueConversation,
 });
 
 // Wrapper to track results immediately
@@ -546,8 +548,12 @@ const lastSpeechStartedTime = ref<number | null>(null);
 
 // LLM audio playback state (for avatar lip-sync, visual feedback, etc.)
 const isAudioPlaying = ref(false);
-// Between the voice transport's speech started and stopped events.
+// Between the voice transport's speech started and stopped events. A session
+// that ends mid-speech (stopped, dropped, switched) sends no stopped event.
 const userSpeaking = ref(false);
+watch(chatActive, (active) => {
+  if (!active) userSpeaking.value = false;
+});
 
 registerEventHandlers({
   onToolCall: async (msg, id, argStr) => {
