@@ -77,11 +77,11 @@ const slideKey = (
   { slide, totalSlides, title, imagePrompt }: SlideArgs,
 ) => JSON.stringify([slideshowId, slide, totalSlides, title, imagePrompt]);
 
-// The slideshow being shown. Slides carry no ID, so a slideshow is known by
-// its mode, its length and its first slide's title: slide 1 with another
-// title, or another mode or length, starts a new one. Its ID names the file
-// the server saves it in (artifacts/slideshows/<id>.json).
-let slideshow: {
+// A slideshow as shown. Slides carry no ID, so a slideshow is known by its
+// mode, its length and its first slide's title: slide 1 with another title,
+// or another length, starts a new one. Its ID names the file it is saved in
+// (artifacts/slideshows/<id>.json).
+interface ShownSlideshow {
   id: string;
   mode: SlideMode;
   totalSlides: number;
@@ -94,25 +94,57 @@ let slideshow: {
    *  no later step of a guide passes until it has appeared and the user has
    *  spoken. */
   shownAt: number;
-} | null = null;
+}
 
-function slideshowFor(slide: SlideArgs) {
+// The latest slideshow of each mode: a presentation shown in the middle of a
+// guide (the user asked a question between steps) leaves the guide as it
+// was, so "go back to step 2" still shows that step as it was, and the next
+// step is still drawn from the one before it.
+const latest: Record<SlideMode, ShownSlideshow | null> = {
+  presentation: null,
+  steps: null,
+};
+
+// The slideshow whose slide was shown last. An identical request is dropped
+// as a repeat (Gemini Live) only while its slideshow is still the one shown;
+// after the other mode's slideshow, it is a request to see the slide again.
+let lastShown: ShownSlideshow | null = null;
+
+/** A slide shown earlier, shown again as it was, at once. */
+function showAgain(
+  show: ShownSlideshow,
+  slide: SlideArgs,
+  earlier: ToolResult,
+): ToolResult {
+  show.current = slide.slide;
+  show.shownAt = performance.now();
+  lastShown = show;
+  const noun = slide.mode === "steps" ? "step" : "slide";
+  return {
+    ...earlier,
+    uuid: undefined,
+    message: `${noun} ${slide.slide} of ${slide.totalSlides} is on the screen again, as it was`,
+    instructions: slideShownInstructions(slide),
+  };
+}
+
+function slideshowFor(slide: SlideArgs): ShownSlideshow {
+  const shown = latest[slide.mode];
   const same =
-    slideshow?.mode === slide.mode &&
-    slideshow.totalSlides === slide.totalSlides &&
-    (slide.slide !== 1 || slideshow.firstTitle === slide.title);
-  if (!slideshow || !same) {
-    slideshow = {
-      id: uuidv4().replace(/-/g, "").slice(0, 12),
-      mode: slide.mode,
-      totalSlides: slide.totalSlides,
-      firstTitle: slide.slide === 1 ? slide.title : "",
-      slides: new Map(),
-      current: 0,
-      shownAt: -Infinity,
-    };
-  }
-  return slideshow;
+    shown?.totalSlides === slide.totalSlides &&
+    (slide.slide !== 1 || shown.firstTitle === slide.title);
+  if (shown && same) return shown;
+  const started: ShownSlideshow = {
+    id: uuidv4().replace(/-/g, "").slice(0, 12),
+    mode: slide.mode,
+    totalSlides: slide.totalSlides,
+    firstTitle: slide.slide === 1 ? slide.title : "",
+    slides: new Map(),
+    current: 0,
+    shownAt: -Infinity,
+  };
+  latest[slide.mode] = started;
+  return started;
 }
 
 async function presentSlide(
@@ -159,17 +191,15 @@ async function presentSlide(
       };
     }
     // Going back (or forward again): the step as it was, at once.
-    show.current = slide.slide;
-    show.shownAt = performance.now();
-    return {
-      ...earlier,
-      uuid: undefined,
-      message: `step ${slide.slide} of ${slide.totalSlides} is on the screen again, as it was`,
-      instructions: slideShownInstructions(slide),
-    };
+    return showAgain(show, slide, earlier);
   }
   const key = slideKey(show.id, slide);
   if (await repeats.alreadyShown(key)) {
+    // A guide's step has replaced it since: shown again, as it was.
+    const shownBefore = show.slides.get(slide.slide);
+    if (shownBefore && lastShown !== show) {
+      return showAgain(show, slide, shownBefore);
+    }
     // Not shown again, and no instructions: the model goes on by itself.
     return {
       message: `slide ${slide.slide} of ${slide.totalSlides} is already on the screen`,
@@ -198,6 +228,7 @@ async function presentSlide(
       show.slides.set(slide.slide, image);
       show.current = slide.slide;
       show.shownAt = performance.now();
+      lastShown = show;
     }
     // A failure keeps the image host's message and instructions.
     return image;
