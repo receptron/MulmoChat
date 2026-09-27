@@ -105,6 +105,29 @@ const latest: Record<SlideMode, ShownSlideshow | null> = {
   steps: null,
 };
 
+// The slideshow whose slide was shown last. An identical request is dropped
+// as a repeat (Gemini Live) only while its slideshow is still the one shown;
+// after the other mode's slideshow, it is a request to see the slide again.
+let lastShown: ShownSlideshow | null = null;
+
+/** A slide shown earlier, shown again as it was, at once. */
+function showAgain(
+  show: ShownSlideshow,
+  slide: SlideArgs,
+  earlier: ToolResult,
+): ToolResult {
+  show.current = slide.slide;
+  show.shownAt = performance.now();
+  lastShown = show;
+  const noun = slide.mode === "steps" ? "step" : "slide";
+  return {
+    ...earlier,
+    uuid: undefined,
+    message: `${noun} ${slide.slide} of ${slide.totalSlides} is on the screen again, as it was`,
+    instructions: slideShownInstructions(slide),
+  };
+}
+
 function slideshowFor(slide: SlideArgs): ShownSlideshow {
   const shown = latest[slide.mode];
   const same =
@@ -168,17 +191,15 @@ async function presentSlide(
       };
     }
     // Going back (or forward again): the step as it was, at once.
-    show.current = slide.slide;
-    show.shownAt = performance.now();
-    return {
-      ...earlier,
-      uuid: undefined,
-      message: `step ${slide.slide} of ${slide.totalSlides} is on the screen again, as it was`,
-      instructions: slideShownInstructions(slide),
-    };
+    return showAgain(show, slide, earlier);
   }
   const key = slideKey(show.id, slide);
   if (await repeats.alreadyShown(key)) {
+    // A guide's step has replaced it since: shown again, as it was.
+    const shownBefore = show.slides.get(slide.slide);
+    if (shownBefore && lastShown !== show) {
+      return showAgain(show, slide, shownBefore);
+    }
     // Not shown again, and no instructions: the model goes on by itself.
     return {
       message: `slide ${slide.slide} of ${slide.totalSlides} is already on the screen`,
@@ -207,6 +228,7 @@ async function presentSlide(
       show.slides.set(slide.slide, image);
       show.current = slide.slide;
       show.shownAt = performance.now();
+      lastShown = show;
     }
     // A failure keeps the image host's message and instructions.
     return image;
