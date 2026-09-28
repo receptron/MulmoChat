@@ -24,6 +24,7 @@ import {
 import { createFileOps } from "./fileOps";
 import { trackFileChanges } from "./fileChanges";
 import { workspaceRoot } from "./workspace";
+import { logger } from "../utils/logger";
 
 const DOCS_DIR = "artifacts/documents";
 const PREFIX_MAX_LENGTH = 60;
@@ -183,7 +184,10 @@ export function createMarkdownHostApp(
           const result = await generateImage(documentImagePrompt(prompt));
           const imageData = imageDataOf(result);
           if (!imageData) {
-            console.warn("[document] no image for", prompt, result.message);
+            logger.warn("[document] no image", {
+              prompt,
+              reason: result.message,
+            });
           }
           return imageData;
         },
