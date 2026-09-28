@@ -48,7 +48,10 @@ export async function generateGeminiImage({
   model,
 }: ImageRequest): Promise<GeminiImageResult> {
   // Tests: MULMOCHAT_MOCK_IMAGE_MS (../utils/mockImage.ts).
-  const mocked = await mockImage(prompt, images?.length ?? 0);
+  const mocked = await mockImage(
+    prompt,
+    Array.isArray(images) ? images.length : 0,
+  );
   if (mocked) return { success: true, imageData: mocked, message: undefined };
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey) {
@@ -160,7 +163,10 @@ export async function generateOpenAIImage({
   size = "1024x1024",
 }: ImageRequest & { size?: string }): Promise<OpenAIImageResult> {
   // Tests: MULMOCHAT_MOCK_IMAGE_MS (../utils/mockImage.ts).
-  const mocked = await mockImage(prompt, images.length);
+  const mocked = await mockImage(
+    prompt,
+    Array.isArray(images) ? images.length : 0,
+  );
   if (mocked) return { success: true, imageData: mocked, message: undefined };
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!openaiKey) {

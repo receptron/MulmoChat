@@ -60,9 +60,12 @@ app.use((err: Error, req: Request, res: Response, __next: NextFunction) => {
   res.status(500).json({ error: "Internal Server Error" });
 });
 
+// Read before listening: a mistyped MULMOCHAT_MOCK_IMAGE_MS stops the server
+// here rather than letting a test run on the real, paid image models.
+const mockDelay = mockImageDelayMs();
+
 app.listen(PORT, "0.0.0.0", () => {
   logger.info("Server started", { port: PORT });
-  const mockDelay = mockImageDelayMs();
   if (mockDelay !== undefined) {
     logger.warn("Images are mocked (MULMOCHAT_MOCK_IMAGE_MS)", {
       delayMs: mockDelay,

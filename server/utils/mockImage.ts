@@ -14,12 +14,19 @@ const WIDTH = 1024;
 const HEIGHT = 576;
 const MARGIN = 32;
 
-/** The mock's delay in milliseconds, or undefined when images are real. */
+/** The mock's delay in milliseconds, or undefined when images are real.
+ *  Throws for a value that isn't a delay: a mistyped setting must not fall
+ *  back to the real, paid models. */
 export function mockImageDelayMs(): number | undefined {
   const raw = process.env.MULMOCHAT_MOCK_IMAGE_MS;
   if (raw === undefined || raw === "") return undefined;
   const ms = Number(raw);
-  return Number.isFinite(ms) && ms >= 0 ? ms : undefined;
+  if (!Number.isFinite(ms) || ms < 0) {
+    throw new Error(
+      `MULMOCHAT_MOCK_IMAGE_MS must be a delay in milliseconds, not "${raw}"`,
+    );
+  }
+  return ms;
 }
 
 let count = 0;
@@ -104,12 +111,15 @@ function wrap(text: string, width: number): string[] {
   const lines: string[] = [];
   let line = "";
   for (const word of text.split(/\s+/).filter(Boolean)) {
-    const piece = word.length > width ? word.slice(0, width) : word;
-    if (line && line.length + 1 + piece.length > width) {
-      lines.push(line);
-      line = piece;
-    } else {
-      line = line ? `${line} ${piece}` : piece;
+    // A word longer than a line (a URL) is split across lines, not cut.
+    for (let at = 0; at < word.length; at += width) {
+      const piece = word.slice(at, at + width);
+      if (line && line.length + 1 + piece.length > width) {
+        lines.push(line);
+        line = piece;
+      } else {
+        line = line ? `${line} ${piece}` : piece;
+      }
     }
   }
   if (line) lines.push(line);
