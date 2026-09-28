@@ -265,7 +265,16 @@ export function useToolResults(
       // than that audio (Grok explaining a slide for 30 seconds, the next
       // one drawn in 10) otherwise appeared while it was still talking
       // about the one before.
-      if (executed.sequence && !executed.cancelled) {
+      // Not a step that waits for the user (a guide step, a panel with
+      // choices): the plugin holds the step after it until the user has
+      // spoken since it appeared, and it counts from when execute()
+      // returned, so speech during a wait here would count as the user
+      // having seen a step that isn't on the screen yet.
+      if (
+        executed.sequence &&
+        !executed.sequence.waitsForUser &&
+        !executed.cancelled
+      ) {
         await options.waitForSpeechEnd?.();
       }
       const replaced = options.onResult?.(executed, startedAt);
