@@ -51,9 +51,9 @@ interface UseToolResultsOptions {
   onResult?: (result: ToolResult, startedAt: number) => string | undefined;
   /** When the user last spoke (Date.now()), for ToolContext.userSpokeAt. */
   getUserSpokeAt?: () => number | undefined;
-  /** Resolves when the model's voice has finished playing (at once when it
-   *  isn't playing). */
-  waitForSpeechEnd?: () => Promise<void>;
+  /** Resolves when the model's voice has finished playing: true to go on,
+   *  false when the chat ended while waiting (the step is dropped). */
+  waitForSpeechEnd?: () => Promise<boolean>;
 }
 
 interface ToolCallMessage {
@@ -275,7 +275,9 @@ export function useToolResults(
         !executed.sequence.waitsForUser &&
         !executed.cancelled
       ) {
-        await options.waitForSpeechEnd?.();
+        // Stopped while it waited: not shown after Stop, and there is no
+        // session to send it to.
+        if ((await options.waitForSpeechEnd?.()) === false) return;
       }
       const replaced = options.onResult?.(executed, startedAt);
       const result = replaced

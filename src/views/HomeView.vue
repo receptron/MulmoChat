@@ -565,27 +565,30 @@ const SPEECH_WAIT_MAX_MS = 120_000;
 const SPEECH_END_QUIET_MS = 800;
 
 /** Resolves when the model's voice has finished playing (stopped for
- *  SPEECH_END_QUIET_MS), the chat has ended, or SPEECH_WAIT_MAX_MS has
- *  passed. */
-function waitForSpeechEnd(): Promise<void> {
-  if (!chatActive.value) return Promise.resolve();
+ *  SPEECH_END_QUIET_MS) or SPEECH_WAIT_MAX_MS has passed: true; or when the
+ *  chat ended while waiting: false, so the step isn't shown after Stop. A
+ *  chat that isn't active (text chat) doesn't wait. */
+function waitForSpeechEnd(): Promise<boolean> {
+  if (!chatActive.value) return Promise.resolve(true);
   const started = Date.now();
   return new Promise((resolve) => {
     let quiet: ReturnType<typeof setTimeout> | undefined;
-    const done = (why: string) => {
+    const done = (why: string, goOn = true) => {
       stopWatching();
       clearTimeout(limit);
       clearTimeout(quiet);
       const waited = Date.now() - started;
       if (waited > SPEECH_END_QUIET_MS) {
-        console.info(`[sequence] step shown after ${waited} ms (${why})`);
+        console.info(
+          `[sequence] step ${goOn ? "shown" : "dropped"} after ${waited} ms (${why})`,
+        );
       }
-      resolve();
+      resolve(goOn);
     };
     const check = () => {
       clearTimeout(quiet);
       quiet = undefined;
-      if (!chatActive.value) return done("chat ended");
+      if (!chatActive.value) return done("chat ended", false);
       if (!isAudioPlaying.value) {
         quiet = setTimeout(() => done("voice ended"), SPEECH_END_QUIET_MS);
       }
