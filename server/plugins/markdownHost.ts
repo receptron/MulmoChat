@@ -184,9 +184,11 @@ export function createMarkdownHostApp(
           const result = await generateImage(documentImagePrompt(prompt));
           const imageData = imageDataOf(result);
           if (!imageData) {
+            // The reason, not the prompt: alt text can carry the document's
+            // content, and these logs are kept.
             logger.warn("[document] no image", {
-              prompt,
               reason: result.message,
+              promptLength: prompt.length,
             });
           }
           return imageData;
