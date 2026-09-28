@@ -581,8 +581,14 @@ function waitForSpeechEnd(): Promise<void> {
 // Between the voice transport's speech started and stopped events. A session
 // that ends mid-speech (stopped, dropped, switched) sends no stopped event.
 const userSpeaking = ref(false);
+// A session that ends mid-reply (stopped, dropped, switched) may send no
+// playback-stopped event either (OpenAI's stopChat doesn't), and a stale
+// isAudioPlaying would hold every sequence step of the next session for
+// SPEECH_WAIT_MAX_MS.
 watch(chatActive, (active) => {
-  if (!active) userSpeaking.value = false;
+  if (active) return;
+  userSpeaking.value = false;
+  isAudioPlaying.value = false;
 });
 
 registerEventHandlers({
