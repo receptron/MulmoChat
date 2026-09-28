@@ -558,24 +558,41 @@ const isAudioPlaying = ref(false);
 // The longest a sequence step waits for the model's voice to finish: a
 // playback-stopped event that never comes must not hold the step forever.
 const SPEECH_WAIT_MAX_MS = 120_000;
+// How long playback must stay stopped to count as the end of the voice. The
+// audio queue can run dry for a moment while a reply's audio is still
+// arriving (seen with Grok: stopped and started again within a second),
+// which would otherwise release a step mid-explanation.
+const SPEECH_END_QUIET_MS = 800;
 
-/** Resolves when the model's voice has finished playing, the chat has ended,
- *  or SPEECH_WAIT_MAX_MS has passed. */
+/** Resolves when the model's voice has finished playing (stopped for
+ *  SPEECH_END_QUIET_MS), the chat has ended, or SPEECH_WAIT_MAX_MS has
+ *  passed. */
 function waitForSpeechEnd(): Promise<void> {
-  if (!isAudioPlaying.value || !chatActive.value) return Promise.resolve();
+  if (!chatActive.value) return Promise.resolve();
+  const started = Date.now();
   return new Promise((resolve) => {
-    const done = () => {
+    let quiet: ReturnType<typeof setTimeout> | undefined;
+    const done = (why: string) => {
       stopWatching();
-      clearTimeout(timer);
+      clearTimeout(limit);
+      clearTimeout(quiet);
+      const waited = Date.now() - started;
+      if (waited > SPEECH_END_QUIET_MS) {
+        console.info(`[sequence] step shown after ${waited} ms (${why})`);
+      }
       resolve();
     };
-    const timer = setTimeout(done, SPEECH_WAIT_MAX_MS);
-    const stopWatching = watch(
-      [isAudioPlaying, chatActive],
-      ([playing, active]) => {
-        if (!playing || !active) done();
-      },
-    );
+    const check = () => {
+      clearTimeout(quiet);
+      quiet = undefined;
+      if (!chatActive.value) return done("chat ended");
+      if (!isAudioPlaying.value) {
+        quiet = setTimeout(() => done("voice ended"), SPEECH_END_QUIET_MS);
+      }
+    };
+    const limit = setTimeout(() => done("waited too long"), SPEECH_WAIT_MAX_MS);
+    const stopWatching = watch([isAudioPlaying, chatActive], check);
+    check();
   });
 }
 // Between the voice transport's speech started and stopped events. A session
