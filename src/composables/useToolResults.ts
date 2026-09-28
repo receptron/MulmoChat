@@ -51,6 +51,9 @@ interface UseToolResultsOptions {
   onResult?: (result: ToolResult, startedAt: number) => string | undefined;
   /** When the user last spoke (Date.now()), for ToolContext.userSpokeAt. */
   getUserSpokeAt?: () => number | undefined;
+  /** Resolves when the model's voice has finished playing (at once when it
+   *  isn't playing). */
+  waitForSpeechEnd?: () => Promise<void>;
 }
 
 interface ToolCallMessage {
@@ -255,6 +258,16 @@ export function useToolResults(
       }
 
       const executed = await options.toolExecute(context, msg.name, args);
+      // A step of a sequence (a slide, a story panel) is shown, and goes back
+      // to the model, when the model has finished talking about the step
+      // before. The model asks for the next step at the end of its reply,
+      // long before the reply's audio has played, so a step drawn faster
+      // than that audio (Grok explaining a slide for 30 seconds, the next
+      // one drawn in 10) otherwise appeared while it was still talking
+      // about the one before.
+      if (executed.sequence && !executed.cancelled) {
+        await options.waitForSpeechEnd?.();
+      }
       const replaced = options.onResult?.(executed, startedAt);
       const result = replaced
         ? { ...executed, instructions: replaced }
