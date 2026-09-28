@@ -738,8 +738,17 @@ The execute function receives `ToolContext`. Through this, you can access app fe
 interface ToolContext {
   currentResult?: ToolResult | null;  // Currently selected result (used when updating)
   app?: ToolContextApp;               // Features provided by the app
+  userSpokeAt?: number;               // 2.1: when the user last spoke or sent a message (Date.now() ms)
+  conversationId?: string;            // 2.2: which conversation the call belongs to
 }
 ```
+
+- **`userSpokeAt`** is absent when the host doesn't know; a plugin then doesn't wait for the user.
+  It is a plain number, so a host that runs `execute()` on a server sends it with the request
+  (MulmoChat's `runOnServer` does).
+- **`conversationId`**: a plugin that keeps state in memory between calls keeps it per
+  `conversationId`. A server-run plugin serves every browser tab from one process, and MulmoChat
+  gives each tab its own ID. Compare it, don't parse it. Absent means one conversation.
 
 ### Features Provided by context.app
 
@@ -751,7 +760,7 @@ MulmoChat's `context.app` provides the following features:
 | `setConfig(key, value)` | Save configuration value *Allowed plugins only | `void` | SetImageStyle |
 | `generateImage(prompt)` | Generate an image. On the server (server-run plugins) it is also saved as `artifacts/images/<YYYY>/<MM>/<id>.<ext>`, with the path in `data.imagePath` and in the message (only when the save worked; otherwise the message says there is no path) | `Promise<ToolResult>` | GenerateImage |
 | `editImage(prompt)` | Edit the image selected on the screen. On the server it edits the saved file (`data.imagePath`; an unsaved image is saved first) and saves the result | `Promise<ToolResult>` | EditImage |
-| `editImages(prompt, imagePaths)` | Server only: a new image from 1 to 8 saved images (`artifacts/images/…`, `.png`/`.jpg`/`.webp`) and a prompt, to restyle one or to draw with references such as character sheets. The same arguments as MulmoClaude's `editImages`. ComfyUI ignores the images and says so | `Promise<ToolResult>` | — |
+| `editImages(prompt, imagePaths)` | Server only: a new image from 1 to 8 saved images (`artifacts/images/…`, `.png`/`.jpg`/`.webp`) and a prompt, to restyle one or to draw with references such as character sheets. The same arguments as MulmoClaude's `editImages`. ComfyUI ignores the images and says so | `Promise<ToolResult>` | presentPanel (`@gui-chat-plugin/sequence`) |
 | `generateHtml({ prompt })` | Generate HTML with LLM | `Promise<{ success, html?, error? }>` | GenerateHtml, EditHtml |
 | `browseUrl(url)` | Fetch web page | `Promise<BrowseResult>` | Browse |
 | `getTwitterEmbed(url)` | Get Twitter embed | `Promise<string>` | Browse |
@@ -761,6 +770,35 @@ MulmoChat's `context.app` provides the following features:
 | `getImageConfig()` | Get image generation config | `ImageGenerationConfig` | SetImageStyle |
 | `getRoles()` | Get role list | `Role[]` | SwitchRole |
 | `switchRole(roleId)` | Switch role | `void` | SwitchRole |
+
+`generateImage` and `editImages` are gui-chat-protocol conventions (the [API reference](https://github.com/receptron/gui-chat-protocol/blob/main/spec/API_REFERENCE.md)):
+MulmoGlass provides them with the same shapes, so a plugin that checks for them runs in both. The
+others are MulmoChat's own.
+
+### Steps Shown One at a Time (sequences)
+
+A tool that shows a sequence one step per call, such as slides or a story's panels, returns
+`sequence` on each result (gui-chat-protocol 2.1): where the sequence is, and the call for the next
+step. A host that supports sequences (MulmoChat, MulmoGlass) asks the model once to go on when it
+ends a reply mid-sequence, which models do. Set `sequence: null` for a step that wasn't shown (its
+picture failed), and leave it out on results that aren't steps. A step that waits for the user (a
+how-to step, a story choice) sets `waitsForUser`; the plugin then holds a later step until
+`context.userSpokeAt` is after the waiting step appeared.
+
+```typescript
+return {
+  data, message, instructions,
+  sequence: {
+    step: 2, total: 5, kind: "slideshow", label: "Slide 2 of 5",
+    onShown: "explain it", nextCall: "call presentSlide for slide 3 of 5",
+  },
+};
+```
+
+The shape and the host side (`createSequenceKeeper`) are in the [API reference](https://github.com/receptron/gui-chat-protocol/blob/main/spec/API_REFERENCE.md#sequences-21).
+[`@gui-chat-plugin/sequence`](https://github.com/receptron/gui-chat-plugins/tree/main/packages/sequence)
+(presentSlide, defineStoryboard, presentPanel) is the working example: the holds, a repeat guard,
+state per `conversationId`, and drawing with `generateImage` / `editImages`.
 
 ### Concrete Implementation Examples
 

@@ -738,8 +738,17 @@ execute 関数には `ToolContext` が渡されます。これを通じてアプ
 interface ToolContext {
   currentResult?: ToolResult | null;  // 現在選択されている結果（updating 時に使用）
   app?: ToolContextApp;               // アプリが提供する機能
+  userSpokeAt?: number;               // 2.1: ユーザーが最後に話した、またはメッセージを送った時刻（Date.now() のミリ秒）
+  conversationId?: string;            // 2.2: その呼び出しが属する会話
 }
 ```
+
+- **`userSpokeAt`** は、ホストが知らない場合はありません。そのときプラグインはユーザーを待ちません。
+  ただの数値なので、`execute()` をサーバーで動かすホストはリクエストに入れて送ります
+  （MulmoChat の `runOnServer` がそうしています）。
+- **`conversationId`**: 呼び出しの間の状態をメモリに持つプラグインは、`conversationId` ごとに持ちます。
+  サーバーで動くプラグインは、すべてのブラウザのタブを 1 つのプロセスで受けます。MulmoChat はタブごとに別の ID を付けます。
+  比較にだけ使い、中身を解釈しないでください。ない場合は会話が 1 つです。
 
 ### context.app が提供する機能一覧
 
@@ -751,7 +760,7 @@ MulmoChat の `context.app` は以下の機能を提供します：
 | `setConfig(key, value)` | 設定値を保存 ※許可されたプラグインのみ | `void` | SetImageStyle |
 | `generateImage(prompt)` | 画像を生成します。サーバー（サーバーで動くプラグイン）では `artifacts/images/<YYYY>/<MM>/<id>.<ext>` にも保存され、そのパスが `data.imagePath` とメッセージに入ります（保存できた場合のみ。保存できなかった場合は、パスがないことをメッセージで伝えます） | `Promise<ToolResult>` | GenerateImage |
 | `editImage(prompt)` | 画面で選択中の画像を編集します。サーバーでは保存済みのファイル（`data.imagePath`。保存されていない画像は先に保存）を編集し、結果も保存します | `Promise<ToolResult>` | EditImage |
-| `editImages(prompt, imagePaths)` | サーバーのみ。保存済みの画像 1〜8 枚（`artifacts/images/…`、`.png`/`.jpg`/`.webp`）とプロンプトから新しい画像を作ります。1 枚の画像のスタイル変更や、キャラクターシートなどを参照画像にした描画に使います。引数は MulmoClaude の `editImages` と同じです。ComfyUI は画像を使わず、その旨を結果に書きます | `Promise<ToolResult>` | — |
+| `editImages(prompt, imagePaths)` | サーバーのみ。保存済みの画像 1〜8 枚（`artifacts/images/…`、`.png`/`.jpg`/`.webp`）とプロンプトから新しい画像を作ります。1 枚の画像のスタイル変更や、キャラクターシートなどを参照画像にした描画に使います。引数は MulmoClaude の `editImages` と同じです。ComfyUI は画像を使わず、その旨を結果に書きます | `Promise<ToolResult>` | presentPanel（`@gui-chat-plugin/sequence`） |
 | `generateHtml({ prompt })` | LLM で HTML 生成 | `Promise<{ success, html?, error? }>` | GenerateHtml, EditHtml |
 | `browseUrl(url)` | Web ページ取得 | `Promise<BrowseResult>` | Browse |
 | `getTwitterEmbed(url)` | Twitter 埋め込み取得 | `Promise<string>` | Browse |
@@ -761,6 +770,33 @@ MulmoChat の `context.app` は以下の機能を提供します：
 | `getImageConfig()` | 画像生成設定を取得 | `ImageGenerationConfig` | SetImageStyle |
 | `getRoles()` | ロール一覧を取得 | `Role[]` | SwitchRole |
 | `switchRole(roleId)` | ロールを切り替え | `void` | SwitchRole |
+
+`generateImage` と `editImages` は gui-chat-protocol の決まりごとです（[API リファレンス](https://github.com/receptron/gui-chat-protocol/blob/main/spec/API_REFERENCE.md)）。
+MulmoGlass も同じ形で提供しているので、あるかを確かめてから呼ぶプラグインは両方で動きます。ほかは MulmoChat 独自のものです。
+
+### 1 ステップずつ見せるツール（シーケンス）
+
+スライドや物語のコマのように、1 回の呼び出しで 1 ステップずつ見せるツールは、各結果に `sequence` を返します
+（gui-chat-protocol 2.1）。シーケンスのどこにいるかと、次のステップの呼び出しを書きます。シーケンスに対応したホスト
+（MulmoChat、MulmoGlass）は、モデルがシーケンスの途中で返答を終えたとき（実際に起きます）、続けるよう一度だけ頼みます。
+表示できなかったステップ（画像の失敗）には `sequence: null` を、ステップではない結果には何も付けません。
+ユーザーを待つステップ（手順の 1 ステップ、物語の選択肢）は `waitsForUser` を付けます。その場合プラグインは、
+待っているステップが表示された後に `context.userSpokeAt` が来るまで、次のステップを保留します。
+
+```typescript
+return {
+  data, message, instructions,
+  sequence: {
+    step: 2, total: 5, kind: "slideshow", label: "Slide 2 of 5",
+    onShown: "explain it", nextCall: "call presentSlide for slide 3 of 5",
+  },
+};
+```
+
+形とホスト側（`createSequenceKeeper`）は [API リファレンス](https://github.com/receptron/gui-chat-protocol/blob/main/spec/API_REFERENCE.md#sequences-21) にあります。
+[`@gui-chat-plugin/sequence`](https://github.com/receptron/gui-chat-plugins/tree/main/packages/sequence)
+（presentSlide、defineStoryboard、presentPanel）が実際に動く例です。保留、重複呼び出しの防止、`conversationId` ごとの状態、
+`generateImage` / `editImages` での描画が入っています。
 
 ### 具体的な実装例
 
