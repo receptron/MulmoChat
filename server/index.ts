@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import apiRoutes from "./routes/api.js";
 import { htmlPreviewRouter } from "./plugins/htmlHost.js";
 import { logger, logApiError } from "./utils/logger.js";
+import { mockImageDelayMs } from "./utils/mockImage.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,4 +62,10 @@ app.use((err: Error, req: Request, res: Response, __next: NextFunction) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   logger.info("Server started", { port: PORT });
+  const mockDelay = mockImageDelayMs();
+  if (mockDelay !== undefined) {
+    logger.warn("Images are mocked (MULMOCHAT_MOCK_IMAGE_MS)", {
+      delayMs: mockDelay,
+    });
+  }
 });

@@ -20,6 +20,7 @@ The project uses yarn (`yarn.lock`); `npm run <script>` also works.
 
 - `yarn dev` — Vite client plus `tsx server/index.ts` on port 3001. `yarn dev:client` / `yarn dev:server` for one side.
 - `yarn typecheck` (`vue-tsc --noEmit`), `yarn lint`, `yarn format`, `yarn knip` (dead code, report-only).
+- `MULMOCHAT_MOCK_IMAGE_MS=8000 yarn dev:server` mocks every Gemini and OpenAI image: a PNG showing its prompt, after that many milliseconds (`server/utils/mockImage.ts`). For voice tests of slideshows and stories without spending on images.
 - Provider smoke tests call real APIs with the keys in `.env`: `yarn test:text:<openai|anthropic|google|ollama>`, `yarn test:tools:<provider>`, `yarn test:image:<comfy|openai>`. Benchmark: `yarn benchmark:llm`.
 - **Do NOT run `npm run build`, `build:server`, `preview` or `start`.** They create build artifacts the repo doesn't want. CI builds on every PR.
 
