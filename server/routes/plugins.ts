@@ -3,6 +3,7 @@ import { getServerPlugins } from "../plugins/registry";
 import {
   createAppContext,
   parsePluginRequestConfig,
+  requestToolContext,
 } from "../plugins/appContext";
 import { artifactsFileOps } from "../plugins/workspace";
 import { hostToolDefinitions, pluginHostHandlers } from "../plugins/dispatch";
@@ -71,11 +72,13 @@ router.post(
       } else if (execute) {
         run = () => execute(args, config);
       } else if (plugin) {
+        const requestConfig = parsePluginRequestConfig(config);
         run = () =>
           plugin.execute(
             {
-              app: createAppContext(parsePluginRequestConfig(config)),
+              app: createAppContext(requestConfig),
               files: { artifacts: artifactsFileOps },
+              ...requestToolContext(requestConfig),
             },
             args,
           );

@@ -9,4 +9,6 @@ export const PLUGIN_PACKAGES: readonly string[] = [
   "@mulmoclaude/html-plugin",
   "@mulmoclaude/shapescript-plugin",
   "@mulmoclaude/mulmoscript-plugin",
+  // presentSlide, defineStoryboard, presentPanel (one core per tool)
+  "@gui-chat-plugin/sequence",
 ];

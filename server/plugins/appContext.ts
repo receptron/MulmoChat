@@ -1,7 +1,11 @@
 // Host backends handed to server-run plugins as gui-chat-protocol's
 // ToolContext.app. Built per request from the settings the browser sends
 // (the image backend, models and style are per-user browser preferences).
-import type { ToolContextApp, ToolResult } from "gui-chat-protocol";
+import type {
+  ToolContext,
+  ToolContextApp,
+  ToolResult,
+} from "gui-chat-protocol";
 import { generateGeminiImage, generateOpenAIImage } from "../routes/image";
 import { generateComfyImage } from "../routes/comfyui";
 import { logger } from "../utils/logger";
@@ -37,6 +41,10 @@ export interface CurrentImage {
 export interface PluginRequestConfig {
   imageGeneration: ImageGenerationSettings;
   currentImage?: CurrentImage;
+  /** When the user last spoke (ms since the epoch), for gui-chat-protocol's
+   *  ToolContext.userSpokeAt: the sequence tools hold a step that waits for
+   *  the user until they have spoken. */
+  userSpokeAt?: number;
 }
 
 const IMAGE_BACKENDS: readonly ImageBackend[] = ["gemini", "openai", "comfyui"];
@@ -78,6 +86,31 @@ export function parsePluginRequestConfig(raw: unknown): PluginRequestConfig {
   return {
     imageGeneration: parseImageSettings(config.imageGeneration),
     currentImage: parseCurrentImage(config.currentImage),
+    ...(typeof config.userSpokeAt === "number" &&
+      Number.isFinite(config.userSpokeAt) && {
+        userSpokeAt: config.userSpokeAt,
+      }),
+  };
+}
+
+/**
+ * The rest of gui-chat-protocol's ToolContext for a server-run plugin, from
+ * what the browser sent: `userSpokeAt`, and `currentResult` as the picture on
+ * the screen, by its saved path only (the sequence tools compare pictures by
+ * path, so a step's data doesn't travel back with every call).
+ */
+export function requestToolContext({
+  currentImage,
+  userSpokeAt,
+}: PluginRequestConfig): Pick<ToolContext, "currentResult" | "userSpokeAt"> {
+  return {
+    ...(currentImage?.imagePath && {
+      currentResult: {
+        message: "",
+        data: { imagePath: currentImage.imagePath },
+      },
+    }),
+    ...(userSpokeAt !== undefined && { userSpokeAt }),
   };
 }
 
@@ -117,10 +150,9 @@ async function runImageBackend(
  * generateImageCommon, with the image as a data URL so the existing ImageView
  * renders it unchanged. The image is also saved (./imageStore.ts), and the
  * result says where (`data.imagePath`, "saved to …"), so a later call can
- * refer to it. Exported for host tools that draw with images they loaded
- * themselves (./sequenceHost.ts).
+ * refer to it.
  */
-export async function generateImage(
+async function generateImage(
   prompt: string,
   settings: ImageGenerationSettings,
   inputImages: InputImage[] = [],

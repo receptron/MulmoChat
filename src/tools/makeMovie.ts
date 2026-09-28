@@ -10,7 +10,7 @@ import {
   MAKE_MOVIE,
   MAKE_MOVIE_DEFINITION,
   MAKE_MOVIE_PROMPT,
-} from "../../server/plugins/sequenceTools";
+} from "../../server/plugins/movieTools";
 
 const plugin: ToolPlugin = {
   toolDefinition: MAKE_MOVIE_DEFINITION,

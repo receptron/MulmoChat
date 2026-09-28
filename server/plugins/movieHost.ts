@@ -1,5 +1,6 @@
 // makeMovie: a narrated movie of a storyboard or a slideshow, from the
-// pictures already made (./sequenceHost.ts saved them and their records).
+// pictures already made (@gui-chat-plugin/sequence saved them and their
+// records).
 //
 // 1. Load the record and check every picture: a saved image under
 //    artifacts/images/ that still exists.
@@ -20,13 +21,14 @@ import path from "node:path";
 import type { ToolResult } from "gui-chat-protocol";
 import { artifactsFileOps } from "./workspace";
 import { movieUnavailable, saveScript } from "./mulmoscriptHost";
-import { loadRecord, SLIDESHOWS_DIR, STORYBOARDS_DIR } from "./sequenceHost";
 import {
-  MAKE_MOVIE,
-  parseMovieArgs,
+  loadRecord,
+  SLIDESHOWS_DIR,
+  STORYBOARDS_DIR,
   type Slideshow,
   type Storyboard,
-} from "./sequenceTools";
+} from "@gui-chat-plugin/sequence";
+import { MAKE_MOVIE, parseMovieArgs } from "./movieTools";
 import { generateText, getProviderAvailability } from "../llm/textService";
 import type { TextLLMProviderId } from "../llm/types";
 import { errorMessageOf } from "../utils/imageGenerationError";
@@ -246,8 +248,16 @@ async function makeMovie(
 
   const record =
     parsed.kind === "storyboard"
-      ? await loadRecord<Storyboard>(STORYBOARDS_DIR, parsed.id)
-      : await loadRecord<Slideshow>(SLIDESHOWS_DIR, parsed.id);
+      ? await loadRecord<Storyboard>(
+          artifactsFileOps,
+          STORYBOARDS_DIR,
+          parsed.id,
+        )
+      : await loadRecord<Slideshow>(
+          artifactsFileOps,
+          SLIDESHOWS_DIR,
+          parsed.id,
+        );
   if (!record) {
     return { message: `there is no ${parsed.kind} "${parsed.id}"` };
   }

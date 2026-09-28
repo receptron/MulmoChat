@@ -51,8 +51,7 @@ import { wrapWithPluginRuntime } from "./pluginRuntime";
 import { withMulmoScriptHostAdapter } from "./mulmoScriptHost";
 import { RenderShapeScriptPlugin } from "./renderShapeScript";
 import { ReadXPostPlugin, SearchXPlugin } from "./xTools";
-import { PresentSlidePlugin } from "./presentSlide";
-import { DefineStoryboardPlugin, PresentPanelPlugin } from "./storyboard";
+import { plugins as sequencePlugins } from "@gui-chat-plugin/sequence/vue";
 import { MakeMoviePlugin } from "./makeMovie";
 
 // generateImage's own prompt says the model MUST draw whenever it talks about
@@ -94,6 +93,29 @@ const ServerEditImagePlugin = {
     currentImage: currentImageOf(context),
   })),
 };
+
+// Slideshows, step-by-step guides and stories told in pictures
+// (@gui-chat-plugin/sequence: presentSlide, defineStoryboard, presentPanel)
+// run on the server, which draws with the user's image settings and saves the
+// records (artifacts/slideshows/, artifacts/storyboards/). The browser sends
+// when the user last spoke, for the steps that wait for them, and the picture
+// on the screen by its saved path only, to tell "show step 2 again" from a
+// repeated call.
+const sequenceConfig = (context: ToolContext) => {
+  const imagePath = (context.currentResult?.data as { imagePath?: unknown })
+    ?.imagePath;
+  return {
+    imageGeneration: context.app?.getImageGenerationSettings?.(),
+    ...(typeof imagePath === "string" && { currentImage: { imagePath } }),
+    ...(context.userSpokeAt !== undefined && {
+      userSpokeAt: context.userSpokeAt,
+    }),
+  };
+};
+
+const ServerSequencePlugins = sequencePlugins.map((plugin) => ({
+  plugin: runOnServer(plugin, sequenceConfig),
+}));
 
 // presentChart runs on the server, which saves the chart document into the
 // shared workspace's artifacts/ area (context.files.artifacts).
@@ -201,9 +223,7 @@ const registeredPlugins = [
   AkinatorPlugin,
   AvatarPlugin,
   ServerChartPlugin,
-  PresentSlidePlugin,
-  DefineStoryboardPlugin,
-  PresentPanelPlugin,
+  ...ServerSequencePlugins,
   MakeMoviePlugin,
 ];
 

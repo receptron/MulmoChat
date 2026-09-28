@@ -52,9 +52,17 @@ needs an entry in `pluginHostHandlers` (`server/plugins/dispatch.ts`). A host to
 gui-chat-protocol package registers (renderShapeScript, and the X tools from the server-only
 `@mulmoclaude/x-plugin`), lives in `dispatch.ts` (`pluginHostHandlers` and `hostToolDefinitions()`)
 plus a placeholder in `src/tools/` built with `hostToolDefinition()`, which the server's definition
-fills in at startup. The slideshow and storyboard tools are host tools too, but their definitions are
-in a browser-safe module (`server/plugins/sequenceTools.ts`), so the browser has them directly and
-`hostToolDefinitions()` doesn't list them.
+fills in at startup. makeMovie is a host tool too, but its definition is in a browser-safe module
+(`server/plugins/movieTools.ts`), so the browser has it directly and `hostToolDefinitions()` doesn't
+list it.
+
+A package may register several tools: the registry (`server/plugins/registry.ts`) loads one
+`<tool>PluginCore` export per tool when there is no single `pluginCore`. `@gui-chat-plugin/sequence`
+(presentSlide, defineStoryboard, presentPanel) is one. Its `execute()` needs more of the
+`ToolContext` than most: `userSpokeAt` (to hold a step that waits for the user) and the picture on the
+screen, which `runOnServer`'s config sends and the route passes on (`requestToolContext` in
+`server/plugins/appContext.ts`). The keeper that asks the model to go on mid-sequence is
+gui-chat-protocol's `createSequenceKeeper`, wired in HomeView.
 
 ## MulmoClaude is the reference host — read it before wiring a shared package
 
