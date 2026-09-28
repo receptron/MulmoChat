@@ -13,6 +13,7 @@ import {
   errorMessageOf,
 } from "../utils/imageGenerationError";
 import { IMAGE_EXTENSIONS, toInputImage } from "../utils/imageMime";
+import { mockImage } from "../utils/mockImage";
 dotenv.config({ quiet: true });
 
 const router: Router = express.Router();
@@ -46,6 +47,12 @@ export async function generateGeminiImage({
   images,
   model,
 }: ImageRequest): Promise<GeminiImageResult> {
+  // Tests: MULMOCHAT_MOCK_IMAGE_MS (../utils/mockImage.ts).
+  const mocked = await mockImage(
+    prompt,
+    Array.isArray(images) ? images.length : 0,
+  );
+  if (mocked) return { success: true, imageData: mocked, message: undefined };
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey) {
     throw new ImageGenerationError(
@@ -155,6 +162,12 @@ export async function generateOpenAIImage({
   model,
   size = "1024x1024",
 }: ImageRequest & { size?: string }): Promise<OpenAIImageResult> {
+  // Tests: MULMOCHAT_MOCK_IMAGE_MS (../utils/mockImage.ts).
+  const mocked = await mockImage(
+    prompt,
+    Array.isArray(images) ? images.length : 0,
+  );
+  if (mocked) return { success: true, imageData: mocked, message: undefined };
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!openaiKey) {
     throw new ImageGenerationError(
