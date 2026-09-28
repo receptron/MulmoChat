@@ -780,7 +780,8 @@ others are MulmoChat's own.
 A tool that shows a sequence one step per call, such as slides or a story's panels, returns
 `sequence` on each result (gui-chat-protocol 2.1): where the sequence is, and the call for the next
 step. A host that supports sequences (MulmoChat, MulmoGlass) asks the model once to go on when it
-ends a reply mid-sequence, which models do. Set `sequence: null` for a step that wasn't shown (its
+ends a reply mid-sequence, which models do, but not after a step that waits for the user
+(`waitsForUser`). Set `sequence: null` for a step that wasn't shown (its
 picture failed), and leave it out on results that aren't steps. A step that waits for the user (a
 how-to step, a story choice) sets `waitsForUser`; the plugin then holds a later step until
 `context.userSpokeAt` is after the waiting step appeared.
