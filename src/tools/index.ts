@@ -110,6 +110,10 @@ const sequenceConfig = (context: ToolContext) => {
     ...(context.userSpokeAt !== undefined && {
       userSpokeAt: context.userSpokeAt,
     }),
+    // Their state between calls is kept per tab: tabs share the server.
+    ...(context.conversationId !== undefined && {
+      conversationId: context.conversationId,
+    }),
   };
 };
 

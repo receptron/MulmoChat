@@ -80,6 +80,10 @@ export function useToolResults(
 ): UseToolResultsReturn {
   const toolResults = ref<ToolResult[]>([]);
   const selectedResult = ref<ToolResult | null>(null);
+  // This tab's conversation, for gui-chat-protocol's
+  // ToolContext.conversationId: tools that run on the server keep their
+  // state between calls per tab (tabs share the server).
+  const conversationId = uuidv4();
   const isGeneratingImage = ref(false);
   const generatingMessage = ref("");
 
@@ -240,6 +244,7 @@ export function useToolResults(
         currentResult: selectedResult.value ?? undefined,
         app,
         ...(userSpokeAt !== undefined && { userSpokeAt }),
+        conversationId,
       };
 
       // Note: waitingMessage is only sent for realtime sessions

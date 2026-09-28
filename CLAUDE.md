@@ -59,9 +59,10 @@ list it.
 A package may register several tools: the registry (`server/plugins/registry.ts`) loads one
 `<tool>PluginCore` export per tool when there is no single `pluginCore`. `@gui-chat-plugin/sequence`
 (presentSlide, defineStoryboard, presentPanel) is one. Its `execute()` needs more of the
-`ToolContext` than most: `userSpokeAt` (to hold a step that waits for the user) and the picture on the
-screen, which `runOnServer`'s config sends and the route passes on (`requestToolContext` in
-`server/plugins/appContext.ts`). The keeper that asks the model to go on mid-sequence is
+`ToolContext` than most: `userSpokeAt` (to hold a step that waits for the user), the picture on the
+screen, and `conversationId` (the browser tab: tabs share the server, and the package keeps its
+state per conversation), which `runOnServer`'s config sends and the route passes on
+(`requestToolContext` in `server/plugins/appContext.ts`). The keeper that asks the model to go on mid-sequence is
 gui-chat-protocol's `createSequenceKeeper`, wired in HomeView.
 
 ## MulmoClaude is the reference host — read it before wiring a shared package

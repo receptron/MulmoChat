@@ -45,6 +45,10 @@ export interface PluginRequestConfig {
    *  ToolContext.userSpokeAt: the sequence tools hold a step that waits for
    *  the user until they have spoken. */
   userSpokeAt?: number;
+  /** Which browser tab the call comes from, for gui-chat-protocol's
+   *  ToolContext.conversationId: packages that keep state between calls
+   *  (the sequence tools) keep it per tab, since tabs share this server. */
+  conversationId?: string;
 }
 
 const IMAGE_BACKENDS: readonly ImageBackend[] = ["gemini", "openai", "comfyui"];
@@ -90,19 +94,31 @@ export function parsePluginRequestConfig(raw: unknown): PluginRequestConfig {
       Number.isFinite(config.userSpokeAt) && {
         userSpokeAt: config.userSpokeAt,
       }),
+    ...(typeof config.conversationId === "string" &&
+      CONVERSATION_ID.test(config.conversationId) && {
+        conversationId: config.conversationId,
+      }),
   };
 }
 
+// A tab's ID, as the browser makes it (a UUID); anything else is ignored.
+const CONVERSATION_ID = /^[0-9a-zA-Z-]{1,64}$/;
+
 /**
  * The rest of gui-chat-protocol's ToolContext for a server-run plugin, from
- * what the browser sent: `userSpokeAt`, and `currentResult` as the picture on
- * the screen, by its saved path only (the sequence tools compare pictures by
- * path, so a step's data doesn't travel back with every call).
+ * what the browser sent: `userSpokeAt`, `conversationId` (its tab), and
+ * `currentResult` as the picture on the screen, by its saved path only (the
+ * sequence tools compare pictures by path, so a step's data doesn't travel
+ * back with every call).
  */
 export function requestToolContext({
   currentImage,
   userSpokeAt,
-}: PluginRequestConfig): Pick<ToolContext, "currentResult" | "userSpokeAt"> {
+  conversationId,
+}: PluginRequestConfig): Pick<
+  ToolContext,
+  "currentResult" | "userSpokeAt" | "conversationId"
+> {
   return {
     ...(currentImage?.imagePath && {
       currentResult: {
@@ -111,6 +127,7 @@ export function requestToolContext({
       },
     }),
     ...(userSpokeAt !== undefined && { userSpokeAt }),
+    ...(conversationId !== undefined && { conversationId }),
   };
 }
 
