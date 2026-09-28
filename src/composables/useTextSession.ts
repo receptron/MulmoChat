@@ -78,6 +78,31 @@ export function useTextSession(
   // follow-up limit stopped the conversation first (continueConversation).
   let requiredUnanswered = false;
 
+  // Instructions a tool sent while other tool calls of the same assistant
+  // message had no output yet: the APIs reject any message between an
+  // assistant's tool calls and their outputs, so they wait for the last
+  // output (a reply that called presentSlide twice got a 400 on its
+  // follow-up turn, the first slide's instructions sitting between the two
+  // outputs).
+  const heldInstructions: TextMessage[] = [];
+
+  /** Whether the latest assistant message has tool calls without an output. */
+  const awaitingToolOutputs = () => {
+    const messages = conversationMessages.value;
+    let at = messages.length - 1;
+    while (at >= 0 && messages[at].role !== "assistant") at--;
+    const calls = at >= 0 ? messages[at].tool_calls : undefined;
+    if (!calls?.length) return false;
+    const answered = new Set(
+      messages.slice(at + 1).map((message) => message.tool_call_id),
+    );
+    return calls.some((call) => !answered.has(call.id));
+  };
+
+  const flushHeldInstructions = () => {
+    conversationMessages.value.push(...heldInstructions.splice(0));
+  };
+
   const flushPendingImages = () => {
     for (const { images, caption } of pendingImages.splice(0)) {
       conversationMessages.value.push({
@@ -143,6 +168,7 @@ export function useTextSession(
     conversationActive.value = false;
     conversationMessages.value = [];
     pendingImages.length = 0;
+    heldInstructions.length = 0;
     followUpRequested = false;
   };
 
@@ -286,6 +312,9 @@ export function useTextSession(
     try {
       followUpRequested = false;
       await runTurn(resolvedModel, generation);
+      // A tool call that got no output leaves its turn's instructions held;
+      // they go with the next request rather than being lost.
+      flushHeldInstructions();
       // A tool that showed the model an image, or asked it to act on its
       // result (required instructions: readXPost's post, a step to read
       // aloud), gets the model another turn: to look at the image
@@ -301,6 +330,7 @@ export function useTextSession(
         followUpRequested = false;
         flushPendingImages();
         await runTurn(resolvedModel, generation);
+        flushHeldInstructions();
       }
       // Past the limit, the images and instructions go with the user's next
       // message, unless the host asks for a turn (continueConversation).
@@ -311,6 +341,7 @@ export function useTextSession(
     } catch (error) {
       // Images from a failed turn would reach the model out of context.
       pendingImages.length = 0;
+      heldInstructions.length = 0;
       followUpRequested = false;
       console.error("Text session request failed", error);
       handlers.onError?.(error);
@@ -328,6 +359,7 @@ export function useTextSession(
       tool_call_id: callId,
       content: output,
     });
+    if (!awaitingToolOutputs()) flushHeldInstructions();
     return true;
   };
 
@@ -350,10 +382,15 @@ export function useTextSession(
     // would put them between an assistant tool call and its outputs, which
     // the APIs reject.
     console.log("QUEUING INSTRUCTIONS (text session)", `"${trimmed}"`);
-    conversationMessages.value.push({
+    const message: TextMessage = {
       role: "user",
       content: `[System instruction] ${trimmed}`,
-    });
+    };
+    if (awaitingToolOutputs() || heldInstructions.length > 0) {
+      heldInstructions.push(message);
+    } else {
+      conversationMessages.value.push(message);
+    }
     if (required) {
       // Required ones get a turn: a follow-up of the running conversation,
       // or, when none is running (the host asking the model to go on with a
