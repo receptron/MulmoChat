@@ -8,9 +8,10 @@
 //   - context.app is built per request (see appContext.ts), because MulmoChat's
 //     backend settings (image backend, model, style) are per-user browser
 //     preferences sent with each call, not server configuration.
-//   - Only plain packages (a core entry exporting TOOL_DEFINITION + pluginCore)
-//     are supported. definePlugin factories need the server-side PluginRuntime,
-//     which will be added with the first plugin that uses one.
+//   - Only plain packages (a core entry exporting TOOL_DEFINITION + pluginCore,
+//     or one `<tool>PluginCore` per tool) are supported. definePlugin
+//     factories need the server-side PluginRuntime, which will be added with
+//     the first plugin that uses one.
 import { isPluginFactory } from "gui-chat-protocol";
 import type { FileOps, ToolContext, ToolDefinition } from "gui-chat-protocol";
 import { logger } from "../utils/logger";
@@ -56,7 +57,29 @@ function soleExecutor(mod: Record<string, unknown>): Executor | undefined {
   return fns.length === 1 ? fns[0] : undefined;
 }
 
-async function loadPackage(name: string): Promise<LoadedPlugin> {
+const loadedPlugin = (
+  definition: ToolDefinition,
+  execute: Executor,
+): LoadedPlugin => ({
+  toolName: definition.name,
+  definition,
+  execute: (context, args) => execute(context, args),
+});
+
+// A package with several tools (@gui-chat-plugin/sequence) exports one core
+// per tool, named `<tool>PluginCore`, instead of a single `pluginCore`.
+function pluginCores(mod: Record<string, unknown>): LoadedPlugin[] {
+  return Object.entries(mod).flatMap(([key, value]) =>
+    key.endsWith("PluginCore") &&
+    isRecord(value) &&
+    isToolDefinition(value.toolDefinition) &&
+    isExecutor(value.execute)
+      ? [loadedPlugin(value.toolDefinition, value.execute)]
+      : [],
+  );
+}
+
+async function loadPackage(name: string): Promise<LoadedPlugin[]> {
   const mod: unknown = await import(name);
   if (!isRecord(mod)) {
     throw new Error(
@@ -71,20 +94,18 @@ async function loadPackage(name: string): Promise<LoadedPlugin> {
   const core = isRecord(mod.pluginCore) ? mod.pluginCore : undefined;
   const definition = mod.TOOL_DEFINITION ?? core?.toolDefinition;
   const execute = core?.execute ?? mod.execute ?? soleExecutor(mod);
-  if (!isToolDefinition(definition) || !isExecutor(execute)) {
-    throw new Error(
-      `Package "${name}" is not a gui-chat-protocol plugin (missing TOOL_DEFINITION/execute).`,
-    );
+  if (isToolDefinition(definition) && isExecutor(execute)) {
+    return [loadedPlugin(definition, execute)];
   }
-  return {
-    toolName: definition.name,
-    definition,
-    execute: (context, args) => execute(context, args),
-  };
+  const cores = pluginCores(mod);
+  if (cores.length) return cores;
+  throw new Error(
+    `Package "${name}" is not a gui-chat-protocol plugin (missing TOOL_DEFINITION/execute, or <tool>PluginCore exports).`,
+  );
 }
 
 async function loadPlugins(): Promise<Map<string, LoadedPlugin>> {
-  const plugins = await Promise.all(PLUGIN_PACKAGES.map(loadPackage));
+  const plugins = (await Promise.all(PLUGIN_PACKAGES.map(loadPackage))).flat();
   // A Map, not a plain object: a tool name like "constructor" must not resolve
   // to an Object.prototype member.
   const byName = new Map<string, LoadedPlugin>();

@@ -357,7 +357,7 @@ export function useTextSession(
     if (required) {
       // Required ones get a turn: a follow-up of the running conversation,
       // or, when none is running (the host asking the model to go on with a
-      // slideshow, useSequence), one of their own.
+      // slideshow, the sequence keeper), one of their own.
       if (conversationActive.value) followUpRequested = true;
       else if (chatActive.value) void runConversation();
     }

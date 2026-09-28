@@ -135,7 +135,7 @@ import { useSessionTransport } from "../composables/useSessionTransport";
 import { useUserPreferences } from "../composables/useUserPreferences";
 import { useToolResults } from "../composables/useToolResults";
 import { useScrolling } from "../composables/useScrolling";
-import { useSequence } from "../composables/useSequence";
+import { createSequenceKeeper } from "gui-chat-protocol";
 import { SESSION_CONFIG } from "../config/session";
 import { DEFAULT_TEXT_MODEL } from "../config/textModels";
 import {
@@ -494,20 +494,25 @@ const {
   switchRole: (roleId: string) => {
     switchRoleCallback.value?.(roleId);
   },
-  onResult: (name, args, result, startedAt) =>
-    sequence.observeToolResult(name, args, result, startedAt),
+  onResult: (result, startedAt) => sequence.observe(result, startedAt),
+  getUserSpokeAt: () => sequence.userSpokeAt(),
 });
 
-// Asks the model to go on when it ends a reply mid-slideshow or mid-story.
-const sequence = useSequence({
+// Keeps a slideshow or a story going (gui-chat-protocol's sequence keeper):
+// asks the model once to go on when it ends a reply mid-sequence. The
+// results say where the sequence is (ToolResult.sequence), and the user
+// speaking or sending a message stops it.
+const sequence = createSequenceKeeper({
   isIdle: () =>
     chatActive.value &&
     !conversationActive.value &&
     !isAudioPlaying.value &&
     !userSpeaking.value &&
     !isGeneratingImage.value,
-  sendInstructions,
+  // Required: text chat takes a turn for them.
+  sendInstructions: (instructions) => sendInstructions(instructions, true),
   continueConversation,
+  log: (message) => console.info(`[sequence] ${message}`),
 });
 
 // Wrapper to track results immediately

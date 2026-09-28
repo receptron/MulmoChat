@@ -45,15 +45,12 @@ interface UseToolResultsOptions {
   scrollCurrentResultToTop: () => void;
   onToolCallError?: (toolName: string, error: string) => void;
   switchRole?: (roleId: string) => void;
-  /** Every tool result, with its arguments and when the call started
-   *  (performance.now()). Returns instructions that replace the result's
-   *  (useSequence: a step asked for before the user spoke). */
-  onResult?: (
-    name: string,
-    args: Record<string, unknown>,
-    result: ToolResult,
-    startedAt: number,
-  ) => string | undefined;
+  /** Every tool result, with when its call started (Date.now()). Returns
+   *  instructions that replace the result's (the sequence keeper: a step
+   *  asked for before the user spoke). */
+  onResult?: (result: ToolResult, startedAt: number) => string | undefined;
+  /** When the user last spoke (Date.now()), for ToolContext.userSpokeAt. */
+  getUserSpokeAt?: () => number | undefined;
 }
 
 interface ToolCallMessage {
@@ -83,6 +80,10 @@ export function useToolResults(
 ): UseToolResultsReturn {
   const toolResults = ref<ToolResult[]>([]);
   const selectedResult = ref<ToolResult | null>(null);
+  // This tab's conversation, for gui-chat-protocol's
+  // ToolContext.conversationId: tools that run on the server keep their
+  // state between calls per tab (tabs share the server).
+  const conversationId = uuidv4();
   const isGeneratingImage = ref(false);
   const generatingMessage = ref("");
 
@@ -153,7 +154,7 @@ export function useToolResults(
   };
 
   const handleToolCall = async ({ msg, rawArgs }: HandleToolCallArgs) => {
-    const startedAt = performance.now();
+    const startedAt = Date.now();
     try {
       const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
       isGeneratingImage.value = true;
@@ -238,9 +239,12 @@ export function useToolResults(
         switchRole: options.switchRole ?? (() => {}),
       };
 
+      const userSpokeAt = options.getUserSpokeAt?.();
       const context: ToolContext = {
         currentResult: selectedResult.value ?? undefined,
         app,
+        ...(userSpokeAt !== undefined && { userSpokeAt }),
+        conversationId,
       };
 
       // Note: waitingMessage is only sent for realtime sessions
@@ -251,7 +255,7 @@ export function useToolResults(
       }
 
       const executed = await options.toolExecute(context, msg.name, args);
-      const replaced = options.onResult?.(msg.name, args, executed, startedAt);
+      const replaced = options.onResult?.(executed, startedAt);
       const result = replaced
         ? { ...executed, instructions: replaced }
         : executed;

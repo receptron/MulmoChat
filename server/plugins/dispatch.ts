@@ -7,9 +7,9 @@
 //     package's execute() (presentMulmoScript's path guard and movie trigger),
 //     or for a host tool that no registered package provides
 //     (renderShapeScript, readXPost, searchX, whose definitions are in
-//     hostToolDefinitions(); and the slideshow and storyboard tools, whose
-//     definitions the browser has, ./sequenceTools.ts). It gets the
-//     request's `config` too, the per-user settings runOnServer sends.
+//     hostToolDefinitions(); and makeMovie, whose definition the browser has,
+//     ./movieTools.ts). It gets the request's `config` too, the per-user
+//     settings runOnServer sends.
 // Anything not listed here goes to the package's execute().
 import {
   executeShapeScriptDispatch,
@@ -20,7 +20,6 @@ import { mulmoScriptHandlers } from "./mulmoscriptHost";
 import { artifactsFileOps } from "./workspace";
 import { RENDER_SHAPE_SCRIPT, renderShapeScript } from "./shapeRenderHost";
 import { xToolDefinitions, xToolHandlers } from "./xHost";
-import { sequenceHandlers } from "./sequenceHost";
 import { movieHandlers } from "./movieHost";
 import type { ToolDefinition } from "gui-chat-protocol";
 
@@ -56,7 +55,6 @@ export const pluginHostHandlers: Readonly<Record<string, PluginHostHandlers>> =
     presentMulmoScript: mulmoScriptHandlers,
     renderShapeScript: { execute: renderShapeScript },
     ...xToolHandlers,
-    ...sequenceHandlers,
     ...movieHandlers,
   };
 

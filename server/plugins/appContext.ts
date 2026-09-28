@@ -1,7 +1,11 @@
 // Host backends handed to server-run plugins as gui-chat-protocol's
 // ToolContext.app. Built per request from the settings the browser sends
 // (the image backend, models and style are per-user browser preferences).
-import type { ToolContextApp, ToolResult } from "gui-chat-protocol";
+import type {
+  ToolContext,
+  ToolContextApp,
+  ToolResult,
+} from "gui-chat-protocol";
 import { generateGeminiImage, generateOpenAIImage } from "../routes/image";
 import { generateComfyImage } from "../routes/comfyui";
 import { logger } from "../utils/logger";
@@ -37,6 +41,14 @@ export interface CurrentImage {
 export interface PluginRequestConfig {
   imageGeneration: ImageGenerationSettings;
   currentImage?: CurrentImage;
+  /** When the user last spoke (ms since the epoch), for gui-chat-protocol's
+   *  ToolContext.userSpokeAt: the sequence tools hold a step that waits for
+   *  the user until they have spoken. */
+  userSpokeAt?: number;
+  /** Which browser tab the call comes from, for gui-chat-protocol's
+   *  ToolContext.conversationId: packages that keep state between calls
+   *  (the sequence tools) keep it per tab, since tabs share this server. */
+  conversationId?: string;
 }
 
 const IMAGE_BACKENDS: readonly ImageBackend[] = ["gemini", "openai", "comfyui"];
@@ -78,6 +90,44 @@ export function parsePluginRequestConfig(raw: unknown): PluginRequestConfig {
   return {
     imageGeneration: parseImageSettings(config.imageGeneration),
     currentImage: parseCurrentImage(config.currentImage),
+    ...(typeof config.userSpokeAt === "number" &&
+      Number.isFinite(config.userSpokeAt) && {
+        userSpokeAt: config.userSpokeAt,
+      }),
+    ...(typeof config.conversationId === "string" &&
+      CONVERSATION_ID.test(config.conversationId) && {
+        conversationId: config.conversationId,
+      }),
+  };
+}
+
+// A tab's ID, as the browser makes it (a UUID); anything else is ignored.
+const CONVERSATION_ID = /^[0-9a-zA-Z-]{1,64}$/;
+
+/**
+ * The rest of gui-chat-protocol's ToolContext for a server-run plugin, from
+ * what the browser sent: `userSpokeAt`, `conversationId` (its tab), and
+ * `currentResult` as the picture on the screen, by its saved path only (the
+ * sequence tools compare pictures by path, so a step's data doesn't travel
+ * back with every call).
+ */
+export function requestToolContext({
+  currentImage,
+  userSpokeAt,
+  conversationId,
+}: PluginRequestConfig): Pick<
+  ToolContext,
+  "currentResult" | "userSpokeAt" | "conversationId"
+> {
+  return {
+    ...(currentImage?.imagePath && {
+      currentResult: {
+        message: "",
+        data: { imagePath: currentImage.imagePath },
+      },
+    }),
+    ...(userSpokeAt !== undefined && { userSpokeAt }),
+    ...(conversationId !== undefined && { conversationId }),
   };
 }
 
@@ -117,10 +167,9 @@ async function runImageBackend(
  * generateImageCommon, with the image as a data URL so the existing ImageView
  * renders it unchanged. The image is also saved (./imageStore.ts), and the
  * result says where (`data.imagePath`, "saved to …"), so a later call can
- * refer to it. Exported for host tools that draw with images they loaded
- * themselves (./sequenceHost.ts).
+ * refer to it.
  */
-export async function generateImage(
+async function generateImage(
   prompt: string,
   settings: ImageGenerationSettings,
   inputImages: InputImage[] = [],

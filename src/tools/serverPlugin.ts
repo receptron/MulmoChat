@@ -14,8 +14,8 @@ const isToolResult = (value: unknown): value is ToolResult =>
 
 /**
  * Run a tool call on the server: POST /api/plugin/:toolName with the tool
- * arguments and the caller's settings. For a tool that decides something in
- * the browser first (src/tools/presentSlide.ts); others use runOnServer.
+ * arguments and the caller's settings. For a host tool that no package
+ * provides (src/tools/makeMovie.ts); package plugins use runOnServer.
  */
 export async function postToServer<T = unknown, J = unknown>(
   toolName: string,
