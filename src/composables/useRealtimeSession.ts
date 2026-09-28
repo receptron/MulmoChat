@@ -364,6 +364,14 @@ export function useRealtimeSession(
       remoteAudioElement.value.srcObject = null;
     }
     resetResponseState();
+    // Audio that was playing stops with the connection, and no
+    // output_audio_buffer.stopped will say so. Left set, the flag would
+    // swallow the next session's output_audio_buffer.started, and the host
+    // would think nothing was playing through its first reply.
+    if (isAudioPlaying) {
+      isAudioPlaying = false;
+      handlers.onAudioPlaybackStopped?.();
+    }
     chatActive.value = false;
     conversationActive.value = false;
     setMute(false);

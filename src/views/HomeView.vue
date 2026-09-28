@@ -496,6 +496,7 @@ const {
   },
   onResult: (result, startedAt) => sequence.observe(result, startedAt),
   getUserSpokeAt: () => sequence.userSpokeAt(),
+  waitForSpeechEnd,
 });
 
 // Keeps a slideshow or a story going (gui-chat-protocol's sequence keeper):
@@ -553,11 +554,61 @@ const lastSpeechStartedTime = ref<number | null>(null);
 
 // LLM audio playback state (for avatar lip-sync, visual feedback, etc.)
 const isAudioPlaying = ref(false);
+
+// The longest a sequence step waits for the model's voice to finish: a
+// playback-stopped event that never comes must not hold the step forever.
+const SPEECH_WAIT_MAX_MS = 120_000;
+// How long playback must stay stopped to count as the end of the voice. The
+// audio queue can run dry for a moment while a reply's audio is still
+// arriving (seen with Grok: stopped and started again within a second),
+// which would otherwise release a step mid-explanation.
+const SPEECH_END_QUIET_MS = 800;
+
+/** Resolves when the model's voice has finished playing (stopped for
+ *  SPEECH_END_QUIET_MS) or SPEECH_WAIT_MAX_MS has passed: true; or when the
+ *  chat ended while waiting: false, so the step isn't shown after Stop. A
+ *  chat that isn't active (text chat) doesn't wait. */
+function waitForSpeechEnd(): Promise<boolean> {
+  if (!chatActive.value) return Promise.resolve(true);
+  const started = Date.now();
+  return new Promise((resolve) => {
+    let quiet: ReturnType<typeof setTimeout> | undefined;
+    const done = (why: string, goOn = true) => {
+      stopWatching();
+      clearTimeout(limit);
+      clearTimeout(quiet);
+      const waited = Date.now() - started;
+      if (waited > SPEECH_END_QUIET_MS) {
+        console.info(
+          `[sequence] step ${goOn ? "shown" : "dropped"} after ${waited} ms (${why})`,
+        );
+      }
+      resolve(goOn);
+    };
+    const check = () => {
+      clearTimeout(quiet);
+      quiet = undefined;
+      if (!chatActive.value) return done("chat ended", false);
+      if (!isAudioPlaying.value) {
+        quiet = setTimeout(() => done("voice ended"), SPEECH_END_QUIET_MS);
+      }
+    };
+    const limit = setTimeout(() => done("waited too long"), SPEECH_WAIT_MAX_MS);
+    const stopWatching = watch([isAudioPlaying, chatActive], check);
+    check();
+  });
+}
 // Between the voice transport's speech started and stopped events. A session
 // that ends mid-speech (stopped, dropped, switched) sends no stopped event.
 const userSpeaking = ref(false);
+// A session that ends mid-reply (stopped, dropped, switched) may send no
+// playback-stopped event either (OpenAI's stopChat doesn't), and a stale
+// isAudioPlaying would hold every sequence step of the next session for
+// SPEECH_WAIT_MAX_MS.
 watch(chatActive, (active) => {
-  if (!active) userSpeaking.value = false;
+  if (active) return;
+  userSpeaking.value = false;
+  isAudioPlaying.value = false;
 });
 
 registerEventHandlers({
