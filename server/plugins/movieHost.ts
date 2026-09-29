@@ -17,6 +17,13 @@
 // mulmocast resolves a `path` source against the script's directory, so a
 // picture at artifacts/images/2026/09/x.jpg is `../images/2026/09/x.jpg` from
 // artifacts/stories/. Only paths checked here are written.
+//
+// An HTML slide (@gui-chat-plugin/sequence 0.3) has no picture: its beat is
+// mulmocast's html_tailwind, with the slide's HTML. mulmocast takes a still
+// of the page as it loads, when the slide's entrance animations haven't
+// started (their elements are still transparent), so the beat turns
+// animations off: the still is the slide as it ends up. The page is the same
+// kind presentMulmoScript's own html_tailwind beats render.
 import path from "node:path";
 import type { ToolResult } from "gui-chat-protocol";
 import { artifactsFileOps } from "./workspace";
@@ -37,10 +44,50 @@ import { logger } from "../utils/logger";
 const IMAGES_PREFIX = "artifacts/images/";
 const PICTURE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
 
-/** One scene of the movie: its picture, and what the narration is about. */
-interface Scene {
-  imagePath: string;
-  about: Record<string, unknown>;
+/** One scene of the movie: its picture (a saved image, or an HTML slide),
+ *  and what the narration is about. */
+type Scene =
+  | { imagePath: string; about: Record<string, unknown> }
+  | { html: string; about: Record<string, unknown> };
+
+// Every animation and transition off, so the still shows the finished slide.
+const STILL_SLIDE_STYLE =
+  "<style>*, *::before, *::after { animation: none !important; transition: none !important; }</style>";
+
+/** An HTML slide's words, for the narration: its text without the markup,
+ *  <style> and <script> blocks included. A scan, not a regular expression:
+ *  the HTML is the model's, of any shape. */
+function slideText(html: string): string {
+  const lower = html.toLowerCase();
+  let text = "";
+  let at = 0;
+  while (at < html.length) {
+    const open = html.indexOf("<", at);
+    if (open < 0) {
+      text += html.slice(at);
+      break;
+    }
+    // A "<" that starts no tag ("a < b") is text.
+    if (!/[a-z/!]/i.test(html.charAt(open + 1))) {
+      text += html.slice(at, open + 1);
+      at = open + 1;
+      continue;
+    }
+    text += `${html.slice(at, open)} `;
+    const block = ["style", "script"].find((name) =>
+      lower.startsWith(`<${name}`, open),
+    );
+    const close = block
+      ? lower.indexOf(`</${block}>`, open)
+      : html.indexOf(">", open);
+    if (close < 0) break;
+    at = block ? close + block.length + 3 : close + 1;
+  }
+  return text
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 1500);
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -79,6 +126,17 @@ function slideshowScenes(slideshow: Slideshow) {
   const scenes: Scene[] = [];
   const skipped: number[] = [];
   for (const [n, slide] of inOrder(slideshow.slides)) {
+    if (slide.html) {
+      scenes.push({
+        html: slide.html,
+        about: {
+          slide: n,
+          title: slide.title,
+          onTheSlide: slideText(slide.html),
+        },
+      });
+      continue;
+    }
     if (!slide.imagePath) {
       skipped.push(n);
       continue;
@@ -270,8 +328,15 @@ async function makeMovie(
       message: `${parsed.kind} "${parsed.id}" has no saved pictures to make a movie from`,
     };
   }
-  const paths: string[] = [];
+  const images: Record<string, unknown>[] = [];
   for (const scene of scenes) {
+    if ("html" in scene) {
+      images.push({
+        type: "html_tailwind",
+        html: `${STILL_SLIDE_STYLE}\n${scene.html}`,
+      });
+      continue;
+    }
     const scriptPath = await scriptPathOf(scene.imagePath);
     if (scriptPath instanceof Error) {
       return {
@@ -280,7 +345,7 @@ async function makeMovie(
           "Tell the user the movie couldn't be made, and briefly why.",
       };
     }
-    paths.push(scriptPath);
+    images.push({ type: "image", source: { kind: "path", path: scriptPath } });
   }
 
   const narration = await writeNarration(
@@ -312,10 +377,7 @@ async function makeMovie(
     beats: scenes.map((_, i) => ({
       speaker: "Narrator",
       text: narration[i],
-      image: {
-        type: "image",
-        source: { kind: "path", path: paths[i] },
-      },
+      image: images[i],
     })),
   };
   const { result: shown, movieStarted } = await saveScript({
