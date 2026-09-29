@@ -110,11 +110,16 @@ async function renderStill(
         () => false,
       );
     if (!styled) logger.warn("HTML slide still without Tailwind's styles");
-    // Then the body shown, and a frame more for the finished animations to
-    // be painted.
+    // Then the body shown, its web fonts (Google Fonts) loaded, at most 5 s
+    // (a screenshot doesn't wait for them: the text would be missing or
+    // wrap differently), and a frame more for the finished animations to be
+    // painted.
     await page.waitForFunction(
       'document.documentElement.classList.contains("ready")',
       { timeout: 5_000 },
+    );
+    await page.evaluate(
+      "Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 5000))])",
     );
     await page.evaluate(
       "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
