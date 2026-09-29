@@ -71,9 +71,14 @@ export function useTextSession(
   // after the turn's tool calls are all answered, because the provider APIs
   // expect the tool outputs right after the assistant message that called them.
   const pendingImages: Array<{ images: string[]; caption: string }> = [];
-  // A tool's required instructions were queued: the model answers them in a
-  // follow-up turn instead of with the user's next message.
+  // A tool sent instructions during a conversation: the model answers them in
+  // a follow-up turn, as a voice model answers every instruction (browse's
+  // "summarize the page" was left for the user's next message, so the chat
+  // stopped after the page was read).
   let followUpRequested = false;
+  // Among them, required ones (instructionsRequired): past the follow-up
+  // limit, the host may still ask for a turn for these (continueConversation).
+  let requiredFollowUp = false;
   // Required instructions are queued and no turn has answered them: the
   // follow-up limit stopped the conversation first (continueConversation).
   let requiredUnanswered = false;
@@ -170,6 +175,7 @@ export function useTextSession(
     pendingImages.length = 0;
     heldInstructions.length = 0;
     followUpRequested = false;
+    requiredFollowUp = false;
   };
 
   // One request to the model, then its text and tool calls. Throws on failure.
@@ -311,15 +317,15 @@ export function useTextSession(
 
     try {
       followUpRequested = false;
+      requiredFollowUp = false;
       await runTurn(resolvedModel, generation);
       // A tool call that got no output leaves its turn's instructions held;
       // they go with the next request rather than being lost.
       flushHeldInstructions();
-      // A tool that showed the model an image, or asked it to act on its
-      // result (required instructions: readXPost's post, a step to read
-      // aloud), gets the model another turn: to look at the image
-      // (renderShapeScript: check the model, fix it, render again) or to
-      // answer.
+      // A tool that showed the model an image, or sent it instructions
+      // (browse's page to summarize, readXPost's post, a step to read aloud),
+      // gets the model another turn: to look at the image (renderShapeScript:
+      // check the model, fix it, render again) or to answer.
       for (
         let turn = 0;
         turn < MAX_FOLLOW_UP_TURNS &&
@@ -328,14 +334,16 @@ export function useTextSession(
         turn++
       ) {
         followUpRequested = false;
+        requiredFollowUp = false;
         flushPendingImages();
         await runTurn(resolvedModel, generation);
         flushHeldInstructions();
       }
       // Past the limit, the images and instructions go with the user's next
       // message, unless the host asks for a turn (continueConversation).
-      requiredUnanswered = followUpRequested && isCurrentChat(generation);
+      requiredUnanswered = requiredFollowUp && isCurrentChat(generation);
       followUpRequested = false;
+      requiredFollowUp = false;
       if (isCurrentChat(generation)) flushPendingImages();
       return true;
     } catch (error) {
@@ -343,6 +351,7 @@ export function useTextSession(
       pendingImages.length = 0;
       heldInstructions.length = 0;
       followUpRequested = false;
+      requiredFollowUp = false;
       console.error("Text session request failed", error);
       handlers.onError?.(error);
       return false;
@@ -391,12 +400,15 @@ export function useTextSession(
     } else {
       conversationMessages.value.push(message);
     }
-    if (required) {
-      // Required ones get a turn: a follow-up of the running conversation,
-      // or, when none is running (the host asking the model to go on with a
-      // slideshow, the sequence keeper), one of their own.
-      if (conversationActive.value) followUpRequested = true;
-      else if (chatActive.value) void runConversation();
+    if (conversationActive.value) {
+      // A follow-up turn of the running conversation.
+      followUpRequested = true;
+      if (required) requiredFollowUp = true;
+    } else if (required && chatActive.value) {
+      // None is running (the host asking the model to go on with a
+      // slideshow, the sequence keeper): required ones get one of their own;
+      // others go with the user's next message.
+      void runConversation();
     }
 
     return true;
