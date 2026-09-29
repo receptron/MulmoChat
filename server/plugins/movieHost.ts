@@ -25,13 +25,17 @@
 // goes to the narration. mulmocast renders it as it renders
 // presentMulmoScript's own html_tailwind beats: a page that runs scripts and
 // may fetch, unlike the View's sandboxed, CSP-bound iframe (a deliberate
-// choice, for movies that move and scripts that stay editable).
+// choice, for movies that move and scripts that stay editable). Its CSS
+// animations are shown at their end, as the View shows them: mulmocast pauses
+// them at their first frame, where an element faded in with @keyframes (as
+// the slides of sequence 0.3, still in saved slideshows, did) is invisible.
 import path from "node:path";
 import type { ToolResult } from "gui-chat-protocol";
 import { artifactsFileOps } from "./workspace";
 import { movieUnavailable, saveScript } from "./mulmoscriptHost";
 import {
   loadRecord,
+  SLIDE_CSS_ANIMATIONS_FINISHED,
   SLIDESHOWS_DIR,
   STORYBOARDS_DIR,
   type Slideshow,
@@ -329,7 +333,11 @@ async function makeMovie(
   const images: Record<string, unknown>[] = [];
   for (const scene of scenes) {
     if ("html" in scene) {
-      images.push({ type: "html_tailwind", html: scene.html, animation: true });
+      images.push({
+        type: "html_tailwind",
+        html: `<style>${SLIDE_CSS_ANIMATIONS_FINISHED}</style>\n${scene.html}`,
+        animation: true,
+      });
       continue;
     }
     const scriptPath = await scriptPathOf(scene.imagePath);
