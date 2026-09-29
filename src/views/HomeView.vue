@@ -564,12 +564,64 @@ const SPEECH_WAIT_MAX_MS = 120_000;
 // which would otherwise release a step mid-explanation.
 const SPEECH_END_QUIET_MS = 800;
 
+// How long a step queued behind another waits, once that one is shown, for
+// the model to start explaining it; past that the step is shown.
+const SPEECH_START_WAIT_MS = 6_000;
+
+// The step being held, when one is: a step asked for meanwhile waits for it.
+let heldStep: Promise<boolean> | null = null;
+
 /** Resolves when the model's voice has finished playing (stopped for
  *  SPEECH_END_QUIET_MS) or SPEECH_WAIT_MAX_MS has passed: true; or when the
  *  chat ended while waiting: false, so the step isn't shown after Stop. A
- *  chat that isn't active (text chat) doesn't wait. */
+ *  chat that isn't active (text chat) doesn't wait.
+ *
+ *  One step at a time. A held step's result hasn't reached the model, so it
+ *  may ask for the next step meanwhile (Grok asked for slide 3 six seconds
+ *  after slide 2); both would then appear the moment the voice stopped, and
+ *  slide 2 would be replaced at once. A step asked for while another is
+ *  held waits until that one is shown, then for the model to explain it:
+ *  its voice to start (at most SPEECH_START_WAIT_MS) and end. */
 function waitForSpeechEnd(): Promise<boolean> {
   if (!chatActive.value) return Promise.resolve(true);
+  const before = heldStep;
+  const mine: Promise<boolean> = (async () => {
+    if (before) {
+      console.info("[sequence] step queued behind the one held");
+      if (!(await before)) return false;
+      if (!(await waitForSpeechStart())) return false;
+    }
+    return waitForQuiet();
+  })();
+  heldStep = mine;
+  void mine.finally(() => {
+    if (heldStep === mine) heldStep = null;
+  });
+  return mine;
+}
+
+/** Resolves when the model's voice starts playing, or after
+ *  SPEECH_START_WAIT_MS without it: true; when the chat ends first: false. */
+function waitForSpeechStart(): Promise<boolean> {
+  if (!chatActive.value) return Promise.resolve(false);
+  if (isAudioPlaying.value) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const done = (goOn: boolean) => {
+      stopWatching();
+      clearTimeout(limit);
+      resolve(goOn);
+    };
+    const limit = setTimeout(() => done(true), SPEECH_START_WAIT_MS);
+    const stopWatching = watch([isAudioPlaying, chatActive], () => {
+      if (!chatActive.value) done(false);
+      else if (isAudioPlaying.value) done(true);
+    });
+  });
+}
+
+/** The wait for the voice to stop (see waitForSpeechEnd). */
+function waitForQuiet(): Promise<boolean> {
+  if (!chatActive.value) return Promise.resolve(false);
   const started = Date.now();
   return new Promise((resolve) => {
     let quiet: ReturnType<typeof setTimeout> | undefined;
