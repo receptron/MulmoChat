@@ -50,12 +50,13 @@ function stillPage(html: string): { page: string; tailwind: string | null } {
 export async function withSlideStills<T>(
   use: (still: (html: string) => Promise<string | Error>) => Promise<T>,
 ): Promise<T> {
-  let browser: Browser | null = null;
+  // Launched by the first slide; a holder, as it is set inside the callback.
+  const opened: { browser?: Browser } = {};
   try {
     return await use(async (html) => {
       try {
-        browser ??= await puppeteer.launch({ headless: true });
-        return await renderStill(browser, html);
+        opened.browser ??= await puppeteer.launch({ headless: true });
+        return await renderStill(opened.browser, html);
       } catch (error) {
         logger.warn("HTML slide still failed", {
           error: errorMessageOf(error),
@@ -66,7 +67,7 @@ export async function withSlideStills<T>(
       }
     });
   } finally {
-    await browser?.close();
+    await opened.browser?.close();
   }
 }
 
