@@ -18,16 +18,14 @@
 // picture at artifacts/images/2026/09/x.jpg is `../images/2026/09/x.jpg` from
 // artifacts/stories/. Only paths checked here are written.
 //
-// An HTML slide (@gui-chat-plugin/sequence 0.3) has no picture: its beat is
-// mulmocast's html_tailwind, with the slide's HTML. mulmocast takes a still
-// of the page as it loads, when the slide's entrance animations haven't
-// started (their elements are still transparent), so the beat turns
-// animations off: the still is the slide as it ends up. The page is the same
-// kind presentMulmoScript's own html_tailwind beats render.
+// An HTML slide (@gui-chat-plugin/sequence 0.3) has no picture: it is
+// rendered to one here, the slide as it ends up (./slideStill.ts), and its
+// text goes to the narration.
 import path from "node:path";
 import type { ToolResult } from "gui-chat-protocol";
 import { artifactsFileOps } from "./workspace";
 import { movieUnavailable, saveScript } from "./mulmoscriptHost";
+import { withSlideStills } from "./slideStill";
 import {
   loadRecord,
   SLIDESHOWS_DIR,
@@ -49,10 +47,6 @@ const PICTURE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
 type Scene =
   | { imagePath: string; about: Record<string, unknown> }
   | { html: string; about: Record<string, unknown> };
-
-// Every animation and transition off, so the still shows the finished slide.
-const STILL_SLIDE_STYLE =
-  "<style>*, *::before, *::after { animation: none !important; transition: none !important; }</style>";
 
 /** An HTML slide's words, for the narration: its text without the markup,
  *  <style> and <script> blocks included. A scan, not a regular expression:
@@ -328,24 +322,24 @@ async function makeMovie(
       message: `${parsed.kind} "${parsed.id}" has no saved pictures to make a movie from`,
     };
   }
-  const images: Record<string, unknown>[] = [];
-  for (const scene of scenes) {
-    if ("html" in scene) {
-      images.push({
-        type: "html_tailwind",
-        html: `${STILL_SLIDE_STYLE}\n${scene.html}`,
-      });
-      continue;
+  const paths = await withSlideStills(async (still) => {
+    const found: string[] = [];
+    for (const scene of scenes) {
+      const imagePath =
+        "html" in scene ? await still(scene.html) : scene.imagePath;
+      const scriptPath =
+        imagePath instanceof Error ? imagePath : await scriptPathOf(imagePath);
+      if (scriptPath instanceof Error) return scriptPath;
+      found.push(scriptPath);
     }
-    const scriptPath = await scriptPathOf(scene.imagePath);
-    if (scriptPath instanceof Error) {
-      return {
-        message: `the movie couldn't be made: ${scriptPath.message}`,
-        instructions:
-          "Tell the user the movie couldn't be made, and briefly why.",
-      };
-    }
-    images.push({ type: "image", source: { kind: "path", path: scriptPath } });
+    return found;
+  });
+  if (paths instanceof Error) {
+    return {
+      message: `the movie couldn't be made: ${paths.message}`,
+      instructions:
+        "Tell the user the movie couldn't be made, and briefly why.",
+    };
   }
 
   const narration = await writeNarration(
@@ -377,7 +371,10 @@ async function makeMovie(
     beats: scenes.map((_, i) => ({
       speaker: "Narrator",
       text: narration[i],
-      image: images[i],
+      image: {
+        type: "image",
+        source: { kind: "path", path: paths[i] },
+      },
     })),
   };
   const { result: shown, movieStarted } = await saveScript({
