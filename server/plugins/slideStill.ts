@@ -26,9 +26,11 @@ import { errorMessageOf } from "../utils/imageGenerationError";
 import { logger } from "../utils/logger";
 
 // Zero-length animations, filled both ways: each element takes its last
-// keyframe at once. One iteration, so an endless one ends too.
+// keyframe at once. One iteration, so an endless one ends too. Typed, so the
+// page's check for Tailwind's stylesheet (a <style> without a type) doesn't
+// take it for that.
 const FINISHED_STYLE =
-  "<style>*, *::before, *::after { animation-duration: 0s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; animation-fill-mode: both !important; transition: none !important; }</style>";
+  '<style type="text/css">*, *::before, *::after { animation-duration: 0s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; animation-fill-mode: both !important; transition: none !important; }</style>';
 
 const GOOGLE_FONTS = [
   "https://fonts.googleapis.com/",
@@ -94,9 +96,22 @@ async function renderStill(
       }
     });
     await page.setContent(content, { waitUntil: "load", timeout: 20_000 });
-    // In the page (strings: this file is the server's). It shows its body
-    // once Tailwind has styled it, or after a second without it; then a frame
-    // more, for the finished animations to be painted.
+    // In the page (strings: this file is the server's). Tailwind's styles
+    // first: the page shows its body without them after a second, a still
+    // that would be unstyled. A slide without them after 10 s (Tailwind
+    // unreachable) is taken unstyled, as the View would show it.
+    const styled = await page
+      .waitForFunction(
+        'document.querySelector("style:not([type]):not(#slide-base)")',
+        { timeout: 10_000 },
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    if (!styled) logger.warn("HTML slide still without Tailwind's styles");
+    // Then the body shown, and a frame more for the finished animations to
+    // be painted.
     await page.waitForFunction(
       'document.documentElement.classList.contains("ready")',
       { timeout: 5_000 },
