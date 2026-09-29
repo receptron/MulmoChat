@@ -711,10 +711,10 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/scroll-to-anchor/-/scroll-to-anchor-2.0.0.tgz#39cff9e31654689cc03f6e33959d7f51e8450dba"
   integrity sha512-bfe6ECB4p7UJFzzTkaiQGiirVRgbVV891DQQiBdJfRJFjXbqUCGYXOAzsUBOAqTkrH5/BEF3Bbbpj1O4aiyKWA==
 
-"@gui-chat-plugin/sequence@0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/sequence/-/sequence-0.3.0.tgz#98c6bfb924ef8b1eb859233d728072d91906f7a8"
-  integrity sha512-GDZzhNjS5GJAn207nFqxtW4AzakcgXrAzoyJAdQZKIsvkoAVpDc8/K+cQb0mrum8KC2p0kbFgsgUHQ91tn2V1A==
+"@gui-chat-plugin/sequence@0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/sequence/-/sequence-0.3.1.tgz#53c30bdb19a627386ecf995366c0269033ca22d3"
+  integrity sha512-b9BfjVm1LLv/hCqrhlV40gR7JXhVFPtw30IOTvnAHcSW93LO8602YUuYM9UeiK9wA6IQLx4Qkdzon+zlevAuyw==
 
 "@gui-chat-plugin/set-image-style@^2.0.0":
   version "2.0.0"
