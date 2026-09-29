@@ -140,7 +140,8 @@ export function useRealtimeSession(
   // response.created/done echo; only those settle it.
   let responseRunning = false;
   // Our response.create, sent and not yet settled.
-  let pendingRequest: { eventId: string; instructions?: string } | null = null;
+  // Its instructions aren't kept: they are in the conversation already.
+  let pendingRequest: { eventId: string } | null = null;
   let heldResponse: { instructions: string[] } | null = null;
   let requestCount = 0;
 
@@ -160,17 +161,31 @@ export function useRealtimeSession(
     }
     requestCount += 1;
     const eventId = `mulmochat_response_${requestCount}`;
+    // Follow-up instructions (a tool's "slide 2 is on the screen: explain
+    // it, then call presentSlide for slide 3") go into the conversation as a
+    // system message, not as the response's `instructions`, which replace the
+    // session prompt for that reply. There, the model often called the next
+    // slide without a word about the one on the screen (MulmoGlass, which
+    // sent them appended to the session prompt: slide 1 unexplained in about
+    // 5 runs of 6; as a message, every slide was explained in 11 runs of 12).
+    if (instructions) {
+      sendDataChannelMessage({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "system",
+          content: [{ type: "input_text", text: instructions }],
+        },
+      });
+    }
     const sent = sendDataChannelMessage({
       type: "response.create",
       event_id: eventId,
-      response: {
-        ...(instructions ? { instructions } : {}),
-        metadata: { request_id: eventId },
-      },
+      response: { metadata: { request_id: eventId } },
     });
     // A closed channel (a tool finishing after Stop) changes nothing, so the
     // next session doesn't start out waiting for a response that never ran.
-    if (sent) pendingRequest = { eventId, instructions };
+    if (sent) pendingRequest = { eventId };
     return sent;
   };
 
@@ -224,12 +239,14 @@ export function useRealtimeSession(
           const error = msg.error as
             { code?: unknown; event_id?: unknown } | undefined;
           if (pendingRequest && error?.event_id === pendingRequest.eventId) {
-            const refused = pendingRequest;
             pendingRequest = null;
             // Our request raced a response the server started itself (the
             // user's own turn): hold it again, ahead of later ones.
             if (error.code === "conversation_already_has_active_response") {
-              holdResponse(refused.instructions, true);
+              // Only the response is asked for again: its instructions went
+              // into the conversation with it, and sending them again would
+              // leave a second copy there.
+              holdResponse(undefined, true);
               releaseHeldResponse();
               break;
             }
