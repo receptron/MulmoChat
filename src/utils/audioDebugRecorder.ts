@@ -43,6 +43,9 @@ interface OutputBlock {
   /** The context's frame at the block's start. */
   frame: number;
   samples: Float32Array;
+  /** Date.now() at the block's start, worked out when it arrived, while the
+   *  context's clock runs (it stops when the context is closed). */
+  t?: number;
 }
 
 // Copies its input to the main thread in blocks, on the audio thread: the
@@ -174,9 +177,12 @@ class AudioDebugRecorder {
           this.output = [];
           const tapNode = new AudioWorkletNode(context, "mulmochat-audio-tap");
           tapNode.port.onmessage = (message) => {
-            if (this.tapNode === tapNode) {
-              this.pushOutput(message.data as OutputBlock);
-            }
+            if (this.tapNode !== tapNode) return;
+            const block = message.data as OutputBlock;
+            // The context's clock and Date.now(), read together: the block
+            // started this long before now (however late the message came).
+            const ago = context.currentTime - block.frame / context.sampleRate;
+            this.pushOutput({ ...block, t: Date.now() - ago * 1000 });
           };
           // Pulled by the graph through a silent gain.
           const silent = context.createGain();
@@ -227,10 +233,7 @@ class AudioDebugRecorder {
       offset += chunk.pcm.length;
       return entry;
     });
-    const outputStart = context
-      ? Date.now() -
-        ((context.currentTime * outputRate - first) / outputRate) * 1000
-      : null;
+    const outputStart = this.output[0]?.t ?? null;
     const report = {
       savedAt: Date.now(),
       userAgent: navigator.userAgent,
