@@ -2,8 +2,8 @@
 
 // A debug recording of Gemini Live's and Grok's audio (AudioStreamManager),
 // for sounds that shouldn't be there, such as a buzz: turned on with
-// localStorage "mulmochat_audio_debug" = "1" (then reload), it keeps the last
-// KEEP_SECONDS of
+// VITE_MULMOCHAT_AUDIO_DEBUG=1 (in .env or the environment of `yarn dev`),
+// it keeps the last KEEP_SECONDS of
 //   - what the player renders (its output node, tapped on the audio thread),
 //   - what the model sent (the PCM chunks, as received), and
 //   - what happened: buffers scheduled, underruns (a buffer that started late),
@@ -18,18 +18,14 @@
 // OpenAI Realtime plays through WebRTC and an <audio> element, not this
 // player, so it isn't recorded.
 
-const FLAG = "mulmochat_audio_debug";
 const KEEP_SECONDS = 60;
 // The main thread is late by more than this: a stall.
 const STALL_MS = 150;
 
-/** Whether the debug recording is on (a localStorage flag). */
+/** Whether the debug recording is on (VITE_MULMOCHAT_AUDIO_DEBUG=1, read
+ *  when Vite serves or builds the client). */
 export function isAudioDebugEnabled(): boolean {
-  try {
-    return localStorage.getItem(FLAG) === "1";
-  } catch {
-    return false;
-  }
+  return import.meta.env.VITE_MULMOCHAT_AUDIO_DEBUG === "1";
 }
 
 interface DebugEvent {
