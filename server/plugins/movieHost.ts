@@ -30,7 +30,9 @@
 // them at their first frame, where an element faded in with @keyframes (as
 // the slides of sequence 0.3, still in saved slideshows, did) is invisible.
 // A Markdown slide (sequence 0.5) is an HTML slide too, with its Markdown as
-// the model wrote it, TeX math included, for the narration. A chart slide
+// the model wrote it, TeX math included, for the narration; its beat runs
+// the package's SLIDE_FIT_SCRIPT, which shrinks dense text to fit as the
+// View does (without it, the movie cut the slide off). A chart slide
 // has its Chart.js configuration, which mulmocast's chart beat takes as it is
 // (chartData), drawn under the slide's title as the View draws it.
 import path from "node:path";
@@ -40,6 +42,7 @@ import { movieUnavailable, saveScript } from "./mulmoscriptHost";
 import {
   loadRecord,
   SLIDE_CSS_ANIMATIONS_FINISHED,
+  SLIDE_FIT_SCRIPT,
   SLIDESHOWS_DIR,
   STORYBOARDS_DIR,
   type SlideChart,
@@ -59,7 +62,7 @@ const PICTURE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
  *  chart), and what the narration is about. */
 type Scene =
   | { imagePath: string; about: Record<string, unknown> }
-  | { html: string; about: Record<string, unknown> }
+  | { html: string; fit: boolean; about: Record<string, unknown> }
   | { chart: SlideChart; title: string; about: Record<string, unknown> };
 
 /** An HTML slide's words, for the narration: its text without the markup,
@@ -137,6 +140,7 @@ function slideshowScenes(slideshow: Slideshow) {
     if (slide.html) {
       scenes.push({
         html: slide.html,
+        fit: slide.markdown !== undefined,
         about: {
           slide: n,
           title: slide.title,
@@ -363,6 +367,7 @@ async function makeMovie(
         type: "html_tailwind",
         html: `<style>${SLIDE_CSS_ANIMATIONS_FINISHED}</style>\n${scene.html}`,
         animation: true,
+        ...(scene.fit && { script: SLIDE_FIT_SCRIPT }),
       });
       continue;
     }
