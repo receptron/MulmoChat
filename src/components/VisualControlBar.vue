@@ -17,7 +17,7 @@
       :disabled="!chatActive && (connecting || !canConnect)"
       @click="$emit('toggleChat')"
     >
-      <span class="material-icons text-[32px] sm:text-[44px]">{{
+      <span class="material-icons text-[32px]! sm:text-[44px]!">{{
         chatActive ? "call_end" : connecting ? "hourglass_top" : "mic"
       }}</span>
     </button>
@@ -34,7 +34,7 @@
       :title="isMuted ? 'Unmute microphone' : 'Mute microphone'"
       @click="$emit('toggleMute')"
     >
-      <span class="material-icons text-[28px] sm:text-[36px]">{{
+      <span class="material-icons text-[28px]! sm:text-[36px]!">{{
         isMuted ? "mic_off" : "mic_none"
       }}</span>
     </button>
@@ -61,7 +61,7 @@
         :disabled="selectedIndex <= 0"
         @click="$emit('select', selectedIndex - 1)"
       >
-        <span class="material-icons text-[28px] sm:text-[36px]"
+        <span class="material-icons text-[28px]! sm:text-[36px]!"
           >chevron_left</span
         >
       </button>
@@ -74,7 +74,7 @@
         :disabled="selectedIndex >= resultCount - 1"
         @click="$emit('select', selectedIndex + 1)"
       >
-        <span class="material-icons text-[28px] sm:text-[36px]"
+        <span class="material-icons text-[28px]! sm:text-[36px]!"
           >chevron_right</span
         >
       </button>
@@ -87,7 +87,7 @@
       title="Save the last minute of audio (debug)"
       @click="$emit('saveAudio')"
     >
-      <span class="material-icons text-[28px] sm:text-[36px]">graphic_eq</span>
+      <span class="material-icons text-[28px]! sm:text-[36px]!">graphic_eq</span>
     </button>
 
     <!-- Configuration can't change while connected (as in the sidebar). -->
@@ -98,7 +98,7 @@
       title="Configuration"
       @click="$emit('openSettings')"
     >
-      <span class="material-icons text-[28px] sm:text-[36px]">settings</span>
+      <span class="material-icons text-[28px]! sm:text-[36px]!">settings</span>
     </button>
 
     <button
@@ -107,7 +107,7 @@
       title="Exit visual mode"
       @click="$emit('exit')"
     >
-      <span class="material-icons text-[28px] sm:text-[36px]"
+      <span class="material-icons text-[28px]! sm:text-[36px]!"
         >close_fullscreen</span
       >
     </button>
