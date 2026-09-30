@@ -711,10 +711,13 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/scroll-to-anchor/-/scroll-to-anchor-2.0.0.tgz#39cff9e31654689cc03f6e33959d7f51e8450dba"
   integrity sha512-bfe6ECB4p7UJFzzTkaiQGiirVRgbVV891DQQiBdJfRJFjXbqUCGYXOAzsUBOAqTkrH5/BEF3Bbbpj1O4aiyKWA==
 
-"@gui-chat-plugin/sequence@0.4.1":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/sequence/-/sequence-0.4.1.tgz#977396a0657c01420277858eb93de176e9250dfa"
-  integrity sha512-26ZKj77iYaGGt+mcExbm0anNtuSjE0mZO4v3FK0kBAOk5SgAwLxMYOMEY7aF5d9+DQmuk2tm6R57GpgwvHCb6g==
+"@gui-chat-plugin/sequence@0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/sequence/-/sequence-0.5.0.tgz#9416739d9b78b4c6571946a9f78e2e360b3d5305"
+  integrity sha512-ggmuu8ypPpLiLmVipwzkHA4wON6bJWCcFNaVLOnndfbWJHkbOk4HnAxPABDhO1KcrmtAuzs55b5cBh4TQkf+jw==
+  dependencies:
+    katex "^0.18.9"
+    marked "^18.0.14"
 
 "@gui-chat-plugin/set-image-style@^2.0.0":
   version "2.0.0"
@@ -3046,6 +3049,11 @@ commander@7:
   resolved "https://registry.yarnpkg.com/commander/-/commander-7.2.0.tgz#a36cb57d0b501ce108e4d20559a150a391d97ab7"
   integrity sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==
 
+commander@^15.0.0:
+  version "15.0.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-15.0.0.tgz#96f3961f12adac1799ef3fbd8bc61d40572d1b11"
+  integrity sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==
+
 commander@^2.20.3:
   version "2.20.3"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.3.tgz#fd485e84c03eb4881c20722ba48035e8531aeb33"
@@ -5074,6 +5082,13 @@ katex@^0.17.0:
   integrity sha512-Vdw0ATsQ9V+LuegM/BTwQqV/6cTl5lbGcIrU+BCgLxyf6bo38ybOr372tuSIxir3CN720flu1meYR6XzNMwQnw==
   dependencies:
     commander "^8.3.0"
+
+katex@^0.18.9:
+  version "0.18.9"
+  resolved "https://registry.yarnpkg.com/katex/-/katex-0.18.9.tgz#60d720d8cc87a2267096785070e4210b39957bda"
+  integrity sha512-8ad9RyoKsb/g8/yLFE+KAlP+DhbCTRUNi/V9XGsxn0R+trJJltNwzcDNo0q/DEkOy5fQUQTAQyCXCYSE+OakTQ==
+  dependencies:
+    commander "^15.0.0"
 
 keyv@^5.6.0:
   version "5.6.0"

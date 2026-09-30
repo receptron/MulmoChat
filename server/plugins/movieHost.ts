@@ -29,6 +29,10 @@
 // animations are shown at their end, as the View shows them: mulmocast pauses
 // them at their first frame, where an element faded in with @keyframes (as
 // the slides of sequence 0.3, still in saved slideshows, did) is invisible.
+// A Markdown slide (sequence 0.5) is an HTML slide too, with its Markdown as
+// the model wrote it, TeX math included, for the narration. A chart slide
+// has its Chart.js configuration, which mulmocast's chart beat takes as it is
+// (chartData), drawn under the slide's title as the View draws it.
 import path from "node:path";
 import type { ToolResult } from "gui-chat-protocol";
 import { artifactsFileOps } from "./workspace";
@@ -38,6 +42,7 @@ import {
   SLIDE_CSS_ANIMATIONS_FINISHED,
   SLIDESHOWS_DIR,
   STORYBOARDS_DIR,
+  type SlideChart,
   type Slideshow,
   type Storyboard,
 } from "@gui-chat-plugin/sequence";
@@ -50,11 +55,12 @@ import { logger } from "../utils/logger";
 const IMAGES_PREFIX = "artifacts/images/";
 const PICTURE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
 
-/** One scene of the movie: its picture (a saved image, or an HTML slide),
- *  and what the narration is about. */
+/** One scene of the movie: its picture (a saved image, an HTML slide or a
+ *  chart), and what the narration is about. */
 type Scene =
   | { imagePath: string; about: Record<string, unknown> }
-  | { html: string; about: Record<string, unknown> };
+  | { html: string; about: Record<string, unknown> }
+  | { chart: SlideChart; title: string; about: Record<string, unknown> };
 
 /** An HTML slide's words, for the narration: its text without the markup,
  *  <style> and <script> blocks included. A scan, not a regular expression:
@@ -134,7 +140,19 @@ function slideshowScenes(slideshow: Slideshow) {
         about: {
           slide: n,
           title: slide.title,
-          onTheSlide: slideText(slide.html),
+          onTheSlide: slide.markdown ?? slideText(slide.html),
+        },
+      });
+      continue;
+    }
+    if (slide.chart) {
+      scenes.push({
+        chart: slide.chart,
+        title: slide.title,
+        about: {
+          slide: n,
+          title: slide.title,
+          chart: JSON.stringify(slide.chart).slice(0, 1500),
         },
       });
       continue;
@@ -332,6 +350,14 @@ async function makeMovie(
   }
   const images: Record<string, unknown>[] = [];
   for (const scene of scenes) {
+    if ("chart" in scene) {
+      images.push({
+        type: "chart",
+        title: scene.title,
+        chartData: scene.chart,
+      });
+      continue;
+    }
     if ("html" in scene) {
       images.push({
         type: "html_tailwind",
