@@ -6,6 +6,7 @@ import {
   resampleAudioSync,
 } from "./audioCodec";
 import { audioDebug } from "./audioDebugRecorder";
+import { StreamResampler } from "./streamResampler";
 
 /**
  * Manages audio capture from microphone and playback for Google Live API
@@ -32,6 +33,9 @@ export class AudioStreamManager {
   private nextPlaybackTime = 0;
   private playbackGainNode: GainNode | null = null;
   private scheduledBuffersCount = 0;
+  // The model's audio, resampled here to the context's rate: Chrome then
+  // plays the buffers as they are (see ./streamResampler.ts for why).
+  private resampler: StreamResampler | null = null;
 
   // Event handlers for LLM audio playback (for avatar lip-sync, visual feedback)
   private playbackEventHandlers: AudioPlaybackEventHandlers = {};
@@ -189,6 +193,10 @@ export class AudioStreamManager {
     }
 
     this.isPlayingAudio = true;
+    this.resampler = new StreamResampler(
+      sampleRate,
+      this.audioContext.sampleRate,
+    );
     this.nextPlaybackTime = this.audioContext.currentTime;
     this.scheduledBuffersCount = 0;
     audioDebug?.event("playback started", {
@@ -257,49 +265,21 @@ export class AudioStreamManager {
       if (!mergedChunk || mergedChunk.length === 0) {
         continue;
       }
-
-      // Create audio buffer
-      const audioBuffer = this.audioContext.createBuffer(
-        1, // mono
-        mergedChunk.length,
-        sampleRate,
-      );
-
-      // Copy data to buffer
-      audioBuffer.copyToChannel(mergedChunk as Float32Array<ArrayBuffer>, 0);
-
-      // Create source node
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-
-      // Connect through gain node for smooth volume control
-      source.connect(this.playbackGainNode);
-
-      // Calculate start time - ensure continuous playback
-      const startTime = Math.max(now, this.nextPlaybackTime);
-      audioDebug?.event("scheduled", {
-        when: startTime,
+      this.schedule(
+        this.resampler ? this.resampler.process(mergedChunk) : mergedChunk,
+        this.resampler ? this.audioContext.sampleRate : sampleRate,
         now,
-        seconds: audioBuffer.duration,
-        // The previous buffer ended this long before this one could start:
-        // a gap of silence (the audio arrived, or was scheduled, late).
-        late: now > this.nextPlaybackTime ? now - this.nextPlaybackTime : 0,
-      });
+      );
+    }
 
-      try {
-        source.start(startTime);
-        this.scheduledBuffersCount++;
-
-        // Update next playback time to prevent gaps
-        this.nextPlaybackTime = startTime + audioBuffer.duration;
-
-        // Decrement counter when buffer finishes
-        source.onended = () => {
-          this.scheduledBuffersCount--;
-        };
-      } catch (error) {
-        console.error("Failed to schedule audio buffer:", error);
-      }
+    // The reply's audio is all played but the resampler's last samples
+    // (0.7 ms): they go after it.
+    if (
+      this.playbackQueue.length === 0 &&
+      this.scheduledBuffersCount === 0 &&
+      this.resampler
+    ) {
+      this.schedule(this.resampler.flush(), this.audioContext.sampleRate, now);
     }
 
     // Continue checking for more chunks
@@ -318,6 +298,45 @@ export class AudioStreamManager {
     }
   }
 
+  /** Schedules one buffer of samples right after the previous one. */
+  private schedule(samples: Float32Array, rate: number, now: number): void {
+    if (!this.audioContext || !this.playbackGainNode || samples.length === 0) {
+      return;
+    }
+    const audioBuffer = this.audioContext.createBuffer(1, samples.length, rate);
+    audioBuffer.copyToChannel(samples as Float32Array<ArrayBuffer>, 0);
+    const source = this.audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    // Connect through gain node for smooth volume control
+    source.connect(this.playbackGainNode);
+
+    // Calculate start time - ensure continuous playback
+    const startTime = Math.max(now, this.nextPlaybackTime);
+    audioDebug?.event("scheduled", {
+      when: startTime,
+      now,
+      seconds: audioBuffer.duration,
+      // The previous buffer ended this long before this one could start:
+      // a gap of silence (the audio arrived, or was scheduled, late).
+      late: now > this.nextPlaybackTime ? now - this.nextPlaybackTime : 0,
+    });
+
+    try {
+      source.start(startTime);
+      this.scheduledBuffersCount++;
+
+      // Update next playback time to prevent gaps
+      this.nextPlaybackTime = startTime + audioBuffer.duration;
+
+      // Decrement counter when buffer finishes
+      source.onended = () => {
+        this.scheduledBuffersCount--;
+      };
+    } catch (error) {
+      console.error("Failed to schedule audio buffer:", error);
+    }
+  }
+
   /**
    * Stop playback
    */
@@ -327,6 +346,7 @@ export class AudioStreamManager {
     this.isPlayingAudio = false;
     this.playbackQueue = [];
     this.scheduledBuffersCount = 0;
+    this.resampler = null;
 
     // Notify that LLM audio playback has stopped (for avatar lip-sync, etc.)
     if (wasPlaying) {
