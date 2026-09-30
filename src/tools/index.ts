@@ -131,9 +131,9 @@ const ServerChartPlugin = {
 // workspace (artifacts/documents/) and fills image placeholders with the
 // user's image settings. The package has no system prompt, so MulmoChat keeps
 // the one from its previous markdown plugin.
-const PRESENT_DOCUMENT_PROMPT = `Use the presentDocument tool to create structured documents with text and embedded images. This tool is ideal for:
-- Guides, tutorials, and how-to content ("create a guide about...", "explain how to...")
-- Educational content (lessons, explanations, timelines, concept visualizations)
+const PRESENT_DOCUMENT_PROMPT = `Use the presentDocument tool to create structured documents with text and embedded images. When you also have presentSlide, an explanation is a slideshow, not a document: when the user asks you to explain or describe something, walk them through it or comment on it, use presentSlide, and use presentDocument when the user asks for a document, a guide, a report or an article to keep. Without presentSlide, presentDocument is also how you explain something with visuals. This tool is ideal for:
+- Guides, tutorials, and how-to content the user asks to have written ("create a guide about...", "write up how to...")
+- Educational content to keep (lesson notes, timelines, concept visualizations)
 - Reports and presentations (business reports, data analysis, infographics)
 - Articles and blog posts with illustrations
 - Documentation with diagrams or screenshots
