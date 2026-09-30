@@ -1,11 +1,10 @@
 <template>
   <!-- The visual mode (after MulmoGlass): the canvas fills a dark screen,
-       with the controls in a bar below it; no sidebar, no text entry.
-       Fixed to the viewport: several plugins' stylesheets pad <body>. -->
+       with the controls in a bar below it; no sidebar, no text entry. -->
   <div
     :class="
       visualMode
-        ? 'fixed inset-0 flex flex-col bg-slate-950 text-slate-100'
+        ? 'h-screen flex flex-col bg-slate-950 text-slate-100'
         : 'p-4 space-y-4'
     "
   >

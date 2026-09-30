@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+/* `html body`, not `body`: several plugin packages (avatar, quiz, mindmap, …)
+   ship their demo page's `body { padding: 20px; … }` in the style.css we
+   import, which padded the app and made the page scroll. */
+html body {
+  padding: 0;
+}
