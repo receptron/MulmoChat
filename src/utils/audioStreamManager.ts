@@ -22,6 +22,10 @@ export interface AudioPlaybackEventHandlers {
   onPlaybackStopped?: () => void;
 }
 
+// How near the end of the scheduled audio the resampler's tail is scheduled:
+// three of playNextChunk's 10 ms polls.
+const TAIL_LEAD = 0.03;
+
 export class AudioStreamManager {
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
@@ -272,12 +276,16 @@ export class AudioStreamManager {
       );
     }
 
-    // The reply's audio is all played but the resampler's last samples
-    // (0.7 ms): they go after it.
+    // The resampler's last samples (0.7 ms), right after the last buffer,
+    // once no audio has come for the scheduled audio's last TAIL_LEAD
+    // seconds: the reply has ended (or the audio ran out, a gap anyway).
+    // Not whenever the queue is empty, which it often is mid-reply: each
+    // flush starts the resampler afresh, a seam. Not once the buffers have
+    // played either: the polling would put a gap before the tail.
     if (
       this.playbackQueue.length === 0 &&
-      this.scheduledBuffersCount === 0 &&
-      this.resampler
+      this.resampler &&
+      this.nextPlaybackTime - now < TAIL_LEAD
     ) {
       this.schedule(this.resampler.flush(), this.audioContext.sampleRate, now);
     }
