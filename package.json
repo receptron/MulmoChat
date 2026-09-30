@@ -57,7 +57,7 @@
     "@gui-chat-plugin/othello": "^2.0.0",
     "@gui-chat-plugin/piano": "github:receptron/GUIChatPluginPiano",
     "@gui-chat-plugin/scroll-to-anchor": "^2.0.0",
-    "@gui-chat-plugin/sequence": "0.4.1",
+    "@gui-chat-plugin/sequence": "0.5.1",
     "@gui-chat-plugin/set-image-style": "^2.0.0",
     "@gui-chat-plugin/spreadsheet": "^2.1.0",
     "@gui-chat-plugin/switch-role": "^2.0.0",
