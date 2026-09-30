@@ -89,6 +89,16 @@
           >
             <span class="material-icons text-lg">settings</span>
           </button>
+          <!-- Debug recording of Gemini's and Grok's audio (localStorage
+               "mulmochat_audio_debug" = "1"): saves the last minute. -->
+          <button
+            v-if="audioDebugEnabled"
+            @click="saveAudioDebugRecording"
+            class="px-3 py-2 rounded border border-amber-300 bg-amber-50 text-amber-700 flex items-center justify-center"
+            title="Save the last minute of audio (debug)"
+          >
+            <span class="material-icons text-lg">graphic_eq</span>
+          </button>
         </template>
       </div>
       <audio v-if="supportsAudioOutput" ref="audioEl" autoplay></audio>
@@ -571,6 +581,10 @@ import {
   getEnabledBackends,
 } from "../tools";
 import { LANGUAGES } from "../config/languages";
+import {
+  isAudioDebugEnabled,
+  saveAudioDebugRecording,
+} from "../utils/audioDebugRecorder";
 import { ROLES } from "../config/roles";
 import {
   REALTIME_MODELS,
@@ -700,6 +714,8 @@ onUnmounted(() => {
 
 const acceptedFileTypes = computed(() => getAcceptedFileTypes().join(","));
 const fileInputPlugins = computed(() => getFileInputPlugins());
+const audioDebugEnabled = isAudioDebugEnabled();
+
 const isVoiceMode = computed(
   () =>
     props.modelKind === "voice-realtime" ||
