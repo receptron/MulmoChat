@@ -184,384 +184,389 @@
       </button>
     </div>
 
-    <!-- Config Popup -->
-    <div
-      v-if="showConfigPopup"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      @click.self="showConfigPopup = false"
-    >
+    <!-- Config Popup: in <body>, so it shows while the sidebar is hidden
+         (the visual mode opens it) -->
+    <Teleport to="body">
       <div
-        class="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] flex flex-col"
+        v-if="showConfigPopup"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        @click.self="showConfigPopup = false"
       >
-        <div class="flex justify-between items-center mb-4 flex-shrink-0">
-          <h2 class="text-xl font-semibold">Configuration</h2>
-          <button
-            @click="showConfigPopup = false"
-            class="text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div class="space-y-4 overflow-y-auto flex-1">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Mode
-            </label>
-            <select
-              :value="modelKind"
-              @change="
-                $emit(
-                  'update:modelKind',
-                  ($event.target as HTMLSelectElement)
-                    .value as SessionTransportKind,
-                )
-              "
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <div
+          class="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] flex flex-col"
+        >
+          <div class="flex justify-between items-center mb-4 flex-shrink-0">
+            <h2 class="text-xl font-semibold">Configuration</h2>
+            <button
+              @click="showConfigPopup = false"
+              class="text-gray-500 hover:text-gray-700"
             >
-              <option value="voice-realtime">Voice (OpenAI Realtime)</option>
-              <option value="voice-google-live">Voice (Google Live)</option>
-              <option value="voice-grok">Voice (Grok)</option>
-              <option value="text-rest">Text (REST)</option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">
-              Choose between OpenAI WebRTC, Google or Grok WebSocket, or REST
-              text interface.
-            </p>
+              ✕
+            </button>
           </div>
 
-          <div v-if="isOpenAIRealtime">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Realtime Model
-            </label>
-            <select
-              :value="modelId"
-              @change="
-                $emit(
-                  'update:modelId',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option
-                v-for="model in REALTIME_MODELS"
-                :key="model.id"
-                :value="model.id"
-              >
-                {{ model.label }}
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">
-              Chooses the OpenAI realtime model used when connecting.
-            </p>
-          </div>
-
-          <div v-if="isGoogleLive">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Google Live Model
-            </label>
-            <select
-              :value="modelId"
-              @change="
-                $emit(
-                  'update:modelId',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option
-                v-for="model in GOOGLE_LIVE_MODELS"
-                :key="model.id"
-                :value="model.id"
-              >
-                {{ model.label }}
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">
-              Chooses the Google Gemini model used for real-time conversations.
-            </p>
-          </div>
-
-          <div v-if="isGrokVoice">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Grok Voice Model
-            </label>
-            <select
-              :value="modelId"
-              @change="
-                $emit(
-                  'update:modelId',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option
-                v-for="model in GROK_VOICE_MODELS"
-                :key="model.id"
-                :value="model.id"
-              >
-                {{ model.label }}
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">
-              Chooses the xAI Grok voice model (needs XAI_API_KEY). Grok doesn't
-              see images tools return.
-            </p>
-          </div>
-
-          <div v-if="isTextRest">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Text Model
-            </label>
-            <select
-              :value="textModelId"
-              @change="
-                $emit(
-                  'update:textModelId',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option
-                v-for="option in textModelOptions"
-                :key="option.id"
-                :value="option.id"
-                :disabled="option.disabled"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">
-              Select the REST text model. Providers marked "credentials
-              required" need an API key set on the server.
-            </p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Role
-            </label>
-            <div class="relative">
-              <span
-                class="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-600 pointer-events-none"
-              >
-                {{ getRoleIcon() }}
-              </span>
+          <div class="space-y-4 overflow-y-auto flex-1">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Mode
+              </label>
               <select
-                :value="roleId"
+                :value="modelKind"
                 @change="
                   $emit(
-                    'update:roleId',
+                    'update:modelKind',
+                    ($event.target as HTMLSelectElement)
+                      .value as SessionTransportKind,
+                  )
+                "
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="voice-realtime">Voice (OpenAI Realtime)</option>
+                <option value="voice-google-live">Voice (Google Live)</option>
+                <option value="voice-grok">Voice (Grok)</option>
+                <option value="text-rest">Text (REST)</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                Choose between OpenAI WebRTC, Google or Grok WebSocket, or REST
+                text interface.
+              </p>
+            </div>
+
+            <div v-if="isOpenAIRealtime">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Realtime Model
+              </label>
+              <select
+                :value="modelId"
+                @change="
+                  $emit(
+                    'update:modelId',
                     ($event.target as HTMLSelectElement).value,
                   )
                 "
-                class="w-full border border-gray-300 rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option v-for="role in ROLES" :key="role.id" :value="role.id">
-                  {{ role.name }}
+                <option
+                  v-for="model in REALTIME_MODELS"
+                  :key="model.id"
+                  :value="model.id"
+                >
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                Chooses the OpenAI realtime model used when connecting.
+              </p>
+            </div>
+
+            <div v-if="isGoogleLive">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Google Live Model
+              </label>
+              <select
+                :value="modelId"
+                @change="
+                  $emit(
+                    'update:modelId',
+                    ($event.target as HTMLSelectElement).value,
+                  )
+                "
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option
+                  v-for="model in GOOGLE_LIVE_MODELS"
+                  :key="model.id"
+                  :value="model.id"
+                >
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                Chooses the Google Gemini model used for real-time
+                conversations.
+              </p>
+            </div>
+
+            <div v-if="isGrokVoice">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Grok Voice Model
+              </label>
+              <select
+                :value="modelId"
+                @change="
+                  $emit(
+                    'update:modelId',
+                    ($event.target as HTMLSelectElement).value,
+                  )
+                "
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option
+                  v-for="model in GROK_VOICE_MODELS"
+                  :key="model.id"
+                  :value="model.id"
+                >
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                Chooses the xAI Grok voice model (needs XAI_API_KEY). Grok
+                doesn't see images tools return.
+              </p>
+            </div>
+
+            <div v-if="isTextRest">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Text Model
+              </label>
+              <select
+                :value="textModelId"
+                @change="
+                  $emit(
+                    'update:textModelId',
+                    ($event.target as HTMLSelectElement).value,
+                  )
+                "
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option
+                  v-for="option in textModelOptions"
+                  :key="option.id"
+                  :value="option.id"
+                  :disabled="option.disabled"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                Select the REST text model. Providers marked "credentials
+                required" need an API key set on the server.
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Role
+              </label>
+              <div class="relative">
+                <span
+                  class="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-600 pointer-events-none"
+                >
+                  {{ getRoleIcon() }}
+                </span>
+                <select
+                  :value="roleId"
+                  @change="
+                    $emit(
+                      'update:roleId',
+                      ($event.target as HTMLSelectElement).value,
+                    )
+                  "
+                  class="w-full border border-gray-300 rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option v-for="role in ROLES" :key="role.id" :value="role.id">
+                    {{ role.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Native Language
+              </label>
+              <select
+                :value="userLanguage"
+                @change="
+                  $emit(
+                    'update:userLanguage',
+                    ($event.target as HTMLSelectElement).value,
+                  )
+                "
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option
+                  v-for="language in LANGUAGES"
+                  :key="language.code"
+                  :value="language.code"
+                >
+                  {{ language.name }}
                 </option>
               </select>
             </div>
-          </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Native Language
-            </label>
-            <select
-              :value="userLanguage"
-              @change="
-                $emit(
-                  'update:userLanguage',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option
-                v-for="language in LANGUAGES"
-                :key="language.code"
-                :value="language.code"
-              >
-                {{ language.name }}
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                :checked="suppressInstructions"
-                @change="
-                  $emit(
-                    'update:suppressInstructions',
-                    ($event.target as HTMLInputElement).checked,
-                  )
-                "
-                class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-              />
-              <span class="text-sm font-medium text-gray-700">
-                Suppress Instructions
-              </span>
-            </label>
-          </div>
-
-          <div>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                :checked="showRoleList"
-                @change="
-                  $emit(
-                    'update:showRoleList',
-                    ($event.target as HTMLInputElement).checked,
-                  )
-                "
-                class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-              />
-              <span class="text-sm font-medium text-gray-700">
-                Show Role List in System Prompt
-              </span>
-            </label>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Custom Instructions
-            </label>
-            <textarea
-              :value="customInstructions"
-              @input="
-                $emit(
-                  'update:customInstructions',
-                  ($event.target as HTMLTextAreaElement).value,
-                )
-              "
-              placeholder="Add additional instructions for the AI..."
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-20"
-            ></textarea>
-            <p class="text-xs text-gray-500 mt-1">
-              These instructions will be added to the system prompt.
-            </p>
-          </div>
-
-          <div v-if="isCurrentRoleCustomizable">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Enabled Plugins
-            </label>
-            <div
-              class="max-h-60 overflow-y-auto border border-gray-300 rounded p-2 space-y-1"
-            >
-              <label
-                v-for="pluginModule in getPluginList()"
-                :key="pluginModule.plugin.toolDefinition.name"
-                class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
-              >
+            <div>
+              <label class="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  :checked="
-                    enabledPlugins[pluginModule.plugin.toolDefinition.name] ??
-                    true
-                  "
+                  :checked="suppressInstructions"
                   @change="
-                    handlePluginToggle(
-                      pluginModule.plugin.toolDefinition.name,
+                    $emit(
+                      'update:suppressInstructions',
                       ($event.target as HTMLInputElement).checked,
                     )
                   "
                   class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
                 />
-                <span class="text-sm text-gray-700">
-                  {{ pluginModule.plugin.toolDefinition.name }}
+                <span class="text-sm font-medium text-gray-700">
+                  Suppress Instructions
                 </span>
               </label>
             </div>
-          </div>
 
-          <div v-else class="plugins-info">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Available Plugins
-            </label>
-            <p class="text-xs text-gray-500 mb-2">
-              This role uses a curated set of plugins optimized for its purpose.
-            </p>
-            <div
-              class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50"
-            >
-              <span
-                v-for="pluginName in availablePluginsForCurrentRole"
-                :key="pluginName"
-                class="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
-              >
-                {{ pluginName }}
-              </span>
+            <div>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  :checked="showRoleList"
+                  @change="
+                    $emit(
+                      'update:showRoleList',
+                      ($event.target as HTMLInputElement).checked,
+                    )
+                  "
+                  class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                />
+                <span class="text-sm font-medium text-gray-700">
+                  Show Role List in System Prompt
+                </span>
+              </label>
             </div>
-          </div>
 
-          <div v-if="hasAnyPluginConfig()">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Plugin Settings
-            </label>
-            <div class="space-y-4">
-              <component
-                v-for="pluginModule in getPluginsWithConfig(roleId)"
-                :key="pluginModule.plugin.config!.key"
-                :is="pluginModule.plugin.config!.component"
-                :value="
-                  pluginConfigs[pluginModule.plugin.config!.key] ??
-                  pluginModule.plugin.config!.defaultValue
-                "
-                @update:value="
-                  handlePluginConfigUpdate(
-                    pluginModule.plugin.config!.key,
-                    $event,
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Custom Instructions
+              </label>
+              <textarea
+                :value="customInstructions"
+                @input="
+                  $emit(
+                    'update:customInstructions',
+                    ($event.target as HTMLTextAreaElement).value,
                   )
+                "
+                placeholder="Add additional instructions for the AI..."
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-20"
+              ></textarea>
+              <p class="text-xs text-gray-500 mt-1">
+                These instructions will be added to the system prompt.
+              </p>
+            </div>
+
+            <div v-if="isCurrentRoleCustomizable">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Enabled Plugins
+              </label>
+              <div
+                class="max-h-60 overflow-y-auto border border-gray-300 rounded p-2 space-y-1"
+              >
+                <label
+                  v-for="pluginModule in getPluginList()"
+                  :key="pluginModule.plugin.toolDefinition.name"
+                  class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="
+                      enabledPlugins[pluginModule.plugin.toolDefinition.name] ??
+                      true
+                    "
+                    @change="
+                      handlePluginToggle(
+                        pluginModule.plugin.toolDefinition.name,
+                        ($event.target as HTMLInputElement).checked,
+                      )
+                    "
+                    class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span class="text-sm text-gray-700">
+                    {{ pluginModule.plugin.toolDefinition.name }}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div v-else class="plugins-info">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Available Plugins
+              </label>
+              <p class="text-xs text-gray-500 mb-2">
+                This role uses a curated set of plugins optimized for its
+                purpose.
+              </p>
+              <div
+                class="flex flex-wrap gap-2 max-h-60 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50"
+              >
+                <span
+                  v-for="pluginName in availablePluginsForCurrentRole"
+                  :key="pluginName"
+                  class="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+                >
+                  {{ pluginName }}
+                </span>
+              </div>
+            </div>
+
+            <div v-if="hasAnyPluginConfig()">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Plugin Settings
+              </label>
+              <div class="space-y-4">
+                <component
+                  v-for="pluginModule in getPluginsWithConfig(roleId)"
+                  :key="pluginModule.plugin.config!.key"
+                  :is="pluginModule.plugin.config!.component"
+                  :value="
+                    pluginConfigs[pluginModule.plugin.config!.key] ??
+                    pluginModule.plugin.config!.defaultValue
+                  "
+                  @update:value="
+                    handlePluginConfigUpdate(
+                      pluginModule.plugin.config!.key,
+                      $event,
+                    )
+                  "
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Backend Settings
+              </label>
+              <BackendSettings
+                :text-l-l-m-backend="
+                  pluginConfigs.htmlGenerationBackend || 'claude'
+                "
+                :image-gen-backend="
+                  pluginConfigs.imageGenerationBackend || 'gemini'
+                "
+                :mulmocast-auto-generate="pluginConfigs.mulmocast ?? true"
+                :enabled-backends="enabledBackendsForRole"
+                @update:text-l-l-m-backend="
+                  handlePluginConfigUpdate('htmlGenerationBackend', $event)
+                "
+                @update:image-gen-backend="
+                  handlePluginConfigUpdate('imageGenerationBackend', $event)
+                "
+                @update:mulmocast-auto-generate="
+                  handlePluginConfigUpdate('mulmocast', $event)
                 "
               />
             </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Backend Settings
-            </label>
-            <BackendSettings
-              :text-l-l-m-backend="
-                pluginConfigs.htmlGenerationBackend || 'claude'
-              "
-              :image-gen-backend="
-                pluginConfigs.imageGenerationBackend || 'gemini'
-              "
-              :mulmocast-auto-generate="pluginConfigs.mulmocast ?? true"
-              :enabled-backends="enabledBackendsForRole"
-              @update:text-l-l-m-backend="
-                handlePluginConfigUpdate('htmlGenerationBackend', $event)
-              "
-              @update:image-gen-backend="
-                handlePluginConfigUpdate('imageGenerationBackend', $event)
-              "
-              @update:mulmocast-auto-generate="
-                handlePluginConfigUpdate('mulmocast', $event)
-              "
-            />
+          <div class="flex justify-end mt-4 pt-4 border-t flex-shrink-0">
+            <button
+              @click="showConfigPopup = false"
+              class="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Close
+            </button>
           </div>
         </div>
-
-        <div class="flex justify-end mt-4 pt-4 border-t flex-shrink-0">
-          <button
-            @click="showConfigPopup = false"
-            class="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
-            Close
-          </button>
-        </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -858,5 +863,8 @@ function handleSendClick(): void {
 defineExpose({
   audioEl,
   scrollToBottom,
+  openConfig: () => {
+    showConfigPopup.value = true;
+  },
 });
 </script>

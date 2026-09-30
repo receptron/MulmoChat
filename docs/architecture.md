@@ -7,7 +7,7 @@ The reference description of how MulmoChat is built: directory layout, session t
 - `src/` — Vue 3 + TypeScript client
   - `main.ts`, `App.vue` (just a `<router-view>`), `router/index.ts` (`/` → `HomeView`, `/test` → `TestView`)
   - `views/HomeView.vue` — the main screen; wires all composables together
-  - `components/` — `Sidebar.vue` (controls, result previews, text input, settings), `RightSidebar.vue`, `TextSelectionMenu.vue`, `settings/` (backend settings panels)
+  - `components/` — `Sidebar.vue` (controls, result previews, text input, settings), `VisualControlBar.vue` (the visual mode's controls), `RightSidebar.vue`, `TextSelectionMenu.vue`, `settings/` (backend settings panels)
   - `composables/` — session transports, tool results, user preferences, scrolling
   - `config/` — roles, languages, realtime/live models, text models, session constants
   - `tools/` — plugin registry (`index.ts`), MulmoChat `ToolPlugin` type (`types.ts`), `backend/` (client helpers that call server APIs), `utils/`
@@ -19,6 +19,8 @@ The reference description of how MulmoChat is built: directory layout, session t
 ## Main View (src/views/HomeView.vue)
 
 HomeView orchestrates the UI: it creates `useUserPreferences`, `useSessionTransport`, `useToolResults`, the sequence keeper (gui-chat-protocol's `createSequenceKeeper`) and `useScrolling`, routes tool calls from the session to `useToolResults`, and renders the selected result on the main canvas with `getToolPlugin(toolName).viewComponent`. The sidebar renders each result with the plugin's `previewComponent`. Listener-mode audio gating also lives here.
+
+**Visual mode** (the toolbar's `view_in_ar` button, after MulmoGlass; persisted as `visual_mode_v1`): the canvas fills a dark screen and `VisualControlBar` below it holds Connect/Stop, mute, the state and status line, ‹ n / m › result navigation, Configuration and exit. There is no text entry, so a text model can't connect in it. The Sidebar is hidden with `v-show`, never unmounted: it owns OpenAI's `<audio>` element (unmounting it silences the session) and the configuration popup, which is teleported to `<body>` so it opens while the Sidebar is hidden. The mode is `fixed inset-0` because several plugin packages' stylesheets pad `<body>`.
 
 ## Session Transports
 

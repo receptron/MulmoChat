@@ -1,11 +1,30 @@
 <template>
-  <div class="p-4 space-y-4">
-    <div role="toolbar" class="flex justify-between items-center">
+  <!-- The visual mode (after MulmoGlass): the canvas fills a dark screen,
+       with the controls in a bar below it; no sidebar, no text entry. -->
+  <div
+    :class="
+      visualMode
+        ? 'h-screen flex flex-col bg-slate-950 text-slate-100'
+        : 'p-4 space-y-4'
+    "
+  >
+    <div
+      v-if="!visualMode"
+      role="toolbar"
+      class="flex justify-between items-center"
+    >
       <h1 class="text-2xl font-bold">
         MulmoChat
         <span class="text-sm text-gray-500 font-normal">{{ statusLine }}</span>
       </h1>
       <div class="flex gap-2">
+        <button
+          @click="setVisualMode(true)"
+          class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 flex items-center justify-center transition-colors"
+          title="Visual mode"
+        >
+          <span class="material-icons text-base">view_in_ar</span>
+        </button>
         <button
           @click="toggleSidebar"
           class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 flex items-center justify-center transition-colors"
@@ -30,9 +49,14 @@
     </div>
 
     <!-- Main content area with sidebar -->
-    <div class="flex space-x-4" style="height: calc(100vh - 80px)">
+    <div
+      :class="visualMode ? 'flex-1 min-h-0 flex' : 'flex space-x-4'"
+      :style="visualMode ? undefined : { height: 'calc(100vh - 80px)' }"
+    >
+      <!-- Hidden, not removed: it holds OpenAI's <audio> element and the
+           configuration popup. -->
       <Sidebar
-        v-if="sidebarVisible"
+        v-show="sidebarVisible && !visualMode"
         ref="sidebarRef"
         :chat-active="chatActive"
         :connecting="connecting"
@@ -81,9 +105,16 @@
       />
 
       <!-- Main content -->
-      <div class="flex-1 flex flex-col">
+      <div class="flex-1 min-w-0 flex flex-col relative">
         <div
-          class="flex-1 border border-gray-300 rounded bg-gray-50 overflow-hidden"
+          class="flex-1 min-h-0 overflow-hidden"
+          :class="
+            visualMode
+              ? selectedResult
+                ? 'bg-white text-slate-900'
+                : ''
+              : 'border border-gray-300 rounded bg-gray-50'
+          "
         >
           <component
             v-if="
@@ -102,21 +133,58 @@
             @update-result="handleUpdateResult"
           />
           <div
-            v-if="!selectedResult"
+            v-if="!selectedResult && visualMode"
+            class="w-full h-full flex flex-col items-center justify-center gap-4 px-8 text-center text-slate-400"
+          >
+            <span class="material-icons" style="font-size: 96px"
+              >view_in_ar</span
+            >
+            <p class="text-2xl">{{ visualPrompt }}</p>
+          </div>
+          <div
+            v-else-if="!selectedResult"
             class="w-full h-full flex items-center justify-center"
           >
             <div class="text-gray-400 text-lg">Canvas</div>
           </div>
         </div>
+        <!-- The sidebar shows this below the results; here it floats. -->
+        <div
+          v-if="visualMode && isGeneratingImage"
+          class="absolute top-6 left-1/2 -translate-x-1/2 rounded-full bg-slate-800/90 px-6 py-3 text-xl text-slate-100 flex items-center gap-3"
+        >
+          <span class="material-icons animate-spin">autorenew</span>
+          {{ generatingMessage }}
+        </div>
       </div>
 
       <!-- Right sidebar for debugging -->
       <RightSidebar
-        v-if="rightSidebarVisible"
+        v-if="rightSidebarVisible && !visualMode"
         ref="rightSidebarRef"
         :tool-call-history="toolCallHistory"
       />
     </div>
+
+    <VisualControlBar
+      v-if="visualMode"
+      :chat-active="chatActive"
+      :connecting="connecting"
+      :can-connect="userPreferences.modelKind !== 'text-rest'"
+      :is-muted="isMuted"
+      :supports-audio-input="supportsAudioInput"
+      :state="visualState"
+      :status="statusLine"
+      :result-count="toolResults.length"
+      :selected-index="selectedIndex"
+      :audio-debug="audioDebugEnabled"
+      @toggle-chat="chatActive ? stopChat() : startChat()"
+      @toggle-mute="setMute(!isMuted)"
+      @select="selectResultAt"
+      @save-audio="saveAudioDebugRecording"
+      @open-settings="sidebarRef?.openConfig()"
+      @exit="setVisualMode(false)"
+    />
   </div>
 </template>
 
@@ -131,6 +199,11 @@ import {
 } from "../tools";
 import Sidebar from "../components/Sidebar.vue";
 import RightSidebar from "../components/RightSidebar.vue";
+import VisualControlBar from "../components/VisualControlBar.vue";
+import {
+  isAudioDebugEnabled,
+  saveAudioDebugRecording,
+} from "../utils/audioDebugRecorder";
 import { useSessionTransport } from "../composables/useSessionTransport";
 import { useUserPreferences } from "../composables/useUserPreferences";
 import { useToolResults } from "../composables/useToolResults";
@@ -208,6 +281,19 @@ function toggleSidebar(): void {
     sidebarVisible.value ? "true" : "false",
   );
 }
+
+// The visual mode (persisted to localStorage): see the template.
+const VISUAL_MODE_KEY = "visual_mode_v1";
+const visualMode = ref<boolean>(
+  localStorage.getItem(VISUAL_MODE_KEY) === "true",
+);
+
+function setVisualMode(on: boolean): void {
+  visualMode.value = on;
+  localStorage.setItem(VISUAL_MODE_KEY, on ? "true" : "false");
+}
+
+const audioDebugEnabled = isAudioDebugEnabled();
 
 // Right sidebar (debug panel) visibility state (persisted to localStorage)
 const RIGHT_SIDEBAR_VISIBLE_KEY = "right_sidebar_visible_v1";
@@ -396,6 +482,35 @@ const statusLine = computed(() => {
 
   return `${modelName} / ${imageModelName} / ${roleName} / ${languageName}`;
 });
+
+// The visual mode's control bar and empty canvas.
+const visualState = computed(() => {
+  if (userPreferences.modelKind === "text-rest") {
+    return "The visual mode needs a voice model: choose one in Configuration.";
+  }
+  if (connecting.value) return "Connecting…";
+  if (!chatActive.value) return "Tap the microphone to start.";
+  if (isMuted.value) return "Muted";
+  return conversationActive.value ? "Responding…" : "Listening";
+});
+
+const visualPrompt = computed(() => {
+  if (chatActive.value) return "Ask for anything — results appear here.";
+  // A text model can't connect here (no text entry): the button is disabled.
+  if (userPreferences.modelKind === "text-rest") {
+    return "Choose a voice model in Configuration to start.";
+  }
+  return "Tap the microphone to start.";
+});
+
+const selectedIndex = computed(() =>
+  selectedResult.value ? toolResults.value.indexOf(selectedResult.value) : -1,
+);
+
+function selectResultAt(index: number): void {
+  const result = toolResults.value[index];
+  if (result) handleSelectResult(result);
+}
 
 async function loadTextProviders(): Promise<void> {
   try {
