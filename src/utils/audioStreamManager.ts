@@ -6,6 +6,7 @@ import {
   resampleAudioSync,
 } from "./audioCodec";
 import { audioDebug } from "./audioDebugRecorder";
+import { StreamResampler } from "./streamResampler";
 
 /**
  * Manages audio capture from microphone and playback for Google Live API
@@ -21,6 +22,10 @@ export interface AudioPlaybackEventHandlers {
   onPlaybackStopped?: () => void;
 }
 
+// How near the end of the scheduled audio the resampler's tail is scheduled:
+// three of playNextChunk's 10 ms polls.
+const TAIL_LEAD = 0.03;
+
 export class AudioStreamManager {
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
@@ -32,6 +37,14 @@ export class AudioStreamManager {
   private nextPlaybackTime = 0;
   private playbackGainNode: GainNode | null = null;
   private scheduledBuffersCount = 0;
+  // The model's audio, resampled here to the context's rate: Chrome then
+  // plays the buffers as they are (see ./streamResampler.ts for why). One
+  // per reply, kept while the audio runs dry mid-reply (the audio after the
+  // gap goes on from it, without a seam) and dropped when the reply ends.
+  private resampler: StreamResampler | null = null;
+  // The provider said the reply is done (endOfReply()): its audio is all
+  // queued, and the resampler's tail can go after the last buffer.
+  private replyEnded = false;
 
   // Event handlers for LLM audio playback (for avatar lip-sync, visual feedback)
   private playbackEventHandlers: AudioPlaybackEventHandlers = {};
@@ -257,49 +270,31 @@ export class AudioStreamManager {
       if (!mergedChunk || mergedChunk.length === 0) {
         continue;
       }
-
-      // Create audio buffer
-      const audioBuffer = this.audioContext.createBuffer(
-        1, // mono
-        mergedChunk.length,
+      this.resampler ??= new StreamResampler(
         sampleRate,
+        this.audioContext.sampleRate,
       );
-
-      // Copy data to buffer
-      audioBuffer.copyToChannel(mergedChunk as Float32Array<ArrayBuffer>, 0);
-
-      // Create source node
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-
-      // Connect through gain node for smooth volume control
-      source.connect(this.playbackGainNode);
-
-      // Calculate start time - ensure continuous playback
-      const startTime = Math.max(now, this.nextPlaybackTime);
-      audioDebug?.event("scheduled", {
-        when: startTime,
+      this.schedule(
+        this.resampler.process(mergedChunk),
+        this.audioContext.sampleRate,
         now,
-        seconds: audioBuffer.duration,
-        // The previous buffer ended this long before this one could start:
-        // a gap of silence (the audio arrived, or was scheduled, late).
-        late: now > this.nextPlaybackTime ? now - this.nextPlaybackTime : 0,
-      });
+      );
+    }
 
-      try {
-        source.start(startTime);
-        this.scheduledBuffersCount++;
-
-        // Update next playback time to prevent gaps
-        this.nextPlaybackTime = startTime + audioBuffer.duration;
-
-        // Decrement counter when buffer finishes
-        source.onended = () => {
-          this.scheduledBuffersCount--;
-        };
-      } catch (error) {
-        console.error("Failed to schedule audio buffer:", error);
-      }
+    // The resampler's last samples (0.7 ms), right after the last buffer,
+    // once the reply has ended and its audio is all scheduled: within the
+    // scheduled audio's last TAIL_LEAD seconds, so no gap comes before them.
+    // Not when the audio merely runs dry mid-reply: the audio after the gap
+    // goes on from the resampler as it is.
+    if (
+      this.replyEnded &&
+      this.playbackQueue.length === 0 &&
+      this.resampler &&
+      this.nextPlaybackTime - now < TAIL_LEAD
+    ) {
+      this.schedule(this.resampler.flush(), this.audioContext.sampleRate, now);
+      this.resampler = null;
+      this.replyEnded = false;
     }
 
     // Continue checking for more chunks
@@ -318,6 +313,58 @@ export class AudioStreamManager {
     }
   }
 
+  /** The provider says the reply is done (Gemini's turnComplete, Grok's
+   *  response.done): all its audio has been queued. Its last 0.7 ms, which
+   *  the resampler holds back, then play after the rest. A reply that has
+   *  already finished playing drops them: a moment after its last sound. */
+  endOfReply(): void {
+    if (!this.resampler) return;
+    if (this.isPlayingAudio) {
+      this.replyEnded = true;
+      return;
+    }
+    this.resampler = null;
+  }
+
+  /** Schedules one buffer of samples right after the previous one. */
+  private schedule(samples: Float32Array, rate: number, now: number): void {
+    if (!this.audioContext || !this.playbackGainNode || samples.length === 0) {
+      return;
+    }
+    const audioBuffer = this.audioContext.createBuffer(1, samples.length, rate);
+    audioBuffer.copyToChannel(samples as Float32Array<ArrayBuffer>, 0);
+    const source = this.audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    // Connect through gain node for smooth volume control
+    source.connect(this.playbackGainNode);
+
+    // Calculate start time - ensure continuous playback
+    const startTime = Math.max(now, this.nextPlaybackTime);
+    audioDebug?.event("scheduled", {
+      when: startTime,
+      now,
+      seconds: audioBuffer.duration,
+      // The previous buffer ended this long before this one could start:
+      // a gap of silence (the audio arrived, or was scheduled, late).
+      late: now > this.nextPlaybackTime ? now - this.nextPlaybackTime : 0,
+    });
+
+    try {
+      source.start(startTime);
+      this.scheduledBuffersCount++;
+
+      // Update next playback time to prevent gaps
+      this.nextPlaybackTime = startTime + audioBuffer.duration;
+
+      // Decrement counter when buffer finishes
+      source.onended = () => {
+        this.scheduledBuffersCount--;
+      };
+    } catch (error) {
+      console.error("Failed to schedule audio buffer:", error);
+    }
+  }
+
   /**
    * Stop playback
    */
@@ -327,6 +374,8 @@ export class AudioStreamManager {
     this.isPlayingAudio = false;
     this.playbackQueue = [];
     this.scheduledBuffersCount = 0;
+    this.resampler = null;
+    this.replyEnded = false;
 
     // Notify that LLM audio playback has stopped (for avatar lip-sync, etc.)
     if (wasPlaying) {

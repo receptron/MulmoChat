@@ -149,6 +149,7 @@ export function useGrokVoiceSession(
         handlers.onConversationStarted?.();
         break;
       case "response.done":
+        grok.audioManager?.endOfReply();
         responseActive = false;
         conversationActive.value = false;
         handlers.onTextCompleted?.();

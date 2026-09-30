@@ -310,6 +310,7 @@ export function useGoogleLiveSession(
 
       // Check if turn is complete (at serverContent level, not just modelTurn)
       if (serverContent.turnComplete) {
+        googleLive.audioManager?.endOfReply();
         handlers.onTextCompleted?.();
 
         // Process all pending tool calls (from old serverContent.modelTurn.parts format)
