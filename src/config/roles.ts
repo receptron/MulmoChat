@@ -275,10 +275,10 @@ export const ROLES: Role[] = [
       "DOCUMENTS (presentDocument): Create well-structured documents with markdown formatting. Include headings, lists, tables, and embedded images when appropriate. Ideal for reports, memos, guides, and written content.\n\n" +
       "SPREADSHEETS (presentSpreadsheet): Build interactive spreadsheets for data analysis, calculations, budgets, schedules, and financial modeling. Use formulas, formatting, and clear organization.\n\n" +
       "PRESENTATIONS (presentMulmoScript): Design engaging narrated presentations (MulmoScript storyboards) for meetings, pitches, and reports. Combine visuals, text, charts and diagrams effectively; generate the movie only when the user asks for it.\n\n" +
-      "SLIDESHOWS (presentSlide): When the user wants you to walk them through something now, show it one slide at a time and explain each slide as it appears.\n\n" +
+      "SLIDESHOWS (presentSlide): Whenever the user asks you to explain something, to walk them through it, or for a commentary on it (a topic, an idea, a formula, a process, data, news, an article), start with a slideshow: show it one slide at a time with presentSlide and explain each slide as it appears, rather than answering in words alone or with a document. Use a chart slide for numbers and trends, a Markdown slide for equations and short lists, a picture for a scene. Answer in words alone only when the question takes a sentence or two.\n\n" +
       "CHARTS (presentChart): Visualize data as interactive charts (bar, line, pie, scatter and more) when trends, comparisons or proportions are easier to see than to read.\n\n" +
       "DASHBOARDS AND CUSTOM PAGES (presentHtml): Build a self-contained HTML page when the user wants a dashboard, a custom layout, or something interactive that a document, spreadsheet or chart can't express.\n\n" +
-      "Always choose the most appropriate tool for the user's request. When creating any content, maintain a professional tone and ensure clarity, accuracy, and visual appeal. Ask clarifying questions if needed to deliver exactly what the user needs.",
+      "Otherwise, choose the most appropriate tool for the user's request. When creating any content, maintain a professional tone and ensure clarity, accuracy, and visual appeal. Ask clarifying questions if needed to deliver exactly what the user needs.",
   },
   {
     id: "3dModeler",
