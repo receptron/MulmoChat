@@ -89,8 +89,8 @@
           >
             <span class="material-icons text-lg">settings</span>
           </button>
-          <!-- Debug recording of Gemini's and Grok's audio (localStorage
-               "mulmochat_audio_debug" = "1"): saves the last minute. -->
+          <!-- Debug recording of Gemini's and Grok's audio
+               (VITE_MULMOCHAT_AUDIO_DEBUG=1): saves the last minute. -->
           <button
             v-if="audioDebugEnabled"
             @click="saveAudioDebugRecording"
