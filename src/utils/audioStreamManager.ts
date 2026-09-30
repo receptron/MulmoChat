@@ -38,8 +38,13 @@ export class AudioStreamManager {
   private playbackGainNode: GainNode | null = null;
   private scheduledBuffersCount = 0;
   // The model's audio, resampled here to the context's rate: Chrome then
-  // plays the buffers as they are (see ./streamResampler.ts for why).
+  // plays the buffers as they are (see ./streamResampler.ts for why). One
+  // per reply, kept while the audio runs dry mid-reply (the audio after the
+  // gap goes on from it, without a seam) and dropped when the reply ends.
   private resampler: StreamResampler | null = null;
+  // The provider said the reply is done (endOfReply()): its audio is all
+  // queued, and the resampler's tail can go after the last buffer.
+  private replyEnded = false;
 
   // Event handlers for LLM audio playback (for avatar lip-sync, visual feedback)
   private playbackEventHandlers: AudioPlaybackEventHandlers = {};
@@ -197,10 +202,6 @@ export class AudioStreamManager {
     }
 
     this.isPlayingAudio = true;
-    this.resampler = new StreamResampler(
-      sampleRate,
-      this.audioContext.sampleRate,
-    );
     this.nextPlaybackTime = this.audioContext.currentTime;
     this.scheduledBuffersCount = 0;
     audioDebug?.event("playback started", {
@@ -269,25 +270,31 @@ export class AudioStreamManager {
       if (!mergedChunk || mergedChunk.length === 0) {
         continue;
       }
+      this.resampler ??= new StreamResampler(
+        sampleRate,
+        this.audioContext.sampleRate,
+      );
       this.schedule(
-        this.resampler ? this.resampler.process(mergedChunk) : mergedChunk,
-        this.resampler ? this.audioContext.sampleRate : sampleRate,
+        this.resampler.process(mergedChunk),
+        this.audioContext.sampleRate,
         now,
       );
     }
 
     // The resampler's last samples (0.7 ms), right after the last buffer,
-    // once no audio has come for the scheduled audio's last TAIL_LEAD
-    // seconds: the reply has ended (or the audio ran out, a gap anyway).
-    // Not whenever the queue is empty, which it often is mid-reply: each
-    // flush starts the resampler afresh, a seam. Not once the buffers have
-    // played either: the polling would put a gap before the tail.
+    // once the reply has ended and its audio is all scheduled: within the
+    // scheduled audio's last TAIL_LEAD seconds, so no gap comes before them.
+    // Not when the audio merely runs dry mid-reply: the audio after the gap
+    // goes on from the resampler as it is.
     if (
+      this.replyEnded &&
       this.playbackQueue.length === 0 &&
       this.resampler &&
       this.nextPlaybackTime - now < TAIL_LEAD
     ) {
       this.schedule(this.resampler.flush(), this.audioContext.sampleRate, now);
+      this.resampler = null;
+      this.replyEnded = false;
     }
 
     // Continue checking for more chunks
@@ -304,6 +311,19 @@ export class AudioStreamManager {
       );
       this.playbackEventHandlers.onPlaybackStopped?.();
     }
+  }
+
+  /** The provider says the reply is done (Gemini's turnComplete, Grok's
+   *  response.done): all its audio has been queued. Its last 0.7 ms, which
+   *  the resampler holds back, then play after the rest. A reply that has
+   *  already finished playing drops them: a moment after its last sound. */
+  endOfReply(): void {
+    if (!this.resampler) return;
+    if (this.isPlayingAudio) {
+      this.replyEnded = true;
+      return;
+    }
+    this.resampler = null;
   }
 
   /** Schedules one buffer of samples right after the previous one. */
@@ -355,6 +375,7 @@ export class AudioStreamManager {
     this.playbackQueue = [];
     this.scheduledBuffersCount = 0;
     this.resampler = null;
+    this.replyEnded = false;
 
     // Notify that LLM audio playback has stopped (for avatar lip-sync, etc.)
     if (wasPlaying) {
