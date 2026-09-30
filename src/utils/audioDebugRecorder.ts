@@ -165,20 +165,27 @@ class AudioDebugRecorder {
     }
     module.then(
       () => {
-        if (context.state === "closed") return;
+        if (context.state === "closed" || !isCurrent()) return;
         if (this.outputContext !== context) {
-          // A new context (a new session): its frames count from zero.
+          // A new context (a new session): its frames count from zero, so
+          // the old tap is retired, and blocks it had already queued are
+          // ignored rather than mixed in.
+          this.tapNode?.port.close();
           this.output = [];
-          this.tapNode = new AudioWorkletNode(context, "mulmochat-audio-tap");
-          this.tapNode.port.onmessage = (message) =>
-            this.pushOutput(message.data as OutputBlock);
+          const tapNode = new AudioWorkletNode(context, "mulmochat-audio-tap");
+          tapNode.port.onmessage = (message) => {
+            if (this.tapNode === tapNode) {
+              this.pushOutput(message.data as OutputBlock);
+            }
+          };
           // Pulled by the graph through a silent gain.
           const silent = context.createGain();
           silent.gain.value = 0;
-          this.tapNode.connect(silent).connect(context.destination);
+          tapNode.connect(silent).connect(context.destination);
+          this.tapNode = tapNode;
           this.outputContext = context;
         }
-        if (this.tapNode && isCurrent()) node.connect(this.tapNode);
+        node.connect(this.tapNode!);
       },
       (error: unknown) => this.event("tap failed", { error: String(error) }),
     );
@@ -204,9 +211,12 @@ class AudioDebugRecorder {
     const first = this.output[0]?.frame ?? 0;
     const last = this.output[this.output.length - 1];
     const length = last ? last.frame + last.samples.length - first : 0;
-    const rendered = new Float32Array(length);
+    const rendered = new Float32Array(Math.max(0, length));
     for (const block of this.output) {
-      rendered.set(block.samples, block.frame - first);
+      const at = block.frame - first;
+      if (at >= 0 && at + block.samples.length <= rendered.length) {
+        rendered.set(block.samples, at);
+      }
     }
     const receivedLength = this.received.reduce((n, c) => n + c.pcm.length, 0);
     const received = new Int16Array(receivedLength);
