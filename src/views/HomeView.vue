@@ -494,11 +494,14 @@ const visualState = computed(() => {
   return conversationActive.value ? "Responding…" : "Listening";
 });
 
-const visualPrompt = computed(() =>
-  chatActive.value
-    ? "Ask for anything — results appear here."
-    : "Tap the microphone to start.",
-);
+const visualPrompt = computed(() => {
+  if (chatActive.value) return "Ask for anything — results appear here.";
+  // A text model can't connect here (no text entry): the button is disabled.
+  if (userPreferences.modelKind === "text-rest") {
+    return "Choose a voice model in Configuration to start.";
+  }
+  return "Tap the microphone to start.";
+});
 
 const selectedIndex = computed(() =>
   selectedResult.value ? toolResults.value.indexOf(selectedResult.value) : -1,
