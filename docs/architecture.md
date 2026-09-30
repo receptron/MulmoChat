@@ -138,6 +138,7 @@ gui-chat-protocol's `ToolDefinition.prompt` is for the host's system prompt: `pl
 - `MULMOCHAT_ALLOWED_ORIGINS` — extra browser origins (comma-separated) allowed to call `/api/plugin/*`, e.g. `http://mac.local:5173` when opening the dev server from another device. Loopback origins are always allowed; the Host header is not trusted (DNS rebinding). Requests must be JSON (`server/utils/trustedOrigin.ts`).
 - `MULMOCHAT_ALLOW_REMOTE_PLUGINS` — `/api/plugin/*` only accepts connections from this machine (the Vite proxy connects from localhost, so the dev app works from other devices). Set to `true` to accept other machines, only on a trusted network.
 - `MULMOCHAT_WORKSPACE` — workspace for server-run plugins' files (default: `~/mulmoclaude` if it exists, else `output/workspace`). Point it at a scratch folder when testing.
+- `VITE_MULMOCHAT_AUDIO_DEBUG` — `1` turns on the audio debug recording (Gemini Live and Grok): a button next to the microphone saves the last minute of audio and a timeline (`src/utils/audioDebugRecorder.ts`). Read by Vite, so restart `yarn dev` after changing it.
 - `PORT`, `NODE_ENV`
 
 ## Data Flow
