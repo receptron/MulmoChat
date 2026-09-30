@@ -87,7 +87,9 @@
       title="Save the last minute of audio (debug)"
       @click="$emit('saveAudio')"
     >
-      <span class="material-icons text-[28px]! sm:text-[36px]!">graphic_eq</span>
+      <span class="material-icons text-[28px]! sm:text-[36px]!"
+        >graphic_eq</span
+      >
     </button>
 
     <!-- Configuration can't change while connected (as in the sidebar). -->
