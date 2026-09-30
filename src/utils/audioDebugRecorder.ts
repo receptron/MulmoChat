@@ -94,6 +94,9 @@ class AudioDebugRecorder {
   >();
   private readonly ready = new WeakMap<AudioContext, AudioWorkletNode>();
   private readonly watched = new WeakSet<AudioContext>();
+  // The context watched last: the session's. A tap that finishes loading
+  // after a newer context was watched is for an old session and is dropped.
+  private latestContext: AudioContext | null = null;
   private lastTick = Date.now();
 
   constructor() {
@@ -162,12 +165,15 @@ class AudioDebugRecorder {
   private prepareTap(context: AudioContext): Promise<AudioWorkletNode | null> {
     let tap = this.taps.get(context);
     if (tap) return tap;
+    this.latestContext = context;
     const url = URL.createObjectURL(
       new Blob([TAP_PROCESSOR], { type: "text/javascript" }),
     );
     tap = context.audioWorklet.addModule(url).then(
       () => {
-        if (context.state === "closed") return null;
+        if (context.state === "closed" || this.latestContext !== context) {
+          return null;
+        }
         this.tapNode?.port.close();
         this.output = [];
         const tapNode = new AudioWorkletNode(context, "mulmochat-audio-tap");
