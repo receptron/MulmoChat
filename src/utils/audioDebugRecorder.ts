@@ -86,7 +86,13 @@ class AudioDebugRecorder {
   private output: OutputBlock[] = [];
   private outputContext: AudioContext | null = null;
   private tapNode: AudioWorkletNode | null = null;
-  private readonly modules = new WeakMap<AudioContext, Promise<void>>();
+  // Each context's tap: made when the context is (the session starts), so
+  // it is ready before the first reply plays; `ready` once it exists.
+  private readonly taps = new WeakMap<
+    AudioContext,
+    Promise<AudioWorkletNode | null>
+  >();
+  private readonly ready = new WeakMap<AudioContext, AudioWorkletNode>();
   private readonly watched = new WeakSet<AudioContext>();
   private lastTick = Date.now();
 
@@ -118,6 +124,7 @@ class AudioDebugRecorder {
       state: context.state,
     });
     this.contexts.push({ t: Date.now(), what: "audio context", ...describe() });
+    this.prepareTap(context);
     context.addEventListener("statechange", () =>
       this.contexts.push({
         t: Date.now(),
@@ -149,52 +156,69 @@ class AudioDebugRecorder {
     }
   }
 
-  /** Records what `node` (the player's output) renders, while
-   *  `isCurrent()`: a node the player dropped before the tap was ready isn't
-   *  connected (it would record what nobody hears). */
+  /** Loads the tap into `context` and makes it the recording's: a new
+   *  context is a new session, whose frames count from zero, so the old tap
+   *  is retired and blocks it had already queued are ignored. */
+  private prepareTap(context: AudioContext): Promise<AudioWorkletNode | null> {
+    let tap = this.taps.get(context);
+    if (tap) return tap;
+    const url = URL.createObjectURL(
+      new Blob([TAP_PROCESSOR], { type: "text/javascript" }),
+    );
+    tap = context.audioWorklet.addModule(url).then(
+      () => {
+        if (context.state === "closed") return null;
+        this.tapNode?.port.close();
+        this.output = [];
+        const tapNode = new AudioWorkletNode(context, "mulmochat-audio-tap");
+        tapNode.port.onmessage = (message) => {
+          if (this.tapNode !== tapNode) return;
+          const block = message.data as OutputBlock;
+          // The context's clock and Date.now(), read together: the block
+          // started this long before now (however late the message came).
+          const ago = context.currentTime - block.frame / context.sampleRate;
+          this.pushOutput({ ...block, t: Date.now() - ago * 1000 });
+        };
+        // Pulled by the graph through a silent gain.
+        const silent = context.createGain();
+        silent.gain.value = 0;
+        tapNode.connect(silent).connect(context.destination);
+        this.tapNode = tapNode;
+        this.outputContext = context;
+        this.ready.set(context, tapNode);
+        return tapNode;
+      },
+      (error: unknown) => {
+        this.event("tap failed", { error: String(error) });
+        return null;
+      },
+    );
+    this.taps.set(context, tap);
+    return tap;
+  }
+
+  /** Records what `node` (the player's output) renders, from now on when
+   *  the tap is ready (the usual case: it is made with the context). If it
+   *  isn't, the audio until it is goes unrecorded, and an event says how
+   *  long. A node the player dropped meanwhile (`isCurrent()` false) isn't
+   *  connected: it would record what nobody hears. */
   tapOutput(
     context: AudioContext,
     node: AudioNode,
     isCurrent: () => boolean,
   ): void {
     this.watchContext(context, "playback");
-    let module = this.modules.get(context);
-    if (!module) {
-      const url = URL.createObjectURL(
-        new Blob([TAP_PROCESSOR], { type: "text/javascript" }),
-      );
-      module = context.audioWorklet.addModule(url);
-      this.modules.set(context, module);
+    const tap = this.ready.get(context);
+    if (tap && this.tapNode === tap) {
+      node.connect(tap);
+      return;
     }
-    module.then(
-      () => {
-        if (context.state === "closed" || !isCurrent()) return;
-        if (this.outputContext !== context) {
-          // A new context (a new session): its frames count from zero, so
-          // the old tap is retired, and blocks it had already queued are
-          // ignored rather than mixed in.
-          this.tapNode?.port.close();
-          this.output = [];
-          const tapNode = new AudioWorkletNode(context, "mulmochat-audio-tap");
-          tapNode.port.onmessage = (message) => {
-            if (this.tapNode !== tapNode) return;
-            const block = message.data as OutputBlock;
-            // The context's clock and Date.now(), read together: the block
-            // started this long before now (however late the message came).
-            const ago = context.currentTime - block.frame / context.sampleRate;
-            this.pushOutput({ ...block, t: Date.now() - ago * 1000 });
-          };
-          // Pulled by the graph through a silent gain.
-          const silent = context.createGain();
-          silent.gain.value = 0;
-          tapNode.connect(silent).connect(context.destination);
-          this.tapNode = tapNode;
-          this.outputContext = context;
-        }
-        node.connect(this.tapNode!);
-      },
-      (error: unknown) => this.event("tap failed", { error: String(error) }),
-    );
+    const asked = Date.now();
+    void this.prepareTap(context).then((late) => {
+      if (!late || this.tapNode !== late || !isCurrent()) return;
+      node.connect(late);
+      this.event("output recorded late", { ms: Date.now() - asked });
+    });
   }
 
   private pushOutput(block: OutputBlock): void {
