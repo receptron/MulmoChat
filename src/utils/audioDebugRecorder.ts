@@ -124,9 +124,16 @@ class AudioDebugRecorder {
     );
   }
 
-  /** A chunk of the model's audio, as received (16-bit PCM, base64). */
+  /** A chunk of the model's audio, as received (16-bit PCM, base64). Never
+   *  throws: the recording must not keep the chunk from being played. */
   received16(base64: string): void {
-    const binary = atob(base64);
+    let binary: string;
+    try {
+      binary = atob(base64);
+    } catch (error) {
+      this.event("received chunk not base64", { error: String(error) });
+      return;
+    }
     const bytes = new Uint8Array(binary.length - (binary.length % 2));
     for (let i = 0; i < bytes.length; i++) bytes[i] = binary.charCodeAt(i);
     this.received.push({ t: Date.now(), pcm: new Int16Array(bytes.buffer) });
