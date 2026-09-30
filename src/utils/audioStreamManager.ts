@@ -5,6 +5,7 @@ import {
   decodePCM16ToFloat32,
   resampleAudioSync,
 } from "./audioCodec";
+import { audioDebug } from "./audioDebugRecorder";
 
 /**
  * Manages audio capture from microphone and playback for Google Live API
@@ -61,6 +62,7 @@ export class AudioStreamManager {
 
     // Create audio context
     this.audioContext = new AudioContext();
+    audioDebug?.watchContext(this.audioContext, "capture and playback");
     const sourceSampleRate = this.audioContext.sampleRate;
 
     // Create source from microphone stream
@@ -139,6 +141,7 @@ export class AudioStreamManager {
       return;
     }
 
+    audioDebug?.received16(pcmData);
     try {
       const float32 = decodePCM16ToFloat32(pcmData);
       if (float32.length > 0) {
@@ -154,6 +157,7 @@ export class AudioStreamManager {
       }
     } catch (error) {
       console.error("Failed to decode audio data:", error);
+      audioDebug?.event("decode failed", { error: String(error) });
     }
   }
 
@@ -168,18 +172,28 @@ export class AudioStreamManager {
 
     if (!this.audioContext) {
       this.audioContext = new AudioContext();
+      audioDebug?.watchContext(this.audioContext, "playback");
     }
 
     // Create gain node for smooth volume control
     if (!this.playbackGainNode) {
-      this.playbackGainNode = this.audioContext.createGain();
-      this.playbackGainNode.gain.value = 1.0;
-      this.playbackGainNode.connect(this.audioContext.destination);
+      const gain = this.audioContext.createGain();
+      gain.gain.value = 1.0;
+      gain.connect(this.audioContext.destination);
+      this.playbackGainNode = gain;
+      audioDebug?.tapOutput(
+        this.audioContext,
+        gain,
+        () => this.playbackGainNode === gain,
+      );
     }
 
     this.isPlayingAudio = true;
     this.nextPlaybackTime = this.audioContext.currentTime;
     this.scheduledBuffersCount = 0;
+    audioDebug?.event("playback started", {
+      contextTime: this.audioContext.currentTime,
+    });
 
     // Notify that LLM audio playback has started (for avatar lip-sync, etc.)
     console.log("[Avatar Debug] Google: Audio playback STARTED");
@@ -263,6 +277,14 @@ export class AudioStreamManager {
 
       // Calculate start time - ensure continuous playback
       const startTime = Math.max(now, this.nextPlaybackTime);
+      audioDebug?.event("scheduled", {
+        when: startTime,
+        now,
+        seconds: audioBuffer.duration,
+        // The previous buffer ended this long before this one could start:
+        // a gap of silence (the audio arrived, or was scheduled, late).
+        late: now > this.nextPlaybackTime ? now - this.nextPlaybackTime : 0,
+      });
 
       try {
         source.start(startTime);
@@ -288,6 +310,7 @@ export class AudioStreamManager {
       // Playback finished: queue empty and all buffers completed
       // Notify that LLM audio playback has stopped (for avatar lip-sync, etc.)
       this.isPlayingAudio = false;
+      audioDebug?.event("playback ended");
       console.log(
         "[Avatar Debug] Google: Audio playback STOPPED (queue empty)",
       );
@@ -300,6 +323,7 @@ export class AudioStreamManager {
    */
   stopPlayback(): void {
     const wasPlaying = this.isPlayingAudio;
+    audioDebug?.event("playback stopped", { wasPlaying });
     this.isPlayingAudio = false;
     this.playbackQueue = [];
     this.scheduledBuffersCount = 0;
