@@ -572,7 +572,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, onMounted, onUnmounted } from "vue";
+import { ref, nextTick, computed, onMounted, onUnmounted, watch } from "vue";
 import type { ToolResult } from "gui-chat-protocol/vue";
 import { BackendSettings } from "./settings";
 import {
@@ -775,8 +775,38 @@ const currentTextCompany = computed(
     )?.label ?? "",
 );
 
-/** A Mode menu choice: a voice transport, or text with a company's model
- *  (the one already chosen when it is that company's, else its default). */
+// Each company's last chosen model, so going back to a company brings back
+// the model chosen there (this browser only; empty when storage is blocked).
+const LAST_TEXT_MODELS_KEY = "text_model_by_company_v1";
+const readLastTextModels = (): Record<string, string> => {
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem(LAST_TEXT_MODELS_KEY) ?? "{}",
+    );
+    return stored && typeof stored === "object" ? stored : {};
+  } catch {
+    return {};
+  }
+};
+watch(
+  () => props.textModelId,
+  (modelId) => {
+    const provider = textProviderOf(modelId);
+    if (!provider) return;
+    try {
+      localStorage.setItem(
+        LAST_TEXT_MODELS_KEY,
+        JSON.stringify({ ...readLastTextModels(), [provider]: modelId }),
+      );
+    } catch {
+      // Storage blocked: the company's default is chosen instead.
+    }
+  },
+  { immediate: true },
+);
+
+/** A Mode menu choice: a voice transport, or text with a company's model:
+ *  the one chosen there last, else its default. */
 function selectMode(value: string): void {
   if (!value.startsWith(TEXT_MODE_PREFIX)) {
     emit("update:modelKind", value as SessionTransportKind);
@@ -787,7 +817,11 @@ function selectMode(value: string): void {
     const options = props.textModelOptions.filter(
       (option) => option.provider === provider && !option.disabled,
     );
-    const next = options.find((option) => option.isDefault) ?? options[0];
+    const last = readLastTextModels()[provider];
+    const next =
+      options.find((option) => option.id === last) ??
+      options.find((option) => option.isDefault) ??
+      options[0];
     if (next) emit("update:textModelId", next.id);
   }
   emit("update:modelKind", "text-rest");
