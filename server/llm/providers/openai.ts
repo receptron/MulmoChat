@@ -248,11 +248,17 @@ async function generateWithResponses(
     requestBody.max_output_tokens = params.maxTokens;
   }
   if (params.tools !== undefined && params.tools.length > 0) {
+    // strict: false, as on chat completions. The Responses API makes a tool
+    // strict unless told otherwise, which makes every optional argument
+    // required and closes open objects: searchWeb's optional date filters
+    // were filled on every search, in forms Exa refused, and presentChart's
+    // free-form chart option couldn't hold its properties.
     requestBody.tools = params.tools.map((tool) => ({
       type: "function",
       name: tool.name,
       description: tool.description,
       parameters: tool.parameters,
+      strict: false,
     }));
     requestBody.parallel_tool_calls = true;
   }
