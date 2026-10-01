@@ -16,6 +16,16 @@ export const PDF_TEXT_MAX = 40_000;
 const PDF_BYTES_MAX = 30 * 1024 * 1024;
 const NAVIGATION_TIMEOUT_MS = 30_000;
 
+// The URL's last path segment, decoded when it can be ("%E0%A4%A" can't).
+const fileName = (url: string): string => {
+  const segment = new URL(url).pathname.split("/").pop() || "PDF";
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+};
+
 export interface PdfText {
   title: string;
   text: string;
@@ -37,9 +47,14 @@ export async function fetchPdfText(url: string): Promise<PdfText | null> {
     // route): a redirect to this machine or its network is refused too.
     await page.setRequestInterception(true);
     page.on("request", (request) => {
-      void publicHttpUrl(request.url()).then((allowed) =>
-        allowed ? request.continue() : request.abort("accessdenied"),
-      );
+      // The page may close while the check waits on DNS (the URL wasn't a
+      // PDF, or the read ended): handling the request then rejects, and an
+      // unhandled rejection would end the server.
+      void publicHttpUrl(request.url())
+        .then((allowed) =>
+          allowed ? request.continue() : request.abort("accessdenied"),
+        )
+        .catch(() => {});
     });
     const response = await page.goto(url, {
       waitUntil: "load",
@@ -98,7 +113,7 @@ export async function fetchPdfText(url: string): Promise<PdfText | null> {
     const title =
       typeof infoTitle === "string" && infoTitle.trim()
         ? infoTitle.trim()
-        : decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "PDF");
+        : fileName(url);
     return clean.length > PDF_TEXT_MAX
       ? {
           title,
