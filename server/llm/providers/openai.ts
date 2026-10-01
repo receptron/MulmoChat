@@ -262,8 +262,15 @@ async function generateWithResponses(
     }));
     requestBody.parallel_tool_calls = true;
   }
-  // Reasoning models: temperature and top_p aren't taken, so they are left
-  // out.
+  // These reasoning models take no temperature or top_p: a caller that sets
+  // one is told so, rather than having it dropped. (MulmoChat's text chat
+  // sets neither.)
+  if (params.temperature !== undefined || params.topP !== undefined) {
+    throw new TextGenerationError(
+      `temperature and top_p are not supported for model ${params.model}`,
+      400,
+    );
+  }
 
   const response = await fetch(OPENAI_RESPONSES_URL, {
     method: "POST",
