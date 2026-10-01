@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { puppeteerCrawlerAgent } from "mulmocast";
 import { defaultTestContext } from "graphai";
 import { fetchPdfText } from "../utils/pdfText";
+import { publicHttpUrl } from "../utils/publicUrl";
 import { StartApiResponse } from "../types";
 import { exaSearch, hasExaApiKey } from "../exaSearch";
 import { sendApiError } from "../utils/logger";
@@ -182,12 +183,19 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
 
 // Browse endpoint using mulmocast puppeteerCrawlerAgent
 router.post("/browse", async (req: Request, res: Response): Promise<void> => {
-  const { url } = req.body;
+  const { url: requested } = req.body as { url?: unknown };
 
-  if (!url) {
+  if (!requested || typeof requested !== "string") {
     sendApiError(res, req, 400, "URL is required");
     return;
   }
+  // Only public http(s) pages: the server opens the URL itself (publicUrl.ts).
+  const target = await publicHttpUrl(requested);
+  if (!target) {
+    sendApiError(res, req, 400, "Only public http(s) URLs can be browsed");
+    return;
+  }
+  const url = target.href;
 
   try {
     const result = (await puppeteerCrawlerAgent.agent({

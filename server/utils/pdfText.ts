@@ -6,6 +6,7 @@
 // with the cookies it just set.
 import puppeteer from "puppeteer";
 import { extractText, getDocumentProxy } from "unpdf";
+import { publicHttpUrl } from "./publicUrl";
 
 const isCI = process.env.CI === "true";
 
@@ -31,6 +32,15 @@ export async function fetchPdfText(url: string): Promise<PdfText | null> {
   });
   try {
     const page = await browser.newPage();
+    // Every request the page makes (redirects, the fetch below) goes only to
+    // public addresses, as the URL itself (publicHttpUrl, checked by the
+    // route): a redirect to this machine or its network is refused too.
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      void publicHttpUrl(request.url()).then((allowed) =>
+        allowed ? request.continue() : request.abort("accessdenied"),
+      );
+    });
     const response = await page.goto(url, {
       waitUntil: "load",
       timeout: NAVIGATION_TIMEOUT_MS,

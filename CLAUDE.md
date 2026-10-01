@@ -113,6 +113,7 @@ A check in the browser is a courtesy; the boundary is whatever the server refuse
 | Plugin files | the rooted `FileOps` (`server/plugins/fileOps.ts`): lexical check, then realpath, so `..` and symlinks out of `artifacts/` are refused |
 | Model-written HTML pages | the response's CSP (`sandbox allow-scripts`, CDN allowlist, `connect-src 'none'`) in `htmlHost.ts`, not the View's iframe attribute |
 | Images sent to text models | `server/llm/images.ts` / `parseMessageImages`, whatever the client filtered |
+| What `/api/browse` fetches | `publicHttpUrl` (`server/utils/publicUrl.ts`): http(s) whose host resolves to public addresses only. The PDF reader checks every request its browser makes (redirects included); the crawler path checks the URL it is given, not where it redirects |
 
 **Known gap:** every other route has no guard. The server listens on `0.0.0.0` with `cors()` open
 to any origin, so `/api/start` (which returns `GEMINI_API_KEY` and mints OpenAI keys),
