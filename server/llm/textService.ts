@@ -14,7 +14,7 @@ import {
 } from "./types";
 
 const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
-  openai: "gpt-4o-mini",
+  openai: "gpt-6.1-sol",
   anthropic: "claude-sonnet-4-6",
   google: "gemini-3.6-flash",
   ollama: "gpt-oss:20b",
@@ -24,6 +24,8 @@ const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
 const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
   {
     openai: [
+      "gpt-6.1-sol",
+      "gpt-6-astra",
       "gpt-6-sol",
       "gpt-6-luna",
       "gpt-5.6-sol",

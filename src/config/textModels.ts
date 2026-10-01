@@ -13,11 +13,11 @@ export interface ResolvedTextModel {
   rawId: string;
 }
 
-const DEFAULT_MODEL_ID = "openai:gpt-4o-mini";
+const DEFAULT_MODEL_ID = "openai:gpt-6.1-sol";
 
 export const DEFAULT_TEXT_MODEL: ResolvedTextModel = {
   provider: "openai",
-  model: "gpt-4o-mini",
+  model: "gpt-6.1-sol",
   rawId: DEFAULT_MODEL_ID,
 };
 
