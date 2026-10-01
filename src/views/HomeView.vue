@@ -210,7 +210,7 @@ import { useToolResults } from "../composables/useToolResults";
 import { useScrolling } from "../composables/useScrolling";
 import { createSequenceKeeper } from "gui-chat-protocol";
 import { SESSION_CONFIG } from "../config/session";
-import { DEFAULT_TEXT_MODEL } from "../config/textModels";
+import { DEFAULT_TEXT_MODEL, type TextModelOption } from "../config/textModels";
 import {
   DEFAULT_GOOGLE_LIVE_MODEL_ID,
   DEFAULT_GROK_VOICE_MODEL_ID,
@@ -339,16 +339,13 @@ function addToolCallToHistory(
   return toolCallHistory.value[toolCallHistory.value.length - 1];
 }
 
-interface TextModelOption {
-  id: string;
-  label: string;
-  disabled?: boolean;
-}
-
 // The option shown before the providers load, or when none is configured.
 const DEFAULT_TEXT_MODEL_OPTION: TextModelOption = {
   id: DEFAULT_TEXT_MODEL.rawId,
-  label: `OpenAI — ${DEFAULT_TEXT_MODEL.model} (default)`,
+  provider: DEFAULT_TEXT_MODEL.provider,
+  providerLabel: "OpenAI",
+  model: DEFAULT_TEXT_MODEL.model,
+  isDefault: true,
 };
 
 const textModelOptions = ref<TextModelOption[]>([DEFAULT_TEXT_MODEL_OPTION]);
@@ -530,13 +527,12 @@ async function loadTextProviders(): Promise<void> {
         continue;
       }
       for (const model of models) {
-        const isDefault = provider.defaultModel === model;
-        const credentialNote = provider.hasCredentials
-          ? ""
-          : " (credentials required)";
         options.push({
           id: `${provider.provider}:${model}`,
-          label: `${providerLabel} — ${model}${isDefault ? " (default)" : ""}${credentialNote}`,
+          provider: provider.provider,
+          providerLabel,
+          model,
+          isDefault: provider.defaultModel === model,
           disabled: !provider.hasCredentials,
         });
       }
