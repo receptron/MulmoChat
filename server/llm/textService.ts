@@ -17,46 +17,25 @@ const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
   openai: "gpt-6.1-sol",
   anthropic: "claude-sonnet-5-5",
   google: "gemini-3.8-flash",
-  ollama: "gpt-oss:20b",
+  ollama: "gemma4:26b",
   grok: "grok-4.7",
 };
 
-// Each company's current models only, newest first (checked against each
-// API's model list, 2026-10-01). Ollama's are models installed locally.
+// At most three per company, its newest, default first (checked against
+// each API's model list, 2026-10-01).
 const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
   {
     openai: ["gpt-6.1-sol", "gpt-6-astra", "gpt-6-luna"],
-    anthropic: [
-      "claude-sonnet-5-5",
-      "claude-opus-5-5",
-      "claude-fable-5-1",
-      "claude-haiku-4-5",
-    ],
+    anthropic: ["claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1"],
     google: [
       "gemini-3.8-flash",
       "gemini-3.1-pro-preview",
       "gemini-3.5-flash-lite",
     ],
     grok: ["grok-4.7", "grok-4.6"],
-    ollama: [
-      "gpt-oss:20b",
-      "gpt-oss:120b",
-      "qwen3:30b",
-      "phi4-mini:latest",
-      "mistral-small3.2:24b",
-      "PetrosStav/gemma3-tools:27b",
-      "ministral-3:14b",
-      "nemotron-3-nano",
-      "qwen3-coder",
-      "glm-4.7-flash",
-      "frob/qwen3-coder-next",
-      // "functiongemma",
-      // "deepseek-r1:32b", no tools
-      // "gemma3:27b", no tools
-      // "deepseek-coder:33b", no tools
-      // "llama3.3:70b", no tools
-      // "nemotron:70b", no tools
-    ],
+    // Installed and checked with tools here; qwen3.5's tag is the MLX
+    // build (Apple silicon only), nemotron-3-ultra runs on Ollama's cloud.
+    ollama: ["gemma4:26b", "qwen3.5:27b-mlx", "nemotron-3-ultra:cloud"],
   };
 
 function isSupportedRole(role: string): role is TextMessage["role"] {
