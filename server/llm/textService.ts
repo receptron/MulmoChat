@@ -15,95 +15,27 @@ import {
 
 const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
   openai: "gpt-6.1-sol",
-  anthropic: "claude-sonnet-4-6",
-  google: "gemini-3.6-flash",
-  ollama: "gpt-oss:20b",
-  grok: "grok-4-1-fast-reasoning",
+  anthropic: "claude-sonnet-5-5",
+  google: "gemini-3.8-flash",
+  ollama: "gemma4:26b",
+  grok: "grok-4.7",
 };
 
+// At most three per company, its newest, default first (checked against
+// each API's model list, 2026-10-01).
 const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
   {
-    openai: [
-      "gpt-6.1-sol",
-      "gpt-6-astra",
-      "gpt-6-sol",
-      "gpt-6-luna",
-      "gpt-5.6-sol",
-      "gpt-5.6-terra",
-      "gpt-5.6-luna",
-      "gpt-5.5",
-      "gpt-5.4",
-      "gpt-5.4-mini",
-      "gpt-5.4-nano",
-      "o3",
-      "o4-mini",
-      "gpt-5.2",
-      "gpt-5.1",
-      "gpt-5",
-      "gpt-5-mini",
-      "gpt-5-nano",
-      "gpt-4.1",
-      "gpt-4o",
-      "gpt-4o-mini",
-      "gpt-4.1-mini",
-    ],
-    anthropic: [
-      "claude-opus-5-5",
-      "claude-fable-5-1",
-      "claude-sonnet-5",
-      "claude-opus-5",
-      "claude-fable-5",
-      "claude-opus-4-8",
-      "claude-opus-4-7",
-      "claude-sonnet-4-6",
-      "claude-opus-4-6",
-      "claude-sonnet-4-5",
-      "claude-opus-4-5-20251101",
-      "claude-haiku-4-5",
-    ],
+    openai: ["gpt-6.1-sol", "gpt-6-astra", "gpt-6-luna"],
+    anthropic: ["claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1"],
     google: [
       "gemini-3.8-flash",
-      "gemini-3.7-flash",
-      "gemini-3.6-flash",
-      "gemini-3.5-flash",
-      "gemini-3.5-flash-lite",
       "gemini-3.1-pro-preview",
-      "gemini-3.1-flash-lite",
+      "gemini-3.5-flash-lite",
     ],
-    ollama: [
-      "gpt-oss:20b",
-      "gpt-oss:120b",
-      "qwen3:30b",
-      "phi4-mini:latest",
-      "mistral-small3.2:24b",
-      "PetrosStav/gemma3-tools:27b",
-      "ministral-3:14b",
-      "nemotron-3-nano",
-      "qwen3-coder",
-      "glm-4.7-flash",
-      "frob/qwen3-coder-next",
-      // "functiongemma",
-      // "deepseek-r1:32b", no tools
-      // "gemma3:27b", no tools
-      // "deepseek-coder:33b", no tools
-      // "llama3.3:70b", no tools
-      // "nemotron:70b", no tools
-    ],
-    grok: [
-      "grok-4-1-fast-reasoning",
-      "grok-4-1",
-      "grok-4-1-vision",
-      "grok-4",
-      "grok-3-1",
-      "grok-3-1-vision",
-      "grok-3",
-      "grok-2-latest",
-      "grok-2-vision-latest",
-      "grok-2-1212",
-      "grok-2-vision-1212",
-      "grok-beta",
-      "grok-vision-beta",
-    ],
+    grok: ["grok-4.7", "grok-4.6"],
+    // Installed and checked with tools here; qwen3.5's tag is the MLX
+    // build (Apple silicon only), nemotron-3-ultra runs on Ollama's cloud.
+    ollama: ["gemma4:26b", "qwen3.5:27b-mlx", "nemotron-3-ultra:cloud"],
   };
 
 function isSupportedRole(role: string): role is TextMessage["role"] {
@@ -246,12 +178,14 @@ function hasProviderCredentials(provider: TextLLMProviderId): boolean {
 }
 
 export function getProviderAvailability(): ProviderAvailability[] {
+  // The order of the Configuration's Mode menu: the hosted companies, then
+  // Ollama's local models.
   const providers: TextLLMProviderId[] = [
     "openai",
     "anthropic",
     "google",
-    "ollama",
     "grok",
+    "ollama",
   ];
 
   return providers.map((provider) => {

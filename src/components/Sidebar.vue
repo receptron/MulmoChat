@@ -211,24 +211,26 @@
                 Mode
               </label>
               <select
-                :value="modelKind"
-                @change="
-                  $emit(
-                    'update:modelKind',
-                    ($event.target as HTMLSelectElement)
-                      .value as SessionTransportKind,
-                  )
-                "
+                :value="modeValue"
+                @change="selectMode(($event.target as HTMLSelectElement).value)"
                 class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="voice-realtime">Voice (OpenAI Realtime)</option>
                 <option value="voice-google-live">Voice (Google Live)</option>
                 <option value="voice-grok">Voice (Grok)</option>
-                <option value="text-rest">Text (REST)</option>
+                <option
+                  v-for="company in textCompanies"
+                  :key="company.provider"
+                  :value="`${TEXT_MODE_PREFIX}${company.provider}`"
+                  :disabled="!company.available"
+                >
+                  Text ({{ company.label
+                  }}{{ company.available ? "" : ", API key needed" }})
+                </option>
               </select>
               <p class="text-xs text-gray-500 mt-1">
-                Choose between OpenAI WebRTC, Google or Grok WebSocket, or REST
-                text interface.
+                Talk by voice, or type to a text model. A company marked "API
+                key needed" has no key set on the server.
               </p>
             </div>
 
@@ -330,17 +332,16 @@
                 class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option
-                  v-for="option in textModelOptions"
+                  v-for="option in companyModels"
                   :key="option.id"
                   :value="option.id"
                   :disabled="option.disabled"
                 >
-                  {{ option.label }}
+                  {{ option.model }}{{ option.isDefault ? " (default)" : "" }}
                 </option>
               </select>
               <p class="text-xs text-gray-500 mt-1">
-                Select the REST text model. Providers marked "credentials
-                required" need an API key set on the server.
+                The {{ currentTextCompany }} model text chat uses.
               </p>
             </div>
 
@@ -571,7 +572,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, onMounted, onUnmounted } from "vue";
+import { ref, nextTick, computed, onMounted, onUnmounted, watch } from "vue";
 import type { ToolResult } from "gui-chat-protocol/vue";
 import { BackendSettings } from "./settings";
 import {
@@ -597,12 +598,7 @@ import {
   GROK_VOICE_MODELS,
 } from "../config/models";
 import type { SessionTransportKind } from "../composables/useSessionTransport";
-
-interface TextModelOption {
-  id: string;
-  label: string;
-  disabled?: boolean;
-}
+import type { TextModelOption } from "../config/textModels";
 
 const props = defineProps<{
   chatActive: boolean;
@@ -736,6 +732,100 @@ const needsConnectionToSend = computed(
   () => isOpenAIRealtime.value || isGrokVoice.value,
 );
 const isTextRest = computed(() => props.modelKind === "text-rest");
+
+// Text is chosen by company in the Mode menu, as voice is ("text:anthropic"),
+// and then by model, among that company's only: one list of every company's
+// models was too long to pick from.
+const TEXT_MODE_PREFIX = "text:";
+const textProviderOf = (modelId: string) => modelId.split(":")[0] ?? "";
+
+const textCompanies = computed(() => {
+  const companies = new Map<
+    string,
+    { provider: string; label: string; available: boolean }
+  >();
+  for (const option of props.textModelOptions) {
+    const company = companies.get(option.provider) ?? {
+      provider: option.provider,
+      label: option.providerLabel,
+      available: false,
+    };
+    company.available ||= !option.disabled;
+    companies.set(option.provider, company);
+  }
+  return [...companies.values()];
+});
+
+const modeValue = computed(() =>
+  isTextRest.value
+    ? `${TEXT_MODE_PREFIX}${textProviderOf(props.textModelId)}`
+    : props.modelKind,
+);
+
+const companyModels = computed(() =>
+  props.textModelOptions.filter(
+    (option) => option.provider === textProviderOf(props.textModelId),
+  ),
+);
+
+const currentTextCompany = computed(
+  () =>
+    textCompanies.value.find(
+      (company) => company.provider === textProviderOf(props.textModelId),
+    )?.label ?? "",
+);
+
+// Each company's last chosen model, so going back to a company brings back
+// the model chosen there (this browser only; empty when storage is blocked).
+const LAST_TEXT_MODELS_KEY = "text_model_by_company_v1";
+const readLastTextModels = (): Record<string, string> => {
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem(LAST_TEXT_MODELS_KEY) ?? "{}",
+    );
+    return stored && typeof stored === "object" ? stored : {};
+  } catch {
+    return {};
+  }
+};
+watch(
+  () => props.textModelId,
+  (modelId) => {
+    const provider = textProviderOf(modelId);
+    if (!provider) return;
+    try {
+      localStorage.setItem(
+        LAST_TEXT_MODELS_KEY,
+        JSON.stringify({ ...readLastTextModels(), [provider]: modelId }),
+      );
+    } catch {
+      // Storage blocked: the company's default is chosen instead.
+    }
+  },
+  { immediate: true },
+);
+
+/** A Mode menu choice: a voice transport, or text with a company's model:
+ *  the one chosen there last, else its default. */
+function selectMode(value: string): void {
+  if (!value.startsWith(TEXT_MODE_PREFIX)) {
+    emit("update:modelKind", value as SessionTransportKind);
+    return;
+  }
+  const provider = value.slice(TEXT_MODE_PREFIX.length);
+  if (textProviderOf(props.textModelId) !== provider) {
+    const options = props.textModelOptions.filter(
+      (option) => option.provider === provider && !option.disabled,
+    );
+    const last = readLastTextModels()[provider];
+    const next =
+      options.find((option) => option.id === last) ??
+      options.find((option) => option.isDefault) ??
+      options[0];
+    if (next) emit("update:textModelId", next.id);
+  }
+  emit("update:modelKind", "text-rest");
+}
 const connectButtonLabel = computed(() =>
   isVoiceMode.value ? "Connect" : "Start Session",
 );

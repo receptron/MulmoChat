@@ -2,6 +2,7 @@ export const TEXT_MODEL_PROVIDERS = [
   "openai",
   "anthropic",
   "google",
+  "grok",
   "ollama",
 ] as const;
 
@@ -11,6 +12,18 @@ export interface ResolvedTextModel {
   provider: TextModelProvider;
   model: string;
   rawId: string;
+}
+
+/** A text model the Configuration offers: chosen by company first (the
+ *  Mode menu), then by model. */
+export interface TextModelOption {
+  id: string;
+  provider: string;
+  providerLabel: string;
+  model: string;
+  isDefault?: boolean;
+  /** The server has no key for the company. */
+  disabled?: boolean;
 }
 
 const DEFAULT_MODEL_ID = "openai:gpt-6.1-sol";
