@@ -40,6 +40,7 @@ All four share the same event handler contract (`onToolCall`, `onTextDelta`, con
 - Replaces the existing result when `result.updating === true` (keeping its UUID), otherwise appends
 - Sends follow-up `instructions` unless suppressed (plugins can force them with `instructionsRequired`); `onResult` sees every result first and may replace its instructions (the sequence keeper); each call's context carries `userSpokeAt`
 - Honors `delayAfterExecution` and shows `generatingMessage` while running
+- When the model calls one tool several times at once (three to five searches for an analysis), sends that tool's `waitingMessage` with the first call and its instructions with the last to finish, not once per call; required instructions (a slideshow's step) always go
 - On failure, sends a retry instruction back to the model
 - Handles uploaded files and pasted images through plugin input handlers
 
@@ -53,7 +54,7 @@ All preferences persist to localStorage. Keys:
 - `image_generation_backend_v1`, `comfyui_model_v1`
 - Legacy keys migrated on load: `mode_id_v2`, `system_prompt_id_v1`
 
-It also builds the final instructions (role prompt + plugin system prompts + custom instructions + language) and the enabled tool list.
+It also builds the final instructions (role prompt + plugin system prompts + custom instructions + language + today's date, when the session starts) and the enabled tool list.
 
 ## Roles (src/config/roles.ts)
 

@@ -94,6 +94,21 @@ const initPluginConfigs = (): Record<string, unknown> => {
   }
 };
 
+// The model doesn't know today's date, and took the figures a search found
+// as old ones: asked for an analysis of a company, Gemini charted fiscal
+// 2024 and 2025 as the latest, with fiscal 2027's results in its search.
+// The user's local date, when the session starts.
+const todayText = (now = new Date()): string => {
+  const day = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return `Today is ${day} (${iso}).`;
+};
+
 const resolveStoredModelKind = (
   stored: string | null,
 ): SessionTransportKind => {
@@ -253,7 +268,7 @@ export function useUserPreferences(): UseUserPreferencesReturn {
           .map((r) => `- ${r.id}: ${r.name}`)
           .join("\n")
       : "";
-    return `${role.prompt}${roleListText}\n${pluginPrompts}\n${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}.`;
+    return `${role.prompt}${roleListText}\n${pluginPrompts}\n${customInstructionsText} The user's native language is ${getLanguageName(state.userLanguage)}. ${todayText()}`;
   };
 
   const buildTools = ({ startResponse }: BuildContext) =>

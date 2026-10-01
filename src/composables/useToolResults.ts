@@ -156,8 +156,30 @@ export function useToolResults(
     return true;
   };
 
+  // Calls of each tool still running. A model often calls one tool several
+  // times at once (three to five searches for an analysis), and each call's
+  // waiting message and instructions ("tell the user you're searching",
+  // "use what the search found") made a turn of its own: on Gemini Live the
+  // late ones came after slide 1 was up, and the model explained it again
+  // and stopped. So the waiting message goes with the first call, and the
+  // instructions with the last to finish.
+  const running = new Map<string, number>();
+  const callStarted = (name: string) => {
+    const before = running.get(name) ?? 0;
+    running.set(name, before + 1);
+    return before === 0;
+  };
+  const callEnded = (name: string) => {
+    const left = (running.get(name) ?? 1) - 1;
+    if (left > 0) running.set(name, left);
+    else running.delete(name);
+    return left === 0;
+  };
+
   const handleToolCall = async ({ msg, rawArgs }: HandleToolCallArgs) => {
     const startedAt = Date.now();
+    const first = callStarted(msg.name);
+    let ended = false;
     try {
       const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
       isGeneratingImage.value = true;
@@ -253,11 +275,13 @@ export function useToolResults(
       // Note: waitingMessage is only sent for realtime sessions
       // For text sessions, it would cause an error because we need to send
       // tool output before any new LLM generation can happen
-      if (plugin?.waitingMessage && options.isDataChannelOpen()) {
+      if (first && plugin?.waitingMessage && options.isDataChannelOpen()) {
         options.sendInstructions(plugin.waitingMessage);
       }
 
       const executed = await options.toolExecute(context, msg.name, args);
+      ended = true;
+      const last = callEnded(msg.name);
       // A step of a sequence (a slide, a story panel) is shown, and goes back
       // to the model, when the model has finished talking about the step
       // before. The model asks for the next step at the end of its reply,
@@ -313,11 +337,11 @@ export function useToolResults(
           images,
           `[Image returned by ${result.toolName}]`,
         );
-      const instructed = await maybeSendInstructions(
-        result.toolName,
-        plugin,
-        result,
-      );
+      // Another call of this tool still running sends its instructions
+      // (see `running`); required ones (a slideshow's step) always go.
+      const instructed =
+        (last || result.instructionsRequired) &&
+        (await maybeSendInstructions(result.toolName, plugin, result));
       // The model needs a turn to look at the images. Instructions start one
       // (Realtime response.create, the Live turn's completion); without them,
       // ask for it here.
@@ -341,6 +365,7 @@ export function useToolResults(
       console.log(`INS:tool-error\n${retryInstruction}`);
       options.sendInstructions(retryInstruction);
     } finally {
+      if (!ended) callEnded(msg.name);
       isGeneratingImage.value = false;
       generatingMessage.value = "";
     }
