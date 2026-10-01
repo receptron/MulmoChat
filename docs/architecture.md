@@ -115,7 +115,7 @@ gui-chat-protocol's `ToolDefinition.prompt` is for the host's system prompt: `pl
 ## Server Architecture
 
 - **server/index.ts** — Express app on `PORT` (default 3001), JSON body limit 500 MB, `/api/health`, `/api/config`, static `/output` for generated files, serves the client in production
-- **server/routes/api.ts** — `/api/start`, `/api/browse`, `/api/exa-search`, `/api/twitter-embed`; mounts the other routers:
+- **server/routes/api.ts** — `/api/start`, `/api/browse`, `/api/exa-search`, `/api/twitter-embed`; mounts the other routers. `/api/browse` reads a page with mulmocast's crawler and, when that finds no text, a PDF with `server/utils/pdfText.ts` (fetched from inside headless Chrome, which sites that refuse other clients serve; the first 40,000 characters, marked when cut):
   - `textLLM.ts` — `/api/text/providers`, `/api/text/generate`, and server-side sessions under `/api/text/session…` (not used by the current client)
   - `image.ts` — `/api/generate-image` (Gemini), `/api/generate-image/openai`
   - `comfyui.ts` — `/api/generate-image/comfy`

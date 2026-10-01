@@ -43,7 +43,6 @@ interface UseToolResultsOptions {
   isDataChannelOpen: () => boolean;
   scrollToBottomOfSideBar: () => void;
   scrollCurrentResultToTop: () => void;
-  onToolCallError?: (toolName: string, error: string) => void;
   switchRole?: (roleId: string) => void;
   /** Every tool result, with when its call started (Date.now()). Returns
    *  instructions that replace the result's (the sequence keeper: a step
@@ -67,12 +66,19 @@ interface HandleToolCallArgs {
   rawArgs: unknown;
 }
 
+/** What one call came to: its result, or its error; nothing when the chat
+ *  ended while the call's step waited. Calls run at the same time (several
+ *  searches), so a caller keeps its own call's outcome, not "the latest
+ *  result". */
+export type ToolCallOutcome =
+  { result: ToolResult } | { error: string } | undefined;
+
 export interface UseToolResultsReturn {
   toolResults: Ref<ToolResult[]>;
   selectedResult: Ref<ToolResult | null>;
   isGeneratingImage: Ref<boolean>;
   generatingMessage: Ref<string>;
-  handleToolCall: (args: HandleToolCallArgs) => Promise<void>;
+  handleToolCall: (args: HandleToolCallArgs) => Promise<ToolCallOutcome>;
   handleSelectResult: (result: ToolResult) => void;
   handleUpdateResult: (updatedResult: ToolResult) => void;
   handleUploadFiles: (results: ToolResult[]) => Promise<void>;
@@ -176,7 +182,10 @@ export function useToolResults(
     return left === 0;
   };
 
-  const handleToolCall = async ({ msg, rawArgs }: HandleToolCallArgs) => {
+  const handleToolCall = async ({
+    msg,
+    rawArgs,
+  }: HandleToolCallArgs): Promise<ToolCallOutcome> => {
     const startedAt = Date.now();
     const first = callStarted(msg.name);
     let ended = false;
@@ -301,7 +310,7 @@ export function useToolResults(
       ) {
         // Stopped while it waited: not shown after Stop, and there is no
         // session to send it to.
-        if ((await options.waitForSpeechEnd?.()) === false) return;
+        if ((await options.waitForSpeechEnd?.()) === false) return undefined;
       }
       const replaced = options.onResult?.(executed, startedAt);
       const result = replaced
@@ -350,20 +359,17 @@ export function useToolResults(
           `Look at the image ${result.toolName} returned.`,
         );
       }
+      return { result };
     } catch (e) {
       const errorMessage = `Tool execution failed: ${e}`;
       console.error(`MSG: ${errorMessage}`);
       sendFunctionOutput(msg.call_id, errorMessage);
 
-      // Report error to debug panel if callback is provided
-      if (options.onToolCallError) {
-        options.onToolCallError(msg.name, errorMessage);
-      }
-
       // Instruct the LLM about the error
       const retryInstruction = `The previous tool call for "${msg.name}" failed with error: ${e}. Please analyze the error and try an appropriate solution.`;
       console.log(`INS:tool-error\n${retryInstruction}`);
       options.sendInstructions(retryInstruction);
+      return { error: errorMessage };
     } finally {
       if (!ended) callEnded(msg.name);
       isGeneratingImage.value = false;

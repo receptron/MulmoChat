@@ -320,7 +320,13 @@ interface ToolCallHistoryItem {
 
 const toolCallHistory = ref<ToolCallHistoryItem[]>([]);
 
-function addToolCallToHistory(toolName: string, args: any): void {
+// The entry it returns is the one to give the call's outcome: calls run at the
+// same time (a model's several searches), and "the latest result, on the
+// latest call of that tool without one" put results on the wrong calls.
+function addToolCallToHistory(
+  toolName: string,
+  args: any,
+): ToolCallHistoryItem {
   toolCallHistory.value.push({
     toolName,
     args,
@@ -330,19 +336,7 @@ function addToolCallToHistory(toolName: string, args: any): void {
   setTimeout(() => {
     rightSidebarRef.value?.scrollToBottom();
   }, 100);
-}
-
-function updateToolCallResult(toolName: string, result: ToolResult): void {
-  // Find the most recent call with this tool name that doesn't have a result
-  for (let i = toolCallHistory.value.length - 1; i >= 0; i--) {
-    if (
-      toolCallHistory.value[i].toolName === toolName &&
-      !toolCallHistory.value[i].result
-    ) {
-      toolCallHistory.value[i].result = result;
-      break;
-    }
-  }
+  return toolCallHistory.value[toolCallHistory.value.length - 1];
 }
 
 interface TextModelOption {
@@ -603,9 +597,6 @@ const {
   isDataChannelOpen,
   scrollToBottomOfSideBar: scrolling.scrollSidebarToBottom,
   scrollCurrentResultToTop: scrolling.scrollCanvasToTop,
-  onToolCallError: (toolName: string, error: string) => {
-    updateToolCallError({ name: toolName }, error);
-  },
   switchRole: (roleId: string) => {
     switchRoleCallback.value?.(roleId);
   },
@@ -631,36 +622,17 @@ const sequence = createSequenceKeeper({
   log: (message) => console.info(`[sequence] ${message}`),
 });
 
-// Wrapper to track results immediately
-async function handleToolCall(params: any): Promise<void> {
+// Runs a call and puts its outcome on its own history entry.
+async function handleToolCall(
+  params: any,
+  entry: ToolCallHistoryItem,
+): Promise<void> {
   try {
-    await originalHandleToolCall(params);
-    // After tool execution, update the history with the result
-    if (toolResults.value.length > 0) {
-      const latestResult = toolResults.value[toolResults.value.length - 1];
-      if (latestResult && latestResult.toolName) {
-        updateToolCallResult(latestResult.toolName, latestResult);
-      }
-    }
+    const outcome = await originalHandleToolCall(params);
+    if (outcome && "result" in outcome) entry.result = outcome.result;
+    else if (outcome) entry.error = outcome.error;
   } catch (error) {
-    // Mark the tool call as failed in history
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    updateToolCallError(params.msg, errorMessage);
-  }
-}
-
-function updateToolCallError(msg: any, errorMessage: string): void {
-  const toolName = typeof msg === "string" ? msg : msg.name || msg;
-  // Find the most recent call with this tool name that doesn't have a result or error
-  for (let i = toolCallHistory.value.length - 1; i >= 0; i--) {
-    if (
-      toolCallHistory.value[i].toolName === toolName &&
-      !toolCallHistory.value[i].result &&
-      !toolCallHistory.value[i].error
-    ) {
-      toolCallHistory.value[i].error = errorMessage;
-      break;
-    }
+    entry.error = error instanceof Error ? error.message : String(error);
   }
 }
 
@@ -782,13 +754,14 @@ registerEventHandlers({
   onToolCall: async (msg, id, argStr) => {
     // Track tool call in history for debugging
     const toolName = typeof msg === "string" ? msg : msg.name || "unknown";
+    let args: unknown = argStr;
     try {
-      const args = JSON.parse(argStr);
-      addToolCallToHistory(toolName, args);
+      args = JSON.parse(argStr);
     } catch {
-      addToolCallToHistory(toolName, argStr);
+      // Shown as the model sent it.
     }
-    await handleToolCall({ msg, rawArgs: argStr });
+    const entry = addToolCallToHistory(toolName, args);
+    await handleToolCall({ msg, rawArgs: argStr }, entry);
   },
   onTextDelta: (delta) => {
     currentText.value += delta;
@@ -954,20 +927,6 @@ watch(
     // by kind (a still-open voice connection would keep the microphone).
     if (newKind !== previousKind) {
       stopTransportChatFor(previousKind);
-    }
-  },
-);
-
-// Watch tool results and update history with results
-watch(
-  () => toolResults.value.length,
-  () => {
-    // When a new result is added, update the corresponding history entry
-    if (toolResults.value.length > 0) {
-      const latestResult = toolResults.value[toolResults.value.length - 1];
-      if (latestResult && latestResult.toolName) {
-        updateToolCallResult(latestResult.toolName, latestResult);
-      }
     }
   },
 );

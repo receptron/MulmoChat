@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 import { puppeteerCrawlerAgent } from "mulmocast";
 import { defaultTestContext } from "graphai";
+import { fetchPdfText } from "../utils/pdfText";
 import { StartApiResponse } from "../types";
 import { exaSearch, hasExaApiKey } from "../exaSearch";
 import { sendApiError } from "../utils/logger";
@@ -189,13 +190,32 @@ router.post("/browse", async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const result = await puppeteerCrawlerAgent.agent({
+    const result = (await puppeteerCrawlerAgent.agent({
       ...defaultTestContext,
       namedInputs: { url },
-    });
+    })) as { content?: unknown } | null;
+    if (typeof result?.content === "string" && result.content.trim()) {
+      res.json({ success: true, data: result });
+      return;
+    }
+    // No text from the crawler: a PDF (see fetchPdfText), or a page with
+    // none. The crawler's empty result had null fields, which the browse
+    // plugin took for "an unrecognized response".
+    const pdf = await fetchPdfText(url);
+    if (!pdf) {
+      res.json({ success: false, error: "The page has no readable text" });
+      return;
+    }
+    const note = pdf.fullLength
+      ? `\n\n[The first ${pdf.text.length} of ${pdf.fullLength} characters of this ${pdf.pages}-page PDF.]`
+      : "";
+    const content = `${pdf.text}${note}`;
     res.json({
       success: true,
-      data: result,
+      data: {
+        data: { url, title: pdf.title, textContent: content },
+        content,
+      },
     });
   } catch (error: unknown) {
     console.error("Browse failed:", error);
