@@ -37,18 +37,40 @@ export async function fetchPdfText(url: string): Promise<PdfText | null> {
     });
     const type = response?.headers()["content-type"] ?? "";
     if (!type.includes("application/pdf")) return null;
+    // From where the navigation ended: a URL that redirects to another site
+    // (a CDN) would otherwise be fetched cross-origin, and refused. Read as a
+    // stream, so a file over the limit is dropped as soon as it passes it.
     const base64 = await page.evaluate(
       async (target, max) => {
         const res = await fetch(target);
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        if (bytes.length > max) return null;
+        if (Number(res.headers.get("content-length") ?? 0) > max) return null;
+        const reader = res.body?.getReader();
+        if (!reader) return null;
+        const chunks: Uint8Array[] = [];
+        let size = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          size += value.length;
+          if (size > max) {
+            await reader.cancel();
+            return null;
+          }
+          chunks.push(value);
+        }
+        const bytes = new Uint8Array(size);
+        let at = 0;
+        for (const chunk of chunks) {
+          bytes.set(chunk, at);
+          at += chunk.length;
+        }
         let binary = "";
         for (let i = 0; i < bytes.length; i += 0x8000) {
           binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
         }
         return btoa(binary);
       },
-      url,
+      response?.url() ?? url,
       PDF_BYTES_MAX,
     );
     if (!base64) throw new Error("The PDF is too large to read");
