@@ -345,12 +345,13 @@ interface TextModelOption {
   disabled?: boolean;
 }
 
-const textModelOptions = ref<TextModelOption[]>([
-  {
-    id: DEFAULT_TEXT_MODEL.rawId,
-    label: "OpenAI — gpt-4o-mini (default)",
-  },
-]);
+// The option shown before the providers load, or when none is configured.
+const DEFAULT_TEXT_MODEL_OPTION: TextModelOption = {
+  id: DEFAULT_TEXT_MODEL.rawId,
+  label: `OpenAI — ${DEFAULT_TEXT_MODEL.model} (default)`,
+};
+
+const textModelOptions = ref<TextModelOption[]>([DEFAULT_TEXT_MODEL_OPTION]);
 
 const PROVIDER_LABELS: Record<string, string> = {
   openai: "OpenAI",
@@ -542,10 +543,7 @@ async function loadTextProviders(): Promise<void> {
     }
 
     if (options.length === 0) {
-      options.push({
-        id: DEFAULT_TEXT_MODEL.rawId,
-        label: "OpenAI — gpt-4o-mini (default)",
-      });
+      options.push(DEFAULT_TEXT_MODEL_OPTION);
     }
 
     textModelOptions.value = options;
@@ -559,12 +557,7 @@ async function loadTextProviders(): Promise<void> {
     }
   } catch (error) {
     console.warn("Failed to load text model providers", error);
-    textModelOptions.value = [
-      {
-        id: DEFAULT_TEXT_MODEL.rawId,
-        label: "OpenAI — gpt-4o-mini (default)",
-      },
-    ];
+    textModelOptions.value = [DEFAULT_TEXT_MODEL_OPTION];
     if (!userPreferences.textModelId) {
       userPreferences.textModelId = DEFAULT_TEXT_MODEL.rawId;
     }
