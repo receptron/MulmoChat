@@ -2,6 +2,8 @@ import express, { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 import { puppeteerCrawlerAgent } from "mulmocast";
 import { defaultTestContext } from "graphai";
+import { fetchPdfText } from "../utils/pdfText";
+import { publicHttpUrl } from "../utils/publicUrl";
 import { StartApiResponse } from "../types";
 import { exaSearch, hasExaApiKey } from "../exaSearch";
 import { sendApiError } from "../utils/logger";
@@ -181,21 +183,47 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
 
 // Browse endpoint using mulmocast puppeteerCrawlerAgent
 router.post("/browse", async (req: Request, res: Response): Promise<void> => {
-  const { url } = req.body;
+  const { url: requested } = req.body as { url?: unknown };
 
-  if (!url) {
+  if (!requested || typeof requested !== "string") {
     sendApiError(res, req, 400, "URL is required");
     return;
   }
+  // Only public http(s) pages: the server opens the URL itself (publicUrl.ts).
+  const target = await publicHttpUrl(requested);
+  if (!target) {
+    sendApiError(res, req, 400, "Only public http(s) URLs can be browsed");
+    return;
+  }
+  const url = target.href;
 
   try {
-    const result = await puppeteerCrawlerAgent.agent({
+    const result = (await puppeteerCrawlerAgent.agent({
       ...defaultTestContext,
       namedInputs: { url },
-    });
+    })) as { content?: unknown } | null;
+    if (typeof result?.content === "string" && result.content.trim()) {
+      res.json({ success: true, data: result });
+      return;
+    }
+    // No text from the crawler: a PDF (see fetchPdfText), or a page with
+    // none. The crawler's empty result had null fields, which the browse
+    // plugin took for "an unrecognized response".
+    const pdf = await fetchPdfText(url);
+    if (!pdf) {
+      res.json({ success: false, error: "The page has no readable text" });
+      return;
+    }
+    const note = pdf.fullLength
+      ? `\n\n[The first ${pdf.text.length} of ${pdf.fullLength} characters of this ${pdf.pages}-page PDF.]`
+      : "";
+    const content = `${pdf.text}${note}`;
     res.json({
       success: true,
-      data: result,
+      data: {
+        data: { url, title: pdf.title, textContent: content },
+        content,
+      },
     });
   } catch (error: unknown) {
     console.error("Browse failed:", error);

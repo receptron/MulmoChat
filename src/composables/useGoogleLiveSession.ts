@@ -121,6 +121,15 @@ export function useGoogleLiveSession(
   const startResponse = ref<StartApiResponse | null>(null);
   const pendingToolCalls = new Map<string, PendingToolCall>();
   const processedToolCalls = new Set<string>();
+  // Each running call's tool name, for its toolResponse. Set before the call
+  // runs: its output is sent while it runs, and the name, read from
+  // pendingToolCalls after the call returned, went out as "unknown".
+  const callNames = new Map<string, string>();
+  // An ID for a call that came without one. Unique within the session: a
+  // batch's calls start together, in the same millisecond, and a second call
+  // with the first one's ID was skipped as a duplicate.
+  let fallbackCalls = 0;
+  const fallbackCallId = () => `call-${Date.now()}-${++fallbackCalls}`;
   // Set by the user's first transcribed words in a turn, cleared when the
   // model's turn starts (onSpeechStarted / onSpeechStopped).
   let userSpeaking = false;
@@ -216,9 +225,13 @@ export function useGoogleLiveSession(
         handlers.onSpeechStopped?.();
       }
       const functionCalls = data.toolCall.functionCalls || [];
-
+      // A batch's calls run together, as the other transports run them, so
+      // the host sees them as one batch (useToolResults sends a tool's
+      // waiting message and instructions once for calls running together);
+      // one after another, three searches made three of each.
+      const calls: Promise<void>[] = [];
       for (const fc of functionCalls) {
-        const callId = fc.id || `call-${Date.now()}`;
+        const callId = fc.id || fallbackCallId();
 
         // Check for duplicates
         if (processedToolCalls.has(callId)) {
@@ -227,6 +240,7 @@ export function useGoogleLiveSession(
 
         // Mark as processed BEFORE calling handler to prevent double execution
         processedToolCalls.add(callId);
+        callNames.set(callId, fc.name);
 
         const toolCallMsg: ToolCallMessage = {
           type: "response.function_call_arguments.done",
@@ -239,16 +253,11 @@ export function useGoogleLiveSession(
         const fixedArgs = fixGoogleArgs(fc.args || {});
         const argStr = JSON.stringify(fixedArgs);
 
-        // Call handler immediately - don't store in pendingToolCalls since we're handling it now
-        await handlers.onToolCall?.(toolCallMsg, callId, argStr);
-
-        // Store ONLY for sendFunctionCallOutput to retrieve the name later
-        pendingToolCalls.set(callId, {
-          id: callId,
-          name: fc.name,
-          args: fc.args || {},
-        });
+        calls.push(
+          Promise.resolve(handlers.onToolCall?.(toolCallMsg, callId, argStr)),
+        );
       }
+      await Promise.all(calls);
     }
 
     // Handle server content
@@ -294,7 +303,7 @@ export function useGoogleLiveSession(
           // Handle function call (old format - shouldn't happen with new model)
           if (part.functionCall) {
             const functionCall = part.functionCall;
-            const callId = functionCall.id || `call-${Date.now()}`;
+            const callId = functionCall.id || fallbackCallId();
 
             // Skip if already processed
             if (!processedToolCalls.has(callId)) {
@@ -314,6 +323,7 @@ export function useGoogleLiveSession(
         handlers.onTextCompleted?.();
 
         // Process all pending tool calls (from old serverContent.modelTurn.parts format)
+        const calls: Promise<void>[] = [];
         for (const [callId, functionCall] of pendingToolCalls.entries()) {
           if (!processedToolCalls.has(callId)) {
             const toolCallMsg: ToolCallMessage = {
@@ -324,11 +334,16 @@ export function useGoogleLiveSession(
 
             const argStr = JSON.stringify(functionCall.args || {});
             processedToolCalls.add(callId);
-            await handlers.onToolCall?.(toolCallMsg, callId, argStr);
+            callNames.set(callId, functionCall.name);
+            calls.push(
+              Promise.resolve(
+                handlers.onToolCall?.(toolCallMsg, callId, argStr),
+              ),
+            );
           }
         }
-
         pendingToolCalls.clear();
+        await Promise.all(calls);
         conversationActive.value = false;
         handlers.onConversationFinished?.();
       }
@@ -593,14 +608,8 @@ export function useGoogleLiveSession(
   };
 
   const sendFunctionCallOutput = (callId: string, output: string) => {
-    // Get the function name from processed tool calls
-    let functionName = "unknown";
-    for (const [id, call] of pendingToolCalls.entries()) {
-      if (id === callId) {
-        functionName = call.name;
-        break;
-      }
-    }
+    const functionName = callNames.get(callId) ?? "unknown";
+    callNames.delete(callId);
 
     return sendWebSocketMessage({
       toolResponse: {

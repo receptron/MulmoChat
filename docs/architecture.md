@@ -27,7 +27,7 @@ HomeView orchestrates the UI: it creates `useUserPreferences`, `useSessionTransp
 `useSessionTransport` (src/composables/useSessionTransport.ts) holds all four sessions and exposes the active one through a common interface (`UseRealtimeSessionReturn`) plus a `capabilities` object. The transport is chosen by the user's model kind preference:
 
 - **`voice-realtime`** — `useVoiceRealtimeSession` → `useRealtimeSession`: OpenAI Realtime over WebRTC. Fetches an ephemeral key from `/api/start?model=<id>` (the key is bound to that model), opens an `oai-events` data channel, streams microphone audio, accumulates function-call arguments and dispatches tool calls. A tool's instructions go into the conversation as a system message before the `response.create`, not as its `instructions`, which replace the session prompt and which the model often skipped (it called the next slide without explaining the one on the screen). A `response.create` (a typed message, a tool's instructions) asked for while a response runs is held and sent after `response.done`, once, with the held instructions joined; OpenAI would reject it with `conversation_already_has_active_response`. Each request carries an `event_id`, also put in the response's `metadata.request_id`, because the server starts responses of its own (the user's spoken turn): only an error with that `event_id` or a `response.created`/`done` with that metadata settles it. Models in `config/models.ts` (`REALTIME_MODELS`).
-- **`voice-google-live`** — `useGoogleLiveSession`: Gemini Live API over a WebSocket opened directly from the browser with the Gemini key returned by `/api/start`, with PCM encoding/playback via `utils/audioCodec.ts` and `utils/audioStreamManager.ts`. Gemini Live sends no speech-started event, so the session asks for a transcript of the user's speech (`inputAudioTranscription`) and reports speech started on its first text in a turn, or on `interrupted`; the transcript can arrive seconds late. Models in `GOOGLE_LIVE_MODELS`.
+- **`voice-google-live`** — `useGoogleLiveSession`: Gemini Live API over a WebSocket opened directly from the browser with the Gemini key returned by `/api/start`, with PCM encoding/playback via `utils/audioCodec.ts` and `utils/audioStreamManager.ts`. Gemini Live sends no speech-started event, so the session asks for a transcript of the user's speech (`inputAudioTranscription`) and reports speech started on its first text in a turn, or on `interrupted`; the transcript can arrive seconds late. The calls of one `toolCall` batch run together, as on the other transports. Models in `GOOGLE_LIVE_MODELS`.
 - **`voice-grok`** — `useGrokVoiceSession`: xAI's Voice Agent API over a WebSocket opened from the browser. The events are OpenAI Realtime's; the audio is PCM16 through `AudioStreamManager`, like Gemini Live. The server mints a short-lived client secret (`/api/start?voice=grok`, from `XAI_API_KEY`), which the browser passes as the `xai-client-secret.<secret>` subprotocol. Follow-up instructions go in as user messages (a `response.create` with `instructions` would replace the system prompt), and a `response.create` asked for while a response runs is sent after it. Grok takes no image input, so `sendImagesToModel` returns false. Models in `GROK_VOICE_MODELS`.
 - **`text-rest`** — `useTextSession`: keeps the conversation history on the client and calls the stateless `/api/text/generate` endpoint for each turn. Model IDs are `provider:model` strings (`config/textModels.ts`, default `openai:gpt-4o-mini`). Required instructions sent while no turn runs (the host asking the model to go on with a slideshow) start a turn of their own.
 
@@ -40,6 +40,7 @@ All four share the same event handler contract (`onToolCall`, `onTextDelta`, con
 - Replaces the existing result when `result.updating === true` (keeping its UUID), otherwise appends
 - Sends follow-up `instructions` unless suppressed (plugins can force them with `instructionsRequired`); `onResult` sees every result first and may replace its instructions (the sequence keeper); each call's context carries `userSpokeAt`
 - Honors `delayAfterExecution` and shows `generatingMessage` while running
+- When the model calls one tool several times at once (three to five searches for an analysis), sends that tool's `waitingMessage` with the first call and its instructions with the last to finish, not once per call; required instructions (a slideshow's step) always go
 - On failure, sends a retry instruction back to the model
 - Handles uploaded files and pasted images through plugin input handlers
 
@@ -53,7 +54,7 @@ All preferences persist to localStorage. Keys:
 - `image_generation_backend_v1`, `comfyui_model_v1`
 - Legacy keys migrated on load: `mode_id_v2`, `system_prompt_id_v1`
 
-It also builds the final instructions (role prompt + plugin system prompts + custom instructions + language) and the enabled tool list.
+It also builds the final instructions (role prompt + plugin system prompts + custom instructions + language + today's date, when the session starts) and the enabled tool list.
 
 ## Roles (src/config/roles.ts)
 
@@ -114,7 +115,7 @@ gui-chat-protocol's `ToolDefinition.prompt` is for the host's system prompt: `pl
 ## Server Architecture
 
 - **server/index.ts** — Express app on `PORT` (default 3001), JSON body limit 500 MB, `/api/health`, `/api/config`, static `/output` for generated files, serves the client in production
-- **server/routes/api.ts** — `/api/start`, `/api/browse`, `/api/exa-search`, `/api/twitter-embed`; mounts the other routers:
+- **server/routes/api.ts** — `/api/start`, `/api/browse`, `/api/exa-search`, `/api/twitter-embed`; mounts the other routers. `/api/browse` reads a page with mulmocast's crawler and, when that finds no text, a PDF with `server/utils/pdfText.ts` (fetched from inside headless Chrome, which sites that refuse other clients serve; the first 40,000 characters, marked when cut):
   - `textLLM.ts` — `/api/text/providers`, `/api/text/generate`, and server-side sessions under `/api/text/session…` (not used by the current client)
   - `image.ts` — `/api/generate-image` (Gemini), `/api/generate-image/openai`
   - `comfyui.ts` — `/api/generate-image/comfy`

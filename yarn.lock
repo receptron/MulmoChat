@@ -670,12 +670,12 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/edit-image/-/edit-image-2.0.0.tgz#9c4452175b2fe91e231c1a8a4395e6c538581fc0"
   integrity sha512-lv8YTtjKn/8U7M39uNYJIK/k+iAIep+ooMNDtZCBXvkzv3LzKw1nG3Y/CKEeOVNdbKUuOEXa4EWoIyKhmHiPWA==
 
-"@gui-chat-plugin/exa@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/exa/-/exa-2.0.0.tgz#16e9aa0ddf95efc9e5b5bcd4598fcc23d4330e52"
-  integrity sha512-bJFst9NY8e59b/rIFk/m130XBUuIXik6gpqcJ7bmGDw1nTdgUDN37+el3Mz9w3xgQcQInxYtNikKQNI0I1oDlQ==
+"@gui-chat-plugin/exa@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/exa/-/exa-2.0.1.tgz#ae83f09c723abcc43d1220576500297e7af745ab"
+  integrity sha512-OG4po/T2xmFG4aYqfvEzz1uVQLi6J52azkYH+Uo2y5+v7/0WfuYK6iz/zWxOq+oCh4xcbf1OHphOZC6FzYLtcA==
   dependencies:
-    exa-js "^2.16.3"
+    exa-js "^2.23.0"
 
 "@gui-chat-plugin/generate-html@^2.0.0":
   version "2.0.0"
@@ -726,10 +726,10 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/scroll-to-anchor/-/scroll-to-anchor-2.0.0.tgz#39cff9e31654689cc03f6e33959d7f51e8450dba"
   integrity sha512-bfe6ECB4p7UJFzzTkaiQGiirVRgbVV891DQQiBdJfRJFjXbqUCGYXOAzsUBOAqTkrH5/BEF3Bbbpj1O4aiyKWA==
 
-"@gui-chat-plugin/sequence@0.5.2":
-  version "0.5.2"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/sequence/-/sequence-0.5.2.tgz#ddb37130ebfd7b30332c263fc8f70a22042c39de"
-  integrity sha512-2npo7jsRXmigaAaRHpF6+I5LQVsji/B4Wut3Aa0PW73jxGysnDLXp/B+V+QjaRu+bzUN+xDxotUrAOJZYgm5WA==
+"@gui-chat-plugin/sequence@0.5.3":
+  version "0.5.3"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/sequence/-/sequence-0.5.3.tgz#24d517a69e44893d25f31ca2892d3476c75be020"
+  integrity sha512-t6cBWonnB073ekjp7nUQBS7a3UUSWAgu1NdieqhZo4zOfmcvpbAb4EKGAj6TXgTfUcfvYRdQhRQ1iaJknIYA2A==
   dependencies:
     katex "^0.18.9"
     marked "^18.0.14"
@@ -4013,6 +4013,17 @@ exa-js@^2.16.3:
   version "2.16.3"
   resolved "https://registry.yarnpkg.com/exa-js/-/exa-js-2.16.3.tgz#08bb12e3aad6efe955c91a35c5537118154c8b49"
   integrity sha512-e1oYN1gvMyMSUG64YuwINYQ2oLnVXMGO6/Qk3tXykGg3HUyY87UjcMLQwNePBRlHSA09ccKihMbjp4cKXUH0kg==
+  dependencies:
+    cross-fetch "~4.1.0"
+    dotenv "~16.4.7"
+    openai "^5.0.1"
+    zod "^3.22.0"
+    zod-to-json-schema "^3.20.0"
+
+exa-js@^2.23.0:
+  version "2.24.0"
+  resolved "https://registry.yarnpkg.com/exa-js/-/exa-js-2.24.0.tgz#ecc611cc0ed1ca078015d7b1958ec0aac81c97a1"
+  integrity sha512-Y/9gHxHsT03+KftqyFf6OBuDE8y4BIqCCymOHi4lKWHqLUi8WBz/7aifRYUR1Bo8+MEoV5iJ0YnkEEvUqUK3Aw==
   dependencies:
     cross-fetch "~4.1.0"
     dotenv "~16.4.7"
@@ -7470,6 +7481,11 @@ unique-string@^3.0.0:
   integrity sha512-VGXBUVwxKMBUznyffQweQABPRRW1vHZAbadFZud4pLFAqRGvv/96vafgjWFqzourzr8YonlQiPgH0YCJfawoGQ==
   dependencies:
     crypto-random-string "^4.0.0"
+
+unpdf@^1.8.1:
+  version "1.8.1"
+  resolved "https://registry.yarnpkg.com/unpdf/-/unpdf-1.8.1.tgz#9fb1ccc04817dc03fc5668e346edeccddec504be"
+  integrity sha512-xkURhy2SoGpOIH0a1gLHNkASPIQYonadDJs2AQwPEfUakafeD9EA1WTWWsaR++gfTCXJpV27W7tU1nXuk82UKQ==
 
 unpipe@~1.0.0:
   version "1.0.0"
