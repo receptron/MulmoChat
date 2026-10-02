@@ -51,6 +51,9 @@
         v-model="text"
         type="text"
         aria-label="Message"
+        @keydown.enter="holdWhileComposing"
+        @compositionstart="composing = true"
+        @compositionend="composing = false"
         placeholder="Muted: type a message"
         class="flex-1 min-w-0 h-12 sm:h-14 rounded-full bg-slate-800 px-5 text-lg sm:text-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
       />
@@ -172,6 +175,17 @@ const emit = defineEmits<{
 
 const text = ref("");
 const textInput = ref<HTMLInputElement | null>(null);
+const composing = ref(false);
+
+// Enter that confirms an IME conversion (Japanese kana to kanji) must not
+// send the half-typed message. Safari ends the composition before that
+// Enter's keydown, which then has isComposing false and keyCode 229.
+const IME_KEY_CODE = 229;
+function holdWhileComposing(event: KeyboardEvent): void {
+  if (event.isComposing || composing.value || event.keyCode === IME_KEY_CODE) {
+    event.preventDefault();
+  }
+}
 
 // The box takes the focus when it appears (the user just muted).
 watch(
