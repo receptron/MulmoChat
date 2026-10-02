@@ -39,7 +39,35 @@
       }}</span>
     </button>
 
-    <div class="flex-1 min-w-40">
+    <!-- With the microphone muted, the user types to the model instead: the
+         box takes the state and status lines' place, in the same row. -->
+    <form
+      v-if="chatActive && isMuted"
+      class="flex-1 min-w-40 flex items-center gap-2 sm:gap-3"
+      @submit.prevent="send"
+    >
+      <input
+        ref="textInput"
+        v-model="text"
+        type="text"
+        aria-label="Message"
+        @keydown.enter="holdWhileComposing"
+        @compositionstart="composing = true"
+        @compositionend="composing = false"
+        placeholder="Muted: type a message"
+        class="flex-1 min-w-0 h-12 sm:h-14 rounded-full bg-slate-800 px-5 text-lg sm:text-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+      />
+      <button
+        type="submit"
+        class="h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0 bg-sky-600 hover:bg-sky-500 disabled:opacity-40"
+        aria-label="Send"
+        title="Send"
+        :disabled="!text.trim() || sending"
+      >
+        <span class="material-icons text-[26px]! sm:text-[30px]!">send</span>
+      </button>
+    </form>
+    <div v-else class="flex-1 min-w-40">
       <div
         class="text-xl sm:text-2xl leading-snug truncate"
         data-testid="visual-state"
@@ -117,7 +145,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { nextTick, ref, watch } from "vue";
+
+const props = defineProps<{
   chatActive: boolean;
   connecting: boolean;
   /** False for a text model: this mode has no text entry. */
@@ -131,6 +161,8 @@ defineProps<{
   resultCount: number;
   selectedIndex: number;
   audioDebug: boolean;
+  /** Sends a typed message to the model; false when it couldn't go. */
+  sendText: (text: string) => Promise<boolean>;
 }>();
 
 defineEmits<{
@@ -141,4 +173,47 @@ defineEmits<{
   openSettings: [];
   exit: [];
 }>();
+
+const text = ref("");
+const textInput = ref<HTMLInputElement | null>(null);
+const composing = ref(false);
+
+// Enter that confirms an IME conversion (Japanese kana to kanji) must not
+// send the half-typed message. Safari ends the composition before that
+// Enter's keydown, which then has isComposing false and keyCode 229.
+const IME_KEY_CODE = 229;
+function holdWhileComposing(event: KeyboardEvent): void {
+  if (event.isComposing || composing.value || event.keyCode === IME_KEY_CODE) {
+    event.preventDefault();
+  }
+}
+
+// The box takes the focus when it appears: the user just muted, or the bar
+// appeared (the visual mode turned on) with the microphone already muted.
+watch(
+  () => props.chatActive && props.isMuted,
+  async (shown) => {
+    if (!shown) return;
+    await nextTick();
+    textInput.value?.focus();
+  },
+  { immediate: true },
+);
+
+// The draft is cleared once the message has gone (a session that closed
+// meanwhile keeps it), and only if it is still what was sent. One send at a
+// time: it can wait seconds for a reply to end, and a second Enter would
+// send the same draft again.
+const sending = ref(false);
+async function send(): Promise<void> {
+  const message = text.value.trim();
+  if (!message || sending.value) return;
+  sending.value = true;
+  try {
+    const sent = await props.sendText(message);
+    if (sent && text.value.trim() === message) text.value = "";
+  } finally {
+    sending.value = false;
+  }
+}
 </script>
