@@ -872,6 +872,9 @@ async function sendTextMessage(providedText?: string): Promise<boolean> {
 
   const sent = await sendUserMessageInternal(text);
   if (!sent) {
+    // Not sent: the draft stays to try again, so its entry goes.
+    const index = toolResults.value.indexOf(userMessageResult);
+    if (index !== -1) toolResults.value.splice(index, 1);
     return false;
   }
 

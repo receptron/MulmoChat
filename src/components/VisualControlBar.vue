@@ -62,7 +62,7 @@
         class="h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0 bg-sky-600 hover:bg-sky-500 disabled:opacity-40"
         aria-label="Send"
         title="Send"
-        :disabled="!text.trim()"
+        :disabled="!text.trim() || sending"
       >
         <span class="material-icons text-[26px]! sm:text-[30px]!">send</span>
       </button>
@@ -201,11 +201,19 @@ watch(
 );
 
 // The draft is cleared once the message has gone (a session that closed
-// meanwhile keeps it), and only if it is still what was sent.
+// meanwhile keeps it), and only if it is still what was sent. One send at a
+// time: it can wait seconds for a reply to end, and a second Enter would
+// send the same draft again.
+const sending = ref(false);
 async function send(): Promise<void> {
   const message = text.value.trim();
-  if (!message) return;
-  const sent = await props.sendText(message);
-  if (sent && text.value.trim() === message) text.value = "";
+  if (!message || sending.value) return;
+  sending.value = true;
+  try {
+    const sent = await props.sendText(message);
+    if (sent && text.value.trim() === message) text.value = "";
+  } finally {
+    sending.value = false;
+  }
 }
 </script>
