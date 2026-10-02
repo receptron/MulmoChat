@@ -39,7 +39,32 @@
       }}</span>
     </button>
 
-    <div class="flex-1 min-w-40">
+    <!-- With the microphone muted, the user types to the model instead: the
+         box takes the state and status lines' place, in the same row. -->
+    <form
+      v-if="chatActive && isMuted"
+      class="flex-1 min-w-40 flex items-center gap-2 sm:gap-3"
+      @submit.prevent="send"
+    >
+      <input
+        ref="textInput"
+        v-model="text"
+        type="text"
+        aria-label="Message"
+        placeholder="Muted: type a message"
+        class="flex-1 min-w-0 h-12 sm:h-14 rounded-full bg-slate-800 px-5 text-lg sm:text-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+      />
+      <button
+        type="submit"
+        class="h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0 bg-sky-600 hover:bg-sky-500 disabled:opacity-40"
+        aria-label="Send"
+        title="Send"
+        :disabled="!text.trim()"
+      >
+        <span class="material-icons text-[26px]! sm:text-[30px]!">send</span>
+      </button>
+    </form>
+    <div v-else class="flex-1 min-w-40">
       <div
         class="text-xl sm:text-2xl leading-snug truncate"
         data-testid="visual-state"
@@ -117,7 +142,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { nextTick, ref, watch } from "vue";
+
+const props = defineProps<{
   chatActive: boolean;
   connecting: boolean;
   /** False for a text model: this mode has no text entry. */
@@ -133,12 +160,33 @@ defineProps<{
   audioDebug: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   toggleChat: [];
   toggleMute: [];
   select: [index: number];
   saveAudio: [];
   openSettings: [];
   exit: [];
+  sendText: [text: string];
 }>();
+
+const text = ref("");
+const textInput = ref<HTMLInputElement | null>(null);
+
+// The box takes the focus when it appears (the user just muted).
+watch(
+  () => props.chatActive && props.isMuted,
+  async (shown) => {
+    if (!shown) return;
+    await nextTick();
+    textInput.value?.focus();
+  },
+);
+
+function send(): void {
+  const message = text.value.trim();
+  if (!message) return;
+  emit("sendText", message);
+  text.value = "";
+}
 </script>

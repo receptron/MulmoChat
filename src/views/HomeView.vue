@@ -148,12 +148,15 @@
             <div class="text-gray-400 text-lg">Canvas</div>
           </div>
         </div>
-        <!-- The sidebar shows this below the results; here it floats. -->
+        <!-- The sidebar shows this below the results; here it floats, small,
+             in a corner: a slide or a panel is often being drawn while the
+             one on the screen is explained. -->
         <div
           v-if="visualMode && isGeneratingImage"
-          class="absolute top-6 left-1/2 -translate-x-1/2 rounded-full bg-slate-800/90 px-6 py-3 text-xl text-slate-100 flex items-center gap-3"
+          class="absolute bottom-3 right-3 rounded-full bg-slate-800/70 px-3 py-1 text-sm text-slate-300 flex items-center gap-1.5 pointer-events-none"
+          data-testid="generating"
         >
-          <span class="material-icons animate-spin">autorenew</span>
+          <span class="material-icons animate-spin text-base!">autorenew</span>
           {{ generatingMessage }}
         </div>
       </div>
@@ -184,6 +187,7 @@
       @save-audio="saveAudioDebugRecording"
       @open-settings="sidebarRef?.openConfig()"
       @exit="setVisualMode(false)"
+      @send-text="sendTextMessage($event)"
     />
   </div>
 </template>
