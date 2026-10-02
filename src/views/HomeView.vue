@@ -187,7 +187,7 @@
       @save-audio="saveAudioDebugRecording"
       @open-settings="sidebarRef?.openConfig()"
       @exit="setVisualMode(false)"
-      @send-text="sendTextMessage($event)"
+      :send-text="sendTextMessage"
     />
   </div>
 </template>
@@ -827,9 +827,11 @@ async function startChat(): Promise<void> {
   await startTransportChat();
 }
 
-async function sendTextMessage(providedText?: string): Promise<void> {
+/** Sends what the user typed; false when it couldn't go (nothing typed, or
+ *  the session wasn't ready), so a caller can keep the draft. */
+async function sendTextMessage(providedText?: string): Promise<boolean> {
   const text = (providedText || userInput.value).trim();
-  if (!text) return;
+  if (!text) return false;
   // A typed message is the user speaking: it may be "next" to a step that
   // waits for them, or "stop".
   sequence.userSpoke();
@@ -870,10 +872,11 @@ async function sendTextMessage(providedText?: string): Promise<void> {
 
   const sent = await sendUserMessageInternal(text);
   if (!sent) {
-    return;
+    return false;
   }
 
   messages.value.push(`You: ${text}`);
+  return true;
 }
 
 function stopChat(): void {

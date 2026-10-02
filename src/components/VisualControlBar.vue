@@ -161,16 +161,17 @@ const props = defineProps<{
   resultCount: number;
   selectedIndex: number;
   audioDebug: boolean;
+  /** Sends a typed message to the model; false when it couldn't go. */
+  sendText: (text: string) => Promise<boolean>;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   toggleChat: [];
   toggleMute: [];
   select: [index: number];
   saveAudio: [];
   openSettings: [];
   exit: [];
-  sendText: [text: string];
 }>();
 
 const text = ref("");
@@ -187,7 +188,8 @@ function holdWhileComposing(event: KeyboardEvent): void {
   }
 }
 
-// The box takes the focus when it appears (the user just muted).
+// The box takes the focus when it appears: the user just muted, or the bar
+// appeared (the visual mode turned on) with the microphone already muted.
 watch(
   () => props.chatActive && props.isMuted,
   async (shown) => {
@@ -195,12 +197,15 @@ watch(
     await nextTick();
     textInput.value?.focus();
   },
+  { immediate: true },
 );
 
-function send(): void {
+// The draft is cleared once the message has gone (a session that closed
+// meanwhile keeps it), and only if it is still what was sent.
+async function send(): Promise<void> {
   const message = text.value.trim();
   if (!message) return;
-  emit("sendText", message);
-  text.value = "";
+  const sent = await props.sendText(message);
+  if (sent && text.value.trim() === message) text.value = "";
 }
 </script>
