@@ -7,7 +7,8 @@ export const PLUGIN_PACKAGES: readonly string[] = [
   "@mulmoclaude/chart-plugin",
   "@mulmoclaude/markdown-plugin",
   "@mulmoclaude/html-plugin",
-  "@mulmoclaude/shapescript-plugin",
+  "@gui-chat-plugin/shapescript",
+  "@gui-chat-plugin/jinglescript",
   "@mulmoclaude/mulmoscript-plugin",
   // presentSlide, defineStoryboard, presentPanel (one core per tool)
   "@gui-chat-plugin/sequence",

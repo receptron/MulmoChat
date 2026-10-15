@@ -31,7 +31,8 @@ import ExaPlugin from "@gui-chat-plugin/exa/vue";
 import MarkdownPlugin from "@mulmoclaude/markdown-plugin/vue";
 import EditImagePlugin from "@gui-chat-plugin/edit-image/vue";
 import MulmoScriptPlugin from "@mulmoclaude/mulmoscript-plugin/vue";
-import ShapeScriptPlugin from "@mulmoclaude/shapescript-plugin/vue";
+import ShapeScriptPlugin from "@gui-chat-plugin/shapescript/vue";
+import JingleScriptPlugin from "@gui-chat-plugin/jinglescript/vue";
 import CameraPlugin from "@gui-chat-plugin/camera/vue";
 import CanvasPlugin from "@gui-chat-plugin/canvas/vue";
 import HtmlPlugin from "@mulmoclaude/html-plugin/vue";
@@ -175,6 +176,15 @@ const ServerShapeScriptPlugin = {
   plugin: runOnServer(ShapeScriptPlugin.plugin, () => ({})),
 };
 
+// manageJingleScript renders a jingle on the server (jinglescript, with ffmpeg
+// for MP3 when it is installed) and returns the audio inline, which the View
+// plays. Unlike MulmoTerminal, MulmoChat gives it no `files.byPath`, so a score
+// is always passed inline: a `path` gets the package's "pass the score inline"
+// error, as presentDocument's paths stay inside the workspace (see CLAUDE.md).
+const ServerJingleScriptPlugin = {
+  plugin: runOnServer(JingleScriptPlugin.plugin, () => ({})),
+};
+
 // presentMulmoScript runs on the server, which saves the storyboard under
 // artifacts/stories/ and generates images, audio, the movie and PDFs with
 // mulmocast (server/plugins/mulmoscriptHost.ts). Progress reaches the View as
@@ -211,6 +221,7 @@ const registeredPlugins = [
   ServerMulmoScriptPlugin,
   ServerShapeScriptPlugin,
   RenderShapeScriptPlugin,
+  ServerJingleScriptPlugin,
   ReadXPostPlugin,
   SearchXPlugin,
   CameraPlugin,

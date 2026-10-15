@@ -2,7 +2,7 @@
 // sheet on the server (server/plugins/shapeRenderHost.ts) and shows it to the
 // model, so the model can check a 3D model before presenting it.
 //
-// Its definition comes from @mulmoclaude/shapescript-plugin/render, a
+// Its definition comes from @gui-chat-plugin/shapescript/render, a
 // Node-only entry the browser can't import, so the server sends it (see
 // hostTools.ts). Until then the tool stays disabled. The result is an image, shown
 // with the same View as generateImage.
