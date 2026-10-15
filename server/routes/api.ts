@@ -4,6 +4,7 @@ import { puppeteerCrawlerAgent } from "mulmocast";
 import { defaultTestContext } from "graphai";
 import { fetchPdfText } from "../utils/pdfText";
 import { publicHttpUrl } from "../utils/publicUrl";
+import { resolveVoice } from "../utils/voices";
 import { StartApiResponse } from "../types";
 import { exaSearch, hasExaApiKey } from "../exaSearch";
 import { sendApiError } from "../utils/logger";
@@ -133,7 +134,7 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
         type: "realtime",
         model: resolveRealtimeModel(req.query.model),
         audio: {
-          output: { voice: "shimmer" },
+          output: { voice: resolveVoice("openai", req.query.voice) },
         },
       },
     });

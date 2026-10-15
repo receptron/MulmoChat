@@ -317,6 +317,35 @@
               </p>
             </div>
 
+            <div v-if="voiceProvider">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Voice
+              </label>
+              <select
+                :value="voiceIds[voiceProvider]"
+                @change="
+                  selectVoice(($event.target as HTMLSelectElement).value)
+                "
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option
+                  v-for="voice in VOICES[voiceProvider]"
+                  :key="voice.id"
+                  :value="voice.id"
+                >
+                  {{ voice.label
+                  }}{{
+                    voice.id === DEFAULT_VOICES[voiceProvider]
+                      ? " (default)"
+                      : ""
+                  }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                The voice the model speaks with, from the next connection.
+              </p>
+            </div>
+
             <div v-if="isTextRest">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 Text Model
@@ -596,7 +625,13 @@ import {
   REALTIME_MODELS,
   GOOGLE_LIVE_MODELS,
   GROK_VOICE_MODELS,
+  VOICE_PROVIDER_FOR_KIND,
 } from "../config/models";
+import {
+  DEFAULT_VOICES,
+  VOICES,
+  type VoiceProvider,
+} from "../../server/utils/voices";
 import type { SessionTransportKind } from "../composables/useSessionTransport";
 import type { TextModelOption } from "../config/textModels";
 
@@ -623,6 +658,7 @@ const props = defineProps<{
   supportsAudioInput: boolean;
   supportsAudioOutput: boolean;
   pluginConfigs: Record<string, any>;
+  voiceIds: Record<VoiceProvider, string>;
 }>();
 
 const emit = defineEmits<{
@@ -643,6 +679,7 @@ const emit = defineEmits<{
   "update:modelKind": [value: SessionTransportKind];
   "update:textModelId": [value: string];
   "update:pluginConfigs": [value: Record<string, any>];
+  "update:voiceIds": [value: Record<VoiceProvider, string>];
   uploadFiles: [results: ToolResult[]];
 }>();
 
@@ -732,6 +769,14 @@ const needsConnectionToSend = computed(
   () => isOpenAIRealtime.value || isGrokVoice.value,
 );
 const isTextRest = computed(() => props.modelKind === "text-rest");
+const voiceProvider = computed(() => VOICE_PROVIDER_FOR_KIND[props.modelKind]);
+const selectVoice = (voiceId: string) => {
+  if (!voiceProvider.value) return;
+  emit("update:voiceIds", {
+    ...props.voiceIds,
+    [voiceProvider.value]: voiceId,
+  });
+};
 
 // Text is chosen by company in the Mode menu, as voice is ("text:anthropic"),
 // and then by model, among that company's only: one list of every company's

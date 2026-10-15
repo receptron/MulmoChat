@@ -11,6 +11,7 @@ import {
   REALTIME_MODELS,
 } from "../config/models";
 import { DEFAULT_TEXT_MODEL } from "../config/textModels";
+import { resolveVoice, type VoiceProvider } from "../../server/utils/voices";
 import type { BuildContext } from "./types";
 import type { SessionTransportKind } from "./useSessionTransport";
 
@@ -28,6 +29,7 @@ const TEXT_MODEL_ID_KEY = "text_model_id_v1";
 const IMAGE_GENERATION_BACKEND_KEY = "image_generation_backend_v1";
 const COMFYUI_MODEL_KEY = "comfyui_model_v1";
 const PLUGIN_CONFIGS_KEY = "plugin_configs_v1";
+const VOICE_IDS_KEY = "voice_ids_v1";
 
 interface StorageLike {
   getItem(key: string): string | null;
@@ -66,6 +68,7 @@ export interface UserPreferencesState extends Record<string, unknown> {
   imageGenerationBackend: "gemini" | "openai" | "comfyui";
   comfyuiModel: string;
   pluginConfigs: Record<string, unknown>;
+  voiceIds: Record<VoiceProvider, string>;
 }
 
 export interface UseUserPreferencesReturn {
@@ -82,6 +85,22 @@ const initEnabledPlugins = (): Record<string, boolean> => {
   } catch {
     return {};
   }
+};
+
+// One voice per provider, so switching transport keeps each one's choice.
+// A voice no longer offered falls back to the provider's default.
+const initVoiceIds = (): Record<VoiceProvider, string> => {
+  let stored: Partial<Record<VoiceProvider, unknown>> = {};
+  try {
+    stored = JSON.parse(getStoredValue(VOICE_IDS_KEY) || "{}");
+  } catch {
+    // keep the defaults
+  }
+  return {
+    openai: resolveVoice("openai", stored.openai),
+    google: resolveVoice("google", stored.google),
+    xai: resolveVoice("xai", stored.xai),
+  };
 };
 
 const initPluginConfigs = (): Record<string, unknown> => {
@@ -173,6 +192,7 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     comfyuiModel:
       getStoredValue(COMFYUI_MODEL_KEY) || "flux1-schnell-fp8.safetensors",
     pluginConfigs: initPluginConfigs(),
+    voiceIds: initVoiceIds(),
   });
 
   // Simple string preference watchers
@@ -247,6 +267,11 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   watch(
     () => state.pluginConfigs,
     (val) => setStoredObject(PLUGIN_CONFIGS_KEY, val),
+    { deep: true },
+  );
+  watch(
+    () => state.voiceIds,
+    (val) => setStoredObject(VOICE_IDS_KEY, val),
     { deep: true },
   );
 

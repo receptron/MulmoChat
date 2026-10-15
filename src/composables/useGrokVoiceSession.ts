@@ -17,9 +17,9 @@ import {
 } from "./useRealtimeSession";
 import { AudioStreamManager } from "../utils/audioStreamManager";
 import { DEFAULT_GROK_VOICE_MODEL_ID } from "../config/models";
+import { resolveVoice } from "../../server/utils/voices";
 
 const GROK_REALTIME_URL = "wss://api.x.ai/v1/realtime";
-const GROK_VOICE = "eve";
 // Microphone audio sent to Grok; its replies come back at the rate
 // AudioStreamManager plays by default.
 const INPUT_SAMPLE_RATE = 16000;
@@ -183,7 +183,7 @@ export function useGrokVoiceSession(
     sendWebSocketMessage({
       type: "session.update",
       session: {
-        voice: GROK_VOICE,
+        voice: resolveVoice("xai", options.getVoiceId?.("xai")),
         instructions,
         turn_detection: { type: "server_vad" },
         audio: {
