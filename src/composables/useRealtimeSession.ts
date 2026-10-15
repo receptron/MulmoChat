@@ -3,6 +3,7 @@ import type { StartApiResponse } from "../../server/types";
 import type { BuildContext, ToolCallMessage } from "./types";
 import { isValidToolCallMessage } from "./types";
 import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
+import { resolveVoice, type VoiceProvider } from "../../server/utils/voices";
 
 export interface RealtimeSessionEventHandlers {
   onToolCall?: (
@@ -34,6 +35,8 @@ export interface RealtimeSessionOptions {
   buildTools: (context: BuildContext) => unknown[];
   handlers?: RealtimeSessionEventHandlers;
   getModelId?: (context: BuildContext) => string;
+  /** The voice chosen for a provider; a voice it doesn't offer falls back to its default. */
+  getVoiceId?: (provider: VoiceProvider) => string;
 }
 
 export interface UseRealtimeSessionReturn {
@@ -403,10 +406,13 @@ export function useRealtimeSession(
     const modelId =
       options.getModelId?.({ startResponse: startResponse.value }) ??
       DEFAULT_REALTIME_MODEL_ID;
+    const voice = resolveVoice("openai", options.getVoiceId?.("openai"));
 
     try {
+      // The voice goes in the ephemeral key's session too: OpenAI keeps the
+      // one a session starts with once it has spoken.
       const response = await fetch(
-        `/api/start?model=${encodeURIComponent(modelId)}`,
+        `/api/start?model=${encodeURIComponent(modelId)}&voice=${encodeURIComponent(voice)}`,
         {
           method: "GET",
           headers: {
@@ -452,7 +458,7 @@ export function useRealtimeSession(
             instructions,
             audio: {
               output: {
-                voice: "shimmer",
+                voice,
               },
             },
             tools,

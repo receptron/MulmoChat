@@ -80,6 +80,7 @@
         :supports-audio-input="supportsAudioInput"
         :supports-audio-output="supportsAudioOutput"
         :plugin-configs="userPreferences.pluginConfigs"
+        :voice-ids="userPreferences.voiceIds"
         @start-chat="startChat"
         @stop-chat="stopChat"
         @set-mute="setMute"
@@ -101,6 +102,7 @@
         @update:model-kind="userPreferences.modelKind = $event"
         @update:text-model-id="userPreferences.textModelId = $event"
         @update:plugin-configs="userPreferences.pluginConfigs = $event"
+        @update:voice-ids="userPreferences.voiceIds = $event"
         @upload-files="handleUploadFiles"
       />
 
@@ -392,6 +394,7 @@ const session = useSessionTransport({
     }
     return userPreferences.textModelId;
   },
+  getVoiceId: (provider) => userPreferences.voiceIds[provider],
 });
 
 const {

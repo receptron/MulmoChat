@@ -1,3 +1,6 @@
+import type { SessionTransportKind } from "../composables/useSessionTransport";
+import type { VoiceProvider } from "../../server/utils/voices";
+
 export interface RealtimeModelOption {
   id: string;
   label: string;
@@ -63,3 +66,14 @@ export const GROK_VOICE_MODELS: GrokVoiceModelOption[] = [
 ];
 
 export const DEFAULT_GROK_VOICE_MODEL_ID = GROK_VOICE_MODELS[0].id;
+
+// Which provider's voices a transport speaks with; null for one that doesn't speak.
+export const VOICE_PROVIDER_FOR_KIND: Record<
+  SessionTransportKind,
+  VoiceProvider | null
+> = {
+  "voice-realtime": "openai",
+  "voice-google-live": "google",
+  "voice-grok": "xai",
+  "text-rest": null,
+};

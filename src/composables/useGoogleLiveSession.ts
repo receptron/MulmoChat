@@ -17,6 +17,7 @@ import {
   DEFAULT_GOOGLE_LIVE_MODEL_ID,
   GOOGLE_LIVE_MODELS,
 } from "../config/models";
+import { resolveVoice } from "../../server/utils/voices";
 
 // Types for Google Live API
 interface GoogleLiveState {
@@ -73,6 +74,9 @@ interface GoogleWebSocketMessage {
 
 interface GoogleGenerationConfig {
   responseModalities: string[];
+  speechConfig: {
+    voiceConfig: { prebuiltVoiceConfig: { voiceName: string } };
+  };
   thinkingConfig?: { thinkingLevel: string };
 }
 
@@ -383,8 +387,10 @@ export function useGoogleLiveSession(
     // Convert tools to Google format
     const googleTools = convertToGoogleToolFormat(tools);
 
+    const voiceName = resolveVoice("google", options.getVoiceId?.("google"));
     const generationConfig: GoogleGenerationConfig = {
       responseModalities: ["AUDIO"],
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
     };
 
     // Thinking models reject the setup unless a thinking level is given
