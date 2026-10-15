@@ -51,6 +51,11 @@ export interface GrokVoiceModelOption {
 
 export const GROK_VOICE_MODELS: GrokVoiceModelOption[] = [
   {
+    id: "grok-voice-3.0",
+    label: "Grok Voice 3.0",
+    description: "xAI's speech-to-speech model with reasoning and tool use",
+  },
+  {
     id: "grok-voice-think-fast-2.0",
     label: "Grok Voice Think Fast 2.0",
     description: "xAI's speech-to-speech model with reasoning and tool use",
