@@ -92,7 +92,9 @@ const initEnabledPlugins = (): Record<string, boolean> => {
 const initVoiceIds = (): Record<VoiceProvider, string> => {
   let stored: Partial<Record<VoiceProvider, unknown>> = {};
   try {
-    stored = JSON.parse(getStoredValue(VOICE_IDS_KEY) || "{}");
+    const parsed: unknown = JSON.parse(getStoredValue(VOICE_IDS_KEY) || "{}");
+    // "null" or a bare string parses fine but has no fields to read.
+    if (parsed && typeof parsed === "object") stored = parsed;
   } catch {
     // keep the defaults
   }

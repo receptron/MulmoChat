@@ -318,10 +318,14 @@
             </div>
 
             <div v-if="voiceProvider">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                for="voice-select"
+                class="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Voice
               </label>
               <select
+                id="voice-select"
                 :value="voiceIds[voiceProvider]"
                 @change="
                   selectVoice(($event.target as HTMLSelectElement).value)
