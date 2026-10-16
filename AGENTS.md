@@ -31,7 +31,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
   - the user has not switched it off (customizable roles only).
 - Keep plugin-specific code out of `HomeView.vue`, `App.vue` and the composables. Use `toolExecute` / `getToolPlugin` / `pluginTools` from `src/tools/index.ts`.
 - Plugin policy changes must also be reflected in `docs/plugin-development-guide.md` and `docs/plugin-development-guide.ja.md`.
-- Server-run plugins: `generateImage`, `presentChart` (`@mulmoclaude/chart-plugin`), `presentDocument` (`@mulmoclaude/markdown-plugin`), `presentHtml` (`@mulmoclaude/html-plugin`), `presentShapeScript` (`@gui-chat-plugin/shapescript`), `manageJingleScript` (`@gui-chat-plugin/jinglescript`) and `presentMulmoScript` (`@mulmoclaude/mulmoscript-plugin`) run their `execute()` on the server. Plugins write files only through `context.files.artifacts`, rooted at `<workspace>/artifacts`, and presentDocument's host backends (`server/plugins/markdownHost.ts`), limited to `.md` files inside the workspace.
+- Server-run plugins: `generateImage`, `presentChart` (`@mulmoclaude/chart-plugin`), `presentDocument` (`@mulmoclaude/markdown-plugin`), `presentHtml` (`@mulmoclaude/html-plugin`), `presentShapeScript` (`@gui-chat-plugin/shapescript`), `manageJingleScript` (`@gui-chat-plugin/jinglescript`), `manageKenteiScript` (`kenteiscript/plugin`) and `presentMulmoScript` (`@mulmoclaude/mulmoscript-plugin`) run their `execute()` on the server. Plugins write files only through `context.files.artifacts`, rooted at `<workspace>/artifacts`, and presentDocument's host backends (`server/plugins/markdownHost.ts`), limited to `.md` files inside the workspace.
   - The browser wraps the plugin with `runOnServer` (`src/tools/serverPlugin.ts`) and POSTs `{ args, config }` to `/api/plugin/<toolName>`.
   - `server/plugins/` loads the package and builds `context.app` per request.
   - The mechanism is adapted from MulmoTerminal's plugin registry. See `CLAUDE.md` ("A server-run plugin is registered in two lists") for how to add a plugin this way.
@@ -64,6 +64,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 - `GEMINI_API_KEY` — Gemini images, Gemini Live and Google text models.
 - `ANTHROPIC_API_KEY` — Anthropic text models. `XAI_API_KEY` — Grok voice and Grok text models.
 - `EXA_API_KEY` (Exa search), `GOOGLE_MAP_API_KEY` (map) and `X_BEARER_TOKEN` (readXPost, searchX). Plugins that need a missing key are disabled.
+- `TYPESAFE_API_KEY` (optional `JEV_MODEL`, `JEV_URL`) — required by manageKenteiScript, which grades answers with TypeSafe JEV on the server. Without it every manageKenteiScript call fails and tells the model to ask the user to set the key and restart the server.
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends.
 - `MULMOCHAT_ALLOWED_ORIGINS` — extra browser origins allowed to call `/api/plugin/*`. Loopback origins are always allowed, and requests must be JSON.
 - `MULMOCHAT_ALLOW_REMOTE_PLUGINS` — set to `true` to let other machines call `/api/plugin/*`, which by default only accepts loopback connections.

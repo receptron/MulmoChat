@@ -33,6 +33,7 @@ import EditImagePlugin from "@gui-chat-plugin/edit-image/vue";
 import MulmoScriptPlugin from "@mulmoclaude/mulmoscript-plugin/vue";
 import ShapeScriptPlugin from "@gui-chat-plugin/shapescript/vue";
 import JingleScriptPlugin from "@gui-chat-plugin/jinglescript/vue";
+import KenteiScriptPlugin from "kenteiscript/plugin/vue";
 import CameraPlugin from "@gui-chat-plugin/camera/vue";
 import CanvasPlugin from "@gui-chat-plugin/canvas/vue";
 import HtmlPlugin from "@mulmoclaude/html-plugin/vue";
@@ -185,6 +186,18 @@ const ServerJingleScriptPlugin = {
   plugin: runOnServer(JingleScriptPlugin.plugin, () => ({})),
 };
 
+// manageKenteiScript (kenteiscript) shows a quiz the model wrote and grades
+// each answer on the server: the View sends { kind: "grade", … } through its
+// runtime dispatch to /api/plugin/manageKenteiScript, and the package grades
+// it with TypeSafe JEV using TYPESAFE_API_KEY from the server's environment
+// (the key never reaches the browser). The key is required: without it every
+// call fails and asks the user to set it and restart. Like manageJingleScript,
+// it gets no `files.byPath`, so a script is passed inline: a `path` gets the
+// package's "pass the KenteiScript itself as `script`" error (see CLAUDE.md).
+const ServerKenteiScriptPlugin = {
+  plugin: runOnServer(KenteiScriptPlugin.plugin, () => ({})),
+};
+
 // presentMulmoScript runs on the server, which saves the storyboard under
 // artifacts/stories/ and generates images, audio, the movie and PDFs with
 // mulmocast (server/plugins/mulmoscriptHost.ts). Progress reaches the View as
@@ -222,6 +235,7 @@ const registeredPlugins = [
   ServerShapeScriptPlugin,
   RenderShapeScriptPlugin,
   ServerJingleScriptPlugin,
+  ServerKenteiScriptPlugin,
   ReadXPostPlugin,
   SearchXPlugin,
   CameraPlugin,

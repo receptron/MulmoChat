@@ -92,8 +92,9 @@ Deliberate divergence is fine: say so in a comment with the reason, and flag it 
 MulmoChat has today, each commented at its site:
 
 - Files stay inside the workspace: no absolute paths and no `files.byPath` (presentDocument,
-  presentHtml, presentShapeScript, presentMulmoScript), because MulmoChat's tools are driven by
-  voice and text models, not by an agent the user launched in a directory.
+  presentHtml, presentShapeScript, presentMulmoScript, manageJingleScript, manageKenteiScript),
+  because MulmoChat's tools are driven by voice and text models, not by an agent the user launched
+  in a directory.
 - presentHtml pages are served only from `artifacts/html/` (no `/htmlfile` mount), and `packHtml`
   is implemented (MulmoTerminal doesn't).
 - presentDocument has no Marp workspace themes and keeps MulmoChat's own system prompt.

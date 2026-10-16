@@ -9,6 +9,8 @@ export const PLUGIN_PACKAGES: readonly string[] = [
   "@mulmoclaude/html-plugin",
   "@gui-chat-plugin/shapescript",
   "@gui-chat-plugin/jinglescript",
+  // manageKenteiScript; the package has no "." export, only subpaths
+  "kenteiscript/plugin",
   "@mulmoclaude/mulmoscript-plugin",
   // presentSlide, defineStoryboard, presentPanel (one core per tool)
   "@gui-chat-plugin/sequence",
