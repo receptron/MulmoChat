@@ -179,6 +179,7 @@
       :is-muted="isMuted"
       :supports-audio-input="supportsAudioInput"
       :state="visualState"
+      :busy="chatActive && conversationActive"
       :status="statusLine"
       :result-count="toolResults.length"
       :selected-index="selectedIndex"

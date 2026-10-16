@@ -46,6 +46,13 @@
       class="flex-1 min-w-40 flex items-center gap-2 sm:gap-3"
       @submit.prevent="send"
     >
+      <span
+        v-if="busy"
+        class="material-icons animate-spin text-sky-400 text-[28px]! sm:text-[32px]! shrink-0"
+        aria-label="Responding"
+        data-testid="busy"
+        >autorenew</span
+      >
       <input
         ref="textInput"
         v-model="text"
@@ -69,10 +76,19 @@
     </form>
     <div v-else class="flex-1 min-w-40">
       <div
-        class="text-xl sm:text-2xl leading-snug truncate"
+        class="text-xl sm:text-2xl leading-snug truncate flex items-center gap-2"
         data-testid="visual-state"
       >
-        {{ state }}
+        <!-- Turns while the model works on a reply (thinking, calling
+             tools, speaking), as the role icon does in the sidebar. -->
+        <span
+          v-if="busy"
+          class="material-icons animate-spin text-sky-400 text-[24px]! sm:text-[28px]! shrink-0"
+          aria-hidden="true"
+          data-testid="busy"
+          >autorenew</span
+        >
+        <span class="truncate">{{ state }}</span>
       </div>
       <div
         class="text-base sm:text-lg text-slate-400 truncate"
@@ -156,6 +172,8 @@ const props = defineProps<{
   supportsAudioInput: boolean;
   /** What is happening now: connecting, listening, responding. */
   state: string;
+  /** The model is working on a reply: a spinner turns beside the state. */
+  busy: boolean;
   /** The model, image model, role and language. */
   status: string;
   resultCount: number;
