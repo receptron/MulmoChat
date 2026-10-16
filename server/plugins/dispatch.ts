@@ -14,7 +14,7 @@
 import {
   executeShapeScriptDispatch,
   isShapeScriptDispatchArgs,
-} from "@mulmoclaude/shapescript-plugin";
+} from "@gui-chat-plugin/shapescript";
 import { dispatchHtml } from "./htmlHost";
 import { mulmoScriptHandlers } from "./mulmoscriptHost";
 import { artifactsFileOps } from "./workspace";

@@ -1,7 +1,7 @@
 // renderShapeScript: renders a ShapeScript model to a PNG sheet (four camera
 // angles by default) so the model can look at what it wrote before presenting
 // it. The tool itself (schema, defaults, the sheet, puppeteer) comes from
-// @mulmoclaude/shapescript-plugin/render; this module supplies where a `.shape`
+// @gui-chat-plugin/shapescript/render; this module supplies where a `.shape`
 // is read from and where the PNG goes.
 //
 // Adapted from MulmoTerminal's server/infra/shapescript-render-tool.ts
@@ -16,11 +16,11 @@ import {
   RENDER_SHAPE_SCRIPT_DESCRIPTION,
   RENDER_SHAPE_SCRIPT_SCHEMA,
   RENDER_SHAPE_SCRIPT_TOOL_NAME,
-} from "@mulmoclaude/shapescript-plugin/render";
+} from "@gui-chat-plugin/shapescript/render";
 import {
   isShapeArtifactPath,
   toArtifactsRelative,
-} from "@mulmoclaude/shapescript-plugin";
+} from "@gui-chat-plugin/shapescript";
 import type { ToolDefinition } from "gui-chat-protocol";
 import { artifactsFileOps } from "./workspace";
 import { logger } from "../utils/logger";
