@@ -89,6 +89,7 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
   const hasAnthropicApiKey = !!anthropicApiKey;
   const hasGoogleApiKey = !!geminiApiKey;
   const hasXaiApiKey = !!xaiKey;
+  const hasTypesafeApiKey = !!process.env.TYPESAFE_API_KEY?.trim();
 
   if (req.query.voice === "grok") {
     if (!xaiKey) {
@@ -107,6 +108,7 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
         googleApiKey: geminiApiKey,
         hasGoogleApiKey,
         hasXaiApiKey,
+        hasTypesafeApiKey,
       };
       res.json(responseData);
     } catch (error: unknown) {
@@ -166,6 +168,7 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
       googleApiKey: geminiApiKey,
       hasGoogleApiKey,
       hasXaiApiKey,
+      hasTypesafeApiKey,
     };
     res.json(responseData);
   } catch (error: unknown) {
