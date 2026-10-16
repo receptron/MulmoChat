@@ -4,7 +4,7 @@
   "version": "0.1.1",
   "type": "module",
   "author": "snakajima",
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"vite\"",
     "kill": "pkill -f 'tsx server/index.ts' && pkill -f 'vite'",
