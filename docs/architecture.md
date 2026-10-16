@@ -58,13 +58,13 @@ It also builds the final instructions (role prompt + plugin system prompts + cus
 
 ## Roles (src/config/roles.ts)
 
-The old "system prompts"/"modes" are now **roles** (`general`, `office`, `tutor`, `guide`, `artist`, `storyteller`, `game`, `listener`, `raw`; default `general`). Each role has a prompt, an icon, `includePluginPrompts`, and a `pluginMode`:
+The old "system prompts"/"modes" are now **roles** (`general`, `office`, `tutor`, `guide`, `artist`, `storyteller`, `interviewer`, `game`, `listener`, `raw`; default `general`). Each role has a prompt, an icon, `includePluginPrompts`, and a `pluginMode`:
 - `customizable` — all plugins available; the user toggles them
 - `fixed` — only the plugins listed in `availablePlugins`
 
 The model can change role through the `switchRole` plugin, whose tool definition is generated from `ROLES`.
 
-presentSlide and makeMovie are in the Tutor and Office roles; the Storyteller role has the storyboard tools, presentSlide and makeMovie.
+presentSlide and makeMovie are in the Tutor and Office roles; the Storyteller role has the storyboard tools, presentSlide and makeMovie. The Interviewer role has presentSlide too, for one slide at a time (a slideshow of one slide): its prompt keeps the slide's explanation to a sentence or two, against presentSlide's own instructions to explain everything on it.
 
 ## Plugin System
 
