@@ -5316,10 +5316,10 @@ katex@^0.18.0, katex@^0.18.9:
   dependencies:
     commander "^15.0.0"
 
-kenteiscript@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/kenteiscript/-/kenteiscript-0.1.1.tgz#747cc5ec4982d80dba430e1ae852fcf01f689ac1"
-  integrity sha512-uLAzlvn7ZxtcXf2JyIoL18I7tzsXCBwdOkfBGOuL5LQgWPE4VHT62ymf7N38KbgY+sUBkT7zXaFrlC6PfGUBnA==
+kenteiscript@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/kenteiscript/-/kenteiscript-0.1.2.tgz#d2d08905e0fd20f0587c84133df03d62f68031ac"
+  integrity sha512-Poc9BXduy3/O7NIy+EcEoLX/DZ2YEtAloIqvqQ1mqWssqkytxdoexMErFgW9IBqX0elbASjHg5exthrjg1qQOA==
 
 keyv@^5.6.0:
   version "5.6.0"
