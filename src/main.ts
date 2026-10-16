@@ -4,6 +4,8 @@ import router from "./router";
 import { loadHostToolDefinitions } from "./tools";
 import "./index.css";
 import "material-icons/iconfont/material-icons.css";
+// manageKenteiScript's View styles (plain scoped CSS, not under the globs below)
+import "kenteiscript/plugin/style.css";
 
 /* Scan plugin dist files for Tailwind classes */
 import.meta.glob(
