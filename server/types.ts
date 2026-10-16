@@ -8,6 +8,8 @@ export interface StartApiResponse {
   googleApiKey: string | undefined;
   hasGoogleApiKey: boolean;
   hasXaiApiKey: boolean;
+  /** TYPESAFE_API_KEY is set: manageKenteiScript can grade answers (JEV). */
+  hasTypesafeApiKey: boolean;
   /** xAI client secret for the Grok voice WebSocket (`/api/start?voice=grok`). */
   grokClientSecret?: string;
   [key: string]: unknown;

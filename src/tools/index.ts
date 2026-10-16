@@ -190,12 +190,17 @@ const ServerJingleScriptPlugin = {
 // each answer on the server: the View sends { kind: "grade", … } through its
 // runtime dispatch to /api/plugin/manageKenteiScript, and the package grades
 // it with TypeSafe JEV using TYPESAFE_API_KEY from the server's environment
-// (the key never reaches the browser). The key is required: without it every
-// call fails and asks the user to set it and restart. Like manageJingleScript,
+// (the key never reaches the browser). The key is required, so the tool is
+// offered only when /api/start reports one (hasTypesafeApiKey); the Tutor
+// role then quizzes with putQuestions instead. Like manageJingleScript,
 // it gets no `files.byPath`, so a script is passed inline: a `path` gets the
 // package's "pass the KenteiScript itself as `script`" error (see CLAUDE.md).
 const ServerKenteiScriptPlugin = {
-  plugin: runOnServer(KenteiScriptPlugin.plugin, () => ({})),
+  plugin: {
+    ...runOnServer(KenteiScriptPlugin.plugin, () => ({})),
+    isEnabled: (startResponse?: StartApiResponse | null) =>
+      !!startResponse?.hasTypesafeApiKey,
+  },
 };
 
 // presentMulmoScript runs on the server, which saves the storyboard under
