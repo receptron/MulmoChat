@@ -50,6 +50,7 @@ import {
   SLIDE_FIT_SCRIPT,
   SLIDESHOWS_DIR,
   STORYBOARDS_DIR,
+  hasSlideImageMark,
   withSlideImage,
   type SlideChart,
   type Slideshow,
@@ -403,8 +404,13 @@ async function makeMovie(
       continue;
     }
     if ("html" in scene) {
-      const html = scene.imagePath
-        ? withSlideImage(scene.html, await pictureDataUrl(scene.imagePath))
+      // A slide whose picture couldn't be drawn was saved with {{image}} and
+      // no imagePath: it gets the transparent pixel, as in the View.
+      const html = hasSlideImageMark(scene.html)
+        ? withSlideImage(
+            scene.html,
+            scene.imagePath ? await pictureDataUrl(scene.imagePath) : undefined,
+          )
         : scene.html;
       images.push({
         type: "html_tailwind",
