@@ -35,6 +35,11 @@
 // View does (without it, the movie cut the slide off). A chart slide
 // has its Chart.js configuration, which mulmocast's chart beat takes as it is
 // (chartData), drawn under the slide's title as the View draws it.
+// An HTML or Markdown slide can hold a generated picture (sequence 0.6): its
+// saved HTML keeps {{image}} and the picture is saved apart (imagePath), so
+// the beat gets the picture as a data: URL in its place (withSlideImage), as
+// the View puts it; a picture that is gone leaves a transparent pixel there,
+// and the rest of the movie is made.
 import path from "node:path";
 import type { ToolResult } from "gui-chat-protocol";
 import { artifactsFileOps } from "./workspace";
@@ -45,6 +50,8 @@ import {
   SLIDE_FIT_SCRIPT,
   SLIDESHOWS_DIR,
   STORYBOARDS_DIR,
+  hasSlideImageMark,
+  withSlideImage,
   type SlideChart,
   type Slideshow,
   type Storyboard,
@@ -62,7 +69,13 @@ const PICTURE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
  *  chart), and what the narration is about. */
 type Scene =
   | { imagePath: string; about: Record<string, unknown> }
-  | { html: string; fit: boolean; about: Record<string, unknown> }
+  | {
+      html: string;
+      fit: boolean;
+      /** The picture the slide places at {{image}}. */
+      imagePath?: string;
+      about: Record<string, unknown>;
+    }
   | { chart: SlideChart; title: string; about: Record<string, unknown> };
 
 /** An HTML slide's words, for the narration: its text without the markup,
@@ -141,10 +154,12 @@ function slideshowScenes(slideshow: Slideshow) {
       scenes.push({
         html: slide.html,
         fit: slide.markdown !== undefined,
+        ...(slide.imagePath && { imagePath: slide.imagePath }),
         about: {
           slide: n,
           title: slide.title,
           onTheSlide: slide.markdown ?? slideText(slide.html),
+          ...(slide.imagePath && { picture: slide.imagePrompt }),
         },
       });
       continue;
@@ -171,6 +186,32 @@ function slideshowScenes(slideshow: Slideshow) {
     });
   }
   return { scenes, skipped };
+}
+
+const PICTURE_TYPES: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+};
+
+/** An HTML slide's picture as a data: URL, or undefined when it isn't a
+ *  saved picture that still exists (withSlideImage then puts a transparent
+ *  pixel). */
+async function pictureDataUrl(imagePath: string): Promise<string | undefined> {
+  const checked = await scriptPathOf(imagePath);
+  if (checked instanceof Error) {
+    logger.warn("movie: a slide's picture is unusable", {
+      imagePath,
+      reason: checked.message,
+    });
+    return undefined;
+  }
+  const type = PICTURE_TYPES[path.posix.extname(imagePath).toLowerCase()];
+  const bytes = await artifactsFileOps.readBytes(
+    imagePath.slice("artifacts/".length),
+  );
+  return `data:${type};base64,${Buffer.from(bytes).toString("base64")}`;
 }
 
 /** The picture's path from artifacts/stories/, or why it can't be used. */
@@ -363,9 +404,17 @@ async function makeMovie(
       continue;
     }
     if ("html" in scene) {
+      // A slide whose picture couldn't be drawn was saved with {{image}} and
+      // no imagePath: it gets the transparent pixel, as in the View.
+      const html = hasSlideImageMark(scene.html)
+        ? withSlideImage(
+            scene.html,
+            scene.imagePath ? await pictureDataUrl(scene.imagePath) : undefined,
+          )
+        : scene.html;
       images.push({
         type: "html_tailwind",
-        html: `<style>${SLIDE_CSS_ANIMATIONS_FINISHED}</style>\n${scene.html}`,
+        html: `<style>${SLIDE_CSS_ANIMATIONS_FINISHED}</style>\n${html}`,
         animation: true,
         ...(scene.fit && { script: SLIDE_FIT_SCRIPT }),
       });
