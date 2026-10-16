@@ -49,6 +49,7 @@
       <span
         v-if="busy"
         class="material-icons animate-spin text-sky-400 text-[28px]! sm:text-[32px]! shrink-0"
+        role="status"
         aria-label="Responding"
         data-testid="busy"
         >autorenew</span
