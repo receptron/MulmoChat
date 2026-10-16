@@ -550,7 +550,7 @@ To add a new test case:
 
 ## 📄 License
 
-AGPL-3.0-only
+MIT
 
 ---
 
