@@ -769,10 +769,10 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/scroll-to-anchor/-/scroll-to-anchor-2.0.0.tgz#39cff9e31654689cc03f6e33959d7f51e8450dba"
   integrity sha512-bfe6ECB4p7UJFzzTkaiQGiirVRgbVV891DQQiBdJfRJFjXbqUCGYXOAzsUBOAqTkrH5/BEF3Bbbpj1O4aiyKWA==
 
-"@gui-chat-plugin/sequence@0.7.0":
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/sequence/-/sequence-0.7.0.tgz#02fdd5a65dc25a1f7e3711f209e682707f72690d"
-  integrity sha512-fI5ZJVGDkQSaG66RhqdBJVWFCu6KfQ/tnAXxwyBtVuiTPKkCGIj1VMPghZxW14Lbjrv/3qWkCjbHJZ6C0fDMeA==
+"@gui-chat-plugin/sequence@0.7.1":
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/sequence/-/sequence-0.7.1.tgz#7f96bb53d4a4ab707ccfadb70f9b0e8accb1ae66"
+  integrity sha512-DFZQ/FwQhKUaNGKzu1SzomO2If0/OaTGxjrbq7HKxOUMcnJpomMEk2X3hEHG7en9ZzhmJ4EqcgCR28oZMs83WA==
   dependencies:
     katex "^0.18.9"
     marked "^18.0.14"
