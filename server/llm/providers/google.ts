@@ -13,8 +13,8 @@ import {
   type TextGenerationResult,
   type TextMessage,
   type ToolCall,
-} from "../types";
-import { parseImageDataUrl } from "../images";
+} from "../types.js";
+import { parseImageDataUrl } from "../images.js";
 
 type GeminiRole = "user" | "model";
 

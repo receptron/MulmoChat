@@ -2,7 +2,7 @@ import {
   TextGenerationError,
   type ProviderGenerateParams,
   type TextGenerationResult,
-} from "../types";
+} from "../types.js";
 
 // gpt-5.6-* and gpt-6-* on /v1/chat/completions (gpt-6-astra and gpt-6.1-*
 // go to /v1/responses: see USES_RESPONSES_API)

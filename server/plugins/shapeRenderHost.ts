@@ -22,8 +22,8 @@ import {
   toArtifactsRelative,
 } from "@gui-chat-plugin/shapescript";
 import type { ToolDefinition } from "gui-chat-protocol";
-import { artifactsFileOps } from "./workspace";
-import { logger } from "../utils/logger";
+import { artifactsFileOps } from "./workspace.js";
+import { logger } from "../utils/logger.js";
 
 // Renders get their own folder: a `.shape` is a source the user edits, a PNG
 // is a by-product.

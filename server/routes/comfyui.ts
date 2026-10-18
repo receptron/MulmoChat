@@ -1,10 +1,10 @@
 import express, { Request, Response, Router } from "express";
 import { randomUUID } from "crypto";
-import { sendApiError, logApiRequest } from "../utils/logger";
+import { sendApiError, logApiRequest } from "../utils/logger.js";
 import {
   ImageGenerationError,
   errorMessageOf,
-} from "../utils/imageGenerationError";
+} from "../utils/imageGenerationError.js";
 
 const router: Router = express.Router();
 

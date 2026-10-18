@@ -69,5 +69,19 @@ export default [
       prettier: prettierPlugin,
     },
   },
+  {
+    // `yarn start` runs the tsc output under plain Node ESM, which cannot resolve an extensionless relative import.
+    files: ["server/**/*.ts"],
+    ignores: ["server/tests/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        ...["ImportDeclaration", "ExportNamedDeclaration", "ExportAllDeclaration", "ImportExpression"].map((node) => ({
+          selector: `${node}[source.value=/^\\.(?!.*\\.js$)/]`,
+          message: "Relative imports in server/ must end in .js (dist/server runs under Node ESM).",
+        })),
+      ],
+    },
+  },
   eslintConfigPrettier,
 ];

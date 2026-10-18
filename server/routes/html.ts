@@ -2,7 +2,7 @@ import express, { Request, Response, Router } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
-import { sendApiError, logApiRequest } from "../utils/logger";
+import { sendApiError, logApiRequest } from "../utils/logger.js";
 
 dotenv.config({ quiet: true });
 

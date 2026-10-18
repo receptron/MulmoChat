@@ -1,7 +1,7 @@
 import express, { Request, Response, Router } from "express";
 import path from "path";
 import fs from "fs/promises";
-import { sendApiError } from "../utils/logger";
+import { sendApiError } from "../utils/logger.js";
 
 // /api/save-images: stores images the browser generated (useToolResults'
 // saveImages) under output/images/<uuid>/, served from /output. The movie

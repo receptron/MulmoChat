@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { sendApiError } from "./logger";
+import { sendApiError } from "./logger.js";
 
 // Guard for state-changing routes (e.g. server-run plugins that write into the
 // shared workspace). The server listens on all interfaces with permissive CORS,
