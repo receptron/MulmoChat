@@ -42,8 +42,8 @@
 // and the rest of the movie is made.
 import path from "node:path";
 import type { ToolResult } from "gui-chat-protocol";
-import { artifactsFileOps } from "./workspace";
-import { movieUnavailable, saveScript } from "./mulmoscriptHost";
+import { artifactsFileOps } from "./workspace.js";
+import { movieUnavailable, saveScript } from "./mulmoscriptHost.js";
 import {
   loadRecord,
   SLIDE_CSS_ANIMATIONS_FINISHED,
@@ -56,11 +56,11 @@ import {
   type Slideshow,
   type Storyboard,
 } from "@gui-chat-plugin/sequence";
-import { MAKE_MOVIE, parseMovieArgs } from "./movieTools";
-import { generateText, getProviderAvailability } from "../llm/textService";
-import type { TextLLMProviderId } from "../llm/types";
-import { errorMessageOf } from "../utils/imageGenerationError";
-import { logger } from "../utils/logger";
+import { MAKE_MOVIE, parseMovieArgs } from "./movieTools.js";
+import { generateText, getProviderAvailability } from "../llm/textService.js";
+import type { TextLLMProviderId } from "../llm/types.js";
+import { errorMessageOf } from "../utils/imageGenerationError.js";
+import { logger } from "../utils/logger.js";
 
 const IMAGES_PREFIX = "artifacts/images/";
 const PICTURE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];

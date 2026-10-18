@@ -45,14 +45,14 @@ import {
 import type { SaveMulmoScriptArgs } from "@mulmoclaude/mulmoscript-plugin";
 import type { ToolResult } from "gui-chat-protocol";
 import { Buffer } from "node:buffer";
-import { artifactsFileOps, workspaceRoot } from "./workspace";
-import { imageMimeOfBytes } from "../utils/imageMime";
-import { publishPluginEvent } from "./events";
-import { logger } from "../utils/logger";
+import { artifactsFileOps, workspaceRoot } from "./workspace.js";
+import { imageMimeOfBytes } from "../utils/imageMime.js";
+import { publishPluginEvent } from "./events.js";
+import { logger } from "../utils/logger.js";
 import {
   requireLocalClient,
   requireLoopbackHost,
-} from "../utils/trustedOrigin";
+} from "../utils/trustedOrigin.js";
 
 const TOOL_NAME = "presentMulmoScript";
 

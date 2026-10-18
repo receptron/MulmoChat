@@ -21,10 +21,10 @@ import {
   type ExportPdfOptions,
   type MarkdownHostApp,
 } from "@mulmoclaude/markdown-plugin";
-import { createFileOps } from "./fileOps";
-import { trackFileChanges } from "./fileChanges";
-import { workspaceRoot } from "./workspace";
-import { logger } from "../utils/logger";
+import { createFileOps } from "./fileOps.js";
+import { trackFileChanges } from "./fileChanges.js";
+import { workspaceRoot } from "./workspace.js";
+import { logger } from "../utils/logger.js";
 
 const DOCS_DIR = "artifacts/documents";
 const PREFIX_MAX_LENGTH = 60;

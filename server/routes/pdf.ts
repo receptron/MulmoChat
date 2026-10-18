@@ -6,7 +6,7 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
-import { sendApiError } from "../utils/logger";
+import { sendApiError } from "../utils/logger.js";
 
 dotenv.config({ quiet: true });
 

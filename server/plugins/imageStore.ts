@@ -15,13 +15,13 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { Buffer } from "node:buffer";
-import { artifactsFileOps } from "./workspace";
-import { logger } from "../utils/logger";
+import { artifactsFileOps } from "./workspace.js";
+import { logger } from "../utils/logger.js";
 import {
   IMAGE_EXTENSIONS,
   imageMimeOfBytes,
   type InputImage,
-} from "../utils/imageMime";
+} from "../utils/imageMime.js";
 
 const IMAGES_DIR = "images";
 const ARTIFACTS_PREFIX = "artifacts/";

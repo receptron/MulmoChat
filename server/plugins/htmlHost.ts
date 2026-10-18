@@ -24,11 +24,11 @@ import {
   toArtifactsRelative,
   type PackHtmlResult,
 } from "@mulmoclaude/html-plugin";
-import { artifactsFileOps } from "./workspace";
+import { artifactsFileOps } from "./workspace.js";
 import {
   requireLocalClient,
   requireLoopbackHost,
-} from "../utils/trustedOrigin";
+} from "../utils/trustedOrigin.js";
 
 // A page can only load inline content and the CDNs below (the preview route
 // serves nothing else from the workspace), so the zip holds just the page.

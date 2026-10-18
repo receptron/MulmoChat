@@ -1,8 +1,8 @@
-import { generateWithAnthropic } from "./providers/anthropic";
-import { generateWithGoogle } from "./providers/google";
-import { generateWithGrok } from "./providers/grok";
-import { generateWithOllama } from "./providers/ollama";
-import { generateWithOpenAI } from "./providers/openai";
+import { generateWithAnthropic } from "./providers/anthropic.js";
+import { generateWithGoogle } from "./providers/google.js";
+import { generateWithGrok } from "./providers/grok.js";
+import { generateWithOllama } from "./providers/ollama.js";
+import { generateWithOpenAI } from "./providers/openai.js";
 import {
   ProviderAvailability,
   ProviderGenerateParams,
@@ -11,7 +11,7 @@ import {
   TextGenerationResult,
   TextMessage,
   TextLLMProviderId,
-} from "./types";
+} from "./types.js";
 
 const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
   openai: "gpt-6.1-sol",

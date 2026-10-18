@@ -6,7 +6,7 @@
 // with the cookies it just set.
 import puppeteer from "puppeteer";
 import { extractText, getDocumentProxy } from "unpdf";
-import { publicHttpUrl } from "./publicUrl";
+import { publicHttpUrl } from "./publicUrl.js";
 
 const isCI = process.env.CI === "true";
 
