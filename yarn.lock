@@ -815,11 +815,13 @@
     three-bvh-csg "^0.0.18"
     three-mesh-bvh "0.9.15"
 
-"@gui-chat-plugin/spreadsheet@^4.0.2":
-  version "4.0.2"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/spreadsheet/-/spreadsheet-4.0.2.tgz#3c37402aa7b47edef9218c1a5742027eed48c2a6"
-  integrity sha512-19RST+d0LOr2cujHdLB69mLdrIzXr+iBA2ln5OgDg2+5Jbqfpsh8ik8gFrluc9XQnfvamfSenEsng68n2O2l4Q==
+"@gui-chat-plugin/spreadsheet@^4.2.4":
+  version "4.2.4"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/spreadsheet/-/spreadsheet-4.2.4.tgz#3fdd4033bc30705331e6260f727b23ffbcfdfca2"
+  integrity sha512-tZUZ6UnI8/9bR3zzuoB0AGZ+lvGJZ/LxnzH27WeMwBATQGQSsQQ4xUUyQLAPzCa2LQJEkziE2GKVTiWyIweJ1w==
   dependencies:
+    "@jitl/quickjs-singlefile-mjs-release-sync" "^0.32.0"
+    quickjs-emscripten-core "^0.32.0"
     xlsx "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
 
 "@gui-chat-plugin/switch-role@^2.1.0":
@@ -1150,6 +1152,18 @@
   dependencies:
     minipass "^7.0.4"
 
+"@jitl/quickjs-ffi-types@0.32.0":
+  version "0.32.0"
+  resolved "https://registry.yarnpkg.com/@jitl/quickjs-ffi-types/-/quickjs-ffi-types-0.32.0.tgz#43664daea79b1c42d69c262d80ebe743da25dc7d"
+  integrity sha512-v9T+GQpmk43VDJ7d72sf0Nexhk+ArvtUihW27dy7lqAl0zBObFKtSBBIm5RBjwIhE8VwsPPm9PNuvPvNqLWUEg==
+
+"@jitl/quickjs-singlefile-mjs-release-sync@^0.32.0":
+  version "0.32.0"
+  resolved "https://registry.yarnpkg.com/@jitl/quickjs-singlefile-mjs-release-sync/-/quickjs-singlefile-mjs-release-sync-0.32.0.tgz#81b97a6d8111c7badf6a792bf545306bdd9a52e3"
+  integrity sha512-h9g2Dri6WxKNjX6a1+sFAafOVxj1n5YIA1GAzMoSdIqK1M8cG07tz3GxKVC3Gbdutz14uQ3oc3Q2lll8otInhA==
+  dependencies:
+    "@jitl/quickjs-ffi-types" "0.32.0"
+
 "@jridgewell/gen-mapping@^0.3.5":
   version "0.3.13"
   resolved "https://registry.yarnpkg.com/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz#6342a19f44347518c93e43b1ac69deb3c4656a1f"
@@ -1340,20 +1354,20 @@
   resolved "https://registry.yarnpkg.com/@mulmochat-plugin/ui-image/-/ui-image-0.4.1.tgz#8fd3b1c4ffe21e6bc22761ff48eac03306e0d345"
   integrity sha512-I3AqTIuQPsSMNxDON9UTxT2KO57HV6uUVotCIFskV0UqBMQrQ3FUu8J+qXRWDdjPyYaHoC8AJsi91TbNrOMwng==
 
-"@mulmoclaude/chart-plugin@^4.0.1":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@mulmoclaude/chart-plugin/-/chart-plugin-4.0.1.tgz#b97826f61e9805076d8afc25edffd72a9a99d5ed"
-  integrity sha512-ZWf3mwUo2+QhujPm9vOsRnZphMV11KR03w0QNG/Gi0SOxI1f/vFGGDMf9eH7ytFs/5gOaW7j9sT7zvDwwsVA6Q==
+"@mulmoclaude/chart-plugin@^4.1.0":
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/@mulmoclaude/chart-plugin/-/chart-plugin-4.1.0.tgz#26072f2b7a00b473f4de7e9336dfb07eeaf43bab"
+  integrity sha512-b04HxzdWAp0OUHG0AfPJBTeLQDASLa/T+nFARwDfp65PCkKJeS3GI1SiM9u48+PJcpT3UTUJypWwxgCa4nxGZQ==
 
 "@mulmoclaude/common@^1.5.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@mulmoclaude/common/-/common-1.5.0.tgz#d4362c31b68ca19e1b60c78d2b7d93c0cba93cc1"
   integrity sha512-IgeY1HcUVvEkiQWYn8suQ/fwRqAMrL0RaKRPpZPwjmS6XVyHrBOuNpKyrAk5Ux8qMpDXoio2JMQfxz3jCtIAbg==
 
-"@mulmoclaude/core@^5.11.4":
-  version "5.11.4"
-  resolved "https://registry.yarnpkg.com/@mulmoclaude/core/-/core-5.11.4.tgz#6f18d9f64485e6ba49a6a77214c7a7c205fdd918"
-  integrity sha512-x7bgMrq3dzy5TgmcYNr8qT/xoWynncg1MDtX5tgicaru/SxodH5WOhUhqRFRRBRcS0CYAMvbIK/5aB2b5mo6Hg==
+"@mulmoclaude/core@^5.12.0":
+  version "5.12.0"
+  resolved "https://registry.yarnpkg.com/@mulmoclaude/core/-/core-5.12.0.tgz#141cd614e785715938bf113e843ddbaab5e8b9e4"
+  integrity sha512-SsGcpRpOMnuOHFZ08vRltGeLPG7XdwpC+Ym/YQeDdLRzEyMebwWtOCKEvoFBBT6KkNbZB5wdF7t9Ru+QvDXkUg==
   dependencies:
     "@duckdb/node-api" "^1.5.6-r.1"
     "@gui-chat-plugin/common" "^0.1.0"
@@ -6695,6 +6709,13 @@ quansync@^0.2.11:
   version "0.2.11"
   resolved "https://registry.yarnpkg.com/quansync/-/quansync-0.2.11.tgz#f9c3adda2e1272e4f8cf3f1457b04cbdb4ee692a"
   integrity sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==
+
+quickjs-emscripten-core@^0.32.0:
+  version "0.32.0"
+  resolved "https://registry.yarnpkg.com/quickjs-emscripten-core/-/quickjs-emscripten-core-0.32.0.tgz#a7b1c923fb57538c2ee543c70a6755df52533b3f"
+  integrity sha512-QFnPfjFey8EqknSrSxe1hZrf1/8z7/6s1QzGOmKo6++02r7QRRX7ZoyNaZh7JuVjWsVW87KnQrbZqnHkOAzUyg==
+  dependencies:
+    "@jitl/quickjs-ffi-types" "0.32.0"
 
 raf@^3.4.1:
   version "3.4.1"
