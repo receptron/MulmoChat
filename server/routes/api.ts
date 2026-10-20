@@ -2,26 +2,29 @@ import express, { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 import { puppeteerCrawlerAgent } from "mulmocast";
 import { defaultTestContext } from "graphai";
-import { fetchPdfText } from "../utils/pdfText";
-import { publicHttpUrl } from "../utils/publicUrl";
-import { resolveVoice } from "../utils/voices";
+import { fetchPdfText } from "../utils/pdfText.js";
+import { publicHttpUrl } from "../utils/publicUrl.js";
+import { resolveVoice } from "../utils/voices.js";
 import {
   ELEVENLABS_SAMPLE_RATE,
   resolveElevenLabsModel,
-} from "../utils/elevenLabsRealtime";
-import { localClientOnly, requireTrustedOrigin } from "../utils/trustedOrigin";
-import { StartApiResponse } from "../types";
-import { exaSearch, hasExaApiKey } from "../exaSearch";
-import { sendApiError } from "../utils/logger";
-import movieRouter from "./movie";
-import pdfRouter from "./pdf";
-import htmlRouter from "./html";
-import textRouter from "./textLLM";
-import comfyRouter from "./comfyui";
-import imageRouter from "./image";
-import pluginRouter from "./plugins";
-import { pluginEventsRouter } from "../plugins/events";
-import { mulmoScriptMediaRouter } from "../plugins/mulmoscriptHost";
+} from "../utils/elevenLabsRealtime.js";
+import {
+  localClientOnly,
+  requireTrustedOrigin,
+} from "../utils/trustedOrigin.js";
+import { StartApiResponse } from "../types.js";
+import { exaSearch, hasExaApiKey } from "../exaSearch.js";
+import { sendApiError } from "../utils/logger.js";
+import movieRouter from "./movie.js";
+import pdfRouter from "./pdf.js";
+import htmlRouter from "./html.js";
+import textRouter from "./textLLM.js";
+import comfyRouter from "./comfyui.js";
+import imageRouter from "./image.js";
+import pluginRouter from "./plugins.js";
+import { pluginEventsRouter } from "../plugins/events.js";
+import { mulmoScriptMediaRouter } from "../plugins/mulmoscriptHost.js";
 dotenv.config({ quiet: true });
 
 const router: Router = express.Router();

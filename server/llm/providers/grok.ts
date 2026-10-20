@@ -2,7 +2,7 @@ import {
   TextGenerationError,
   type ProviderGenerateParams,
   type TextGenerationResult,
-} from "../types";
+} from "../types.js";
 
 const GROK_CHAT_COMPLETIONS_URL = "https://api.x.ai/v1/chat/completions";
 

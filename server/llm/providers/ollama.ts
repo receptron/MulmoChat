@@ -3,8 +3,8 @@ import {
   type ProviderGenerateParams,
   type TextGenerationResult,
   type ToolCall,
-} from "../types";
-import { parseImageDataUrl } from "../images";
+} from "../types.js";
+import { parseImageDataUrl } from "../images.js";
 
 interface OllamaToolCall {
   function: {

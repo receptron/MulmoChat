@@ -5,7 +5,7 @@ import type {
   TextSessionDefaults,
   TextSessionSnapshot,
   ToolDefinition,
-} from "./types";
+} from "./types.js";
 
 interface TextSession {
   id: string;

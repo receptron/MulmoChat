@@ -10,7 +10,7 @@ import express, { Request, Response, Router } from "express";
 import {
   requireLocalClient,
   requireLoopbackHost,
-} from "../utils/trustedOrigin";
+} from "../utils/trustedOrigin.js";
 
 export interface PluginEvent {
   toolName: string;

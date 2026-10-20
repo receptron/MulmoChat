@@ -14,8 +14,8 @@
 //     the first plugin that uses one.
 import { isPluginFactory } from "gui-chat-protocol";
 import type { FileOps, ToolContext, ToolDefinition } from "gui-chat-protocol";
-import { logger } from "../utils/logger";
-import { PLUGIN_PACKAGES } from "./config";
+import { logger } from "../utils/logger.js";
+import { PLUGIN_PACKAGES } from "./config.js";
 
 type Executor = (...args: unknown[]) => unknown;
 

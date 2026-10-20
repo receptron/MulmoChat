@@ -8,7 +8,7 @@
 // Written with node:zlib and a 5x7 bitmap font: the server has no image
 // library, and the tests need no more than readable capitals.
 import { deflateSync } from "node:zlib";
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 const WIDTH = 1024;
 const HEIGHT = 576;

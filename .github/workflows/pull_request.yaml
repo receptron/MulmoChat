@@ -37,3 +37,14 @@ jobs:
     - run: yarn run typecheck
     - run: yarn run lint
     - run: yarn run build
+    - name: Smoke-test the built server (same command as yarn start)
+      shell: bash
+      run: |
+        NODE_ENV=production PORT=3917 node dist/server/index.js > server.log 2>&1 &
+        SERVER_PID=$!
+        for i in $(seq 1 30); do curl -sf http://localhost:3917/api/health && break; sleep 1; done
+        status=0
+        curl -sf http://localhost:3917/api/health || status=1
+        curl -sf http://localhost:3917/ | grep -q "<title>MulmoChat" || status=1
+        kill $SERVER_PID || true
+        if [ $status -ne 0 ]; then cat server.log; exit 1; fi

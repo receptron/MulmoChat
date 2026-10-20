@@ -1,12 +1,12 @@
 import { Router, Request, Response } from "express";
-import { generateText, getProviderAvailability } from "../llm/textService";
+import { generateText, getProviderAvailability } from "../llm/textService.js";
 import {
   TextGenerationError,
   type TextGenerationRequest,
   type TextLLMProviderId,
   type TextMessage,
   type TextSessionDefaults,
-} from "../llm/types";
+} from "../llm/types.js";
 import {
   appendSessionMessages,
   createTextSession,
@@ -14,9 +14,9 @@ import {
   getTextSession,
   serializeSession,
   updateSessionDefaults,
-} from "../llm/textSessionStore";
-import { sendApiError } from "../utils/logger";
-import { MAX_MESSAGE_IMAGES, parseImageDataUrl } from "../llm/images";
+} from "../llm/textSessionStore.js";
+import { sendApiError } from "../utils/logger.js";
+import { MAX_MESSAGE_IMAGES, parseImageDataUrl } from "../llm/images.js";
 
 const router = Router();
 

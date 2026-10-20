@@ -15,12 +15,12 @@ import {
   executeShapeScriptDispatch,
   isShapeScriptDispatchArgs,
 } from "@gui-chat-plugin/shapescript";
-import { dispatchHtml } from "./htmlHost";
-import { mulmoScriptHandlers } from "./mulmoscriptHost";
-import { artifactsFileOps } from "./workspace";
-import { RENDER_SHAPE_SCRIPT, renderShapeScript } from "./shapeRenderHost";
-import { xToolDefinitions, xToolHandlers } from "./xHost";
-import { movieHandlers } from "./movieHost";
+import { dispatchHtml } from "./htmlHost.js";
+import { mulmoScriptHandlers } from "./mulmoscriptHost.js";
+import { artifactsFileOps } from "./workspace.js";
+import { RENDER_SHAPE_SCRIPT, renderShapeScript } from "./shapeRenderHost.js";
+import { xToolDefinitions, xToolHandlers } from "./xHost.js";
+import { movieHandlers } from "./movieHost.js";
 import type { ToolDefinition } from "gui-chat-protocol";
 
 type Handler = (args: Record<string, unknown>) => Promise<unknown>;

@@ -12,9 +12,9 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { FileOps } from "gui-chat-protocol";
-import { createFileOps } from "./fileOps";
-import { trackFileChanges } from "./fileChanges";
-import { logger } from "../utils/logger";
+import { createFileOps } from "./fileOps.js";
+import { trackFileChanges } from "./fileChanges.js";
+import { logger } from "../utils/logger.js";
 
 const SHARED_WORKSPACE = path.join(os.homedir(), "mulmoclaude");
 const LOCAL_WORKSPACE = path.join(process.cwd(), "output", "workspace");

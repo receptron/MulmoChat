@@ -6,8 +6,8 @@ import {
   type TextGenerationResult,
   type TextMessage,
   type ToolCall,
-} from "../types";
-import { parseImageDataUrl } from "../images";
+} from "../types.js";
+import { parseImageDataUrl } from "../images.js";
 
 // Room for a long tool argument such as a full HTML page (presentHtml). The
 // SDK refuses non-streaming requests it expects to run over 10 minutes, which

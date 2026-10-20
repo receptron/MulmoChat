@@ -6,20 +6,20 @@ import type {
   ToolContextApp,
   ToolResult,
 } from "gui-chat-protocol";
-import { generateGeminiImage, generateOpenAIImage } from "../routes/image";
-import { generateComfyImage } from "../routes/comfyui";
-import { logger } from "../utils/logger";
-import { createMarkdownHostApp } from "./markdownHost";
-import { loadSourceImages, saveImage } from "./imageStore";
-import { toInputImage, type InputImage } from "../utils/imageMime";
+import { generateGeminiImage, generateOpenAIImage } from "../routes/image.js";
+import { generateComfyImage } from "../routes/comfyui.js";
+import { logger } from "../utils/logger.js";
+import { createMarkdownHostApp } from "./markdownHost.js";
+import { loadSourceImages, saveImage } from "./imageStore.js";
+import { toInputImage, type InputImage } from "../utils/imageMime.js";
 import {
   DEFAULT_GEMINI_IMAGE_MODEL,
   DEFAULT_OPENAI_IMAGE_MODEL,
-} from "../utils/imageModelDefaults";
+} from "../utils/imageModelDefaults.js";
 import {
   ImageGenerationError,
   errorMessageOf,
-} from "../utils/imageGenerationError";
+} from "../utils/imageGenerationError.js";
 
 type ImageBackend = "gemini" | "openai" | "comfyui";
 

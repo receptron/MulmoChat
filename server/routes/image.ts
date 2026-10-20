@@ -3,17 +3,17 @@ import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import OpenAI, { toFile } from "openai";
 import { Buffer } from "node:buffer";
-import { sendApiError, logApiRequest } from "../utils/logger";
+import { sendApiError, logApiRequest } from "../utils/logger.js";
 import {
   DEFAULT_GEMINI_IMAGE_MODEL,
   DEFAULT_OPENAI_IMAGE_MODEL,
-} from "../utils/imageModelDefaults";
+} from "../utils/imageModelDefaults.js";
 import {
   ImageGenerationError,
   errorMessageOf,
-} from "../utils/imageGenerationError";
-import { IMAGE_EXTENSIONS, toInputImage } from "../utils/imageMime";
-import { mockImage } from "../utils/mockImage";
+} from "../utils/imageGenerationError.js";
+import { IMAGE_EXTENSIONS, toInputImage } from "../utils/imageMime.js";
+import { mockImage } from "../utils/mockImage.js";
 dotenv.config({ quiet: true });
 
 const router: Router = express.Router();

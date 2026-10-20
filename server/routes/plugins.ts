@@ -1,22 +1,25 @@
 import express, { Request, Response, Router } from "express";
-import { getServerPlugins } from "../plugins/registry";
+import { getServerPlugins } from "../plugins/registry.js";
 import {
   createAppContext,
   parsePluginRequestConfig,
   requestToolContext,
-} from "../plugins/appContext";
-import { artifactsFileOps } from "../plugins/workspace";
-import { hostToolDefinitions, pluginHostHandlers } from "../plugins/dispatch";
+} from "../plugins/appContext.js";
+import { artifactsFileOps } from "../plugins/workspace.js";
+import {
+  hostToolDefinitions,
+  pluginHostHandlers,
+} from "../plugins/dispatch.js";
 import {
   collectFileChanges,
   FILES_CHANGED_HEADER,
-} from "../plugins/fileChanges";
-import { sendApiError } from "../utils/logger";
+} from "../plugins/fileChanges.js";
+import { sendApiError } from "../utils/logger.js";
 import {
   requireLocalClient,
   requireTrustedOrigin,
-} from "../utils/trustedOrigin";
-import { errorMessageOf } from "../utils/imageGenerationError";
+} from "../utils/trustedOrigin.js";
+import { errorMessageOf } from "../utils/imageGenerationError.js";
 
 const router: Router = express.Router();
 
