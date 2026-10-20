@@ -1,7 +1,7 @@
 // The voices each voice API speaks with. Browser-safe: the settings screen
-// lists them, and /api/start checks the OpenAI one it is sent.
+// lists them, and the server checks the OpenAI and ElevenLabs ones it is sent.
 
-export type VoiceProvider = "openai" | "google" | "xai";
+export type VoiceProvider = "openai" | "google" | "xai" | "elevenlabs";
 
 export interface VoiceOption {
   id: string;
@@ -70,14 +70,31 @@ export const VOICES: Record<VoiceProvider, readonly VoiceOption[]> = {
     ["rex", "Confident"],
     ["sal", "Smooth"],
   ].map(([id, style]) => option(id, style)),
+  // The names ElevenLabs Realtime's client_secrets accepts (it rejects any
+  // other with this list). It also takes OpenAI's names and a workspace's
+  // voice IDs, which are not offered here.
+  elevenlabs: [
+    "brian",
+    "chris",
+    "george",
+    "jessica",
+    "liam",
+    "lily",
+    "matilda",
+    "michael",
+    "sarah",
+    "will",
+  ].map((id) => option(id)),
 };
 
 // shimmer and eve are the voices MulmoChat used before the choice existed;
-// Puck is what Google documents as Gemini Live's default, used when none was sent.
+// Puck is what Google documents as Gemini Live's default, used when none was
+// sent; brian is the one ElevenLabs' Realtime guide uses.
 export const DEFAULT_VOICES: Record<VoiceProvider, string> = {
   openai: "shimmer",
   google: "Puck",
   xai: "eve",
+  elevenlabs: "brian",
 };
 
 /** The voice to use: `value` when the provider offers it, else its default. */

@@ -21,7 +21,7 @@ const grokDialect: RealtimeDialect = {
   name: "Grok voice",
   voiceProvider: "xai",
   defaultModelId: DEFAULT_GROK_VOICE_MODEL_ID,
-  startUrl: () => "/api/start?voice=grok",
+  startRequest: () => ({ url: "/api/start?voice=grok" }),
   secret: (start) => start.grokClientSecret,
   url: (modelId) => `${GROK_REALTIME_URL}?model=${encodeURIComponent(modelId)}`,
   // xAI takes the client secret as a subprotocol.

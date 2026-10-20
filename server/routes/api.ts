@@ -5,6 +5,14 @@ import { defaultTestContext } from "graphai";
 import { fetchPdfText } from "../utils/pdfText.js";
 import { publicHttpUrl } from "../utils/publicUrl.js";
 import { resolveVoice } from "../utils/voices.js";
+import {
+  ELEVENLABS_SAMPLE_RATE,
+  resolveElevenLabsModel,
+} from "../utils/elevenLabsRealtime.js";
+import {
+  localClientOnly,
+  requireTrustedOrigin,
+} from "../utils/trustedOrigin.js";
 import { StartApiResponse } from "../types.js";
 import { exaSearch, hasExaApiKey } from "../exaSearch.js";
 import { sendApiError } from "../utils/logger.js";
@@ -78,18 +86,119 @@ async function mintGrokClientSecret(xaiKey: string): Promise<string> {
   return data.value;
 }
 
+// ElevenLabs Realtime: the model, voice and audio are fixed in the secret
+// (ElevenLabs takes the minted session as the authoritative initial one); the
+// browser sends instructions and tools with session.update, as for Grok.
+const ELEVENLABS_CLIENT_SECRET_TTL_SECONDS = 300;
+
+async function mintElevenLabsClientSecret(
+  apiKey: string,
+  model: string,
+  voice: string,
+): Promise<string> {
+  const response = await fetch(
+    "https://api.elevenlabs.io/v1/convai/realtime/client_secrets",
+    {
+      method: "POST",
+      headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session: {
+          type: "realtime",
+          model,
+          output_modalities: ["audio"],
+          audio: {
+            input: {
+              format: { type: "audio/pcm", rate: ELEVENLABS_SAMPLE_RATE },
+              // ElevenLabs refuses server_vad (422).
+              turn_detection: { type: "semantic_vad", eagerness: "medium" },
+            },
+            output: { format: { type: "audio/pcm" }, voice },
+          },
+        },
+        expires_after: {
+          anchor: "created_at",
+          seconds: ELEVENLABS_CLIENT_SECRET_TTL_SECONDS,
+        },
+      }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`ElevenLabs API error: ${response.statusText}`);
+  }
+  const data = (await response.json()) as { value?: unknown };
+  if (typeof data.value !== "string") {
+    throw new Error("ElevenLabs API returned no client secret");
+  }
+  return data.value;
+}
+
+// The flags every start response carries; plugins read them in isEnabled().
+const startFlags = () => ({
+  success: true,
+  message: "Session started",
+  googleMapKey: process.env.GOOGLE_MAP_API_KEY,
+  hasExaApiKey,
+  hasAnthropicApiKey: !!process.env.ANTHROPIC_API_KEY,
+  googleApiKey: process.env.GEMINI_API_KEY,
+  hasGoogleApiKey: !!process.env.GEMINI_API_KEY,
+  hasXaiApiKey: !!process.env.XAI_API_KEY,
+  hasTypesafeApiKey: !!process.env.TYPESAFE_API_KEY?.trim(),
+});
+
+// ElevenLabs voice start. Unlike /start (CLAUDE.md, "Known gap"), it takes
+// requests only from this machine and from no other site, as a new route
+// with a secret and a cost must: a JSON POST, so the trusted-origin check
+// sees every cross-site attempt (a GET can be sent by an <img>).
+router.post(
+  "/start/elevenlabs",
+  localClientOnly("ElevenLabs voice is"),
+  requireTrustedOrigin,
+  async (req: Request, res: Response): Promise<void> => {
+    const { model, voice } = (req.body ?? {}) as {
+      model?: unknown;
+      voice?: unknown;
+    };
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      sendApiError(
+        res,
+        req,
+        500,
+        "ELEVENLABS_API_KEY environment variable not set",
+      );
+      return;
+    }
+    try {
+      const responseData: StartApiResponse = {
+        ...startFlags(),
+        ephemeralKey: "",
+        elevenLabsClientSecret: await mintElevenLabsClientSecret(
+          apiKey,
+          resolveElevenLabsModel(model),
+          resolveVoice("elevenlabs", voice),
+        ),
+      };
+      res.set("Cache-Control", "no-store");
+      res.json(responseData);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      sendApiError(
+        res,
+        req,
+        500,
+        "Failed to generate ElevenLabs client secret",
+        errorMessage,
+      );
+    }
+  },
+);
+
 // Session start endpoint. `?voice=grok` mints an xAI client secret for the
 // Grok voice transport instead of the OpenAI ephemeral key.
 router.get("/start", async (req: Request, res: Response): Promise<void> => {
   const openaiKey = process.env.OPENAI_API_KEY;
   const xaiKey = process.env.XAI_API_KEY;
-  const googleMapKey = process.env.GOOGLE_MAP_API_KEY;
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-  const hasAnthropicApiKey = !!anthropicApiKey;
-  const hasGoogleApiKey = !!geminiApiKey;
-  const hasXaiApiKey = !!xaiKey;
-  const hasTypesafeApiKey = !!process.env.TYPESAFE_API_KEY?.trim();
 
   if (req.query.voice === "grok") {
     if (!xaiKey) {
@@ -98,17 +207,9 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
     }
     try {
       const responseData: StartApiResponse = {
-        success: true,
-        message: "Session started",
+        ...startFlags(),
         ephemeralKey: "",
         grokClientSecret: await mintGrokClientSecret(xaiKey),
-        googleMapKey,
-        hasExaApiKey,
-        hasAnthropicApiKey,
-        googleApiKey: geminiApiKey,
-        hasGoogleApiKey,
-        hasXaiApiKey,
-        hasTypesafeApiKey,
       };
       res.json(responseData);
     } catch (error: unknown) {
@@ -159,16 +260,8 @@ router.get("/start", async (req: Request, res: Response): Promise<void> => {
 
     const data = await response.json();
     const responseData: StartApiResponse = {
-      success: true,
-      message: "Session started",
+      ...startFlags(),
       ephemeralKey: data.value,
-      googleMapKey,
-      hasExaApiKey,
-      hasAnthropicApiKey,
-      googleApiKey: geminiApiKey,
-      hasGoogleApiKey,
-      hasXaiApiKey,
-      hasTypesafeApiKey,
     };
     res.json(responseData);
   } catch (error: unknown) {

@@ -4,11 +4,7 @@ import { DEFAULT_ROLE_ID, getRole, ROLES } from "../config/roles";
 import { pluginTools, getPluginSystemPrompts } from "../tools";
 import {
   DEFAULT_REALTIME_MODEL_ID,
-  DEFAULT_GOOGLE_LIVE_MODEL_ID,
-  DEFAULT_GROK_VOICE_MODEL_ID,
-  GOOGLE_LIVE_MODELS,
-  GROK_VOICE_MODELS,
-  REALTIME_MODELS,
+  resolveVoiceModelId,
 } from "../config/models";
 import { DEFAULT_TEXT_MODEL } from "../config/textModels";
 import { resolveVoice, type VoiceProvider } from "../../server/utils/voices";
@@ -102,6 +98,7 @@ const initVoiceIds = (): Record<VoiceProvider, string> => {
     openai: resolveVoice("openai", stored.openai),
     google: resolveVoice("google", stored.google),
     xai: resolveVoice("xai", stored.xai),
+    elevenlabs: resolveVoice("elevenlabs", stored.elevenlabs),
   };
 };
 
@@ -136,6 +133,7 @@ const resolveStoredModelKind = (
   if (stored === "text-rest") return "text-rest";
   if (stored === "voice-google-live") return "voice-google-live";
   if (stored === "voice-grok") return "voice-grok";
+  if (stored === "voice-elevenlabs") return "voice-elevenlabs";
   return "voice-realtime";
 };
 
@@ -144,24 +142,12 @@ const resolveStoredModelKind = (
 const resolveStoredModelId = (
   modelKind: SessionTransportKind,
   storedModelId: string | null,
-): string => {
-  if (modelKind === "voice-google-live") {
-    return (
-      GOOGLE_LIVE_MODELS.find((m) => m.id === storedModelId)?.id ??
-      DEFAULT_GOOGLE_LIVE_MODEL_ID
-    );
-  }
-  if (modelKind === "voice-grok") {
-    return (
-      GROK_VOICE_MODELS.find((m) => m.id === storedModelId)?.id ??
-      DEFAULT_GROK_VOICE_MODEL_ID
-    );
-  }
-  return (
-    REALTIME_MODELS.find((m) => m.id === storedModelId)?.id ??
-    DEFAULT_REALTIME_MODEL_ID
-  );
-};
+): string =>
+  // text-rest keeps its model in textModelId; modelId then holds the last
+  // realtime one, as before.
+  resolveVoiceModelId(modelKind, storedModelId) ??
+  resolveVoiceModelId("voice-realtime", storedModelId) ??
+  DEFAULT_REALTIME_MODEL_ID;
 
 /** The saved language, for views that read it without the full preferences. */
 export const getStoredUserLanguage = (): string =>
@@ -244,18 +230,8 @@ export function useUserPreferences(): UseUserPreferencesReturn {
     (val, oldVal) => {
       setStoredValue(MODEL_KIND_KEY, val);
       if (val !== oldVal) {
-        if (val === "voice-realtime") {
-          const isValid = REALTIME_MODELS.some((m) => m.id === state.modelId);
-          if (!isValid) state.modelId = DEFAULT_REALTIME_MODEL_ID;
-        } else if (val === "voice-google-live") {
-          const isValid = GOOGLE_LIVE_MODELS.some(
-            (m) => m.id === state.modelId,
-          );
-          if (!isValid) state.modelId = DEFAULT_GOOGLE_LIVE_MODEL_ID;
-        } else if (val === "voice-grok") {
-          const isValid = GROK_VOICE_MODELS.some((m) => m.id === state.modelId);
-          if (!isValid) state.modelId = DEFAULT_GROK_VOICE_MODEL_ID;
-        }
+        const modelId = resolveVoiceModelId(val, state.modelId);
+        if (modelId) state.modelId = modelId;
       }
     },
   );

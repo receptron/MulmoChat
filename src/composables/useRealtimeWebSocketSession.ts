@@ -28,8 +28,12 @@ export interface RealtimeDialect {
   name: string;
   voiceProvider: VoiceProvider;
   defaultModelId: string;
-  /** The server route that mints this provider's secret. */
-  startUrl: (choice: { modelId: string; voice: string }) => string;
+  /** The server route that mints this provider's secret: a GET, or a JSON
+   *  POST when it has a body. */
+  startRequest: (choice: { modelId: string; voice: string }) => {
+    url: string;
+    body?: unknown;
+  };
   secret: (start: StartApiResponse) => string | undefined;
   url: (modelId: string) => string;
   /** WebSocket subprotocols: how the secret is passed, since a browser
@@ -57,7 +61,8 @@ interface RealtimeServerEvent {
   name?: string;
   arguments?: string;
   delta?: string;
-  error?: unknown;
+  response?: { id?: string };
+  error?: { code?: string; event_id?: string | null } & Record<string, unknown>;
 }
 
 export function useRealtimeWebSocketSession(
@@ -90,14 +95,35 @@ export function useRealtimeWebSocketSession(
     audioManager: null,
   };
 
-  // A response is running from response.create (or the server's own VAD turn)
-  // until response.done. Another response.create in that window is held and
-  // sent after it, once: several tool outputs get one follow-up response.
-  let responseActive = false;
+  // A response runs from response.created until its response.done. The
+  // server starts some itself (its VAD turn; ElevenLabs also follows a spoken
+  // "let me check" with the tool call's response unasked), so they are kept
+  // by id. A response.create asked for while any runs is held and sent after
+  // the last, once: several tool outputs get one follow-up response.
+  const runningResponses = new Set<string>();
   let responseHeld = false;
   // response.create sent, response.created not seen yet. If the provider
   // answers it with an error instead, no response.done follows.
   let responseRequested = false;
+  const responding = () => responseRequested || runningResponses.size > 0;
+  // The event_id of the last response.create, to tell a refusal of it from a
+  // late refusal of an earlier one. Grok and ElevenLabs drop a
+  // response.create sent while a response runs without a word; an
+  // OpenAI-style refusal names the event_id it refuses.
+  let lastCreateId: string | null = null;
+  let createCount = 0;
+  // The user's turn: "waiting" once they stopped, until the server's response
+  // to it starts ("answered"): that response.created is the server's, not the
+  // answer to our response.create. speech_stopped comes before that created
+  // on both Grok and ElevenLabs; committed comes before it on ElevenLabs and
+  // after it on Grok, so a committed after the response started is not a new
+  // turn.
+  let userTurn: "none" | "waiting" | "answered" = "none";
+  // Our response.create went out while the server was starting a response of
+  // its own. Grok and ElevenLabs drop it without a word, so when that response
+  // is done ours is asked again. A provider that kept it would answer twice;
+  // the two that drop it were checked live.
+  let responseOverlapped = false;
 
   const sendWebSocketMessage = (message: unknown): boolean => {
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
@@ -109,13 +135,16 @@ export function useRealtimeWebSocketSession(
   };
 
   const requestResponse = (): boolean => {
-    if (responseActive) {
+    if (responding()) {
       responseHeld = true;
       return true;
     }
-    responseActive = true;
     responseRequested = true;
-    return sendWebSocketMessage({ type: "response.create" });
+    lastCreateId = `mulmochat_response_${++createCount}`;
+    return sendWebSocketMessage({
+      type: "response.create",
+      event_id: lastCreateId,
+    });
   };
 
   const addUserText = (text: string) =>
@@ -140,6 +169,34 @@ export function useRealtimeWebSocketSession(
     await handlers.onToolCall?.(msg, callId, event.arguments ?? "{}");
   };
 
+  const handleError = (error: RealtimeServerEvent["error"]) => {
+    const refusedId = error?.event_id;
+    if (error?.code === "conversation_already_has_active_response") {
+      // A late refusal of an earlier response.create: the one sent since
+      // stands.
+      if (refusedId && refusedId !== lastCreateId) return;
+      // Our response.create was refused because one the server started is
+      // running. Its response.created may already have cleared
+      // responseRequested, so this doesn't depend on it: ask again after that
+      // response, or now if it is already done.
+      responseRequested = false;
+      responseOverlapped = false;
+      responseHeld = true;
+      if (!responding()) {
+        responseHeld = false;
+        requestResponse();
+      }
+      return;
+    }
+    // An error about our response.create would fail again, so drop it. One
+    // about another event leaves it waiting.
+    if (responseRequested && (!refusedId || refusedId === lastCreateId)) {
+      responseRequested = false;
+      responseOverlapped = false;
+      responseHeld = false;
+    }
+  };
+
   const handleWebSocketMessage = async (message: MessageEvent) => {
     let event: RealtimeServerEvent;
     try {
@@ -153,43 +210,62 @@ export function useRealtimeWebSocketSession(
     switch (event.type) {
       case "error":
         console.error(`${dialect.name} error:`, event.error);
-        if (responseRequested) {
-          responseRequested = false;
-          responseActive = false;
-          responseHeld = false;
-        }
+        handleError(event.error);
         handlers.onError?.(event.error);
         break;
       case "response.output_audio.delta":
         if (event.delta) state.audioManager?.queueAudio(event.delta);
         break;
       case "response.created":
-        responseActive = true;
-        responseRequested = false;
+        if (userTurn === "waiting") {
+          userTurn = "answered";
+          if (responseRequested) responseOverlapped = true;
+        } else {
+          responseRequested = false;
+        }
+        runningResponses.add(event.response?.id ?? "");
         conversationActive.value = true;
         handlers.onConversationStarted?.();
         break;
-      case "response.done":
+      case "response.done": {
+        const id = event.response?.id ?? "";
+        // A done whose created was not seen: settle them all, as before ids.
+        if (!runningResponses.delete(id)) runningResponses.clear();
+        if (runningResponses.size > 0) break;
+        // Whatever turn was taken has had its response by now.
+        userTurn = "none";
+        if (responseOverlapped && responseRequested) {
+          // No response came for ours: it was dropped. Its instruction is in
+          // the conversation already.
+          responseRequested = false;
+          responseHeld = true;
+        }
+        responseOverlapped = false;
         state.audioManager?.endOfReply();
-        responseActive = false;
         conversationActive.value = false;
         handlers.onTextCompleted?.();
         handlers.onConversationFinished?.();
-        if (responseHeld) {
+        if (responseHeld && !responseRequested) {
           responseHeld = false;
           requestResponse();
         }
         break;
+      }
       case "response.function_call_arguments.done":
         await handleToolCall(event);
         break;
       case "input_audio_buffer.speech_started":
+        userTurn = "none";
         // The user talks over the reply: stop playing what is queued.
         state.audioManager?.stopPlayback();
         handlers.onSpeechStarted?.();
         break;
       case "input_audio_buffer.speech_stopped":
+        if (userTurn === "none") userTurn = "waiting";
         handlers.onSpeechStopped?.();
+        break;
+      case "input_audio_buffer.committed":
+        if (userTurn === "none") userTurn = "waiting";
         break;
     }
   };
@@ -288,9 +364,11 @@ export function useRealtimeWebSocketSession(
       state.localStream = null;
     }
     processedToolCalls.clear();
-    responseActive = false;
+    runningResponses.clear();
     responseHeld = false;
     responseRequested = false;
+    responseOverlapped = false;
+    userTurn = "none";
     chatActive.value = false;
     conversationActive.value = false;
     connecting.value = false;
@@ -305,23 +383,22 @@ export function useRealtimeWebSocketSession(
     const stopped = () => generation !== startGeneration;
 
     try {
-      const response = await fetch(
-        dialect.startUrl({
-          modelId:
-            options.getModelId?.({ startResponse: null }) ??
-            dialect.defaultModelId,
-          voice: resolveVoice(
-            dialect.voiceProvider,
-            options.getVoiceId?.(dialect.voiceProvider),
-          ),
-        }),
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const { url, body } = dialect.startRequest({
+        modelId:
+          options.getModelId?.({ startResponse: null }) ??
+          dialect.defaultModelId,
+        voice: resolveVoice(
+          dialect.voiceProvider,
+          options.getVoiceId?.(dialect.voiceProvider),
+        ),
+      });
+      const response = await fetch(url, {
+        method: body === undefined ? "GET" : "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
       if (!response.ok) {
         throw new Error(`API error: ${response.statusText}`);
       }
@@ -413,8 +490,9 @@ export function useRealtimeWebSocketSession(
     return requestResponse();
   };
 
-  // Grok's voice API takes no image input (an input_image part is dropped),
-  // so tools that return images only report their text to it.
+  // Neither Grok nor ElevenLabs takes image input: Grok drops an input_image
+  // part, ElevenLabs accepts it and its model says it sees no image. So tools
+  // that return images only report their text.
   const sendImagesToModel = () => false;
 
   const isDataChannelOpen = () => state.ws?.readyState === WebSocket.OPEN;

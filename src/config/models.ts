@@ -1,6 +1,14 @@
 import type { SessionTransportKind } from "../composables/useSessionTransport";
 import type { VoiceProvider } from "../../server/utils/voices";
 
+import {
+  DEFAULT_ELEVENLABS_VOICE_MODEL_ID,
+  ELEVENLABS_VOICE_MODELS,
+} from "../../server/utils/elevenLabsRealtime";
+
+// Defined with the server's mint, which accepts only these.
+export { DEFAULT_ELEVENLABS_VOICE_MODEL_ID, ELEVENLABS_VOICE_MODELS };
+
 export interface RealtimeModelOption {
   id: string;
   label: string;
@@ -67,6 +75,54 @@ export const GROK_VOICE_MODELS: GrokVoiceModelOption[] = [
 
 export const DEFAULT_GROK_VOICE_MODEL_ID = GROK_VOICE_MODELS[0].id;
 
+export interface VoiceModelChoice {
+  models: readonly RealtimeModelOption[];
+  defaultId: string;
+  /** In the status line when the saved model is not in the list. */
+  fallbackLabel: string;
+}
+
+// The models a voice transport offers; null for text, whose models are in
+// textModels.ts.
+export const VOICE_MODELS_FOR_KIND: Record<
+  SessionTransportKind,
+  VoiceModelChoice | null
+> = {
+  "voice-realtime": {
+    models: REALTIME_MODELS,
+    defaultId: DEFAULT_REALTIME_MODEL_ID,
+    fallbackLabel: "GPT Realtime",
+  },
+  "voice-google-live": {
+    models: GOOGLE_LIVE_MODELS,
+    defaultId: DEFAULT_GOOGLE_LIVE_MODEL_ID,
+    fallbackLabel: "Gemini Live",
+  },
+  "voice-grok": {
+    models: GROK_VOICE_MODELS,
+    defaultId: DEFAULT_GROK_VOICE_MODEL_ID,
+    fallbackLabel: "Grok Voice",
+  },
+  "voice-elevenlabs": {
+    models: ELEVENLABS_VOICE_MODELS,
+    defaultId: DEFAULT_ELEVENLABS_VOICE_MODEL_ID,
+    fallbackLabel: "Eleven Realtime",
+  },
+  "text-rest": null,
+};
+
+/** `modelId` when the transport offers it, else its default; null for text. */
+export const resolveVoiceModelId = (
+  kind: SessionTransportKind,
+  modelId: string | null,
+): string | null => {
+  const choice = VOICE_MODELS_FOR_KIND[kind];
+  if (!choice) return null;
+  return choice.models.some((m) => m.id === modelId)
+    ? (modelId as string)
+    : choice.defaultId;
+};
+
 // Which provider's voices a transport speaks with; null for one that doesn't speak.
 export const VOICE_PROVIDER_FOR_KIND: Record<
   SessionTransportKind,
@@ -75,5 +131,6 @@ export const VOICE_PROVIDER_FOR_KIND: Record<
   "voice-realtime": "openai",
   "voice-google-live": "google",
   "voice-grok": "xai",
+  "voice-elevenlabs": "elevenlabs",
   "text-rest": null,
 };

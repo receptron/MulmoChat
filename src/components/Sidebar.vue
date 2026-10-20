@@ -218,6 +218,7 @@
                 <option value="voice-realtime">Voice (OpenAI Realtime)</option>
                 <option value="voice-google-live">Voice (Google Live)</option>
                 <option value="voice-grok">Voice (Grok)</option>
+                <option value="voice-elevenlabs">Voice (ElevenLabs)</option>
                 <option
                   v-for="company in textCompanies"
                   :key="company.provider"
@@ -314,6 +315,35 @@
               <p class="text-xs text-gray-500 mt-1">
                 Chooses the xAI Grok voice model (needs XAI_API_KEY). Grok
                 doesn't see images tools return.
+              </p>
+            </div>
+
+            <div v-if="isElevenLabsVoice">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ElevenLabs Voice Model
+              </label>
+              <select
+                :value="modelId"
+                @change="
+                  $emit(
+                    'update:modelId',
+                    ($event.target as HTMLSelectElement).value,
+                  )
+                "
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option
+                  v-for="model in ELEVENLABS_VOICE_MODELS"
+                  :key="model.id"
+                  :value="model.id"
+                >
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                Chooses the ElevenLabs Realtime model (needs ELEVENLABS_API_KEY
+                with ElevenAgents access). Max is better at tools; Mini answers
+                faster. It doesn't see images tools return.
               </p>
             </div>
 
@@ -629,6 +659,7 @@ import {
   REALTIME_MODELS,
   GOOGLE_LIVE_MODELS,
   GROK_VOICE_MODELS,
+  ELEVENLABS_VOICE_MODELS,
   VOICE_PROVIDER_FOR_KIND,
 } from "../config/models";
 import {
@@ -762,15 +793,19 @@ const isVoiceMode = computed(
   () =>
     props.modelKind === "voice-realtime" ||
     props.modelKind === "voice-google-live" ||
-    props.modelKind === "voice-grok",
+    props.modelKind === "voice-grok" ||
+    props.modelKind === "voice-elevenlabs",
 );
 const isOpenAIRealtime = computed(() => props.modelKind === "voice-realtime");
 const isGoogleLive = computed(() => props.modelKind === "voice-google-live");
 const isGrokVoice = computed(() => props.modelKind === "voice-grok");
+const isElevenLabsVoice = computed(
+  () => props.modelKind === "voice-elevenlabs",
+);
 // Transports whose text messages go over the live connection, so typing is
 // off until it is open.
 const needsConnectionToSend = computed(
-  () => isOpenAIRealtime.value || isGrokVoice.value,
+  () => isOpenAIRealtime.value || isGrokVoice.value || isElevenLabsVoice.value,
 );
 const isTextRest = computed(() => props.modelKind === "text-rest");
 const voiceProvider = computed(() => VOICE_PROVIDER_FOR_KIND[props.modelKind]);

@@ -62,12 +62,12 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 ## Environment Variables
 - `OPENAI_API_KEY` — required; `/api/start` fails without it (except for Grok voice).
 - `GEMINI_API_KEY` — Gemini images, Gemini Live and Google text models.
-- `ANTHROPIC_API_KEY` — Anthropic text models. `XAI_API_KEY` — Grok voice and Grok text models.
+- `ANTHROPIC_API_KEY` — Anthropic text models. `XAI_API_KEY` — Grok voice and Grok text models. `ELEVENLABS_API_KEY` — ElevenLabs voice (the key needs ElevenAgents: Write).
 - `EXA_API_KEY` (Exa search), `GOOGLE_MAP_API_KEY` (map) and `X_BEARER_TOKEN` (readXPost, searchX). Plugins that need a missing key are disabled.
 - `TYPESAFE_API_KEY` (optional `JEV_MODEL`, `JEV_URL`) — required by manageKenteiScript, which grades answers with TypeSafe JEV on the server. Without it every manageKenteiScript call fails and tells the model to ask the user to set the key and restart the server.
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends.
 - `MULMOCHAT_ALLOWED_ORIGINS` — extra browser origins allowed to call `/api/plugin/*`. Loopback origins are always allowed, and requests must be JSON.
-- `MULMOCHAT_ALLOW_REMOTE_PLUGINS` — set to `true` to let other machines call `/api/plugin/*`, which by default only accepts loopback connections.
+- `MULMOCHAT_ALLOW_REMOTE_PLUGINS` — set to `true` to let other machines call `/api/plugin/*` and `/api/start/elevenlabs`, which by default only accept loopback connections.
 - `MULMOCHAT_WORKSPACE` — workspace for plugin files. Defaults to `~/mulmoclaude`, which is shared with MulmoClaude and MulmoTerminal, when it exists; otherwise `output/workspace`. Use a scratch folder for tests.
 - `PORT` and `NODE_ENV`. `.env` is ignored by git.
 
