@@ -1,0 +1,441 @@
+/* global WebSocket, CloseEvent */
+
+// The OpenAI Realtime events (session.update, conversation.item.create,
+// response.create, response.function_call_arguments.done, …) over a WebSocket
+// opened from the browser, with PCM16 audio as base64 JSON played through
+// AudioStreamManager, like Gemini Live. Grok voice speaks it
+// (useGrokVoiceSession); a RealtimeDialect says what one provider does
+// differently. The server mints a short-lived secret, so the provider's API
+// key never reaches the browser.
+
+import { ref } from "vue";
+import type { StartApiResponse } from "../../server/types";
+import type { ToolCallMessage } from "./types";
+import {
+  type RealtimeSessionEventHandlers,
+  type RealtimeSessionOptions,
+  type UseRealtimeSessionReturn,
+} from "./useRealtimeSession";
+import { AudioStreamManager } from "../utils/audioStreamManager";
+import { resolveVoice, type VoiceProvider } from "../../server/utils/voices";
+
+// Replies come back at the rate AudioStreamManager plays by default.
+export const OUTPUT_SAMPLE_RATE = 24000;
+
+/** What one provider's Realtime API needs that another's does not. */
+export interface RealtimeDialect {
+  /** In logs and in the alert when a start fails ("Grok voice"). */
+  name: string;
+  voiceProvider: VoiceProvider;
+  defaultModelId: string;
+  /** The server route that mints this provider's secret. */
+  startUrl: (choice: { modelId: string; voice: string }) => string;
+  secret: (start: StartApiResponse) => string | undefined;
+  url: (modelId: string) => string;
+  /** WebSocket subprotocols: how the secret is passed, since a browser
+   *  cannot set an Authorization header on a WebSocket. */
+  protocols: (secret: string) => string[];
+  /** Microphone audio sent to the provider. */
+  inputSampleRate: number;
+  /** The session.update `session`, given the parts every provider has. */
+  session: (shared: {
+    instructions: string;
+    tools: unknown[];
+    voice: string;
+  }) => Record<string, unknown>;
+}
+
+interface WebSocketState {
+  ws: WebSocket | null;
+  localStream: MediaStream | null;
+  audioManager: AudioStreamManager | null;
+}
+
+interface RealtimeServerEvent {
+  type: string;
+  call_id?: string;
+  name?: string;
+  arguments?: string;
+  delta?: string;
+  error?: unknown;
+}
+
+export function useRealtimeWebSocketSession(
+  options: RealtimeSessionOptions,
+  dialect: RealtimeDialect,
+): UseRealtimeSessionReturn {
+  let handlers: RealtimeSessionEventHandlers = {
+    ...(options.handlers ?? {}),
+  };
+
+  const registerEventHandlers = (
+    newHandlers: Partial<RealtimeSessionEventHandlers>,
+  ) => {
+    handlers = {
+      ...handlers,
+      ...newHandlers,
+    };
+  };
+
+  const chatActive = ref(false);
+  const conversationActive = ref(false);
+  const connecting = ref(false);
+  const isMuted = ref(false);
+  const startResponse = ref<StartApiResponse | null>(null);
+  const processedToolCalls = new Set<string>();
+
+  const state: WebSocketState = {
+    ws: null,
+    localStream: null,
+    audioManager: null,
+  };
+
+  // A response is running from response.create (or the server's own VAD turn)
+  // until response.done. Another response.create in that window is held and
+  // sent after it, once: several tool outputs get one follow-up response.
+  let responseActive = false;
+  let responseHeld = false;
+  // response.create sent, response.created not seen yet. If the provider
+  // answers it with an error instead, no response.done follows.
+  let responseRequested = false;
+
+  const sendWebSocketMessage = (message: unknown): boolean => {
+    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+      console.warn("Cannot send message because WebSocket is not open.");
+      return false;
+    }
+    state.ws.send(JSON.stringify(message));
+    return true;
+  };
+
+  const requestResponse = (): boolean => {
+    if (responseActive) {
+      responseHeld = true;
+      return true;
+    }
+    responseActive = true;
+    responseRequested = true;
+    return sendWebSocketMessage({ type: "response.create" });
+  };
+
+  const addUserText = (text: string) =>
+    sendWebSocketMessage({
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text }],
+      },
+    });
+
+  const handleToolCall = async (event: RealtimeServerEvent) => {
+    const callId = event.call_id;
+    if (!callId || !event.name || processedToolCalls.has(callId)) return;
+    processedToolCalls.add(callId);
+    const msg: ToolCallMessage = {
+      type: "response.function_call_arguments.done",
+      call_id: callId,
+      name: event.name,
+    };
+    await handlers.onToolCall?.(msg, callId, event.arguments ?? "{}");
+  };
+
+  const handleWebSocketMessage = async (message: MessageEvent) => {
+    let event: RealtimeServerEvent;
+    try {
+      event = JSON.parse(message.data as string) as RealtimeServerEvent;
+    } catch (error) {
+      console.error(`Failed to parse ${dialect.name} message:`, error);
+      handlers.onError?.(error);
+      return;
+    }
+
+    switch (event.type) {
+      case "error":
+        console.error(`${dialect.name} error:`, event.error);
+        if (responseRequested) {
+          responseRequested = false;
+          responseActive = false;
+          responseHeld = false;
+        }
+        handlers.onError?.(event.error);
+        break;
+      case "response.output_audio.delta":
+        if (event.delta) state.audioManager?.queueAudio(event.delta);
+        break;
+      case "response.created":
+        responseActive = true;
+        responseRequested = false;
+        conversationActive.value = true;
+        handlers.onConversationStarted?.();
+        break;
+      case "response.done":
+        state.audioManager?.endOfReply();
+        responseActive = false;
+        conversationActive.value = false;
+        handlers.onTextCompleted?.();
+        handlers.onConversationFinished?.();
+        if (responseHeld) {
+          responseHeld = false;
+          requestResponse();
+        }
+        break;
+      case "response.function_call_arguments.done":
+        await handleToolCall(event);
+        break;
+      case "input_audio_buffer.speech_started":
+        // The user talks over the reply: stop playing what is queued.
+        state.audioManager?.stopPlayback();
+        handlers.onSpeechStarted?.();
+        break;
+      case "input_audio_buffer.speech_stopped":
+        handlers.onSpeechStopped?.();
+        break;
+    }
+  };
+
+  const handleWebSocketOpen = (
+    instructions: string,
+    tools: unknown[],
+  ): void => {
+    // Connected only now: text sent before the socket opens would be lost.
+    chatActive.value = true;
+    connecting.value = false;
+    sendWebSocketMessage({
+      type: "session.update",
+      session: dialect.session({
+        instructions,
+        tools,
+        voice: resolveVoice(
+          dialect.voiceProvider,
+          options.getVoiceId?.(dialect.voiceProvider),
+        ),
+      }),
+    });
+
+    if (state.localStream && state.audioManager) {
+      state.audioManager.startCapture(
+        state.localStream,
+        (pcmChunk) => {
+          if (state.ws?.readyState === WebSocket.OPEN) {
+            sendWebSocketMessage({
+              type: "input_audio_buffer.append",
+              audio: pcmChunk,
+            });
+          }
+        },
+        dialect.inputSampleRate,
+      );
+    }
+  };
+
+  const handleWebSocketError = (error: Event) => {
+    console.error(`${dialect.name} WebSocket error:`, error);
+    handlers.onError?.(error);
+  };
+
+  // Bound to its socket: a close from a socket stopChat already replaced
+  // (startChat awaits before opening the next one) must not end the new chat.
+  const handleWebSocketClose = (ws: WebSocket) => (event: CloseEvent) => {
+    console.log(
+      `${dialect.name} WebSocket closed - Code: ${event.code}, Reason: ${event.reason}`,
+    );
+    if (state.ws !== ws) return;
+    // An unexpected close: release the microphone and audio as a stop would.
+    stopChat();
+  };
+
+  const attachRemoteAudioElement = (__audio: HTMLAudioElement | null) => {
+    /* the audio plays through AudioStreamManager, not an audio element */
+  };
+
+  const setTracksEnabled = (enabled: boolean) => {
+    state.localStream?.getAudioTracks().forEach((track) => {
+      track.enabled = enabled;
+    });
+  };
+
+  const setMute = (muted: boolean) => {
+    isMuted.value = muted;
+    setTracksEnabled(!muted);
+  };
+
+  const setLocalAudioEnabled = (enabled: boolean) => {
+    setTracksEnabled(enabled);
+  };
+
+  // Bumped by stopChat, so a startChat still awaiting the server or the
+  // microphone gives up instead of connecting after it was stopped.
+  let startGeneration = 0;
+
+  const stopChat = () => {
+    startGeneration++;
+    const ws = state.ws;
+    if (ws) {
+      state.ws = null;
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onerror = null;
+      ws.onclose = null;
+      ws.close();
+    }
+    if (state.audioManager) {
+      state.audioManager.destroy();
+      state.audioManager = null;
+    }
+    if (state.localStream) {
+      state.localStream.getTracks().forEach((track) => track.stop());
+      state.localStream = null;
+    }
+    processedToolCalls.clear();
+    responseActive = false;
+    responseHeld = false;
+    responseRequested = false;
+    chatActive.value = false;
+    conversationActive.value = false;
+    connecting.value = false;
+    setMute(false);
+  };
+
+  const startChat = async () => {
+    if (chatActive.value || connecting.value) return;
+
+    connecting.value = true;
+    const generation = ++startGeneration;
+    const stopped = () => generation !== startGeneration;
+
+    try {
+      const response = await fetch(
+        dialect.startUrl({
+          modelId:
+            options.getModelId?.({ startResponse: null }) ??
+            dialect.defaultModelId,
+          voice: resolveVoice(
+            dialect.voiceProvider,
+            options.getVoiceId?.(dialect.voiceProvider),
+          ),
+        }),
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+      const start = (await response.json()) as StartApiResponse;
+      if (stopped()) return;
+      startResponse.value = start;
+
+      const clientSecret = dialect.secret(start);
+      if (!clientSecret) {
+        throw new Error(
+          `No ${dialect.name} client secret received from server`,
+        );
+      }
+
+      const instructions = options.buildInstructions({
+        startResponse: startResponse.value,
+      });
+      const tools = options.buildTools({
+        startResponse: startResponse.value,
+      });
+      const modelId =
+        options.getModelId?.({ startResponse: startResponse.value }) ??
+        dialect.defaultModelId;
+
+      // Microphone first, so the WebSocket opens with audio ready to send.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: dialect.inputSampleRate,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+      if (stopped()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      state.localStream = stream;
+
+      state.audioManager = new AudioStreamManager();
+      state.audioManager.setPlaybackEventHandlers({
+        onPlaybackStarted: () => handlers.onAudioPlaybackStarted?.(),
+        onPlaybackStopped: () => handlers.onAudioPlaybackStopped?.(),
+      });
+
+      const ws = new WebSocket(
+        dialect.url(modelId),
+        dialect.protocols(clientSecret),
+      );
+      state.ws = ws;
+      ws.onopen = () => handleWebSocketOpen(instructions, tools);
+      ws.onmessage = handleWebSocketMessage;
+      ws.onerror = handleWebSocketError;
+      ws.onclose = handleWebSocketClose(ws);
+      // chatActive and connecting change in handleWebSocketOpen.
+    } catch (err) {
+      console.error(`Failed to start ${dialect.name} session:`, err);
+      if (stopped()) return;
+      stopChat();
+      alert(
+        `Failed to start ${dialect.name} session. Check console for details.`,
+      );
+    }
+  };
+
+  const sendUserMessage = async (text: string) => {
+    if (!chatActive.value || !addUserText(text)) {
+      console.warn("Cannot send text message because WebSocket is not ready.");
+      return false;
+    }
+    return requestResponse();
+  };
+
+  const sendFunctionCallOutput = (callId: string, output: string) => {
+    return sendWebSocketMessage({
+      type: "conversation.item.create",
+      item: {
+        type: "function_call_output",
+        call_id: callId,
+        output,
+      },
+    });
+  };
+
+  // response.create's `instructions` replace the session's system prompt for
+  // that response, so a plugin's follow-up goes in as a user message instead.
+  const sendInstructions = (instructions: string) => {
+    if (!addUserText(`[System instruction] ${instructions}`)) return false;
+    return requestResponse();
+  };
+
+  // Grok's voice API takes no image input (an input_image part is dropped),
+  // so tools that return images only report their text to it.
+  const sendImagesToModel = () => false;
+
+  const isDataChannelOpen = () => state.ws?.readyState === WebSocket.OPEN;
+
+  return {
+    chatActive,
+    conversationActive,
+    connecting,
+    isMuted,
+    startResponse,
+    isDataChannelOpen,
+    startChat,
+    stopChat,
+    sendUserMessage,
+    sendFunctionCallOutput,
+    sendInstructions,
+    sendImagesToModel,
+    continueConversation: () => false,
+    setMute,
+    setLocalAudioEnabled,
+    attachRemoteAudioElement,
+    registerEventHandlers,
+  };
+}
