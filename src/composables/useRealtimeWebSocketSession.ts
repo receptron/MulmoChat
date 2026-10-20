@@ -62,7 +62,7 @@ interface RealtimeServerEvent {
   arguments?: string;
   delta?: string;
   response?: { id?: string };
-  error?: { code?: string } & Record<string, unknown>;
+  error?: { code?: string; event_id?: string | null } & Record<string, unknown>;
 }
 
 export function useRealtimeWebSocketSession(
@@ -106,6 +106,12 @@ export function useRealtimeWebSocketSession(
   // answers it with an error instead, no response.done follows.
   let responseRequested = false;
   const responding = () => responseRequested || runningResponses.size > 0;
+  // The event_id of the last response.create, to tell a refusal of it from a
+  // late refusal of an earlier one. Grok and ElevenLabs drop a
+  // response.create sent while a response runs without a word; an
+  // OpenAI-style refusal names the event_id it refuses.
+  let lastCreateId: string | null = null;
+  let createCount = 0;
 
   const sendWebSocketMessage = (message: unknown): boolean => {
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
@@ -122,7 +128,11 @@ export function useRealtimeWebSocketSession(
       return true;
     }
     responseRequested = true;
-    return sendWebSocketMessage({ type: "response.create" });
+    lastCreateId = `mulmochat_response_${++createCount}`;
+    return sendWebSocketMessage({
+      type: "response.create",
+      event_id: lastCreateId,
+    });
   };
 
   const addUserText = (text: string) =>
@@ -147,6 +157,32 @@ export function useRealtimeWebSocketSession(
     await handlers.onToolCall?.(msg, callId, event.arguments ?? "{}");
   };
 
+  const handleError = (error: RealtimeServerEvent["error"]) => {
+    const refusedId = error?.event_id;
+    if (error?.code === "conversation_already_has_active_response") {
+      // A late refusal of an earlier response.create: the one sent since
+      // stands.
+      if (refusedId && refusedId !== lastCreateId) return;
+      // Our response.create was refused because one the server started is
+      // running. Its response.created may already have cleared
+      // responseRequested, so this doesn't depend on it: ask again after that
+      // response, or now if it is already done.
+      responseRequested = false;
+      responseHeld = true;
+      if (!responding()) {
+        responseHeld = false;
+        requestResponse();
+      }
+      return;
+    }
+    // An error about our response.create would fail again, so drop it. One
+    // about another event leaves it waiting.
+    if (responseRequested && (!refusedId || refusedId === lastCreateId)) {
+      responseRequested = false;
+      responseHeld = false;
+    }
+  };
+
   const handleWebSocketMessage = async (message: MessageEvent) => {
     let event: RealtimeServerEvent;
     try {
@@ -160,22 +196,7 @@ export function useRealtimeWebSocketSession(
     switch (event.type) {
       case "error":
         console.error(`${dialect.name} error:`, event.error);
-        if (event.error?.code === "conversation_already_has_active_response") {
-          // Our response.create was refused because one the server started
-          // is running. Its response.created may already have cleared
-          // responseRequested, so this doesn't depend on it: ask again after
-          // that response, or now if it is already done.
-          responseRequested = false;
-          responseHeld = true;
-          if (!responding()) {
-            responseHeld = false;
-            requestResponse();
-          }
-        } else if (responseRequested) {
-          // Anything else would fail again, so drop it.
-          responseRequested = false;
-          responseHeld = false;
-        }
+        handleError(event.error);
         handlers.onError?.(event.error);
         break;
       case "response.output_audio.delta":
