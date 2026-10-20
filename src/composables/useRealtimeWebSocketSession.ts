@@ -112,6 +112,18 @@ export function useRealtimeWebSocketSession(
   // OpenAI-style refusal names the event_id it refuses.
   let lastCreateId: string | null = null;
   let createCount = 0;
+  // The user's turn: "waiting" once they stopped, until the server's response
+  // to it starts ("answered"): that response.created is the server's, not the
+  // answer to our response.create. speech_stopped comes before that created
+  // on both Grok and ElevenLabs; committed comes before it on ElevenLabs and
+  // after it on Grok, so a committed after the response started is not a new
+  // turn.
+  let userTurn: "none" | "waiting" | "answered" = "none";
+  // Our response.create went out while the server was starting a response of
+  // its own. Grok and ElevenLabs drop it without a word, so when that response
+  // is done ours is asked again. A provider that kept it would answer twice;
+  // the two that drop it were checked live.
+  let responseOverlapped = false;
 
   const sendWebSocketMessage = (message: unknown): boolean => {
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
@@ -168,6 +180,7 @@ export function useRealtimeWebSocketSession(
       // responseRequested, so this doesn't depend on it: ask again after that
       // response, or now if it is already done.
       responseRequested = false;
+      responseOverlapped = false;
       responseHeld = true;
       if (!responding()) {
         responseHeld = false;
@@ -179,6 +192,7 @@ export function useRealtimeWebSocketSession(
     // about another event leaves it waiting.
     if (responseRequested && (!refusedId || refusedId === lastCreateId)) {
       responseRequested = false;
+      responseOverlapped = false;
       responseHeld = false;
     }
   };
@@ -203,7 +217,12 @@ export function useRealtimeWebSocketSession(
         if (event.delta) state.audioManager?.queueAudio(event.delta);
         break;
       case "response.created":
-        responseRequested = false;
+        if (userTurn === "waiting") {
+          userTurn = "answered";
+          if (responseRequested) responseOverlapped = true;
+        } else {
+          responseRequested = false;
+        }
         runningResponses.add(event.response?.id ?? "");
         conversationActive.value = true;
         handlers.onConversationStarted?.();
@@ -213,6 +232,15 @@ export function useRealtimeWebSocketSession(
         // A done whose created was not seen: settle them all, as before ids.
         if (!runningResponses.delete(id)) runningResponses.clear();
         if (runningResponses.size > 0) break;
+        // Whatever turn was taken has had its response by now.
+        userTurn = "none";
+        if (responseOverlapped && responseRequested) {
+          // No response came for ours: it was dropped. Its instruction is in
+          // the conversation already.
+          responseRequested = false;
+          responseHeld = true;
+        }
+        responseOverlapped = false;
         state.audioManager?.endOfReply();
         conversationActive.value = false;
         handlers.onTextCompleted?.();
@@ -227,12 +255,17 @@ export function useRealtimeWebSocketSession(
         await handleToolCall(event);
         break;
       case "input_audio_buffer.speech_started":
+        userTurn = "none";
         // The user talks over the reply: stop playing what is queued.
         state.audioManager?.stopPlayback();
         handlers.onSpeechStarted?.();
         break;
       case "input_audio_buffer.speech_stopped":
+        if (userTurn === "none") userTurn = "waiting";
         handlers.onSpeechStopped?.();
+        break;
+      case "input_audio_buffer.committed":
+        if (userTurn === "none") userTurn = "waiting";
         break;
     }
   };
@@ -334,6 +367,8 @@ export function useRealtimeWebSocketSession(
     runningResponses.clear();
     responseHeld = false;
     responseRequested = false;
+    responseOverlapped = false;
+    userTurn = "none";
     chatActive.value = false;
     conversationActive.value = false;
     connecting.value = false;
