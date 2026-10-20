@@ -106,6 +106,22 @@ export function useRealtimeWebSocketSession(
   // answers it with an error instead, no response.done follows.
   let responseRequested = false;
   const responding = () => responseRequested || runningResponses.size > 0;
+  // A response's done settles every response that started before it too:
+  // the provider runs them in turn, and Grok sends no done for a response it
+  // drops when a new turn of the user's starts (room noise taken for speech
+  // right after our response.create left ours running forever, the spinner
+  // on and every later response.create held). A done whose created was not
+  // seen settles them all.
+  const settleResponse = (id: string) => {
+    if (!runningResponses.has(id)) {
+      runningResponses.clear();
+      return;
+    }
+    for (const running of [...runningResponses]) {
+      runningResponses.delete(running);
+      if (running === id) break;
+    }
+  };
   // The event_id of the last response.create, to tell a refusal of it from a
   // late refusal of an earlier one. Grok and ElevenLabs drop a
   // response.create sent while a response runs without a word; an
@@ -229,8 +245,7 @@ export function useRealtimeWebSocketSession(
         break;
       case "response.done": {
         const id = event.response?.id ?? "";
-        // A done whose created was not seen: settle them all, as before ids.
-        if (!runningResponses.delete(id)) runningResponses.clear();
+        settleResponse(id);
         if (runningResponses.size > 0) break;
         // Whatever turn was taken has had its response by now.
         userTurn = "none";
