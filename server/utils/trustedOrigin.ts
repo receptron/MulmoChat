@@ -77,28 +77,29 @@ const isLoopbackAddress = (address: string | undefined): boolean =>
  * interfaces, and these routes have no authentication, so without this any
  * device on the network could call them. X-Forwarded-For is not consulted.
  * Set MULMOCHAT_ALLOW_REMOTE_PLUGINS=true to accept other machines anyway
- * (only on a network you trust).
+ * (only on a network you trust). `what` names the routes in the refusal
+ * ("Plugin calls are").
  */
-export function requireLocalClient(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
-  if (
-    process.env.MULMOCHAT_ALLOW_REMOTE_PLUGINS !== "true" &&
-    !isLoopbackAddress(req.socket.remoteAddress)
-  ) {
-    sendApiError(
-      res,
-      req,
-      403,
-      "Plugin calls are only accepted from this machine",
-      "Set MULMOCHAT_ALLOW_REMOTE_PLUGINS=true to accept other machines.",
-    );
-    return;
-  }
-  next();
-}
+export const localClientOnly =
+  (what: string) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (
+      process.env.MULMOCHAT_ALLOW_REMOTE_PLUGINS !== "true" &&
+      !isLoopbackAddress(req.socket.remoteAddress)
+    ) {
+      sendApiError(
+        res,
+        req,
+        403,
+        `${what} only accepted from this machine`,
+        "Set MULMOCHAT_ALLOW_REMOTE_PLUGINS=true to accept other machines.",
+      );
+      return;
+    }
+    next();
+  };
+
+export const requireLocalClient = localClientOnly("Plugin calls are");
 
 // The request must name this machine. A DNS-rebinding page sends its own
 // domain as Host, so it is refused. The Vite dev proxy rewrites Host to

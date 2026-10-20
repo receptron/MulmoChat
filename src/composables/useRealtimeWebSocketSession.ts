@@ -28,8 +28,12 @@ export interface RealtimeDialect {
   name: string;
   voiceProvider: VoiceProvider;
   defaultModelId: string;
-  /** The server route that mints this provider's secret. */
-  startUrl: (choice: { modelId: string; voice: string }) => string;
+  /** The server route that mints this provider's secret: a GET, or a JSON
+   *  POST when it has a body. */
+  startRequest: (choice: { modelId: string; voice: string }) => {
+    url: string;
+    body?: unknown;
+  };
   secret: (start: StartApiResponse) => string | undefined;
   url: (modelId: string) => string;
   /** WebSocket subprotocols: how the secret is passed, since a browser
@@ -57,7 +61,8 @@ interface RealtimeServerEvent {
   name?: string;
   arguments?: string;
   delta?: string;
-  error?: unknown;
+  response?: { id?: string };
+  error?: { code?: string } & Record<string, unknown>;
 }
 
 export function useRealtimeWebSocketSession(
@@ -90,14 +95,17 @@ export function useRealtimeWebSocketSession(
     audioManager: null,
   };
 
-  // A response is running from response.create (or the server's own VAD turn)
-  // until response.done. Another response.create in that window is held and
-  // sent after it, once: several tool outputs get one follow-up response.
-  let responseActive = false;
+  // A response runs from response.created until its response.done. The
+  // server starts some itself (its VAD turn; ElevenLabs also follows a spoken
+  // "let me check" with the tool call's response unasked), so they are kept
+  // by id. A response.create asked for while any runs is held and sent after
+  // the last, once: several tool outputs get one follow-up response.
+  const runningResponses = new Set<string>();
   let responseHeld = false;
   // response.create sent, response.created not seen yet. If the provider
   // answers it with an error instead, no response.done follows.
   let responseRequested = false;
+  const responding = () => responseRequested || runningResponses.size > 0;
 
   const sendWebSocketMessage = (message: unknown): boolean => {
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
@@ -109,11 +117,10 @@ export function useRealtimeWebSocketSession(
   };
 
   const requestResponse = (): boolean => {
-    if (responseActive) {
+    if (responding()) {
       responseHeld = true;
       return true;
     }
-    responseActive = true;
     responseRequested = true;
     return sendWebSocketMessage({ type: "response.create" });
   };
@@ -153,9 +160,20 @@ export function useRealtimeWebSocketSession(
     switch (event.type) {
       case "error":
         console.error(`${dialect.name} error:`, event.error);
-        if (responseRequested) {
+        if (event.error?.code === "conversation_already_has_active_response") {
+          // Our response.create was refused because one the server started
+          // is running. Its response.created may already have cleared
+          // responseRequested, so this doesn't depend on it: ask again after
+          // that response, or now if it is already done.
           responseRequested = false;
-          responseActive = false;
+          responseHeld = true;
+          if (!responding()) {
+            responseHeld = false;
+            requestResponse();
+          }
+        } else if (responseRequested) {
+          // Anything else would fail again, so drop it.
+          responseRequested = false;
           responseHeld = false;
         }
         handlers.onError?.(event.error);
@@ -164,22 +182,26 @@ export function useRealtimeWebSocketSession(
         if (event.delta) state.audioManager?.queueAudio(event.delta);
         break;
       case "response.created":
-        responseActive = true;
         responseRequested = false;
+        runningResponses.add(event.response?.id ?? "");
         conversationActive.value = true;
         handlers.onConversationStarted?.();
         break;
-      case "response.done":
+      case "response.done": {
+        const id = event.response?.id ?? "";
+        // A done whose created was not seen: settle them all, as before ids.
+        if (!runningResponses.delete(id)) runningResponses.clear();
+        if (runningResponses.size > 0) break;
         state.audioManager?.endOfReply();
-        responseActive = false;
         conversationActive.value = false;
         handlers.onTextCompleted?.();
         handlers.onConversationFinished?.();
-        if (responseHeld) {
+        if (responseHeld && !responseRequested) {
           responseHeld = false;
           requestResponse();
         }
         break;
+      }
       case "response.function_call_arguments.done":
         await handleToolCall(event);
         break;
@@ -288,7 +310,7 @@ export function useRealtimeWebSocketSession(
       state.localStream = null;
     }
     processedToolCalls.clear();
-    responseActive = false;
+    runningResponses.clear();
     responseHeld = false;
     responseRequested = false;
     chatActive.value = false;
@@ -305,23 +327,22 @@ export function useRealtimeWebSocketSession(
     const stopped = () => generation !== startGeneration;
 
     try {
-      const response = await fetch(
-        dialect.startUrl({
-          modelId:
-            options.getModelId?.({ startResponse: null }) ??
-            dialect.defaultModelId,
-          voice: resolveVoice(
-            dialect.voiceProvider,
-            options.getVoiceId?.(dialect.voiceProvider),
-          ),
-        }),
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const { url, body } = dialect.startRequest({
+        modelId:
+          options.getModelId?.({ startResponse: null }) ??
+          dialect.defaultModelId,
+        voice: resolveVoice(
+          dialect.voiceProvider,
+          options.getVoiceId?.(dialect.voiceProvider),
+        ),
+      });
+      const response = await fetch(url, {
+        method: body === undefined ? "GET" : "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
       if (!response.ok) {
         throw new Error(`API error: ${response.statusText}`);
       }
@@ -413,8 +434,9 @@ export function useRealtimeWebSocketSession(
     return requestResponse();
   };
 
-  // Grok's voice API takes no image input (an input_image part is dropped),
-  // so tools that return images only report their text to it.
+  // Neither Grok nor ElevenLabs takes image input: Grok drops an input_image
+  // part, ElevenLabs accepts it and its model says it sees no image. So tools
+  // that return images only report their text.
   const sendImagesToModel = () => false;
 
   const isDataChannelOpen = () => state.ws?.readyState === WebSocket.OPEN;

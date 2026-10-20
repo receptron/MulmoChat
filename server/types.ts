@@ -12,6 +12,8 @@ export interface StartApiResponse {
   hasTypesafeApiKey: boolean;
   /** xAI client secret for the Grok voice WebSocket (`/api/start?voice=grok`). */
   grokClientSecret?: string;
+  /** ElevenLabs Realtime client secret (`/api/start/elevenlabs`). */
+  elevenLabsClientSecret?: string;
   [key: string]: unknown;
 }
 

@@ -218,13 +218,7 @@ import { useScrolling } from "../composables/useScrolling";
 import { createSequenceKeeper } from "gui-chat-protocol";
 import { SESSION_CONFIG } from "../config/session";
 import { DEFAULT_TEXT_MODEL, type TextModelOption } from "../config/textModels";
-import {
-  DEFAULT_GOOGLE_LIVE_MODEL_ID,
-  DEFAULT_GROK_VOICE_MODEL_ID,
-  GOOGLE_LIVE_MODELS,
-  GROK_VOICE_MODELS,
-  REALTIME_MODELS,
-} from "../config/models";
+import { resolveVoiceModelId, VOICE_MODELS_FOR_KIND } from "../config/models";
 import { getRole } from "../config/roles";
 import { imageModelShortLabel } from "../config/imageModels";
 import { normalizeImageConfig } from "../tools/backend/imageGeneration";
@@ -375,26 +369,9 @@ const session = useSessionTransport({
   transportKind,
   buildInstructions: (context) => buildPreferenceInstructions(context),
   buildTools: (context) => buildPreferenceTools(context),
-  getModelId: () => {
-    if (userPreferences.modelKind === "voice-realtime") {
-      return userPreferences.modelId;
-    }
-    if (userPreferences.modelKind === "voice-google-live") {
-      // Check if current modelId is a valid Google model
-      const isValidGoogleModel = GOOGLE_LIVE_MODELS.some(
-        (m) => m.id === userPreferences.modelId,
-      );
-      return isValidGoogleModel
-        ? userPreferences.modelId
-        : DEFAULT_GOOGLE_LIVE_MODEL_ID;
-    }
-    if (userPreferences.modelKind === "voice-grok") {
-      return GROK_VOICE_MODELS.some((m) => m.id === userPreferences.modelId)
-        ? userPreferences.modelId
-        : DEFAULT_GROK_VOICE_MODEL_ID;
-    }
-    return userPreferences.textModelId;
-  },
+  getModelId: () =>
+    resolveVoiceModelId(userPreferences.modelKind, userPreferences.modelId) ??
+    userPreferences.textModelId,
   getVoiceId: (provider) => userPreferences.voiceIds[provider],
 });
 
@@ -431,21 +408,12 @@ const supportsAudioOutput = computed(
 const statusLine = computed(() => {
   // Get model name
   let modelName = "Unknown";
-  if (userPreferences.modelKind === "voice-realtime") {
-    const model = REALTIME_MODELS.find((m) => m.id === userPreferences.modelId);
-    const label = model?.label || "GPT Realtime";
-    modelName = label;
-  } else if (userPreferences.modelKind === "voice-google-live") {
-    const model = GOOGLE_LIVE_MODELS.find(
+  const voiceModels = VOICE_MODELS_FOR_KIND[userPreferences.modelKind];
+  if (voiceModels) {
+    const model = voiceModels.models.find(
       (m) => m.id === userPreferences.modelId,
     );
-    const label = model?.label || "Gemini Live";
-    modelName = label;
-  } else if (userPreferences.modelKind === "voice-grok") {
-    const model = GROK_VOICE_MODELS.find(
-      (m) => m.id === userPreferences.modelId,
-    );
-    modelName = model?.label || "Grok Voice";
+    modelName = model?.label || voiceModels.fallbackLabel;
   } else if (userPreferences.modelKind === "text-rest") {
     // For text models, extract the model name from textModelId
     const textModelId = userPreferences.textModelId;
