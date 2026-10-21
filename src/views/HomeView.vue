@@ -560,6 +560,7 @@ const {
   sendImagesToModel,
   conversationActive,
   isDataChannelOpen,
+  answersToolOutputs: () => capabilities.value.answersToolOutputs,
   scrollToBottomOfSideBar: scrolling.scrollSidebarToBottom,
   scrollCurrentResultToTop: scrolling.scrollCanvasToTop,
   switchRole: (roleId: string) => {

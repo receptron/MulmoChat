@@ -40,6 +40,7 @@ All five share the same event handler contract (`onToolCall`, `onTextDelta`, con
 - Executes plugins via `toolExecute(context, toolName, args)`; the context includes the current result, roles, and `setConfig` (only for plugins in `PLUGINS_WITH_SET_CONFIG`)
 - Replaces the existing result when `result.updating === true` (keeping its UUID), otherwise appends
 - Sends follow-up `instructions` unless suppressed (plugins can force them with `instructionsRequired`); `onResult` sees every result first and may replace its instructions (the sequence keeper); each call's context carries `userSpokeAt`
+- A tool call whose result has neither instructions nor images for the model (manageJingleScript's getGuide, getSchema, checkScore) still gets the model a turn ("Go on with the result of …"), once no call of any tool is running; not text chat's `text-response`, and not a result whose instructions the user suppressed; except on Gemini Live, which answers a tool's output by itself (`answersToolOutputs` in `useSessionTransport`). The other transports answer only when asked, and the model fell silent after such a call
 - Honors `delayAfterExecution` and shows `generatingMessage` while running
 - When the model calls one tool several times at once (three to five searches for an analysis), sends that tool's `waitingMessage` with the first call and its instructions with the last to finish, not once per call; required instructions (a slideshow's step) always go
 - On failure, sends a retry instruction back to the model

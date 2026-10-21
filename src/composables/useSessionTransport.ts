@@ -23,12 +23,18 @@ export interface SessionTransportCapabilities {
   supportsAudioInput: boolean;
   supportsAudioOutput: boolean;
   supportsText: boolean;
+  /** The model goes on by itself after a tool's output (Gemini Live). The
+   *  others answer only when asked for a response, so a tool that sends no
+   *  instructions (manageJingleScript's getGuide, checkScore) left the model
+   *  silent after the call. */
+  answersToolOutputs: boolean;
 }
 
 const VOICE: SessionTransportCapabilities = {
   supportsAudioInput: true,
   supportsAudioOutput: true,
   supportsText: true,
+  answersToolOutputs: false,
 };
 
 const TRANSPORT_CAPABILITIES: Record<
@@ -36,13 +42,14 @@ const TRANSPORT_CAPABILITIES: Record<
   SessionTransportCapabilities
 > = {
   "voice-realtime": VOICE,
-  "voice-google-live": VOICE,
+  "voice-google-live": { ...VOICE, answersToolOutputs: true },
   "voice-grok": VOICE,
   "voice-elevenlabs": VOICE,
   "text-rest": {
     supportsAudioInput: false,
     supportsAudioOutput: false,
     supportsText: true,
+    answersToolOutputs: false,
   },
 };
 
