@@ -362,14 +362,19 @@ export function useToolResults(
           `Look at the image ${result.toolName} returned.`,
         );
       } else if (
-        !instructed &&
-        last &&
+        msg.call_id &&
+        !result.instructions &&
+        !imagesSent &&
+        running.size === 0 &&
         !result.cancelled &&
         !options.answersToolOutputs()
       ) {
         // Nothing else asks for the model's next turn: without one it stops
         // after the call (manageJingleScript read its guide, then waited
-        // for the user to say "go on").
+        // for the user to say "go on"). Only for a real call (text chat's
+        // answers come as text-response, with no call_id), not for
+        // instructions the user suppressed, and once no call of any tool
+        // runs: a slower one's own instructions start the turn.
         options.sendInstructions(
           `Go on with the result of ${result.toolName}.`,
         );
