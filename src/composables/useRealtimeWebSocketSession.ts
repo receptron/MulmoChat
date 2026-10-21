@@ -106,6 +106,27 @@ export function useRealtimeWebSocketSession(
   // answers it with an error instead, no response.done follows.
   let responseRequested = false;
   const responding = () => responseRequested || runningResponses.size > 0;
+  // A response's done settles every response that started before it too:
+  // the provider runs them in turn, and Grok sends no done for a response it
+  // drops when a new turn of the user's starts (room noise taken for speech
+  // right after our response.create left ours running forever, the spinner
+  // on and every later response.create held). A done whose created was not
+  // seen settles them all. False for the late done of a response settled
+  // that way, which must not settle the responses running since.
+  const settledEarly = new Set<string>();
+  const settleResponse = (id: string): boolean => {
+    if (settledEarly.delete(id)) return false;
+    if (!runningResponses.has(id)) {
+      runningResponses.clear();
+      return true;
+    }
+    for (const running of [...runningResponses]) {
+      runningResponses.delete(running);
+      if (running === id) break;
+      settledEarly.add(running);
+    }
+    return true;
+  };
   // The event_id of the last response.create, to tell a refusal of it from a
   // late refusal of an earlier one. Grok and ElevenLabs drop a
   // response.create sent while a response runs without a word; an
@@ -229,9 +250,7 @@ export function useRealtimeWebSocketSession(
         break;
       case "response.done": {
         const id = event.response?.id ?? "";
-        // A done whose created was not seen: settle them all, as before ids.
-        if (!runningResponses.delete(id)) runningResponses.clear();
-        if (runningResponses.size > 0) break;
+        if (!settleResponse(id) || runningResponses.size > 0) break;
         // Whatever turn was taken has had its response by now.
         userTurn = "none";
         if (responseOverlapped && responseRequested) {
@@ -365,6 +384,7 @@ export function useRealtimeWebSocketSession(
     }
     processedToolCalls.clear();
     runningResponses.clear();
+    settledEarly.clear();
     responseHeld = false;
     responseRequested = false;
     responseOverlapped = false;
