@@ -41,6 +41,9 @@ interface UseToolResultsOptions {
   sendImagesToModel: (images: string[], caption: string) => boolean;
   conversationActive: Ref<boolean>;
   isDataChannelOpen: () => boolean;
+  /** Whether the transport answers a tool's output without being asked
+   *  (SessionTransportCapabilities.answersToolOutputs). */
+  answersToolOutputs: () => boolean;
   scrollToBottomOfSideBar: () => void;
   scrollCurrentResultToTop: () => void;
   switchRole?: (roleId: string) => void;
@@ -357,6 +360,18 @@ export function useToolResults(
       if (imagesSent && !instructed) {
         options.sendInstructions(
           `Look at the image ${result.toolName} returned.`,
+        );
+      } else if (
+        !instructed &&
+        last &&
+        !result.cancelled &&
+        !options.answersToolOutputs()
+      ) {
+        // Nothing else asks for the model's next turn: without one it stops
+        // after the call (manageJingleScript read its guide, then waited
+        // for the user to say "go on").
+        options.sendInstructions(
+          `Go on with the result of ${result.toolName}.`,
         );
       }
       return { result };
