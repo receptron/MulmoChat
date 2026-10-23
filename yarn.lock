@@ -751,10 +751,10 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/google-map/-/google-map-2.1.0.tgz#521132428a3f987a2439483b9934915a80d66277"
   integrity sha512-eaHBtVy0BE9MLIErSYYayLd5SkVJb5dtlbZxUx09pKVQ1m87um4TtFp5HmjT5G69kNdrnefkc8H7z/c3T0dIwA==
 
-"@gui-chat-plugin/jinglescript@^0.11.1":
-  version "0.11.1"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-0.11.1.tgz#95625bc6436530a93e6a49f56add25aaceb98d53"
-  integrity sha512-JwSmJJei2rg4sPBv5oGS8vNATGWmv+cYEYlN0FXU6jZRF1qla53IFkaYAg2C4z2AZkP4JJPuNgRf5F+bG5Uqiw==
+"@gui-chat-plugin/jinglescript@^0.11.2":
+  version "0.11.2"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-0.11.2.tgz#0ff84baf2c086554bddc0cfcd9448cc755434091"
+  integrity sha512-iB95yAUKTYC4gVSOOHvHoiecYZsZn04ske1olPp/tMKpaWMBP6811/IizTS8DZ3nE2UBodZB8SNWEDI9Phi8lQ==
   dependencies:
     opensheetmusicdisplay "^2.2.1"
 
@@ -5204,10 +5204,10 @@ isexe@^4.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-4.0.0.tgz#48f6576af8e87a18feb796b7ed5e2e5903b43dca"
   integrity sha512-FFUtZMpoZ8RqHS3XeXEmHWLA4thH+ZxCv2lOiPIn1Xc7CxrqhWzNSDzD+/chS/zbYezmiwWLdQC09JdQKmthOw==
 
-jinglescript@^0.11.1:
-  version "0.11.1"
-  resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-0.11.1.tgz#b235918b8ac7032bd33f2fd281e1e49a393fd849"
-  integrity sha512-fOqCBCQqlcmUeNSflfUFPwhb2vODgySfHWEBxZV1QOlgrbLAmnWOZ834EVxTE4bOGcG51v9aG96cQxRKjFv1zQ==
+jinglescript@^0.11.2:
+  version "0.11.2"
+  resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-0.11.2.tgz#38242a4c54fb05a79b6480eec0656fb77f1beab2"
+  integrity sha512-lVbGsalkW2ROTBNoIFzSq+YlhSmY2KsCHOLSQiWDCq3WE0hRCrO+UDQXl9v7UW8+CWYCj5bWaRatC/Fzv9X84Q==
   dependencies:
     "@modelcontextprotocol/sdk" "^1.32.1"
     zod "^4.6.5"
