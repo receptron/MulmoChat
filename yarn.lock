@@ -751,10 +751,12 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/google-map/-/google-map-2.1.0.tgz#521132428a3f987a2439483b9934915a80d66277"
   integrity sha512-eaHBtVy0BE9MLIErSYYayLd5SkVJb5dtlbZxUx09pKVQ1m87um4TtFp5HmjT5G69kNdrnefkc8H7z/c3T0dIwA==
 
-"@gui-chat-plugin/jinglescript@^0.8.0":
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-0.8.0.tgz#9144a8f6bf087b4bd849f54c86a9bd84ddaec018"
-  integrity sha512-K2cmHs6bB05ioE5pr3PvwSEh9johRMSfbRFELc1s34k1FQ/nsXy1hqbr8LG2v4qGi+EiRBFnXChPtiZEHfNpLw==
+"@gui-chat-plugin/jinglescript@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-0.11.0.tgz#6f718305bfc80ef9bcde5bc20aae6ddda92fa4cf"
+  integrity sha512-Pbv3wYdms28fyyGOr+kxXjMGWDnw2P2s+hQZqJZdBJFlFerIZUqDyL9IZhCMprSL6RX32IJkQ9PlEydR3amrbw==
+  dependencies:
+    opensheetmusicdisplay "^2.2.1"
 
 "@gui-chat-plugin/mindmap@^2.1.0":
   version "2.1.0"
@@ -5202,6 +5204,14 @@ isexe@^4.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-4.0.0.tgz#48f6576af8e87a18feb796b7ed5e2e5903b43dca"
   integrity sha512-FFUtZMpoZ8RqHS3XeXEmHWLA4thH+ZxCv2lOiPIn1Xc7CxrqhWzNSDzD+/chS/zbYezmiwWLdQC09JdQKmthOw==
 
+jinglescript@^0.11.0:
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-0.11.0.tgz#177d79b537c28cd4d15d8db75c36532a34baf67e"
+  integrity sha512-9/efEfe/Vx6dYqVKn5MyiNh8HxewcUNXu4SLdR3tkXplXYftuKYAFCy9hPZXUNmMNoV6ek1npmsuaKwsqoNl2A==
+  dependencies:
+    "@modelcontextprotocol/sdk" "^1.32.1"
+    zod "^4.6.5"
+
 jinglescript@^0.8.0:
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-0.8.0.tgz#82560b0a3a35e933a6cac43e2f53bb6298e57a92"
@@ -6243,7 +6253,7 @@ openai@^7.20.0, openai@^7.38.0:
   resolved "https://registry.yarnpkg.com/openai/-/openai-7.38.0.tgz#d35150fa8d65a695a9440d2d8d1512d29d18ffd4"
   integrity sha512-Ef+YyIeoiisZLP/tV4F4/RieJAl4OEJTyJg6gV0AXOb0T9CDkvYJoU224OY5CTmQ4zDJeku4jEHjz2b3/6Ndhw==
 
-opensheetmusicdisplay@^2.0.0:
+opensheetmusicdisplay@^2.0.0, opensheetmusicdisplay@^2.2.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/opensheetmusicdisplay/-/opensheetmusicdisplay-2.2.1.tgz#b661d18b5d675c3b931e3ae41a0aa79e9c0528dc"
   integrity sha512-2DqI2lQKKzDDoIe7yD8yNyWTofSdRbFZYTD3nGRzEo1XmTK2DJWcUXLRXZ2E5xzOt7Pd+RmSGL1quFQZRCqDMw==
