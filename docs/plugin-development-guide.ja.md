@@ -198,6 +198,7 @@ ToolPlugin<T, J, A>
 - **バックエンドには `context` 経由でのみアクセスする。** `execute()` の中では、ホストのルートを `fetch` したり、ブラウザの API（`window`、`localStorage`）に触れたりせず、`context.app.generateImage(prompt)` のようなホストのバックエンドを呼び出してください。サーバー上では、`context.app` にサーバー側の実装が入ります。ファイルを保存するときは `context.files.artifacts` を使ってください（ホストの artifacts フォルダーからの相対パスで読み書きします）。フォルダーの外を指すパスは拒否されます。
 - **JSON にシリアライズできる結果を返す。** `ToolResult` は HTTP でブラウザに返されるため、`data` と `jsonData` は `JSON.stringify` で失われない値にしてください。画像は `Blob` ではなく、データ URL か URL で返してください。
 - **モデルに画像を見せるには `imagesForModel` を使う**（MulmoChat による `ToolResult` の拡張）。画像のデータ URL（PNG・JPEG・WebP・GIF、最大 4 枚）の配列を設定すると、MulmoChat はどのトランスポートでも、ツールの出力のあとにそれをモデルに送ります。テキストチャットでは、モデルがそれを見るための次のターンが自動で続きます（連続 3 回まで）。`renderShapeScript` はこれを使い、モデルが書いた 3D モデルを確認できるようにしています。
+- **ホストの機能は `context` で受け取り、有効になっていなければ従来どおり動く。** ホストは、ツールごとに、プロトコルの定めより多くのものを `execute()` の context に渡すことがあります。MulmoChat ではツールごとに `PLUGIN_EXTRA_CONTEXT`（`server/plugins/config.ts`）に書きます。`manageJingleScript` はここで `deferredAudio: true` を受け取ります。1 秒以上かかる描画は、音なしのカードをすぐに返し、View がランタイムの `dispatch`（`{ kind: "collectRenderedAudio", id }`、同じ `execute()` が答える）で音を受け取ります。このようなフラグを読むプラグインは、フラグを渡さないホストでは従来どおり動くようにしてください。
 - **`definePlugin` のファクトリー形式のパッケージは、MulmoChat のサーバー側レジストリではまだサポートしていません。** 通常の `pluginCore` 形式を使ってください。
 
 View と Preview は変わりません。返された `ToolResult` をもとに、引き続きブラウザで表示されます。
