@@ -132,6 +132,7 @@ export const ROLES: Role[] = [
       "renderShapeScript",
       "manageJingleScript",
       "presentHtml",
+      "searchWeb",
       "switchRole",
     ],
     prompt:
