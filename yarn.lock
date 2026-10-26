@@ -751,10 +751,10 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/google-map/-/google-map-2.1.0.tgz#521132428a3f987a2439483b9934915a80d66277"
   integrity sha512-eaHBtVy0BE9MLIErSYYayLd5SkVJb5dtlbZxUx09pKVQ1m87um4TtFp5HmjT5G69kNdrnefkc8H7z/c3T0dIwA==
 
-"@gui-chat-plugin/jinglescript@^0.11.2":
-  version "0.11.2"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-0.11.2.tgz#0ff84baf2c086554bddc0cfcd9448cc755434091"
-  integrity sha512-iB95yAUKTYC4gVSOOHvHoiecYZsZn04ske1olPp/tMKpaWMBP6811/IizTS8DZ3nE2UBodZB8SNWEDI9Phi8lQ==
+"@gui-chat-plugin/jinglescript@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-1.0.0.tgz#1e73557db44490f27958441886b4960a62fc498a"
+  integrity sha512-ouVaprl06HkRuCBn0wvfKxlRxiDC5c0rR7bcsGrOC+MNH9g7X6bUcVSw4jo3CUUikxBA01CgI+z9s9MntI5ksQ==
   dependencies:
     opensheetmusicdisplay "^2.2.1"
 
@@ -5204,18 +5204,18 @@ isexe@^4.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-4.0.0.tgz#48f6576af8e87a18feb796b7ed5e2e5903b43dca"
   integrity sha512-FFUtZMpoZ8RqHS3XeXEmHWLA4thH+ZxCv2lOiPIn1Xc7CxrqhWzNSDzD+/chS/zbYezmiwWLdQC09JdQKmthOw==
 
-jinglescript@^0.11.2:
-  version "0.11.2"
-  resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-0.11.2.tgz#38242a4c54fb05a79b6480eec0656fb77f1beab2"
-  integrity sha512-lVbGsalkW2ROTBNoIFzSq+YlhSmY2KsCHOLSQiWDCq3WE0hRCrO+UDQXl9v7UW8+CWYCj5bWaRatC/Fzv9X84Q==
-  dependencies:
-    "@modelcontextprotocol/sdk" "^1.32.1"
-    zod "^4.6.5"
-
 jinglescript@^0.8.0:
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-0.8.0.tgz#82560b0a3a35e933a6cac43e2f53bb6298e57a92"
   integrity sha512-2DfgBmipstC2cXDBKTsbA1XFdmSC0VAnZszh9DgRjMXzdQGikXQ6svLPAgsPIXSiybitu7+bu9jT8Hk5jNpq8A==
+  dependencies:
+    "@modelcontextprotocol/sdk" "^1.32.1"
+    zod "^4.6.5"
+
+jinglescript@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-1.0.0.tgz#befc69d8ac36b4218071bdd314af7c0ba249dc0a"
+  integrity sha512-X6WhuMMs5+uJsr6bKQlDdwfW/SsbdUrsDFwhXHwRjdMCVfwoZXf5KgITDuWPPKCNPnc9MK06eH1k41qruu/ryw==
   dependencies:
     "@modelcontextprotocol/sdk" "^1.32.1"
     zod "^4.6.5"

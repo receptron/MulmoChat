@@ -6,6 +6,7 @@ import {
   requestToolContext,
 } from "../plugins/appContext.js";
 import { artifactsFileOps } from "../plugins/workspace.js";
+import { PLUGIN_EXTRA_CONTEXT } from "../plugins/config.js";
 import {
   hostToolDefinitions,
   pluginHostHandlers,
@@ -82,6 +83,9 @@ router.post(
               app: createAppContext(requestConfig),
               files: { artifacts: artifactsFileOps },
               ...requestToolContext(requestConfig),
+              ...(Object.hasOwn(PLUGIN_EXTRA_CONTEXT, toolName)
+                ? PLUGIN_EXTRA_CONTEXT[toolName]
+                : {}),
             },
             args,
           );

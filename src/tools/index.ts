@@ -178,8 +178,11 @@ const ServerShapeScriptPlugin = {
 };
 
 // manageJingleScript renders a jingle on the server (jinglescript, with ffmpeg
-// for MP3 when it is installed) and returns the audio inline, which the View
-// plays. Unlike MulmoTerminal, MulmoChat gives it no `files.byPath`, so a score
+// for MP3 when it is installed, on a worker thread) and returns the audio
+// inline, which the View plays. A render that takes more than a moment (a long
+// piece, a NEUTRINO vocal) answers at once with a card that shows the score;
+// the View collects the audio through its runtime dispatch
+// (PLUGIN_EXTRA_CONTEXT in server/plugins/config.ts turns this on). Unlike MulmoTerminal, MulmoChat gives it no `files.byPath`, so a score
 // is always passed inline: a `path` gets the package's "pass the score inline"
 // error, as presentDocument's paths stay inside the workspace (see CLAUDE.md).
 const ServerJingleScriptPlugin = {
