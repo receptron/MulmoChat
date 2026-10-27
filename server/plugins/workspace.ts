@@ -39,6 +39,14 @@ export function workspaceRoot(): string {
   return resolved;
 }
 
+/** The whole workspace, for paths the model names (presentDocument's `.md`
+ *  documents, manageJingleScript's score `path`). Paths that escape it,
+ *  including through symlinks, are refused. */
+export const workspaceFileOps: FileOps = trackFileChanges(
+  createFileOps(() => workspaceRoot(), "workspace"),
+  "",
+);
+
 /** gui-chat-protocol ToolContext.files.artifacts: <workspace>/artifacts. */
 export const artifactsFileOps: FileOps = trackFileChanges(
   createFileOps(() => path.join(workspaceRoot(), "artifacts"), "artifacts"),

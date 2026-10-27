@@ -1,3 +1,5 @@
+import { artifactsFileOps, workspaceFileOps } from "./workspace.js";
+
 // gui-chat-protocol plugin packages whose execute() runs on the server.
 // The browser forwards these tools' calls to POST /api/plugin/:toolName
 // (see src/tools/serverPlugin.ts).
@@ -23,8 +25,15 @@ export const PLUGIN_PACKAGES: readonly string[] = [
 //     moment answers at once with a card that shows the score, and the View
 //     collects the audio through its dispatch (POST /api/plugin/manageJingleScript
 //     with { kind: "collectRenderedAudio" }, answered by the same execute()).
+//   - manageJingleScript, files.byPath: a score may be given as `path`, a
+//     .json file in the workspace (e.g. one MulmoClaude or MulmoTerminal
+//     wrote), read through the same rooted FileOps as presentDocument's
+//     documents. `files` replaces the protocol's, so artifacts stays in it.
 export const PLUGIN_EXTRA_CONTEXT: Readonly<
   Record<string, Readonly<Record<string, unknown>>>
 > = {
-  manageJingleScript: { deferredAudio: true },
+  manageJingleScript: {
+    deferredAudio: true,
+    files: { artifacts: artifactsFileOps, byPath: workspaceFileOps },
+  },
 };
