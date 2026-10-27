@@ -336,6 +336,14 @@ export function useRealtimeWebSocketSession(
       `${dialect.name} WebSocket closed - Code: ${event.code}, Reason: ${event.reason}`,
     );
     if (state.ws !== ws) return;
+    if (event.code !== 1000) {
+      const reason = event.reason ? `: ${event.reason}` : "";
+      handlers.onError?.(
+        new Error(
+          `${dialect.name} closed the connection (${event.code})${reason}`,
+        ),
+      );
+    }
     // An unexpected close: release the microphone and audio as a stop would.
     stopChat();
   };
@@ -478,8 +486,9 @@ export function useRealtimeWebSocketSession(
       console.error(`Failed to start ${dialect.name} session:`, err);
       if (stopped()) return;
       stopChat();
-      alert(
-        `Failed to start ${dialect.name} session. Check console for details.`,
+      const reason = err instanceof Error ? err.message : String(err);
+      handlers.onError?.(
+        new Error(`Failed to start ${dialect.name}: ${reason}`),
       );
     }
   };

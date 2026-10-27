@@ -432,7 +432,11 @@ export function useRealtimeSession(
       }
     } catch (err) {
       console.error("Failed to get ephemeral key:", err);
-      alert("Failed to start session. Check console for details.");
+      handlers.onError?.(
+        new Error(
+          `Failed to start the session: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
       connecting.value = false;
       return;
     }
@@ -508,7 +512,11 @@ export function useRealtimeSession(
     } catch (err) {
       console.error(err);
       stopChat();
-      alert("Failed to start voice chat. Check console for details.");
+      handlers.onError?.(
+        new Error(
+          `Failed to start the voice chat: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
     } finally {
       connecting.value = false;
     }

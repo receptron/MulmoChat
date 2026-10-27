@@ -368,6 +368,14 @@ export function useGoogleLiveSession(
     console.log(
       `WebSocket closed - Code: ${event.code}, Reason: ${event.reason}, Clean: ${event.wasClean}`,
     );
+    // Google closed it (not stopChat, which lets go of the socket first): say
+    // why, e.g. "Your prepayment credits are depleted".
+    if (googleLive.ws === event.target && event.code !== 1000) {
+      const reason = event.reason ? `: ${event.reason}` : "";
+      handlers.onError?.(
+        new Error(`Gemini Live closed the connection (${event.code})${reason}`),
+      );
+    }
 
     // Stop audio capture when WebSocket closes
     if (googleLive.audioManager) {
@@ -581,7 +589,11 @@ export function useGoogleLiveSession(
     } catch (err) {
       console.error("Failed to start Google Live session:", err);
       stopChat();
-      alert("Failed to start Google Live session. Check console for details.");
+      handlers.onError?.(
+        new Error(
+          `Failed to start Gemini Live: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
     } finally {
       connecting.value = false;
     }
