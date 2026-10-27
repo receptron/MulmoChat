@@ -103,7 +103,7 @@
         @update:text-model-id="userPreferences.textModelId = $event"
         @update:plugin-configs="userPreferences.pluginConfigs = $event"
         @update:voice-ids="userPreferences.voiceIds = $event"
-        @upload-files="handleUploadFiles"
+        @upload-files="handleUploadedFiles"
       />
 
       <!-- Main content -->
@@ -214,6 +214,7 @@ import {
 import { useSessionTransport } from "../composables/useSessionTransport";
 import { useUserPreferences } from "../composables/useUserPreferences";
 import { useToolResults } from "../composables/useToolResults";
+import { useUploadedImages } from "../composables/useUploadedImages";
 import { useScrolling } from "../composables/useScrolling";
 import { createSequenceKeeper } from "gui-chat-protocol";
 import { SESSION_CONFIG } from "../config/session";
@@ -570,6 +571,20 @@ const {
   getUserSpokeAt: () => sequence.userSpokeAt(),
   waitForSpeechEnd,
 });
+
+// Uploaded images become cards and are shown to the model too.
+const { showUploads } = useUploadedImages({
+  transportKind: session.transportKind,
+  chatActive,
+  isDataChannelOpen,
+  sendImagesToModel,
+  sendInstructions,
+});
+
+async function handleUploadedFiles(results: ToolResult[]) {
+  await handleUploadFiles(results);
+  await showUploads(results);
+}
 
 // Keeps a slideshow or a story going (gui-chat-protocol's sequence keeper):
 // asks the model once to go on when it ends a reply mid-sequence. The
