@@ -321,8 +321,12 @@ export function useToolResults(
         : executed;
       console.log("TOOL RESULT", result);
 
-      // Check if the operation was cancelled by the user
-      if (!result.cancelled) {
+      // Check if the operation was cancelled by the user. A result without
+      // `data` is narrate-only in gui-chat-protocol: no card (its preview
+      // draws nothing, which left an empty box in the sidebar). Its
+      // message, jsonData and instructions still go to the model below.
+      // MulmoClaude makes the same `data !== undefined` check.
+      if (!result.cancelled && result.data !== undefined) {
         const previousResult = context.currentResult;
         if (
           previousResult &&
