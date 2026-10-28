@@ -1,10 +1,10 @@
 import {
-  TextGenerationError,
   type ProviderGenerateParams,
   type TextGenerationResult,
   type ToolCall,
 } from "../types.js";
 import { parseImageDataUrl } from "../images.js";
+import { postProviderJson, toFunctionTools } from "./chatCompletions.js";
 
 interface OllamaToolCall {
   function: {
@@ -139,33 +139,14 @@ export async function generateWithOllama(
 
   // Add tools if provided (Ollama supports OpenAI-compatible tool format)
   if (params.tools !== undefined && params.tools.length > 0) {
-    requestBody.tools = params.tools.map((tool) => ({
-      type: "function",
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-      },
-    }));
+    requestBody.tools = toFunctionTools(params.tools);
   }
 
-  const response = await fetch(`${baseUrl}/api/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new TextGenerationError(
-      `Ollama API error: ${response.status} ${response.statusText} - ${errorText}`,
-      response.status,
-    );
-  }
-
-  const data = (await response.json()) as OllamaChatResponse;
+  const data = await postProviderJson<OllamaChatResponse>(
+    `${baseUrl}/api/chat`,
+    requestBody,
+    { apiLabel: "Ollama" },
+  );
   const text = data.message?.content ?? data.response ?? "";
 
   // Extract tool calls if present
