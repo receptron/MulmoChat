@@ -8,16 +8,15 @@
 // differently. The server mints a short-lived secret, so the provider's API
 // key never reaches the browser.
 
-import { ref } from "vue";
 import type { StartApiResponse } from "../../server/types";
 import type { ToolCallMessage } from "./types";
 import {
-  type RealtimeSessionEventHandlers,
   type RealtimeSessionOptions,
   type UseRealtimeSessionReturn,
 } from "./useRealtimeSession";
 import { AudioStreamManager } from "../utils/audioStreamManager";
 import { resolveVoice, type VoiceProvider } from "../../server/utils/voices";
+import { useSessionBase } from "./sessionBase";
 
 // Replies come back at the rate AudioStreamManager plays by default.
 export const OUTPUT_SAMPLE_RATE = 24000;
@@ -69,24 +68,15 @@ export function useRealtimeWebSocketSession(
   options: RealtimeSessionOptions,
   dialect: RealtimeDialect,
 ): UseRealtimeSessionReturn {
-  let handlers: RealtimeSessionEventHandlers = {
-    ...(options.handlers ?? {}),
-  };
-
-  const registerEventHandlers = (
-    newHandlers: Partial<RealtimeSessionEventHandlers>,
-  ) => {
-    handlers = {
-      ...handlers,
-      ...newHandlers,
-    };
-  };
-
-  const chatActive = ref(false);
-  const conversationActive = ref(false);
-  const connecting = ref(false);
-  const isMuted = ref(false);
-  const startResponse = ref<StartApiResponse | null>(null);
+  const {
+    currentHandlers,
+    registerEventHandlers,
+    chatActive,
+    conversationActive,
+    connecting,
+    isMuted,
+    startResponse,
+  } = useSessionBase(options.handlers);
   const processedToolCalls = new Set<string>();
 
   const state: WebSocketState = {
@@ -187,7 +177,7 @@ export function useRealtimeWebSocketSession(
       call_id: callId,
       name: event.name,
     };
-    await handlers.onToolCall?.(msg, callId, event.arguments ?? "{}");
+    await currentHandlers().onToolCall?.(msg, callId, event.arguments ?? "{}");
   };
 
   const handleError = (error: RealtimeServerEvent["error"]) => {
@@ -224,7 +214,7 @@ export function useRealtimeWebSocketSession(
       event = JSON.parse(message.data as string) as RealtimeServerEvent;
     } catch (error) {
       console.error(`Failed to parse ${dialect.name} message:`, error);
-      handlers.onError?.(error);
+      currentHandlers().onError?.(error);
       return;
     }
 
@@ -232,7 +222,7 @@ export function useRealtimeWebSocketSession(
       case "error":
         console.error(`${dialect.name} error:`, event.error);
         handleError(event.error);
-        handlers.onError?.(event.error);
+        currentHandlers().onError?.(event.error);
         break;
       case "response.output_audio.delta":
         if (event.delta) state.audioManager?.queueAudio(event.delta);
@@ -246,7 +236,7 @@ export function useRealtimeWebSocketSession(
         }
         runningResponses.add(event.response?.id ?? "");
         conversationActive.value = true;
-        handlers.onConversationStarted?.();
+        currentHandlers().onConversationStarted?.();
         break;
       case "response.done": {
         const id = event.response?.id ?? "";
@@ -262,8 +252,8 @@ export function useRealtimeWebSocketSession(
         responseOverlapped = false;
         state.audioManager?.endOfReply();
         conversationActive.value = false;
-        handlers.onTextCompleted?.();
-        handlers.onConversationFinished?.();
+        currentHandlers().onTextCompleted?.();
+        currentHandlers().onConversationFinished?.();
         if (responseHeld && !responseRequested) {
           responseHeld = false;
           requestResponse();
@@ -277,11 +267,11 @@ export function useRealtimeWebSocketSession(
         userTurn = "none";
         // The user talks over the reply: stop playing what is queued.
         state.audioManager?.stopPlayback();
-        handlers.onSpeechStarted?.();
+        currentHandlers().onSpeechStarted?.();
         break;
       case "input_audio_buffer.speech_stopped":
         if (userTurn === "none") userTurn = "waiting";
-        handlers.onSpeechStopped?.();
+        currentHandlers().onSpeechStopped?.();
         break;
       case "input_audio_buffer.committed":
         if (userTurn === "none") userTurn = "waiting";
@@ -326,7 +316,7 @@ export function useRealtimeWebSocketSession(
 
   const handleWebSocketError = (error: Event) => {
     console.error(`${dialect.name} WebSocket error:`, error);
-    handlers.onError?.(error);
+    currentHandlers().onError?.(error);
   };
 
   // Bound to its socket: a close from a socket stopChat already replaced
@@ -338,7 +328,7 @@ export function useRealtimeWebSocketSession(
     if (state.ws !== ws) return;
     if (event.code !== 1000) {
       const reason = event.reason ? `: ${event.reason}` : "";
-      handlers.onError?.(
+      currentHandlers().onError?.(
         new Error(
           `${dialect.name} closed the connection (${event.code})${reason}`,
         ),
@@ -468,8 +458,8 @@ export function useRealtimeWebSocketSession(
 
       state.audioManager = new AudioStreamManager();
       state.audioManager.setPlaybackEventHandlers({
-        onPlaybackStarted: () => handlers.onAudioPlaybackStarted?.(),
-        onPlaybackStopped: () => handlers.onAudioPlaybackStopped?.(),
+        onPlaybackStarted: () => currentHandlers().onAudioPlaybackStarted?.(),
+        onPlaybackStopped: () => currentHandlers().onAudioPlaybackStopped?.(),
       });
 
       const ws = new WebSocket(
@@ -487,7 +477,7 @@ export function useRealtimeWebSocketSession(
       if (stopped()) return;
       stopChat();
       const reason = err instanceof Error ? err.message : String(err);
-      handlers.onError?.(
+      currentHandlers().onError?.(
         new Error(`Failed to start ${dialect.name}: ${reason}`),
       );
     }

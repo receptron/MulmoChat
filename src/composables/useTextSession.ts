@@ -1,11 +1,11 @@
 import { ref } from "vue";
 import type { StartApiResponse } from "../../server/types";
 import {
-  type RealtimeSessionEventHandlers,
   type RealtimeSessionOptions,
   type UseRealtimeSessionReturn,
 } from "./useRealtimeSession";
 import { resolveTextModelId, DEFAULT_TEXT_MODEL } from "../config/textModels";
+import { useSessionBase } from "./sessionBase";
 
 interface TextMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -45,24 +45,15 @@ async function fetchStartResponse(): Promise<StartApiResponse | null> {
 export function useTextSession(
   options: RealtimeSessionOptions,
 ): UseRealtimeSessionReturn {
-  let handlers: RealtimeSessionEventHandlers = {
-    ...(options.handlers ?? {}),
-  };
-
-  const registerEventHandlers = (
-    newHandlers: Partial<RealtimeSessionEventHandlers>,
-  ) => {
-    handlers = {
-      ...handlers,
-      ...newHandlers,
-    };
-  };
-
-  const chatActive = ref(false);
-  const conversationActive = ref(false);
-  const connecting = ref(false);
-  const isMuted = ref(false);
-  const startResponse = ref<StartApiResponse | null>(null);
+  const {
+    currentHandlers,
+    registerEventHandlers,
+    chatActive,
+    conversationActive,
+    connecting,
+    isMuted,
+    startResponse,
+  } = useSessionBase(options.handlers);
 
   // Client-side conversation history (source of truth)
   const conversationMessages = ref<TextMessage[]>([]);
@@ -160,7 +151,7 @@ export function useTextSession(
       chatGeneration++;
       chatActive.value = true;
     } catch (error) {
-      handlers.onError?.(error);
+      currentHandlers().onError?.(error);
     } finally {
       connecting.value = false;
     }
@@ -239,11 +230,11 @@ export function useTextSession(
 
     // Always show text response if there's any text
     if (assistantText) {
-      handlers.onTextDelta?.(assistantText);
-      handlers.onTextCompleted?.();
+      currentHandlers().onTextDelta?.(assistantText);
+      currentHandlers().onTextCompleted?.();
 
       const callId = createCallId();
-      handlers.onToolCall?.(
+      currentHandlers().onToolCall?.(
         {
           type: "response.function_call_arguments.done",
           name: "text-response",
@@ -263,7 +254,7 @@ export function useTextSession(
     if (toolCalls && toolCalls.length > 0) {
       for (const toolCall of toolCalls) {
         if (!isCurrentChat(generation)) return;
-        await handlers.onToolCall?.(
+        await currentHandlers().onToolCall?.(
           {
             type: "response.function_call_arguments.done",
             name: toolCall.name,
@@ -313,7 +304,7 @@ export function useTextSession(
     );
 
     conversationActive.value = true;
-    handlers.onConversationStarted?.();
+    currentHandlers().onConversationStarted?.();
     const generation = chatGeneration;
     // The first turn sends whatever is queued.
     requiredUnanswered = false;
@@ -356,11 +347,11 @@ export function useTextSession(
       followUpRequested = false;
       requiredFollowUp = false;
       console.error("Text session request failed", error);
-      handlers.onError?.(error);
+      currentHandlers().onError?.(error);
       return false;
     } finally {
       conversationActive.value = false;
-      handlers.onConversationFinished?.();
+      currentHandlers().onConversationFinished?.();
     }
   };
 

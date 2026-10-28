@@ -1,9 +1,10 @@
-import { ref, shallowRef, type Ref } from "vue";
+import { shallowRef, type Ref } from "vue";
 import type { StartApiResponse } from "../../server/types";
 import type { BuildContext, ToolCallMessage } from "./types";
 import { isValidToolCallMessage } from "./types";
 import { DEFAULT_REALTIME_MODEL_ID } from "../config/models";
 import { resolveVoice, type VoiceProvider } from "../../server/utils/voices";
+import { useSessionBase } from "./sessionBase";
 
 export interface RealtimeSessionEventHandlers {
   onToolCall?: (
@@ -84,24 +85,15 @@ interface WebRtcState {
 export function useRealtimeSession(
   options: RealtimeSessionOptions,
 ): UseRealtimeSessionReturn {
-  let handlers: RealtimeSessionEventHandlers = {
-    ...(options.handlers ?? {}),
-  };
-
-  const registerEventHandlers = (
-    newHandlers: Partial<RealtimeSessionEventHandlers>,
-  ) => {
-    handlers = {
-      ...handlers,
-      ...newHandlers,
-    };
-  };
-
-  const chatActive = ref(false);
-  const conversationActive = ref(false);
-  const connecting = ref(false);
-  const isMuted = ref(false);
-  const startResponse = ref<StartApiResponse | null>(null);
+  const {
+    currentHandlers,
+    registerEventHandlers,
+    chatActive,
+    conversationActive,
+    connecting,
+    isMuted,
+    startResponse,
+  } = useSessionBase(options.handlers);
   const pendingToolArgs: Record<string, string> = {};
   const processedToolCalls = new Map<string, string>();
   const remoteAudioElement = shallowRef<HTMLAudioElement | null>(null);
@@ -221,7 +213,7 @@ export function useRealtimeSession(
       msg = JSON.parse(event.data) as ToolCallMessage;
     } catch (error) {
       console.error("Failed to parse message:", error);
-      handlers.onError?.(error);
+      currentHandlers().onError?.(error);
       return;
     }
 
@@ -254,18 +246,18 @@ export function useRealtimeSession(
               break;
             }
             // Refused outright: no response follows. Send what was held.
-            handlers.onError?.(msg.error);
+            currentHandlers().onError?.(msg.error);
             releaseHeldResponse();
             break;
           }
-          handlers.onError?.(msg.error);
+          currentHandlers().onError?.(msg.error);
           break;
         }
       case "response.text.delta":
-        handlers.onTextDelta?.(msg.delta ?? "");
+        currentHandlers().onTextDelta?.(msg.delta ?? "");
         break;
       case "response.completed":
-        handlers.onTextCompleted?.();
+        currentHandlers().onTextCompleted?.();
         break;
       case "response.function_call_arguments.delta":
         if (id) {
@@ -292,27 +284,27 @@ export function useRealtimeSession(
         }
         console.log(`MSG: toolcall\n${argStr}`);
         processedToolCalls.set(id, argStr);
-        await handlers.onToolCall?.(msg, id, argStr);
+        await currentHandlers().onToolCall?.(msg, id, argStr);
         break;
       }
       case "response.created":
         responseRunning = true;
         if (settlesPendingRequest(msg.response)) pendingRequest = null;
         conversationActive.value = true;
-        handlers.onConversationStarted?.();
+        currentHandlers().onConversationStarted?.();
         break;
       case "response.done":
         responseRunning = false;
         if (settlesPendingRequest(msg.response)) pendingRequest = null;
         conversationActive.value = false;
-        handlers.onConversationFinished?.();
+        currentHandlers().onConversationFinished?.();
         releaseHeldResponse();
         break;
       case "input_audio_buffer.speech_started":
-        handlers.onSpeechStarted?.();
+        currentHandlers().onSpeechStarted?.();
         break;
       case "input_audio_buffer.speech_stopped":
-        handlers.onSpeechStopped?.();
+        currentHandlers().onSpeechStopped?.();
         break;
 
       // LLM audio playback events (for avatar lip-sync, visual feedback)
@@ -323,7 +315,7 @@ export function useRealtimeSession(
         if (!isAudioPlaying) {
           isAudioPlaying = true;
           console.log("[Avatar Debug] OpenAI: Audio playback STARTED");
-          handlers.onAudioPlaybackStarted?.();
+          currentHandlers().onAudioPlaybackStarted?.();
         }
         break;
       case "output_audio_buffer.stopped":
@@ -331,7 +323,7 @@ export function useRealtimeSession(
         if (isAudioPlaying) {
           isAudioPlaying = false;
           console.log("[Avatar Debug] OpenAI: Audio playback STOPPED");
-          handlers.onAudioPlaybackStopped?.();
+          currentHandlers().onAudioPlaybackStopped?.();
         }
         break;
     }
@@ -390,7 +382,7 @@ export function useRealtimeSession(
     // would think nothing was playing through its first reply.
     if (isAudioPlaying) {
       isAudioPlaying = false;
-      handlers.onAudioPlaybackStopped?.();
+      currentHandlers().onAudioPlaybackStopped?.();
     }
     chatActive.value = false;
     conversationActive.value = false;
@@ -432,7 +424,7 @@ export function useRealtimeSession(
       }
     } catch (err) {
       console.error("Failed to get ephemeral key:", err);
-      handlers.onError?.(
+      currentHandlers().onError?.(
         new Error(
           `Failed to start the session: ${err instanceof Error ? err.message : String(err)}`,
         ),
@@ -512,7 +504,7 @@ export function useRealtimeSession(
     } catch (err) {
       console.error(err);
       stopChat();
-      handlers.onError?.(
+      currentHandlers().onError?.(
         new Error(
           `Failed to start the voice chat: ${err instanceof Error ? err.message : String(err)}`,
         ),
