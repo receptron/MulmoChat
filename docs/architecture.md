@@ -118,7 +118,7 @@ gui-chat-protocol's `ToolDefinition.prompt` is for the host's system prompt: `pl
 
 - **server/index.ts** — Express app on `PORT` (default 3001), JSON body limit 500 MB, `/api/health`, `/api/config`, static `/output` for generated files, serves the client in production
 - **server/routes/api.ts** — `/api/start`, `/api/browse`, `/api/exa-search`, `/api/twitter-embed`; mounts the other routers. `/api/browse` reads a page with mulmocast's crawler and, when that finds no text, a PDF with `server/utils/pdfText.ts` (fetched from inside headless Chrome, which sites that refuse other clients serve; the first 40,000 characters, marked when cut):
-  - `textLLM.ts` — `/api/text/providers`, `/api/text/generate`, and server-side sessions under `/api/text/session…` (not used by the current client)
+  - `textLLM.ts` — `/api/text/providers`, `/api/text/generate` (stateless: the client sends the whole conversation each turn)
   - `image.ts` — `/api/generate-image` (Gemini), `/api/generate-image/openai`
   - `comfyui.ts` — `/api/generate-image/comfy`
   - `plugins.ts` — `/api/plugin/:toolName` (server-run plugins; see Plugin System). `/api/plugin-events` (`server/plugins/events.ts`) and `/api/mulmoscript/media` (`server/plugins/mulmoscriptHost.ts`) are mounted next to it
@@ -127,7 +127,7 @@ gui-chat-protocol's `ToolDefinition.prompt` is for the host's system prompt: `pl
   - `html.ts` — `/api/generate-html`
   - `pdf.ts` — `/api/check-pdf`, `/api/summarize-pdf`, `/api/generate-pdf`, `/api/save-pdf`, `/api/download-pdf`
   - `movie.ts` — `/api/save-images`
-- **server/llm/** — `textService.ts` sends text generation to providers in `providers/` (OpenAI, Anthropic, Google, Grok, Ollama) with per-provider default models. OpenAI and Grok share the chat completions format in `providers/chatCompletions.ts` (messages, sampling, tools, request, reply); Ollama uses its tools and request; `textSessionStore.ts` stores server-side sessions
+- **server/llm/** — `textService.ts` sends text generation to providers in `providers/` (OpenAI, Anthropic, Google, Grok, Ollama) with per-provider default models. OpenAI and Grok share the chat completions format in `providers/chatCompletions.ts` (messages, sampling, tools, request, reply); Ollama uses its tools and request
 - **server/utils/logger.ts** — winston logger with daily rotating files in `logs/`; use `logger` / `logApiError` instead of `console.*` for new server code
 
 `/api/start` returns a `StartApiResponse` with the OpenAI ephemeral key (minted for the `model` query parameter if it matches `gpt-realtime*`, otherwise `gpt-realtime-2.1`) and feature flags (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `hasXaiApiKey`, `googleMapKey`, `googleApiKey`). With `?voice=grok` it mints an xAI client secret (`grokClientSecret`) instead of the OpenAI key. `/api/start/elevenlabs` returns the same flags with an ElevenLabs client secret (`elevenLabsClientSecret`), only to this machine and no other site (`localClientOnly`, `requireTrustedOrigin`: it is a JSON POST, so a cross-site `<img>` can't make it mint). Plugins read these in `isEnabled()`.

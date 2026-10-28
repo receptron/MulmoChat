@@ -60,23 +60,6 @@ export interface ProviderAvailability {
   models?: string[];
 }
 
-export interface TextSessionDefaults {
-  maxTokens?: number;
-  temperature?: number;
-  topP?: number;
-}
-
-export interface TextSessionSnapshot {
-  id: string;
-  provider: TextLLMProviderId;
-  model: string;
-  messages: TextMessage[];
-  defaults: TextSessionDefaults;
-  tools?: ToolDefinition[];
-  createdAt: number;
-  updatedAt: number;
-}
-
 export class TextGenerationError extends Error {
   statusCode: number | undefined;
 
