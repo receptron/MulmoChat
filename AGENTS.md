@@ -44,7 +44,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 
 ## Server APIs (all under `/api`)
 - `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key, issued for the model in `?model=` (default `gpt-realtime-2.1`). It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `hasXaiApiKey`, `googleMapKey`, `googleApiKey`). With `?voice=grok` it mints an xAI client secret (`grokClientSecret`) instead of the OpenAI key.
-- `/text/providers`, `/text/generate` — text LLM. `/text/session/...` is a server-side session API; the current client doesn't use it.
+- `/text/providers`, `/text/generate` — text LLM. Stateless: the client sends the whole conversation each turn.
 - `/generate-image` (Gemini), `/generate-image/openai`, `/generate-image/comfy` (ComfyUI).
 - `/plugin/:toolName` — runs a server-run plugin's `execute()`. `/plugin-events` — server-sent events for plugin Views. `/plugin-host-tools` — definitions of host tools. `/mulmoscript/media` — presentMulmoScript movies and PDFs.
 - `/generate-html`.
