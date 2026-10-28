@@ -55,6 +55,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 ## Scripts
 - `yarn dev` runs the server (`tsx server/index.ts`) and Vite together. `yarn dev:server` / `yarn dev:client` start one side only (`yarn server` is the same as `yarn dev:server`).
 - `yarn typecheck` (`vue-tsc --noEmit`), `yarn lint` (ESLint on `src` and `server`), `yarn format` (Prettier), `yarn knip` (dead code).
+- `yarn test` runs the unit tests in `test/test_*.ts` (`node:test`, no API keys).
 - `yarn test:text:<provider>`, `yarn test:tools:<provider>` and `yarn test:image:<comfy|openai>` are smoke tests. They call real APIs.
 - `yarn benchmark:llm` runs the LLM benchmark.
 - Avoid `yarn build` / `yarn preview` / `yarn start` during development; they create build artifacts.
@@ -80,5 +81,5 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 - Request bodies can be up to 500 MB (the Express body parser limit).
 
 ## Testing and CI
-- There are no unit tests. CI (`.github/workflows/pull_request.yaml`) runs `typecheck`, `lint` and `build` on every PR. Separate workflows scan for dead code and duplicated code.
+- Unit tests live in `test/test_*.ts` and cover the rules pulled out into pure functions. CI (`.github/workflows/pull_request.yaml`) runs `typecheck`, `lint`, `test` and `build` on every PR. Separate workflows scan for dead code and duplicated code.
 - Before committing, run `yarn typecheck`, `yarn lint` and `yarn format`.

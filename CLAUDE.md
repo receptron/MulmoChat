@@ -20,15 +20,17 @@ The project uses yarn (`yarn.lock`); `npm run <script>` also works.
 
 - `yarn dev` — Vite client plus `tsx server/index.ts` on port 3001. `yarn dev:client` / `yarn dev:server` for one side.
 - `yarn typecheck` (`vue-tsc --noEmit`), `yarn lint`, `yarn format`, `yarn knip` (dead code, report-only).
+- `yarn test` — unit tests (`node:test` via `tsx --test`) in `test/test_*.ts`. They need no API keys and are not type-checked by `yarn typecheck` (its `tsconfig.json` covers `src/` only).
 - `MULMOCHAT_MOCK_IMAGE_MS=8000 yarn dev:server` mocks every Gemini and OpenAI image: a PNG showing its prompt, after that many milliseconds (`server/utils/mockImage.ts`). For voice tests of slideshows and stories without spending on images.
 - Audio debug recording for Gemini Live and Grok (they play through `AudioStreamManager`, not WebRTC): `VITE_MULMOCHAT_AUDIO_DEBUG=1 yarn dev` (or the line in `.env`; restart `yarn dev` after changing it). A button next to the microphone saves the last minute: what the player rendered (`output.wav`), what the model sent (`received.wav`), and a timeline of scheduled buffers, underruns, main-thread stalls and the audio contexts (`events.json`). `src/utils/audioDebugRecorder.ts`.
 - Provider smoke tests call real APIs with the keys in `.env`: `yarn test:text:<openai|anthropic|google|ollama>`, `yarn test:tools:<provider>`, `yarn test:image:<comfy|openai>`. Benchmark: `yarn benchmark:llm`.
 - **Do NOT run `npm run build`, `build:server`, `preview` or `start`.** They create build artifacts the repo doesn't want. CI builds on every PR.
 
-There is no unit test suite, so CI (`.github/workflows/pull_request.yaml`: typecheck, lint, build on
-Node 22/24 × ubuntu/windows/macos) is the whole safety net, and everything below is what it cannot
-see. One CI trap: the Windows runners check files out with CRLF unless `.gitattributes` forces LF,
-and prettier then fails lint on every line. Keep `* text=auto eol=lf`.
+The unit tests cover only the few rules pulled out into pure functions, so CI
+(`.github/workflows/pull_request.yaml`: typecheck, lint, test, build on Node 22/24 ×
+ubuntu/windows/macos) is most of the safety net, and everything below is what it cannot see. One
+CI trap: the Windows runners check files out with CRLF unless `.gitattributes` forces LF, and
+prettier then fails lint on every line. Keep `* text=auto eol=lf`.
 
 ## Plugin code stays out of the shell
 
