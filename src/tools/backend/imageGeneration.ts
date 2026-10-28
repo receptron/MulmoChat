@@ -6,6 +6,7 @@ import type { ToolContext, ToolResult } from "gui-chat-protocol/vue";
 import type { ImageToolData } from "../utils/imageTypes";
 import type { ImageGenerationConfigValue } from "./types";
 import { getRawPluginConfig } from "./config";
+import { postJson } from "./postJson";
 import {
   DEFAULT_GEMINI_IMAGE_MODEL,
   DEFAULT_OPENAI_IMAGE_MODEL,
@@ -57,6 +58,13 @@ export interface ImageGenerationOptions {
   comfyuiModel?: string;
 }
 
+interface ImageGenerationApiResponse {
+  success?: boolean;
+  images?: string[];
+  imageData?: string;
+  message?: string;
+}
+
 /**
  * Shared function to generate images with backend selection support.
  * Can be used by any plugin that needs image generation.
@@ -93,19 +101,10 @@ export async function generateImageWithBackend(
       requestBody.model = comfyuiModel || "flux1-schnell-fp8.safetensors";
     }
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await postJson<ImageGenerationApiResponse>(
+      endpoint,
+      requestBody,
+    );
 
     // Handle ComfyUI response (array of images)
     if (

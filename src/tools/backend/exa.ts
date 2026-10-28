@@ -2,6 +2,8 @@
  * Backend API calls for exa plugin
  */
 
+import { postJson } from "./postJson";
+
 export interface ExaSearchResult {
   id: string;
   url: string;
@@ -33,26 +35,14 @@ export interface ExaSearchResponse {
 export async function searchExa(
   params: ExaSearchParams,
 ): Promise<ExaSearchResponse> {
-  const response = await fetch("/api/exa-search", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query: params.query,
-      numResults: Math.min(params.numResults || 5, 10),
-      includeText: params.includeText ?? true,
-      fetchHighlights: params.fetchHighlights ?? false,
-      includeDomains: params.includeDomains,
-      excludeDomains: params.excludeDomains,
-      startPublishedDate: params.startPublishedDate,
-      endPublishedDate: params.endPublishedDate,
-    }),
+  return postJson("/api/exa-search", {
+    query: params.query,
+    numResults: Math.min(params.numResults || 5, 10),
+    includeText: params.includeText ?? true,
+    fetchHighlights: params.fetchHighlights ?? false,
+    includeDomains: params.includeDomains,
+    excludeDomains: params.excludeDomains,
+    startPublishedDate: params.startPublishedDate,
+    endPublishedDate: params.endPublishedDate,
   });
-
-  if (!response.ok) {
-    throw new Error(`Server error: ${response.statusText}`);
-  }
-
-  return response.json();
 }
