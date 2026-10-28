@@ -293,6 +293,9 @@ export function useTextSession(
 
     console.log("SENDING USER MESSAGE", `"${trimmed}"`);
 
+    // Images queued while no conversation ran (the user uploaded them) go
+    // just before the message about them.
+    flushPendingImages();
     // Append user message to conversation history
     conversationMessages.value.push({
       role: "user",

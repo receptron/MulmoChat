@@ -21,22 +21,13 @@ import {
   type ExportPdfOptions,
   type MarkdownHostApp,
 } from "@mulmoclaude/markdown-plugin";
-import { createFileOps } from "./fileOps.js";
-import { trackFileChanges } from "./fileChanges.js";
-import { workspaceRoot } from "./workspace.js";
+import { workspaceFileOps } from "./workspace.js";
 import { logger } from "../utils/logger.js";
 
 const DOCS_DIR = "artifacts/documents";
 const PREFIX_MAX_LENGTH = 60;
 const DOC_ID_BYTES = 8;
 const DOC_CREATE_ATTEMPTS = 5;
-
-// Rooted at the workspace: paths that escape it, including through symlinks,
-// are refused.
-const workspaceFiles = trackFileChanges(
-  createFileOps(() => workspaceRoot(), "workspace"),
-  "",
-);
 
 /** A workspace-relative `.md` path, or an error the model can act on. */
 function documentPath(rel: string): string {
@@ -149,24 +140,24 @@ export function createMarkdownHostApp(
 ): MarkdownHostApp {
   return {
     async loadDoc(rel) {
-      return { content: await workspaceFiles.read(documentPath(rel)) };
+      return { content: await workspaceFileOps.read(documentPath(rel)) };
     },
 
     // Overwrite only: the View saves the document it opened.
     async saveDoc(rel, markdown) {
       const target = documentPath(rel);
-      if (!(await workspaceFiles.exists(target))) {
+      if (!(await workspaceFileOps.exists(target))) {
         throw new Error(`document not found: ${rel}`);
       }
-      await workspaceFiles.write(target, markdown);
+      await workspaceFileOps.write(target, markdown);
       return { path: target };
     },
 
     async saveNewDoc(prefix, markdown) {
       for (let attempt = 0; attempt < DOC_CREATE_ATTEMPTS; attempt++) {
         const rel = newDocPath(prefix);
-        if (await workspaceFiles.exists(rel)) continue;
-        await workspaceFiles.write(rel, markdown);
+        if (await workspaceFileOps.exists(rel)) continue;
+        await workspaceFileOps.write(rel, markdown);
         return { path: rel };
       }
       throw new Error(`could not create a document under ${DOCS_DIR}`);

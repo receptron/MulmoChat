@@ -103,11 +103,26 @@
         @update:text-model-id="userPreferences.textModelId = $event"
         @update:plugin-configs="userPreferences.pluginConfigs = $event"
         @update:voice-ids="userPreferences.voiceIds = $event"
-        @upload-files="handleUploadFiles"
+        @upload-files="handleUploadedFiles"
       />
 
       <!-- Main content -->
       <div class="flex-1 min-w-0 flex flex-col relative">
+        <div
+          v-if="sessionError"
+          role="alert"
+          class="absolute top-2 left-2 right-2 z-20 flex items-start gap-2 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 shadow"
+        >
+          <span class="flex-1 break-words">{{ sessionError }}</span>
+          <button
+            type="button"
+            class="shrink-0 px-1 text-red-700 hover:text-red-900"
+            aria-label="Dismiss"
+            @click="sessionError = null"
+          >
+            ✕
+          </button>
+        </div>
         <div
           class="flex-1 min-h-0 overflow-hidden"
           :class="
@@ -214,6 +229,7 @@ import {
 import { useSessionTransport } from "../composables/useSessionTransport";
 import { useUserPreferences } from "../composables/useUserPreferences";
 import { useToolResults } from "../composables/useToolResults";
+import { useUploadedImages } from "../composables/useUploadedImages";
 import { useScrolling } from "../composables/useScrolling";
 import { createSequenceKeeper } from "gui-chat-protocol";
 import { SESSION_CONFIG } from "../config/session";
@@ -571,6 +587,20 @@ const {
   waitForSpeechEnd,
 });
 
+// Uploaded images become cards and are shown to the model too.
+const { showUploads } = useUploadedImages({
+  transportKind: session.transportKind,
+  chatActive,
+  isDataChannelOpen,
+  sendImagesToModel,
+  sendInstructions,
+});
+
+async function handleUploadedFiles(results: ToolResult[]) {
+  await handleUploadFiles(results);
+  await showUploads(results);
+}
+
 // Keeps a slideshow or a story going (gui-chat-protocol's sequence keeper):
 // asks the model once to go on when it ends a reply mid-sequence. The
 // results say where the sequence is (ToolResult.sequence), and the user
@@ -706,6 +736,28 @@ function waitForQuiet(): Promise<boolean> {
 // Between the voice transport's speech started and stopped events. A session
 // that ends mid-speech (stopped, dropped, switched) sends no stopped event.
 const userSpeaking = ref(false);
+
+// The last error of the voice or text session (a connection the API closed,
+// a request it refused), shown above the canvas until dismissed or the next
+// start: otherwise it was only in the console, and the chat just didn't
+// connect.
+const sessionError = ref<string | null>(null);
+
+/** What to show for a session error; nothing for a bare Event (a WebSocket's
+ *  "error"), whose close that follows says why. */
+function describeSessionError(error: unknown): string | undefined {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return undefined;
+}
 // A session that ends mid-reply (stopped, dropped, switched) may send no
 // playback-stopped event either (OpenAI's stopChat doesn't), and a stale
 // isAudioPlaying would hold every sequence step of the next session for
@@ -767,6 +819,8 @@ registerEventHandlers({
   onConversationFinished: () => sequence.replyEnded(),
   onError: (error) => {
     console.error("Session error", error);
+    const message = describeSessionError(error);
+    if (message) sessionError.value = message;
   },
 
   // LLM audio playback events (for avatar lip-sync, visual feedback, etc.)
@@ -793,6 +847,7 @@ watch(
 async function startChat(): Promise<void> {
   // Gard against double start
   if (chatActive.value || connecting.value) return;
+  sessionError.value = null;
 
   if (supportsAudioInput.value) {
     lastSpeechStartedTime.value = Date.now();
