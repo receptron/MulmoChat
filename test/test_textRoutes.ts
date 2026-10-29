@@ -10,12 +10,12 @@ import type {
 } from "../server/llm/types";
 
 const IMAGE = "data:image/png;base64,iVBORw0KGgo=";
-const CREDENTIAL_KEYS = [
+const CREDENTIAL_KEYS: readonly string[] = [
   "OPENAI_API_KEY",
   "ANTHROPIC_API_KEY",
   "GEMINI_API_KEY",
   "XAI_API_KEY",
-] as const;
+];
 const UPSTREAM_REPLY = {
   choices: [{ message: { role: "assistant", content: "ok" } }],
 };
