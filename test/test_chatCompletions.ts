@@ -155,14 +155,37 @@ describe("toChatCompletionRequest", () => {
   it("orders model, messages, sampling, then tools", () => {
     assert.equal(
       JSON.stringify(
-        toChatCompletionRequest({ ...base, tools: [TOOL], topP: 0 }),
+        toChatCompletionRequest({
+          ...base,
+          tools: [TOOL],
+          maxTokens: 9,
+          temperature: 0.5,
+          topP: 0,
+        }),
       ),
       JSON.stringify({
         model: "m",
         messages: toChatCompletionMessages(base.messages),
+        max_tokens: 9,
+        temperature: 0.5,
         top_p: 0,
         tools: toFunctionTools([TOOL]),
       }),
+    );
+  });
+
+  it("converts the messages rather than sending them as given", () => {
+    const messages = [
+      { role: "user" as const, content: "look", images: [IMAGE] },
+      {
+        role: "assistant" as const,
+        content: "",
+        tool_calls: [{ id: "c1", name: "f", arguments: "{}" }],
+      },
+    ];
+    assert.deepEqual(
+      toChatCompletionRequest({ ...base, messages }).messages,
+      toChatCompletionMessages(messages),
     );
   });
 

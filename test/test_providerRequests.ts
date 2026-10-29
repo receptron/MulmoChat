@@ -122,6 +122,17 @@ describe("generateWithOpenAI request body", () => {
     );
     sentBodies = [];
     assert.equal(
+      await withTools("gpt-6-mini"),
+      JSON.stringify({
+        model: "gpt-6-mini",
+        messages: SENT_MESSAGES,
+        tools: SENT_TOOLS,
+        parallel_tool_calls: true,
+        reasoning_effort: "none",
+      }),
+    );
+    sentBodies = [];
+    assert.equal(
       await sentBody(generateWithOpenAI, params("gpt-5.6-mini", { tools: [] })),
       JSON.stringify({ model: "gpt-5.6-mini", messages: SENT_MESSAGES }),
     );
