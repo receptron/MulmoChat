@@ -89,6 +89,20 @@ export const toFunctionTools = (tools: ToolDefinition[]) =>
     },
   }));
 
+export const hasTools = (
+  params: ProviderGenerateParams,
+): params is ProviderGenerateParams & { tools: ToolDefinition[] } =>
+  params.tools !== undefined && params.tools.length > 0;
+
+export const toChatCompletionRequest = (
+  params: ProviderGenerateParams,
+): Record<string, unknown> => ({
+  model: params.model,
+  messages: toChatCompletionMessages(params.messages),
+  ...toChatCompletionSampling(params),
+  ...(hasTools(params) ? { tools: toFunctionTools(params.tools) } : {}),
+});
+
 export async function postProviderJson<TResponse>(
   url: string,
   body: Record<string, unknown>,

@@ -1,8 +1,10 @@
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  hasTools,
   postProviderJson,
   toChatCompletionMessages,
+  toChatCompletionRequest,
   toChatCompletionResult,
   toChatCompletionSampling,
   toFunctionTools,
@@ -124,6 +126,53 @@ describe("toFunctionTools", () => {
         },
       ],
     );
+  });
+});
+
+const TOOL = {
+  type: "function" as const,
+  name: "f",
+  description: "d",
+  parameters: { a: 1 },
+};
+
+describe("hasTools", () => {
+  it("is true only for a non-empty tool list", () => {
+    const base = { model: "m", messages: [], conversationMessages: [] };
+    assert.equal(hasTools(base), false);
+    assert.equal(hasTools({ ...base, tools: [] }), false);
+    assert.equal(hasTools({ ...base, tools: [TOOL] }), true);
+  });
+});
+
+describe("toChatCompletionRequest", () => {
+  const base = {
+    model: "m",
+    messages: [{ role: "user" as const, content: "q" }],
+    conversationMessages: [],
+  };
+
+  it("orders model, messages, sampling, then tools", () => {
+    assert.equal(
+      JSON.stringify(
+        toChatCompletionRequest({ ...base, tools: [TOOL], topP: 0 }),
+      ),
+      JSON.stringify({
+        model: "m",
+        messages: toChatCompletionMessages(base.messages),
+        top_p: 0,
+        tools: toFunctionTools([TOOL]),
+      }),
+    );
+  });
+
+  it("leaves tools out when the list is missing or empty", () => {
+    [undefined, []].forEach((tools) => {
+      assert.equal(
+        "tools" in toChatCompletionRequest({ ...base, tools }),
+        false,
+      );
+    });
   });
 });
 

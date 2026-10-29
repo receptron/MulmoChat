@@ -29,3 +29,15 @@ What each provider does differently stays in it: OpenAI's o-series `parallel_too
 - The harness was mutation-checked, and so were the new tests in `test/test_chatCompletions.ts`.
   The one mutation the tests don't catch is the order of the two request headers, which the server
   can't observe.
+
+## Follow-up: the request body (code scanning alert #70)
+
+After the merge, jscpd still matched `grok.ts` and `openai.ts` on the part that builds the request
+body: model, messages, sampling, then the tools when the list is non-empty. That moves to
+`toChatCompletionRequest`, with `hasTools` for the non-empty check both providers also use for their
+own tool fields (`parallel_tool_calls`, and OpenAI's o-series and `reasoning_effort` rules).
+
+Verified the same way: old vs new `generateWithGrok` / `generateWithOpenAI` over generated models
+(every routing), tool lists (missing, empty, one, several), sampling values (unset, zero, set),
+messages and success/failure replies, comparing URL, headers, the body text (so key order too) and
+the result or error. No differences; the harness and the new tests were both mutation-checked.

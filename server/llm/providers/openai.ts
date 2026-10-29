@@ -4,11 +4,10 @@ import {
   type TextGenerationResult,
 } from "../types.js";
 import {
+  hasTools,
   postProviderJson,
-  toChatCompletionMessages,
+  toChatCompletionRequest,
   toChatCompletionResult,
-  toChatCompletionSampling,
-  toFunctionTools,
   type ChatCompletionResponse,
 } from "./chatCompletions.js";
 
@@ -39,15 +38,9 @@ export async function generateWithOpenAI(
     return generateWithResponses(params, apiKey);
   }
 
-  const requestBody: Record<string, unknown> = {
-    model: params.model,
-    messages: toChatCompletionMessages(params.messages),
-    ...toChatCompletionSampling(params),
-  };
-  if (params.tools !== undefined && params.tools.length > 0) {
-    // Convert from Realtime API format to Chat Completions format
-    requestBody.tools = toFunctionTools(params.tools);
-    // Enable parallel tool calling (o-series models reject the parameter)
+  const requestBody = toChatCompletionRequest(params);
+  if (hasTools(params)) {
+    // o-series models reject parallel_tool_calls
     if (!/^o\d/.test(params.model)) {
       requestBody.parallel_tool_calls = true;
     }

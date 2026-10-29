@@ -4,11 +4,10 @@ import {
   type TextGenerationResult,
 } from "../types.js";
 import {
+  hasTools,
   postProviderJson,
-  toChatCompletionMessages,
+  toChatCompletionRequest,
   toChatCompletionResult,
-  toChatCompletionSampling,
-  toFunctionTools,
   type ChatCompletionResponse,
 } from "./chatCompletions.js";
 
@@ -25,15 +24,8 @@ export async function generateWithGrok(
     );
   }
 
-  const requestBody: Record<string, unknown> = {
-    model: params.model,
-    messages: toChatCompletionMessages(params.messages),
-    ...toChatCompletionSampling(params),
-  };
-  if (params.tools !== undefined && params.tools.length > 0) {
-    // Convert to OpenAI-compatible format (which xAI supports)
-    requestBody.tools = toFunctionTools(params.tools);
-    // Enable parallel tool calling
+  const requestBody = toChatCompletionRequest(params);
+  if (hasTools(params)) {
     requestBody.parallel_tool_calls = true;
   }
 
