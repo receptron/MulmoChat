@@ -4,6 +4,10 @@ import type { Server } from "node:http";
 import express from "express";
 import textRouter from "../server/routes/textLLM";
 import { MAX_MESSAGE_IMAGES } from "../server/llm/images";
+import type {
+  ProviderAvailability,
+  TextLLMProviderId,
+} from "../server/llm/types";
 
 const IMAGE = "data:image/png;base64,iVBORw0KGgo=";
 const CREDENTIAL_KEYS = [
@@ -21,6 +25,11 @@ const originalCredentials = CREDENTIAL_KEYS.map((key) => process.env[key]);
 let server: Server;
 let baseUrl = "";
 let upstreamBodies: unknown[] = [];
+let upstreamCalls: {
+  url: string;
+  method?: string;
+  authorization: string | null;
+}[] = [];
 let upstreamReply: () => Promise<Response> = async () =>
   new Response(JSON.stringify(UPSTREAM_REPLY));
 
@@ -51,10 +60,16 @@ beforeEach(() => {
   CREDENTIAL_KEYS.forEach((key) => delete process.env[key]);
   process.env.OPENAI_API_KEY = "k";
   upstreamBodies = [];
+  upstreamCalls = [];
   upstreamReply = async () => new Response(JSON.stringify(UPSTREAM_REPLY));
   globalThis.fetch = async (input, init) => {
     if (String(input).startsWith(baseUrl)) return originalFetch(input, init);
     upstreamBodies.push(JSON.parse(String(init?.body)));
+    upstreamCalls.push({
+      url: String(input),
+      method: init?.method,
+      authorization: new Headers(init?.headers).get("authorization"),
+    });
     return upstreamReply();
   };
 });
@@ -87,34 +102,68 @@ const assertRejected = async (body: unknown, status: number, error: string) => {
   assert.equal(upstreamBodies.length, 0);
 };
 
+const PROVIDER_IDS: TextLLMProviderId[] = [
+  "openai",
+  "anthropic",
+  "google",
+  "grok",
+  "ollama",
+];
+
+const isProviderAvailability = (
+  value: unknown,
+): value is ProviderAvailability =>
+  typeof value === "object" &&
+  value !== null &&
+  "provider" in value &&
+  PROVIDER_IDS.some((id) => id === value.provider) &&
+  "hasCredentials" in value &&
+  typeof value.hasCredentials === "boolean";
+
+const listProviders = async (): Promise<ProviderAvailability[]> => {
+  const response = await originalFetch(`${baseUrl}/text/providers`);
+  const json = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(json.success, true);
+  const providers: unknown[] = json.providers;
+  assert.ok(providers.every(isProviderAvailability));
+  return providers.filter(isProviderAvailability);
+};
+
+const credentialsByProvider = async () =>
+  (await listProviders()).map((entry) => [
+    entry.provider,
+    entry.hasCredentials,
+  ]);
+
 describe("GET /api/text/providers", () => {
   it("lists every provider in menu order, with credentials from the environment", async () => {
     process.env.XAI_API_KEY = "x";
-    const response = await originalFetch(`${baseUrl}/text/providers`);
-    const json = await response.json();
-    assert.equal(response.status, 200);
-    assert.equal(json.success, true);
-    assert.deepEqual(
-      json.providers.map(
-        (entry: { provider: string; hasCredentials: boolean }) => [
-          entry.provider,
-          entry.hasCredentials,
-        ],
-      ),
-      [
-        ["openai", true],
-        ["anthropic", false],
-        ["google", false],
-        ["grok", true],
-        ["ollama", true],
-      ],
-    );
-    json.providers.forEach(
-      (entry: { defaultModel?: string; models?: string[] }) => {
-        assert.equal(typeof entry.defaultModel, "string");
-        assert.equal(entry.models?.[0], entry.defaultModel);
-      },
-    );
+    assert.deepEqual(await credentialsByProvider(), [
+      ["openai", true],
+      ["anthropic", false],
+      ["google", false],
+      ["grok", true],
+      ["ollama", true],
+    ]);
+    process.env.ANTHROPIC_API_KEY = "a";
+    process.env.GEMINI_API_KEY = "g";
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.XAI_API_KEY;
+    assert.deepEqual(await credentialsByProvider(), [
+      ["openai", false],
+      ["anthropic", true],
+      ["google", true],
+      ["grok", false],
+      ["ollama", true],
+    ]);
+  });
+
+  it("gives each provider a default model, listed first", async () => {
+    (await listProviders()).forEach((entry) => {
+      assert.equal(typeof entry.defaultModel, "string");
+      assert.equal(entry.models?.[0], entry.defaultModel);
+    });
   });
 });
 
@@ -131,6 +180,13 @@ describe("POST /api/text/generate", () => {
         rawResponse: UPSTREAM_REPLY,
       },
     });
+    assert.deepEqual(upstreamCalls, [
+      {
+        url: "https://api.openai.com/v1/chat/completions",
+        method: "POST",
+        authorization: "Bearer k",
+      },
+    ]);
   });
 
   it("passes the messages on, keeping tool fields only on their own roles", async () => {
@@ -281,6 +337,23 @@ describe("POST /api/text/generate", () => {
       request({ messages: [{ role: "user", content: "q", images: atLimit }] }),
     );
     assert.equal(status, 200);
+    assert.deepEqual(upstreamBodies, [
+      {
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "q" },
+              ...atLimit.map((url) => ({
+                type: "image_url",
+                image_url: { url },
+              })),
+            ],
+          },
+        ],
+      },
+    ]);
   });
 
   it("answers with the provider's status when the provider refuses", async () => {
