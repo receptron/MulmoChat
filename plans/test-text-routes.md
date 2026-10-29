@@ -16,7 +16,9 @@ Covered:
 - `/text/generate` success: what reaches the provider (system prompt, roles, `tool_call_id` only on
   tool messages, `tool_calls` only on assistant ones, images, sampling only when numeric, tools only
   when non-empty) and the response shape
-- every 400 the route and the service raise (provider, model, messages, roles, content, images)
+- every 400 a request can reach, from the route and the service (provider, model, messages, roles,
+  content, images). The service's own array and role checks are not reachable: the route rejects
+  those first.
 - errors: an upstream status passes through as the response status, a missing key is a 500 with
   its message, anything else is a 500 "Failed to generate text" with the error's message as details
   ("Unknown error" when what was thrown is not an Error)
@@ -28,3 +30,7 @@ the PR). Two breaks stay green because no provider can observe them: `tool_call_
 non-tool message, and an empty `tools` list passed on. Every provider reads `tool_call_id` only on
 tool messages and sends tools only when the list is non-empty, so what reaches the provider is the
 same either way.
+
+Not covered here: how a provider maps the request beyond OpenAI's chat completions. The tests use
+OpenAI as the provider, which sends the system messages as they are, so the service's joined
+`systemPrompt` (read by Anthropic and Google) is not observable through them.

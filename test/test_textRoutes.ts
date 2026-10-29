@@ -247,7 +247,9 @@ describe("POST /api/text/generate", () => {
     await generate(
       request({ maxTokens: 9, temperature: "0.5", topP: 0, tools: [] }),
     );
-    await generate(request({ temperature: 0, tools: [tool] }));
+    await generate(
+      request({ maxTokens: "9", temperature: 0, topP: null, tools: [tool] }),
+    );
     assert.deepEqual(upstreamBodies, [
       {
         model: "gpt-4o",
