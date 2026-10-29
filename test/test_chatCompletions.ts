@@ -1,8 +1,10 @@
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  hasTools,
   postProviderJson,
   toChatCompletionMessages,
+  toChatCompletionRequest,
   toChatCompletionResult,
   toChatCompletionSampling,
   toFunctionTools,
@@ -124,6 +126,92 @@ describe("toFunctionTools", () => {
         },
       ],
     );
+  });
+});
+
+const TOOL = {
+  type: "function" as const,
+  name: "f",
+  description: "d",
+  parameters: { a: 1 },
+};
+
+describe("hasTools", () => {
+  it("is true only for a non-empty tool list", () => {
+    const base = { model: "m", messages: [], conversationMessages: [] };
+    assert.equal(hasTools(base), false);
+    assert.equal(hasTools({ ...base, tools: [] }), false);
+    assert.equal(hasTools({ ...base, tools: [TOOL] }), true);
+  });
+});
+
+describe("toChatCompletionRequest", () => {
+  const base = {
+    model: "m",
+    messages: [{ role: "user" as const, content: "q" }],
+    conversationMessages: [],
+  };
+
+  it("orders model, messages, sampling, then tools", () => {
+    assert.equal(
+      JSON.stringify(
+        toChatCompletionRequest({
+          ...base,
+          tools: [TOOL],
+          maxTokens: 9,
+          temperature: 0.5,
+          topP: 0,
+        }),
+      ),
+      JSON.stringify({
+        model: "m",
+        messages: toChatCompletionMessages(base.messages),
+        max_tokens: 9,
+        temperature: 0.5,
+        top_p: 0,
+        tools: toFunctionTools([TOOL]),
+      }),
+    );
+  });
+
+  it("converts the messages rather than sending them as given", () => {
+    const messages = [
+      { role: "user" as const, content: "look", images: [IMAGE] },
+      {
+        role: "assistant" as const,
+        content: "",
+        tool_calls: [{ id: "c1", name: "f", arguments: "{}" }],
+      },
+    ];
+    assert.deepEqual(toChatCompletionRequest({ ...base, messages }).messages, [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "look" },
+          { type: "image_url", image_url: { url: IMAGE } },
+        ],
+      },
+      {
+        role: "assistant",
+        content: "",
+        tool_calls: [
+          {
+            id: "c1",
+            type: "function",
+            function: { name: "f", arguments: "{}" },
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("leaves tools out when the list is missing or empty", () => {
+    [undefined, []].forEach((tools) => {
+      assert.equal(
+        "tools" in toChatCompletionRequest({ ...base, tools }),
+        false,
+      );
+    });
   });
 });
 
