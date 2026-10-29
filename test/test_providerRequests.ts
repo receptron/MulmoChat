@@ -65,8 +65,17 @@ describe("generateWithGrok request body", () => {
     for (const tools of [undefined, []]) {
       sentBodies = [];
       assert.equal(
-        await sentBody(generateWithGrok, params("grok-4", { tools, topP: 0 })),
-        JSON.stringify({ model: "grok-4", messages: SENT_MESSAGES, top_p: 0 }),
+        await sentBody(
+          generateWithGrok,
+          params("grok-4", { tools, maxTokens: 9, temperature: 0, topP: 0 }),
+        ),
+        JSON.stringify({
+          model: "grok-4",
+          messages: SENT_MESSAGES,
+          max_tokens: 9,
+          temperature: 0,
+          top_p: 0,
+        }),
       );
     }
   });
