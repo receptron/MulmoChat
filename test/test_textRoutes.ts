@@ -281,6 +281,11 @@ describe("POST /api/text/generate", () => {
       400,
       "Unsupported provider",
     );
+    await assertRejected(
+      request({ model: undefined }),
+      400,
+      "Model is required",
+    );
     await assertRejected(request({ model: " " }), 400, "Model is required");
     await assertRejected(request({ model: 1 }), 400, "Model is required");
   });
@@ -386,6 +391,19 @@ describe("POST /api/text/generate", () => {
       success: false,
       error: "Failed to generate text",
       details: "network down",
+    });
+  });
+
+  it("answers 500 with an unknown reason when the failure is not an Error", async () => {
+    upstreamReply = async () => {
+      throw "network down";
+    };
+    const { status, json } = await generate(request());
+    assert.equal(status, 500);
+    assert.deepEqual(json, {
+      success: false,
+      error: "Failed to generate text",
+      details: "Unknown error",
     });
   });
 });

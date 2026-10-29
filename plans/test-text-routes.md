@@ -18,7 +18,8 @@ Covered:
   when non-empty) and the response shape
 - every 400 the route and the service raise (provider, model, messages, roles, content, images)
 - errors: an upstream status passes through as the response status, a missing key is a 500 with
-  its message, anything else is a 500 "Failed to generate text" with the details
+  its message, anything else is a 500 "Failed to generate text" with the error's message as details
+  ("Unknown error" when what was thrown is not an Error)
 
 ## Verification
 
