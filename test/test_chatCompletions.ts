@@ -183,10 +183,26 @@ describe("toChatCompletionRequest", () => {
         tool_calls: [{ id: "c1", name: "f", arguments: "{}" }],
       },
     ];
-    assert.deepEqual(
-      toChatCompletionRequest({ ...base, messages }).messages,
-      toChatCompletionMessages(messages),
-    );
+    assert.deepEqual(toChatCompletionRequest({ ...base, messages }).messages, [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "look" },
+          { type: "image_url", image_url: { url: IMAGE } },
+        ],
+      },
+      {
+        role: "assistant",
+        content: "",
+        tool_calls: [
+          {
+            id: "c1",
+            type: "function",
+            function: { name: "f", arguments: "{}" },
+          },
+        ],
+      },
+    ]);
   });
 
   it("leaves tools out when the list is missing or empty", () => {
