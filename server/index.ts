@@ -6,6 +6,7 @@ import apiRoutes from "./routes/api.js";
 import { htmlPreviewRouter } from "./plugins/htmlHost.js";
 import { logger, logApiError } from "./utils/logger.js";
 import { mockImageDelayMs } from "./utils/mockImage.js";
+import { fileRouteRateLimit } from "./utils/rateLimit.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,7 +46,7 @@ app.use("/output", express.static(path.join(process.cwd(), "output")));
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../client")));
 
-  app.get("/{*splat}", (req: Request, res: Response) => {
+  app.get("/{*splat}", fileRouteRateLimit(), (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, "../client/index.html"));
   });
 }
