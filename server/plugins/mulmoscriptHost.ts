@@ -32,7 +32,6 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { execFile } from "node:child_process";
 import express, { Request, Response, Router } from "express";
-import { rateLimit } from "express-rate-limit";
 import {
   createMulmoScriptServerOps,
   createMulmoScriptDispatchHandler,
@@ -49,6 +48,7 @@ import { artifactsFileOps, workspaceRoot } from "./workspace.js";
 import { imageMimeOfBytes } from "../utils/imageMime.js";
 import { publishPluginEvent } from "./events.js";
 import { logger } from "../utils/logger.js";
+import { fileRouteRateLimit } from "../utils/rateLimit.js";
 import {
   requireLocalClient,
   requireLoopbackHost,
@@ -309,14 +309,8 @@ const stringQuery = (req: Request, name: string): string | null => {
 // What the View downloads: movies, beat clips and PDFs, not the scripts.
 const MEDIA_EXTENSIONS = new Set([".mp4", ".mov", ".webm", ".pdf"]);
 
-// Each download reads a whole movie or PDF from disk. The View fetches one per
-// click, so this only stops a runaway client.
-const mediaRateLimit = rateLimit({
-  windowMs: 60_000,
-  limit: 60,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-});
+// Each download reads a whole movie or PDF from disk.
+const mediaRateLimit = fileRouteRateLimit();
 
 export const mulmoScriptMediaRouter: Router = express.Router();
 

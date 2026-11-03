@@ -7,6 +7,7 @@ import { createReadStream } from "fs";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import { sendApiError } from "../utils/logger.js";
+import { fileRouteRateLimit } from "../utils/rateLimit.js";
 
 dotenv.config({ quiet: true });
 
@@ -124,6 +125,7 @@ router.post(
 // PDF generation endpoint
 router.post(
   "/generate-pdf",
+  fileRouteRateLimit(),
   async (req: Request, res: Response): Promise<void> => {
     const { markdown, title, uuid } = req.body as {
       markdown: string;
@@ -319,7 +321,7 @@ ${htmlContent}
 );
 
 // PDF save endpoint - saves PDF data to output folder
-router.post("/save-pdf", async (req: Request, res: Response): Promise<void> => {
+const savePdf = async (req: Request, res: Response): Promise<void> => {
   const { pdfData, uuid, fileName } = req.body as {
     pdfData: string;
     uuid: string;
@@ -372,11 +374,13 @@ router.post("/save-pdf", async (req: Request, res: Response): Promise<void> => {
       error instanceof Error ? error.message : "Unknown error";
     sendApiError(res, req, 500, "Failed to save PDF", errorMessage);
   }
-});
+};
+router.post("/save-pdf", fileRouteRateLimit(), savePdf);
 
 // PDF download endpoint
 router.post(
   "/download-pdf",
+  fileRouteRateLimit(),
   async (req: Request, res: Response): Promise<void> => {
     const { pdfPath } = req.body as { pdfPath: string };
 

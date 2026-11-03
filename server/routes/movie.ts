@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from "express";
 import path from "path";
 import fs from "fs/promises";
 import { sendApiError } from "../utils/logger.js";
+import { fileRouteRateLimit } from "../utils/rateLimit.js";
 
 // /api/save-images: stores images the browser generated (useToolResults'
 // saveImages) under output/images/<uuid>/, served from /output. The movie
@@ -41,6 +42,7 @@ async function saveImages(
 // Save images endpoint
 router.post(
   "/save-images",
+  fileRouteRateLimit(),
   async (req: Request, res: Response): Promise<void> => {
     const { uuid, images } = req.body as {
       uuid: string;
