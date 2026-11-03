@@ -123,7 +123,7 @@ router.post(
 
 // PDF save endpoint - saves PDF data to output folder
 const savePdf = async (req: Request, res: Response): Promise<void> => {
-  const { pdfData, uuid, fileName } = req.body as {
+  const { pdfData, uuid, fileName } = (req.body ?? {}) as {
     pdfData: string;
     uuid: string;
     fileName: string;

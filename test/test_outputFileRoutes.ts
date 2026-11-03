@@ -179,6 +179,24 @@ describe("file routes write only under output/", () => {
     );
   });
 
+  it("answers 400 to a request with no JSON body, or a JSON null", async () => {
+    for (const [route, error] of [
+      ["/save-images", "UUID is required"],
+      ["/save-pdf", "PDF data is required"],
+    ]) {
+      const noBody = await fetch(`${baseUrl}${route}`, { method: "POST" });
+      assert.equal(noBody.status, 400, route);
+      assert.equal((await noBody.json()).error, error);
+      const jsonNull = await fetch(`${baseUrl}${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "null",
+      });
+      await jsonNull.arrayBuffer();
+      assert.equal(jsonNull.status, 400, `${route} null`);
+    }
+  });
+
   it("no longer serves generate-pdf or download-pdf", async () => {
     for (const route of ["/generate-pdf", "/download-pdf"]) {
       const response = await fetch(`${baseUrl}${route}`, {

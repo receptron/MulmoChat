@@ -49,7 +49,7 @@ router.post(
   "/save-images",
   fileRouteRateLimit(),
   async (req: Request, res: Response): Promise<void> => {
-    const { uuid, images } = req.body as {
+    const { uuid, images } = (req.body ?? {}) as {
       uuid: string;
       images: Record<string, string>;
     };
