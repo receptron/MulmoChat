@@ -160,7 +160,13 @@ const savePdf = async (req: Request, res: Response): Promise<void> => {
       .replace(/\.pdf$/i, "")
       .replace(/[^a-z0-9]/gi, "_")
       .toLowerCase();
-    const pdfPath = path.join(outputDir, `${uuid}_${sanitizedFileName}.pdf`);
+    // The route already refused an unsafe uuid; this is the containment check
+    // CodeQL recognises as a path-injection barrier.
+    const pdfPath = path.resolve(outputDir, `${uuid}_${sanitizedFileName}.pdf`);
+    if (!pdfPath.startsWith(outputDir + path.sep)) {
+      sendApiError(res, req, 400, "PDF path outside output/");
+      return;
+    }
 
     // Write the PDF file
     await fs.writeFile(pdfPath, pdfBuffer);
