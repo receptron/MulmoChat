@@ -10,3 +10,11 @@ export const isUuid = (value: unknown): value is string =>
 
 export const isSafeFileName = (value: unknown): value is string =>
   typeof value === "string" && SAFE_NAME_PATTERN.test(value);
+
+export const isStringRecord = (
+  value: unknown,
+): value is Record<string, string> =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  Object.values(value).every((entry) => typeof entry === "string");

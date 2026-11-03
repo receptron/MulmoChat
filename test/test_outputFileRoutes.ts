@@ -7,7 +7,11 @@ import path from "node:path";
 import express from "express";
 import movieRouter from "../server/routes/movie";
 import pdfRouter from "../server/routes/pdf";
-import { isSafeFileName, isUuid } from "../server/utils/outputNames";
+import {
+  isSafeFileName,
+  isStringRecord,
+  isUuid,
+} from "../server/utils/outputNames";
 
 const UUID = "0f8fad5b-d9cb-469f-a165-70867728950e";
 const PNG = "data:image/png;base64,iVBORw0KGgo=";
@@ -53,6 +57,17 @@ describe("isSafeFileName", () => {
       null,
     ].forEach((value) =>
       assert.equal(isSafeFileName(value), false, String(value)),
+    );
+  });
+});
+
+describe("isStringRecord", () => {
+  it("accepts a plain object whose values are all strings", () => {
+    [{}, { a: "x" }, { a: "x", b: "" }].forEach((value) =>
+      assert.equal(isStringRecord(value), true, JSON.stringify(value)),
+    );
+    [null, undefined, 1, "a", [], ["a"], { a: 1 }, { a: "x", b: null }].forEach(
+      (value) => assert.equal(isStringRecord(value), false, String(value)),
     );
   });
 });
@@ -112,6 +127,14 @@ describe("file routes write only under output/", () => {
       });
       assert.equal(status, 400, id);
       assert.equal(json.error, "Image ids must be letters, digits, _ or -");
+    }
+    for (const images of [1, "a", [PNG], { a: 1 }, { a: PNG, b: null }]) {
+      const { status, json } = await post("/save-images", {
+        uuid: UUID,
+        images,
+      });
+      assert.equal(status, 400, JSON.stringify(images));
+      assert.equal(json.error, "Images must map ids to strings");
     }
     assert.deepEqual(await filesUnder(workDir), []);
   });
