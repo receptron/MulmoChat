@@ -3,6 +3,11 @@ import path from "path";
 import fs from "fs/promises";
 import { sendApiError } from "../utils/logger.js";
 import { fileRouteRateLimit } from "../utils/rateLimit.js";
+import {
+  isSafeFileName,
+  isStringRecord,
+  isUuid,
+} from "../utils/outputNames.js";
 
 // /api/save-images: stores images the browser generated (useToolResults'
 // saveImages) under output/images/<uuid>/, served from /output. The movie
@@ -20,13 +25,21 @@ async function saveImages(
   const imageUrls: Record<string, string> = {};
 
   if (images && Object.keys(images).length > 0) {
-    const imagesDir = path.join(outputDir, "images", uuid);
+    // The route already refused unsafe names; this is the containment check
+    // CodeQL recognises as a path-injection barrier.
+    const imagesDir = path.resolve(outputDir, "images", uuid);
+    if (!imagesDir.startsWith(outputDir + path.sep)) {
+      throw new Error(`Image folder outside output/: ${uuid}`);
+    }
     await fs.mkdir(imagesDir, { recursive: true });
 
     // Save each image as PNG file
     await Promise.all(
       Object.entries(images).map(async ([beatId, base64Data]) => {
-        const imagePath = path.join(imagesDir, `${beatId}.png`);
+        const imagePath = path.resolve(imagesDir, `${beatId}.png`);
+        if (!imagePath.startsWith(imagesDir + path.sep)) {
+          throw new Error(`Image path outside output/: ${beatId}`);
+        }
         // Remove data:image/png;base64, prefix if present
         const base64Image = base64Data.replace(/^data:image\/\w+;base64,/, "");
         const imageBuffer = Buffer.from(base64Image, "base64");
@@ -44,7 +57,7 @@ router.post(
   "/save-images",
   fileRouteRateLimit(),
   async (req: Request, res: Response): Promise<void> => {
-    const { uuid, images } = req.body as {
+    const { uuid, images } = (req.body ?? {}) as {
       uuid: string;
       images: Record<string, string>;
     };
@@ -56,6 +69,21 @@ router.post(
 
     if (!images) {
       sendApiError(res, req, 400, "Images are required");
+      return;
+    }
+
+    if (!isUuid(uuid)) {
+      sendApiError(res, req, 400, "UUID must be a UUID");
+      return;
+    }
+
+    if (!isStringRecord(images)) {
+      sendApiError(res, req, 400, "Images must map ids to strings");
+      return;
+    }
+
+    if (!Object.keys(images).every(isSafeFileName)) {
+      sendApiError(res, req, 400, "Image ids must be letters, digits, _ or -");
       return;
     }
 
