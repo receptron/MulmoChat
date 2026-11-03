@@ -42,9 +42,7 @@ const statusesOf = async (url: string, method: string, count: number) => {
 
 const ROUTES: { router: Router; method: string; path: string }[] = [
   { router: movieRouter, method: "POST", path: "/save-images" },
-  { router: pdfRouter, method: "POST", path: "/generate-pdf" },
   { router: pdfRouter, method: "POST", path: "/save-pdf" },
-  { router: pdfRouter, method: "POST", path: "/download-pdf" },
   { router: mulmoScriptMediaRouter, method: "GET", path: "/mulmoscript/media" },
 ];
 

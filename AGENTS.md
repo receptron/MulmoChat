@@ -48,7 +48,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 - `/generate-image` (Gemini), `/generate-image/openai`, `/generate-image/comfy` (ComfyUI).
 - `/plugin/:toolName` — runs a server-run plugin's `execute()`. `/plugin-events` — server-sent events for plugin Views. `/plugin-host-tools` — definitions of host tools. `/mulmoscript/media` — presentMulmoScript movies and PDFs.
 - `/generate-html`.
-- `/check-pdf`, `/summarize-pdf`, `/generate-pdf`, `/save-pdf`, `/download-pdf`.
+- `/check-pdf`, `/summarize-pdf`, `/save-pdf`.
 - `/save-images`.
 - `/browse`, `/exa-search`, `/twitter-embed`, plus `/health` and `/config`.
 

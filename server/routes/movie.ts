@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs/promises";
 import { sendApiError } from "../utils/logger.js";
 import { fileRouteRateLimit } from "../utils/rateLimit.js";
+import { isSafeFileName, isUuid } from "../utils/outputNames.js";
 
 // /api/save-images: stores images the browser generated (useToolResults'
 // saveImages) under output/images/<uuid>/, served from /output. The movie
@@ -56,6 +57,16 @@ router.post(
 
     if (!images) {
       sendApiError(res, req, 400, "Images are required");
+      return;
+    }
+
+    if (!isUuid(uuid)) {
+      sendApiError(res, req, 400, "UUID must be a UUID");
+      return;
+    }
+
+    if (!Object.keys(images).every(isSafeFileName)) {
+      sendApiError(res, req, 400, "Image ids must be letters, digits, _ or -");
       return;
     }
 
