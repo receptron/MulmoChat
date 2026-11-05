@@ -295,3 +295,21 @@ The package also provides CLI commands via the `mulmo` binary:
 - `mulmo movie <script.json>` - Generate movie from script
 - `mulmo audio <script.json>` - Generate audio only
 - `mulmo images <script.json>` - Generate images only
+
+## Local LFM3 Omni voice
+
+`voice-liquid` uses `useLiquidVoiceSession`, a dialect of the shared
+`useRealtimeWebSocketSession`. `POST /api/start/liquid` returns plugin feature flags
+without minting a cloud credential; local-client and trusted-origin guards protect
+its key-bearing response. The browser connects directly to llama.cpp's
+`/v1/realtime` (default `ws://127.0.0.1:8080/v1/realtime`, overridden by
+`VITE_LFM_REALTIME_URL`). No authentication is sent to that endpoint.
+
+llama.cpp accepts 16 kHz PCM16 input and emits 24 kHz PCM16 audio, text deltas and
+function calls. It has no server VAD: `localAudioTurnDetector` retains a short
+lead-in, detects speech by RMS level, and ends a turn after 700 ms of silence or
+30 seconds. `response.create` closes the audio turn. Capture is ignored while a
+response is pending, generating or playing, so this mode takes turns rather than
+interrupting playback. The endpoint currently accepts only user text and streamed
+audio; `sendImagesToModel` returns false. Model vision/video capabilities are not
+exposed through this transport. Setup is in README.

@@ -5,8 +5,8 @@
 // opened from the browser, with PCM16 audio as base64 JSON played through
 // AudioStreamManager, like Gemini Live. Grok voice speaks it
 // (useGrokVoiceSession); a RealtimeDialect says what one provider does
-// differently. The server mints a short-lived secret, so the provider's API
-// key never reaches the browser.
+// differently. Cloud providers use a short-lived secret; local llama.cpp
+// connects without a credential.
 
 import { ref } from "vue";
 import type { StartApiResponse } from "../../server/types";
@@ -16,6 +16,7 @@ import {
   type RealtimeSessionOptions,
   type UseRealtimeSessionReturn,
 } from "./useRealtimeSession";
+import { createLocalAudioTurnDetector } from "../utils/localAudioTurnDetector";
 import { AudioStreamManager } from "../utils/audioStreamManager";
 import { resolveVoice, type VoiceProvider } from "../../server/utils/voices";
 
@@ -26,7 +27,14 @@ export const OUTPUT_SAMPLE_RATE = 24000;
 export interface RealtimeDialect {
   /** In logs and in the alert when a start fails ("Grok voice"). */
   name: string;
-  voiceProvider: VoiceProvider;
+  voiceProvider: VoiceProvider | null;
+  /** Local servers need no credential. */
+  requiresSecret?: boolean;
+  /** Client endpointing for servers without VAD; microphone pauses during replies. */
+  clientTurnDetection?: boolean;
+  streamsText?: boolean;
+  /** Wait for the local server to accept its settings before capturing audio. */
+  waitForSessionUpdated?: boolean;
   defaultModelId: string;
   /** The server route that mints this provider's secret: a GET, or a JSON
    *  POST when it has a body. */
@@ -88,6 +96,15 @@ export function useRealtimeWebSocketSession(
   const isMuted = ref(false);
   const startResponse = ref<StartApiResponse | null>(null);
   const processedToolCalls = new Set<string>();
+  const localTurns = createLocalAudioTurnDetector(dialect.inputSampleRate);
+  let playbackActive = false;
+  const selectedVoice = () =>
+    dialect.voiceProvider
+      ? resolveVoice(
+          dialect.voiceProvider,
+          options.getVoiceId?.(dialect.voiceProvider),
+        )
+      : "";
 
   const state: WebSocketState = {
     ws: null,
@@ -229,10 +246,19 @@ export function useRealtimeWebSocketSession(
     }
 
     switch (event.type) {
+      case "session.updated":
+        if (dialect.waitForSessionUpdated && connecting.value)
+          activateSession();
+        break;
       case "error":
         console.error(`${dialect.name} error:`, event.error);
         handleError(event.error);
         handlers.onError?.(event.error);
+        if (dialect.waitForSessionUpdated && connecting.value) stopChat();
+        break;
+      case "response.output_text.delta":
+        if (dialect.streamsText && event.delta)
+          handlers.onTextDelta?.(event.delta);
         break;
       case "response.output_audio.delta":
         if (event.delta) state.audioManager?.queueAudio(event.delta);
@@ -284,7 +310,10 @@ export function useRealtimeWebSocketSession(
         handlers.onSpeechStopped?.();
         break;
       case "input_audio_buffer.committed":
-        if (userTurn === "none") userTurn = "waiting";
+        // Local endpointing requested this response itself. A commit is not
+        // a competing server-VAD response (which the overlap guard retries).
+        if (!dialect.clientTurnDetection && userTurn === "none")
+          userTurn = "waiting";
         break;
     }
   };
@@ -293,25 +322,43 @@ export function useRealtimeWebSocketSession(
     instructions: string,
     tools: unknown[],
   ): void => {
-    // Connected only now: text sent before the socket opens would be lost.
-    chatActive.value = true;
-    connecting.value = false;
     sendWebSocketMessage({
       type: "session.update",
       session: dialect.session({
         instructions,
         tools,
-        voice: resolveVoice(
-          dialect.voiceProvider,
-          options.getVoiceId?.(dialect.voiceProvider),
-        ),
+        voice: selectedVoice(),
       }),
     });
+    if (!dialect.waitForSessionUpdated) activateSession();
+  };
 
+  const activateSession = () => {
+    chatActive.value = true;
+    connecting.value = false;
     if (state.localStream && state.audioManager) {
       state.audioManager.startCapture(
         state.localStream,
         (pcmChunk) => {
+          if (dialect.clientTurnDetection) {
+            if (responding() || playbackActive) {
+              localTurns.reset();
+              return;
+            }
+            const turn = localTurns.push(pcmChunk);
+            if (turn.started) handlers.onSpeechStarted?.();
+            for (const audio of turn.chunks) {
+              sendWebSocketMessage({
+                type: "input_audio_buffer.append",
+                audio,
+              });
+            }
+            if (turn.ended) {
+              handlers.onSpeechStopped?.();
+              requestResponse();
+            }
+            return;
+          }
           if (state.ws?.readyState === WebSocket.OPEN) {
             sendWebSocketMessage({
               type: "input_audio_buffer.append",
@@ -390,6 +437,8 @@ export function useRealtimeWebSocketSession(
       state.localStream.getTracks().forEach((track) => track.stop());
       state.localStream = null;
     }
+    localTurns.reset();
+    playbackActive = false;
     processedToolCalls.clear();
     runningResponses.clear();
     settledEarly.clear();
@@ -415,10 +464,7 @@ export function useRealtimeWebSocketSession(
         modelId:
           options.getModelId?.({ startResponse: null }) ??
           dialect.defaultModelId,
-        voice: resolveVoice(
-          dialect.voiceProvider,
-          options.getVoiceId?.(dialect.voiceProvider),
-        ),
+        voice: selectedVoice(),
       });
       const response = await fetch(url, {
         method: body === undefined ? "GET" : "POST",
@@ -435,7 +481,7 @@ export function useRealtimeWebSocketSession(
       startResponse.value = start;
 
       const clientSecret = dialect.secret(start);
-      if (!clientSecret) {
+      if (dialect.requiresSecret !== false && !clientSecret) {
         throw new Error(
           `No ${dialect.name} client secret received from server`,
         );
@@ -468,13 +514,19 @@ export function useRealtimeWebSocketSession(
 
       state.audioManager = new AudioStreamManager();
       state.audioManager.setPlaybackEventHandlers({
-        onPlaybackStarted: () => handlers.onAudioPlaybackStarted?.(),
-        onPlaybackStopped: () => handlers.onAudioPlaybackStopped?.(),
+        onPlaybackStarted: () => {
+          playbackActive = true;
+          handlers.onAudioPlaybackStarted?.();
+        },
+        onPlaybackStopped: () => {
+          playbackActive = false;
+          handlers.onAudioPlaybackStopped?.();
+        },
       });
 
       const ws = new WebSocket(
         dialect.url(modelId),
-        dialect.protocols(clientSecret),
+        dialect.protocols(clientSecret ?? ""),
       );
       state.ws = ws;
       ws.onopen = () => handleWebSocketOpen(instructions, tools);
@@ -521,7 +573,8 @@ export function useRealtimeWebSocketSession(
 
   // Neither Grok nor ElevenLabs takes image input: Grok drops an input_image
   // part, ElevenLabs accepts it and its model says it sees no image. So tools
-  // that return images only report their text.
+  // that return images only report their text. llama.cpp's realtime endpoint
+  // also accepts only text and streamed audio (not the model's image input).
   const sendImagesToModel = () => false;
 
   const isDataChannelOpen = () => state.ws?.readyState === WebSocket.OPEN;

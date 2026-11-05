@@ -75,6 +75,11 @@ export const GROK_VOICE_MODELS: GrokVoiceModelOption[] = [
 
 export const DEFAULT_GROK_VOICE_MODEL_ID = GROK_VOICE_MODELS[0].id;
 
+export const LIQUID_VOICE_MODEL = {
+  id: "LFM3-Omni-2B",
+  label: "LFM3 Omni 2B (local)",
+};
+
 export interface VoiceModelChoice {
   models: readonly RealtimeModelOption[];
   defaultId: string;
@@ -108,6 +113,11 @@ export const VOICE_MODELS_FOR_KIND: Record<
     defaultId: DEFAULT_ELEVENLABS_VOICE_MODEL_ID,
     fallbackLabel: "Eleven Realtime",
   },
+  "voice-liquid": {
+    models: [LIQUID_VOICE_MODEL],
+    defaultId: LIQUID_VOICE_MODEL.id,
+    fallbackLabel: "LFM3 Omni",
+  },
   "text-rest": null,
 };
 
@@ -132,5 +142,6 @@ export const VOICE_PROVIDER_FOR_KIND: Record<
   "voice-google-live": "google",
   "voice-grok": "xai",
   "voice-elevenlabs": "elevenlabs",
+  "voice-liquid": null,
   "text-rest": null,
 };

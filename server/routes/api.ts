@@ -194,6 +194,17 @@ router.post(
   },
 );
 
+// Local inference needs feature flags, but no cloud credential or key mint.
+router.post(
+  "/start/liquid",
+  localClientOnly("Local voice is"),
+  requireTrustedOrigin,
+  (_req: Request, res: Response): void => {
+    res.set("Cache-Control", "no-store");
+    res.json({ ...startFlags(), ephemeralKey: "" } satisfies StartApiResponse);
+  },
+);
+
 // Session start endpoint. `?voice=grok` mints an xAI client secret for the
 // Grok voice transport instead of the OpenAI ephemeral key.
 router.get("/start", async (req: Request, res: Response): Promise<void> => {
