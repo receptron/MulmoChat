@@ -2,6 +2,8 @@
  * Backend API calls for markdown plugin
  */
 
+import { postJson } from "./postJson";
+
 export interface SaveImagesParams {
   uuid: string;
   images: Record<string, string>; // imageId -> base64 data URL
@@ -16,17 +18,5 @@ export interface SaveImagesResponse {
 export async function saveImages(
   params: SaveImagesParams,
 ): Promise<SaveImagesResponse> {
-  const response = await fetch("/api/save-images", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Server error: ${response.statusText}`);
-  }
-
-  return response.json();
+  return postJson("/api/save-images", params);
 }

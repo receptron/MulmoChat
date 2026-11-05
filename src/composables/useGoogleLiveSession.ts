@@ -1,10 +1,8 @@
 /* global WebSocket, CloseEvent */
 
-import { ref, shallowRef } from "vue";
-import type { StartApiResponse } from "../../server/types";
+import { shallowRef } from "vue";
 import type { ToolCallMessage } from "./types";
 import {
-  type RealtimeSessionEventHandlers,
   type RealtimeSessionOptions,
   type UseRealtimeSessionReturn,
 } from "./useRealtimeSession";
@@ -18,6 +16,7 @@ import {
   GOOGLE_LIVE_MODELS,
 } from "../config/models";
 import { resolveVoice } from "../../server/utils/voices";
+import { useSessionBase } from "./sessionBase";
 
 // Types for Google Live API
 interface GoogleLiveState {
@@ -105,24 +104,15 @@ interface GoogleSetupMessage {
 export function useGoogleLiveSession(
   options: RealtimeSessionOptions,
 ): UseRealtimeSessionReturn {
-  let handlers: RealtimeSessionEventHandlers = {
-    ...(options.handlers ?? {}),
-  };
-
-  const registerEventHandlers = (
-    newHandlers: Partial<RealtimeSessionEventHandlers>,
-  ) => {
-    handlers = {
-      ...handlers,
-      ...newHandlers,
-    };
-  };
-
-  const chatActive = ref(false);
-  const conversationActive = ref(false);
-  const connecting = ref(false);
-  const isMuted = ref(false);
-  const startResponse = ref<StartApiResponse | null>(null);
+  const {
+    currentHandlers,
+    registerEventHandlers,
+    chatActive,
+    conversationActive,
+    connecting,
+    isMuted,
+    startResponse,
+  } = useSessionBase(options.handlers);
   const pendingToolCalls = new Map<string, PendingToolCall>();
   const processedToolCalls = new Set<string>();
   // Each running call's tool name, for its toolResponse. Set before the call
@@ -201,14 +191,14 @@ export function useGoogleLiveSession(
       data = JSON.parse(jsonString);
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
-      handlers.onError?.(error);
+      currentHandlers().onError?.(error);
       return;
     }
 
     // Handle errors from Google
     if (data.error) {
       console.error("Google Live API error:", data.error);
-      handlers.onError?.(data.error);
+      currentHandlers().onError?.(data.error);
       return;
     }
 
@@ -226,7 +216,7 @@ export function useGoogleLiveSession(
       // is over here too, so a "stop" said while the tool runs is new speech.
       if (userSpeaking) {
         userSpeaking = false;
-        handlers.onSpeechStopped?.();
+        currentHandlers().onSpeechStopped?.();
       }
       const functionCalls = data.toolCall.functionCalls || [];
       // A batch's calls run together, as the other transports run them, so
@@ -258,7 +248,9 @@ export function useGoogleLiveSession(
         const argStr = JSON.stringify(fixedArgs);
 
         calls.push(
-          Promise.resolve(handlers.onToolCall?.(toolCallMsg, callId, argStr)),
+          Promise.resolve(
+            currentHandlers().onToolCall?.(toolCallMsg, callId, argStr),
+          ),
         );
       }
       await Promise.all(calls);
@@ -276,24 +268,24 @@ export function useGoogleLiveSession(
         !userSpeaking
       ) {
         userSpeaking = true;
-        handlers.onSpeechStarted?.();
+        currentHandlers().onSpeechStarted?.();
       }
 
       // Check for model turn
       if (serverContent.modelTurn) {
         if (userSpeaking) {
           userSpeaking = false;
-          handlers.onSpeechStopped?.();
+          currentHandlers().onSpeechStopped?.();
         }
         conversationActive.value = true;
-        handlers.onConversationStarted?.();
+        currentHandlers().onConversationStarted?.();
 
         const parts = serverContent.modelTurn.parts || [];
 
         for (const part of parts) {
           // Handle text response
           if (part.text) {
-            handlers.onTextDelta?.(part.text);
+            currentHandlers().onTextDelta?.(part.text);
           }
 
           // Handle audio response (inlineData format)
@@ -324,7 +316,7 @@ export function useGoogleLiveSession(
       // Check if turn is complete (at serverContent level, not just modelTurn)
       if (serverContent.turnComplete) {
         googleLive.audioManager?.endOfReply();
-        handlers.onTextCompleted?.();
+        currentHandlers().onTextCompleted?.();
 
         // Process all pending tool calls (from old serverContent.modelTurn.parts format)
         const calls: Promise<void>[] = [];
@@ -341,7 +333,7 @@ export function useGoogleLiveSession(
             callNames.set(callId, functionCall.name);
             calls.push(
               Promise.resolve(
-                handlers.onToolCall?.(toolCallMsg, callId, argStr),
+                currentHandlers().onToolCall?.(toolCallMsg, callId, argStr),
               ),
             );
           }
@@ -349,7 +341,7 @@ export function useGoogleLiveSession(
         pendingToolCalls.clear();
         await Promise.all(calls);
         conversationActive.value = false;
-        handlers.onConversationFinished?.();
+        currentHandlers().onConversationFinished?.();
       }
     }
 
@@ -361,7 +353,7 @@ export function useGoogleLiveSession(
 
   const handleWebSocketError = (error: Event) => {
     console.error("WebSocket error:", error);
-    handlers.onError?.(error);
+    currentHandlers().onError?.(error);
   };
 
   const handleWebSocketClose = (event: CloseEvent) => {
@@ -372,7 +364,7 @@ export function useGoogleLiveSession(
     // why, e.g. "Your prepayment credits are depleted".
     if (googleLive.ws === event.target && event.code !== 1000) {
       const reason = event.reason ? `: ${event.reason}` : "";
-      handlers.onError?.(
+      currentHandlers().onError?.(
         new Error(`Gemini Live closed the connection (${event.code})${reason}`),
       );
     }
@@ -557,20 +549,20 @@ export function useGoogleLiveSession(
       // Set up audio playback event handlers for avatar lip-sync, visual feedback, etc.
       console.log(
         "[Avatar Debug] Google: Setting up audioManager handlers, onAudioPlaybackStarted exists:",
-        !!handlers.onAudioPlaybackStarted,
+        !!currentHandlers().onAudioPlaybackStarted,
       );
       googleLive.audioManager.setPlaybackEventHandlers({
         onPlaybackStarted: () => {
           console.log(
             "[Avatar Debug] Google: audioManager callback onPlaybackStarted called",
           );
-          handlers.onAudioPlaybackStarted?.();
+          currentHandlers().onAudioPlaybackStarted?.();
         },
         onPlaybackStopped: () => {
           console.log(
             "[Avatar Debug] Google: audioManager callback onPlaybackStopped called",
           );
-          handlers.onAudioPlaybackStopped?.();
+          currentHandlers().onAudioPlaybackStopped?.();
         },
       });
 
@@ -589,7 +581,7 @@ export function useGoogleLiveSession(
     } catch (err) {
       console.error("Failed to start Google Live session:", err);
       stopChat();
-      handlers.onError?.(
+      currentHandlers().onError?.(
         new Error(
           `Failed to start Gemini Live: ${err instanceof Error ? err.message : String(err)}`,
         ),

@@ -4,6 +4,7 @@
 
 import type { ToolContext } from "gui-chat-protocol/vue";
 import { getRawPluginConfig } from "./config";
+import { postJson } from "./postJson";
 
 export type HtmlBackend = "claude" | "gemini";
 
@@ -35,17 +36,5 @@ export interface HtmlGenerationResponse {
 export async function generateHtml(
   params: HtmlGenerationParams,
 ): Promise<HtmlGenerationResponse> {
-  const response = await fetch("/api/generate-html", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Server error: ${response.statusText}`);
-  }
-
-  return response.json();
+  return postJson("/api/generate-html", params);
 }

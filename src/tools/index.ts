@@ -10,6 +10,7 @@ import type {
 import { v4 as uuidv4 } from "uuid";
 import { getRole, ROLES } from "../config/roles";
 import type { ToolPlugin, ToolExecuteFn, GetToolPluginFn } from "./types";
+import { isPluginSelected, type RoleRules } from "./pluginSelection";
 import { createToolDefinition as createSwitchRoleToolDefinition } from "@gui-chat-plugin/switch-role/vue";
 
 // External plugins from npm packages
@@ -378,46 +379,36 @@ const toolDefinitionForModel = (tool: ToolDefinition): ToolDefinition => {
   return definition;
 };
 
+const roleRules: RoleRules = { isPluginAvailableInRole, isRoleCustomizable };
+
+const activePlugins = (
+  startResponse: StartApiResponse | null | undefined,
+  enabledPlugins: Record<string, boolean> | undefined,
+  roleId: string | undefined,
+) =>
+  pluginList.filter(
+    (plugin) =>
+      plugin.plugin.isEnabled(startResponse) &&
+      isPluginSelected(
+        plugin.plugin.toolDefinition.name,
+        enabledPlugins,
+        roleId,
+        roleRules,
+      ),
+  );
+
 export const pluginTools = (
   startResponse?: StartApiResponse | null,
   enabledPlugins?: Record<string, boolean>,
   roleId?: string,
 ) => {
-  return pluginList
-    .filter((plugin) => {
-      const toolName = plugin.plugin.toolDefinition.name;
-
-      // Server-level: Does plugin have required API credentials?
-      if (!plugin.plugin.isEnabled(startResponse)) {
-        return false;
-      }
-
-      // If no role specified, default to enabled
-      if (!roleId) {
-        return enabledPlugins?.[toolName] ?? true;
-      }
-
-      // Role-level filtering
-      const availableInRole = isPluginAvailableInRole(toolName, roleId);
-      if (!availableInRole) {
-        return false;
-      }
-
-      // User-level: Only applies to customizable roles
-      if (isRoleCustomizable(roleId)) {
-        return enabledPlugins?.[toolName] ?? true;
-      }
-
-      // Fixed role: plugin is in the list, so it's enabled
-      return true;
-    })
-    .map((plugin) => {
-      // Use dynamic tool definition for switchRole with app roles
-      if (plugin.plugin.toolDefinition.name === "switchRole") {
-        return switchRoleToolDefinition;
-      }
-      return toolDefinitionForModel(plugin.plugin.toolDefinition);
-    });
+  return activePlugins(startResponse, enabledPlugins, roleId).map((plugin) => {
+    // Use dynamic tool definition for switchRole with app roles
+    if (plugin.plugin.toolDefinition.name === "switchRole") {
+      return switchRoleToolDefinition;
+    }
+    return toolDefinitionForModel(plugin.plugin.toolDefinition);
+  });
 };
 
 export const getPluginSystemPrompts = (
@@ -425,30 +416,7 @@ export const getPluginSystemPrompts = (
   enabledPlugins?: Record<string, boolean>,
   roleId?: string,
 ): string => {
-  const prompts = pluginList
-    .filter((plugin) => {
-      const toolName = plugin.plugin.toolDefinition.name;
-
-      // Same filtering logic as pluginTools
-      if (!plugin.plugin.isEnabled(startResponse)) {
-        return false;
-      }
-
-      if (!roleId) {
-        return enabledPlugins?.[toolName] ?? true;
-      }
-
-      const availableInRole = isPluginAvailableInRole(toolName, roleId);
-      if (!availableInRole) {
-        return false;
-      }
-
-      if (isRoleCustomizable(roleId)) {
-        return enabledPlugins?.[toolName] ?? true;
-      }
-
-      return true;
-    })
+  const prompts = activePlugins(startResponse, enabledPlugins, roleId)
     .map(
       (plugin) =>
         plugin.plugin.systemPrompt ?? plugin.plugin.toolDefinition.prompt,
@@ -592,22 +560,8 @@ export const getEnabledBackends = (
 
   pluginList.forEach((plugin) => {
     const toolName = plugin.plugin.toolDefinition.name;
-
-    if (roleId) {
-      const availableInRole = isPluginAvailableInRole(toolName, roleId);
-      if (!availableInRole) {
-        return;
-      }
-
-      if (isRoleCustomizable(roleId)) {
-        if (!(enabledPlugins?.[toolName] ?? true)) {
-          return;
-        }
-      }
-    } else {
-      if (!(enabledPlugins?.[toolName] ?? true)) {
-        return;
-      }
+    if (!isPluginSelected(toolName, enabledPlugins, roleId, roleRules)) {
+      return;
     }
 
     // Add backends from this plugin

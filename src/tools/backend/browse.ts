@@ -2,6 +2,8 @@
  * Backend API calls for browse plugin
  */
 
+import { postJson } from "./postJson";
+
 export interface BrowseResponse {
   success: boolean;
   data?: {
@@ -18,19 +20,7 @@ export interface BrowseResponse {
 }
 
 export async function browseUrl(url: string): Promise<BrowseResponse> {
-  const response = await fetch("/api/browse", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ url }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Server error: ${response.statusText}`);
-  }
-
-  return response.json();
+  return postJson("/api/browse", { url });
 }
 
 export async function getTwitterEmbed(url: string): Promise<string | null> {

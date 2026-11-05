@@ -44,17 +44,18 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 
 ## Server APIs (all under `/api`)
 - `/start` — exchanges `OPENAI_API_KEY` for a Realtime ephemeral key, issued for the model in `?model=` (default `gpt-realtime-2.1`). It also returns feature flags and keys (`hasExaApiKey`, `hasAnthropicApiKey`, `hasGoogleApiKey`, `hasXaiApiKey`, `googleMapKey`, `googleApiKey`). With `?voice=grok` it mints an xAI client secret (`grokClientSecret`) instead of the OpenAI key.
-- `/text/providers`, `/text/generate` — text LLM. `/text/session/...` is a server-side session API; the current client doesn't use it.
+- `/text/providers`, `/text/generate` — text LLM. Stateless: the client sends the whole conversation each turn.
 - `/generate-image` (Gemini), `/generate-image/openai`, `/generate-image/comfy` (ComfyUI).
 - `/plugin/:toolName` — runs a server-run plugin's `execute()`. `/plugin-events` — server-sent events for plugin Views. `/plugin-host-tools` — definitions of host tools. `/mulmoscript/media` — presentMulmoScript movies and PDFs.
 - `/generate-html`.
-- `/check-pdf`, `/summarize-pdf`, `/generate-pdf`, `/save-pdf`, `/download-pdf`.
+- `/check-pdf`, `/summarize-pdf`, `/save-pdf`.
 - `/save-images`.
 - `/browse`, `/exa-search`, `/twitter-embed`, plus `/health` and `/config`.
 
 ## Scripts
 - `yarn dev` runs the server (`tsx server/index.ts`) and Vite together. `yarn dev:server` / `yarn dev:client` start one side only (`yarn server` is the same as `yarn dev:server`).
 - `yarn typecheck` (`vue-tsc --noEmit`), `yarn lint` (ESLint on `src` and `server`), `yarn format` (Prettier), `yarn knip` (dead code).
+- `yarn test` runs the unit tests in `test/test_*.ts` (`node:test`, no API keys).
 - `yarn test:text:<provider>`, `yarn test:tools:<provider>` and `yarn test:image:<comfy|openai>` are smoke tests. They call real APIs.
 - `yarn benchmark:llm` runs the LLM benchmark.
 - Avoid `yarn build` / `yarn preview` / `yarn start` during development; they create build artifacts.
@@ -80,5 +81,5 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 - Request bodies can be up to 500 MB (the Express body parser limit).
 
 ## Testing and CI
-- There are no unit tests. CI (`.github/workflows/pull_request.yaml`) runs `typecheck`, `lint` and `build` on every PR. Separate workflows scan for dead code and duplicated code.
+- Unit tests live in `test/test_*.ts` and cover the rules pulled out into pure functions. CI (`.github/workflows/pull_request.yaml`) runs `typecheck`, `lint`, `test` and `build` on every PR. Separate workflows scan for dead code and duplicated code.
 - Before committing, run `yarn typecheck`, `yarn lint` and `yarn format`.
