@@ -132,6 +132,7 @@ const resolveStoredModelKind = (
 ): SessionTransportKind => {
   if (stored === "text-rest") return "text-rest";
   if (stored === "voice-google-live") return "voice-google-live";
+  if (stored === "voice-liquid") return "voice-liquid";
   if (stored === "voice-grok") return "voice-grok";
   if (stored === "voice-elevenlabs") return "voice-elevenlabs";
   return "voice-realtime";

@@ -217,6 +217,7 @@
               >
                 <option value="voice-realtime">Voice (OpenAI Realtime)</option>
                 <option value="voice-google-live">Voice (Google Live)</option>
+                <option value="voice-liquid">Voice (LFM3 Omni, local)</option>
                 <option value="voice-grok">Voice (Grok)</option>
                 <option value="voice-elevenlabs">Voice (ElevenLabs)</option>
                 <option
@@ -234,6 +235,13 @@
                 key needed" has no key set on the server.
               </p>
             </div>
+
+            <p v-if="isLiquidVoice" class="text-xs text-gray-500">
+              LFM3 Omni 2B via local llama.cpp. Speak, then pause to send. The
+              microphone pauses while the assistant answers. Text and audio are
+              supported; images are not supported by the realtime endpoint. See
+              README for setup.
+            </p>
 
             <div v-if="isOpenAIRealtime">
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -794,8 +802,10 @@ const isVoiceMode = computed(
     props.modelKind === "voice-realtime" ||
     props.modelKind === "voice-google-live" ||
     props.modelKind === "voice-grok" ||
-    props.modelKind === "voice-elevenlabs",
+    props.modelKind === "voice-elevenlabs" ||
+    props.modelKind === "voice-liquid",
 );
+const isLiquidVoice = computed(() => props.modelKind === "voice-liquid");
 const isOpenAIRealtime = computed(() => props.modelKind === "voice-realtime");
 const isGoogleLive = computed(() => props.modelKind === "voice-google-live");
 const isGrokVoice = computed(() => props.modelKind === "voice-grok");
@@ -805,7 +815,11 @@ const isElevenLabsVoice = computed(
 // Transports whose text messages go over the live connection, so typing is
 // off until it is open.
 const needsConnectionToSend = computed(
-  () => isOpenAIRealtime.value || isGrokVoice.value || isElevenLabsVoice.value,
+  () =>
+    isOpenAIRealtime.value ||
+    isGrokVoice.value ||
+    isElevenLabsVoice.value ||
+    isLiquidVoice.value,
 );
 const isTextRest = computed(() => props.modelKind === "text-rest");
 const voiceProvider = computed(() => VOICE_PROVIDER_FOR_KIND[props.modelKind]);

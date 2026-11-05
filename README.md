@@ -159,3 +159,43 @@ You can override these defaults by passing parameters in the request body.
 - The default timeout is set to 5 minutes to accommodate model loading
 - ComfyUI Desktop must be running for the API endpoint to work
 - FLUX Schnell is optimized for speed with 4 steps, providing fast generation with good quality
+
+### Local voice with LFM3 Omni 2B
+
+Install [llama.cpp v0.8.0 (b11960) or newer](https://github.com/ggml-org/llama.cpp/releases), then start the model:
+
+```sh
+llama serve -hf LiquidAI/LFM3-Omni-2B-GGUF:Q4_K_M --reasoning off --temp 0 --port 8080
+```
+
+On macOS 14/15, affected llama.cpp/GGML builds can fail to initialize Metal
+with `constexpr function never produces a constant expression` in a BF16 shader.
+Use this verified workaround to keep Metal acceleration enabled:
+
+```sh
+GGML_METAL_BF16_DISABLE=1 llama serve \
+  -hf LiquidAI/LFM3-Omni-2B-GGUF:Q4_K_M \
+  --reasoning off --temp 0 --port 8080
+```
+
+The [upstream shader fix](https://github.com/ggml-org/llama.cpp/pull/31360)
+removes the need for this workaround once included in the installed GGML build.
+
+The first run downloads the model and its audio/vision projector. In MulmoChat's
+Configuration, select **Voice (LFM3 Omni, local)** and connect. No cloud LLM key
+is required for this mode; plugins that use cloud services still need their keys.
+Start MulmoChat separately with `yarn dev` and open the URL printed by Vite.
+If its default port is occupied, Vite selects the next available port; or run
+`yarn dev:server` and `yarn dev:client --port 5174` in separate terminals.
+
+The browser connects directly to `ws://127.0.0.1:8080/v1/realtime`. To use another
+endpoint, set `VITE_LFM_REALTIME_URL` in `.env` and restart Vite. The address is
+relative to the browser's machine. An HTTPS deployment needs a reachable `wss://`
+endpoint, and microphone access requires HTTPS or localhost. This integration
+expects a llama.cpp endpoint without API-key authentication.
+
+Voice turns end after about 700 ms of silence, with a 30-second maximum per turn.
+The browser detects speech locally; microphone input pauses while the assistant
+generates or plays its answer. Typed messages and plugin tool calls also work.
+The current llama.cpp realtime API accepts text and audio only, so this mode does
+not send images or video to the model. It uses the server's default speech voice.

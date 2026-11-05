@@ -8,6 +8,7 @@ import { useVoiceRealtimeSession } from "./useVoiceRealtimeSession";
 import { useTextSession } from "./useTextSession";
 import { useGoogleLiveSession } from "./useGoogleLiveSession";
 import { useGrokVoiceSession } from "./useGrokVoiceSession";
+import { useLiquidVoiceSession } from "./useLiquidVoiceSession";
 import { useElevenLabsVoiceSession } from "./useElevenLabsVoiceSession";
 
 type MaybeRef<T> = T | Ref<T>;
@@ -17,7 +18,8 @@ export type SessionTransportKind =
   | "text-rest"
   | "voice-google-live"
   | "voice-grok"
-  | "voice-elevenlabs";
+  | "voice-elevenlabs"
+  | "voice-liquid";
 
 export interface SessionTransportCapabilities {
   supportsAudioInput: boolean;
@@ -45,6 +47,7 @@ const TRANSPORT_CAPABILITIES: Record<
   "voice-google-live": { ...VOICE, answersToolOutputs: true },
   "voice-grok": VOICE,
   "voice-elevenlabs": VOICE,
+  "voice-liquid": VOICE,
   "text-rest": {
     supportsAudioInput: false,
     supportsAudioOutput: false,
@@ -81,6 +84,7 @@ export function useSessionTransport(
     "voice-google-live": useGoogleLiveSession(realtimeOptions),
     "voice-grok": useGrokVoiceSession(realtimeOptions),
     "voice-elevenlabs": useElevenLabsVoiceSession(realtimeOptions),
+    "voice-liquid": useLiquidVoiceSession(realtimeOptions),
   };
 
   const sessionFor = (kind: SessionTransportKind) => sessions[kind];
