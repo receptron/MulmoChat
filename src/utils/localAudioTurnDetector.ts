@@ -15,6 +15,7 @@ export function createLocalAudioTurnDetector(sampleRate: number) {
   };
   return {
     reset,
+    isSpeaking: () => speaking,
     push(chunk: string) {
       const samples = decodePCM16ToFloat32(chunk);
       const ms = (samples.length / sampleRate) * 1000;

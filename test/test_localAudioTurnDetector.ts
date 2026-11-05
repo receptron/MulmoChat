@@ -17,13 +17,24 @@ describe("local audio turn detection", () => {
         ended: false,
       });
     }
+    assert.equal(detector.isSpeaking(), false);
     const start = detector.push(speech);
+    assert.equal(detector.isSpeaking(), true);
     assert.equal(start.started, true);
     assert.deepEqual(start.chunks, [silence, silence, speech]);
     for (let i = 0; i < 6; i++) {
-      assert.equal(detector.push(silence).ended, false);
+      assert.deepEqual(detector.push(silence), {
+        chunks: [silence],
+        started: false,
+        ended: false,
+      });
     }
-    assert.equal(detector.push(silence).ended, true);
+    assert.deepEqual(detector.push(silence), {
+      chunks: [silence],
+      started: false,
+      ended: true,
+    });
+    assert.equal(detector.isSpeaking(), false);
     assert.deepEqual(detector.push(silence).chunks, []);
     assert.equal(detector.push(speech).started, true);
   });
@@ -32,6 +43,7 @@ describe("local audio turn detection", () => {
     const detector = createLocalAudioTurnDetector(16000);
     detector.push(speech);
     detector.reset();
+    assert.equal(detector.isSpeaking(), false);
     assert.deepEqual(detector.push(silence).chunks, []);
     assert.equal(detector.push(speech).started, true);
   });

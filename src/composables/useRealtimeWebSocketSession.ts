@@ -88,6 +88,7 @@ export function useRealtimeWebSocketSession(
   const processedToolCalls = new Set<string>();
   const localTurns = createLocalAudioTurnDetector(dialect.inputSampleRate);
   let playbackActive = false;
+  const pendingLocalText: string[] = [];
   const selectedVoice = () =>
     dialect.voiceProvider
       ? resolveVoice(
@@ -162,11 +163,18 @@ export function useRealtimeWebSocketSession(
     return true;
   };
 
-  const requestResponse = (): boolean => {
-    if (responding()) {
+  const requestResponse = (audioTurn = false): boolean => {
+    // Audio is prefilling the server already. Finish that spoken turn before
+    // sending queued text, rather than closing partial speech into a typed turn.
+    if (dialect.clientTurnDetection && localTurns.isSpeaking()) return true;
+    if (responding() || (dialect.clientTurnDetection && playbackActive)) {
       responseHeld = true;
       return true;
     }
+    if (!audioTurn) {
+      for (const text of pendingLocalText.splice(0)) sendUserText(text);
+    }
+    responseHeld = false;
     responseRequested = true;
     lastCreateId = `mulmochat_response_${++createCount}`;
     return sendWebSocketMessage({
@@ -175,7 +183,7 @@ export function useRealtimeWebSocketSession(
     });
   };
 
-  const addUserText = (text: string) =>
+  const sendUserText = (text: string) =>
     sendWebSocketMessage({
       type: "conversation.item.create",
       item: {
@@ -184,6 +192,17 @@ export function useRealtimeWebSocketSession(
         content: [{ type: "input_text", text }],
       },
     });
+
+  const addUserText = (text: string): boolean => {
+    if (
+      dialect.clientTurnDetection &&
+      (localTurns.isSpeaking() || responding() || playbackActive)
+    ) {
+      pendingLocalText.push(text);
+      return true;
+    }
+    return sendUserText(text);
+  };
 
   const handleToolCall = async (event: RealtimeServerEvent) => {
     const callId = event.call_id;
@@ -280,7 +299,10 @@ export function useRealtimeWebSocketSession(
         conversationActive.value = false;
         currentHandlers().onTextCompleted?.();
         currentHandlers().onConversationFinished?.();
-        if (responseHeld && !responseRequested) {
+        if (
+          (responseHeld || pendingLocalText.length > 0) &&
+          !responseRequested
+        ) {
           responseHeld = false;
           requestResponse();
         }
@@ -332,7 +354,6 @@ export function useRealtimeWebSocketSession(
         (pcmChunk) => {
           if (dialect.clientTurnDetection) {
             if (responding() || playbackActive) {
-              localTurns.reset();
               return;
             }
             const turn = localTurns.push(pcmChunk);
@@ -345,7 +366,7 @@ export function useRealtimeWebSocketSession(
             }
             if (turn.ended) {
               currentHandlers().onSpeechStopped?.();
-              requestResponse();
+              requestResponse(true);
             }
             return;
           }
@@ -427,7 +448,10 @@ export function useRealtimeWebSocketSession(
       state.localStream.getTracks().forEach((track) => track.stop());
       state.localStream = null;
     }
+    // Closing the socket discards the server conversation, including any
+    // partially prefilled audio. Drop unsent text together with that session.
     localTurns.reset();
+    pendingLocalText.length = 0;
     playbackActive = false;
     processedToolCalls.clear();
     runningResponses.clear();
@@ -511,6 +535,9 @@ export function useRealtimeWebSocketSession(
         onPlaybackStopped: () => {
           playbackActive = false;
           currentHandlers().onAudioPlaybackStopped?.();
+          if (dialect.clientTurnDetection && responseHeld && !responding()) {
+            requestResponse();
+          }
         },
       });
 
