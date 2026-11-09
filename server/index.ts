@@ -7,6 +7,7 @@ import { htmlPreviewRouter } from "./plugins/htmlHost.js";
 import { logger, logApiError } from "./utils/logger.js";
 import { mockImageDelayMs } from "./utils/mockImage.js";
 import { fileRouteRateLimit } from "./utils/rateLimit.js";
+import { outputStatic } from "./utils/outputStatic.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,8 +40,8 @@ app.use("/api", apiRoutes);
 // presentHtml pages for the View's iframe (sandboxed; see plugins/htmlHost.ts)
 app.use(htmlPreviewRouter);
 
-// Serve output directory for generated files
-app.use("/output", express.static(path.join(process.cwd(), "output")));
+// Serve output directory for generated files (never output/workspace)
+app.use("/output", outputStatic(path.join(process.cwd(), "output")));
 
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {
