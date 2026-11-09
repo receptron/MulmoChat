@@ -7,7 +7,8 @@
 // presentDocument can also read and overwrite `.md` files anywhere inside it
 // (markdownHost.ts).
 // Over HTTP, only presentHtml pages (htmlHost.ts) and presentMulmoScript movies
-// and PDFs (mulmoscriptHost.ts) are served.
+// and PDFs (mulmoscriptHost.ts) are served; the fallback output/workspace is
+// kept out of the /output mount (utils/outputStatic.ts).
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
