@@ -79,20 +79,26 @@ Tool calling decides it; the other three would narrow a transport, not rule it o
 
 - **A tool-free conversation role**, such as English conversation practice (empty `availablePlugins`).
   Its interruptions and backchannels would feel more natural than any turn-based API.
-- **A hybrid:** a separate text model reads the `0x02` transcript and calls tools. The results can't
-  be fed back into the voice model, so it would talk without knowing what is on the screen. Worth it
-  only for a full-duplex demo.
+- **A hybrid:** a separate text model calls the tools. The `0x02` stream carries only PersonaPlex's
+  own speech, so the user's speech needs its own transcription (an ASR on the microphone) for that
+  model to know what was asked. The results can't be fed back into the voice model, so it would talk
+  without knowing what is on the screen. Worth it only for a full-duplex demo.
 
 ## What would change the verdict
 
-Native tool calling on the live `/api/chat` stream. If it lands, the wiring would be:
+Native tool calling on the live `/api/chat` stream, with a way to send each tool's result back into
+the session: plugins such as `manageJingleScript` return text the model has to read. Outbound calls
+alone are not enough. If both land, the wiring would be:
 
-1. A new `SessionTransportKind` value; the compiler then lists the `Record<SessionTransportKind, …>`
+1. A client transport of its own. PersonaPlex's binary protocol (handshake, `0x01` Opus, `0x02` text)
+   is not the OpenAI Realtime events, so it can't be a `RealtimeDialect` of
+   `useRealtimeWebSocketSession` the way Grok and ElevenLabs are.
+2. A new `SessionTransportKind` value; the compiler then lists the `Record<SessionTransportKind, …>`
    tables to fill (capabilities, `VOICE_MODELS_FOR_KIND`, `VOICE_PROVIDER_FOR_KIND`).
-2. The `if` chains it doesn't list: `resolveStoredModelKind`, and in `Sidebar.vue` the option,
+3. The `if` chains it doesn't list: `resolveStoredModelKind`, and in `Sidebar.vue` the option,
    `isVoiceMode`, the model select and `needsConnectionToSend`.
-3. A server WebSocket proxy to the GPU host, guarded like `/api/start/elevenlabs`
+4. A server WebSocket proxy to the GPU host, guarded like `/api/start/elevenlabs`
    (`localClientOnly`, `requireTrustedOrigin`), with the voice name checked against a whitelist.
-4. `sendImagesToModel` returning false, and follow-up instructions unsupported unless upstream adds a
+5. `sendImagesToModel` returning false, and follow-up instructions unsupported unless upstream adds a
    way to send text mid-session.
-5. A new row in the `CLAUDE.md` transport matrix.
+6. A new row in the `CLAUDE.md` transport matrix.
