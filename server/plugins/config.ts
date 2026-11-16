@@ -10,6 +10,10 @@ export const PLUGIN_PACKAGES: readonly string[] = [
   "@mulmoclaude/markdown-plugin",
   "@mulmoclaude/html-plugin",
   "@gui-chat-plugin/shapescript",
+  // presentBrep. Its script is JavaScript run in this process, unsandboxed
+  // (node:vm in the server's own realm): the model can run code on this
+  // machine through it.
+  "@gui-chat-plugin/brep",
   "@gui-chat-plugin/jinglescript",
   // manageKenteiScript; the package has no "." export, only subpaths
   "kenteiscript/plugin",

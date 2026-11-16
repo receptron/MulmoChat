@@ -33,6 +33,7 @@ import MarkdownPlugin from "@mulmoclaude/markdown-plugin/vue";
 import EditImagePlugin from "@gui-chat-plugin/edit-image/vue";
 import MulmoScriptPlugin from "@mulmoclaude/mulmoscript-plugin/vue";
 import ShapeScriptPlugin from "@gui-chat-plugin/shapescript/vue";
+import BrepPlugin from "@gui-chat-plugin/brep/vue";
 import JingleScriptPlugin from "@gui-chat-plugin/jinglescript/vue";
 import KenteiScriptPlugin from "kenteiscript/plugin/vue";
 import CameraPlugin from "@gui-chat-plugin/camera/vue";
@@ -178,6 +179,15 @@ const ServerShapeScriptPlugin = {
   plugin: runOnServer(ShapeScriptPlugin.plugin, () => ({})),
 };
 
+// presentBrep runs on the server, and only there: the model's replicad script
+// is built by the OpenCascade kernel in Node, and the package's page entry
+// carries the View alone. The script, a STEP file, an STL and a sheet of
+// drawings are saved under artifacts/brep/; the View draws the mesh that
+// comes back in the result.
+const ServerBrepPlugin = {
+  plugin: runOnServer(BrepPlugin.plugin, () => ({})),
+};
+
 // manageJingleScript renders a jingle on the server (jinglescript, with ffmpeg
 // for MP3 when it is installed, on a worker thread) and returns the audio
 // inline, which the View plays. A render that takes more than a moment (a long
@@ -243,6 +253,7 @@ const registeredPlugins = [
   ServerMulmoScriptPlugin,
   ServerShapeScriptPlugin,
   RenderShapeScriptPlugin,
+  ServerBrepPlugin,
   ServerJingleScriptPlugin,
   ServerKenteiScriptPlugin,
   ReadXPostPlugin,
