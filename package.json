@@ -43,6 +43,7 @@
     "@anthropic-ai/sdk": "^0.135.0",
     "@google/genai": "^2.32.0",
     "@gui-chat-plugin/avatar": "^2.1.0",
+    "@gui-chat-plugin/brep": "^0.1.0",
     "@gui-chat-plugin/browse": "^2.1.0",
     "@gui-chat-plugin/camera": "^2.1.0",
     "@gui-chat-plugin/canvas": "^2.1.0",
