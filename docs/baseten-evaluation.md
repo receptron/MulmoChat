@@ -135,9 +135,15 @@ The first three decide whether to wire it; the rest shape the wiring.
    response the client didn't ask for, like ElevenLabs' chained responses. The held-response
    bookkeeping in `useRealtimeWebSocketSession` (by response id, until the last `response.done`)
    has to be checked against it, or the setting turned off.
-6. **Queued `response.create`.** Baseten queues what Grok drops. The shared session holds
-   instructions until `response.done` anyway, so this should be harmless, but a queued one plus a
-   held one must not become two replies.
+6. **Queued `response.create`: two replies as the shared session stands.** Baseten queues what
+   Grok drops. Holding instructions until `response.done` covers the usual case, but not a
+   `response.create` that crosses the server's response to the user's turn (sent after
+   `speech_stopped`, before that response's `response.created`). The shared session takes one that
+   has had no response by `response.done` for dropped and asks again; Baseten runs the queued one
+   too. The retry has to be a `RealtimeDialect` option that Baseten turns off, with a test of that
+   order of events (`speech_stopped`, our `response.create`, the server's `response.created`,
+   `response.done`) giving one reply. Whether Baseten really queues in that gap is to be observed
+   first.
 7. **Echo.** The documentation's example "doesn't cancel echo, so on speakers the agent hears itself
    and stops mid-reply". The browser's `getUserMedia` echo cancellation should cover it, as it does
    for Grok; confirm on speakers.
@@ -160,7 +166,9 @@ Not to be started before access arrives and questions 1 to 3 have answers.
    including `x_llm.base_url` (an endpoint of the caller's choosing) and `x_delegation` (billed to
    the account). ElevenLabs fixes the model and voice in the secret on the server; the equivalent
    here is the relay checking or rewriting `session.update`: voice against a `VOICES.baseten` list,
-   `x_` fields from an allowlist.
+   `x_` fields from an allowlist, and `tools` limited to entries of type `function`. A `tools` entry
+   of type `mcp` carries a `server_url`, so one passed through has Baseten connect to a server of
+   the page's choosing and run its tools there.
 3. **A `RealtimeDialect`** (`useBasetenVoiceSession.ts`): `requiresSecret: false`, `url` pointing at
    our relay, `protocols: () => []`, `inputSampleRate: 24000`, and a `session` with `audio/pcm`
    formats, the voice, `turn_detection`, the transcription language and `x_idle_timeout_secs`.
