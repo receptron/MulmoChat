@@ -857,9 +857,9 @@
   integrity sha512-tq1NAivSmhX3PI9gTXRT0+SJiiZKeNMwhA0nMkdLM6KbqFg3uOMp0GWUZvGrNtFaG+DnXCgWmmq7wx+SrR0CJg==
 
 "@hono/node-server@^1.19.9 || ^2.0.5":
-  version "2.1.5"
-  resolved "https://registry.yarnpkg.com/@hono/node-server/-/node-server-2.1.5.tgz#273db93e8bfb44ef361e55f3d00048013668aa09"
-  integrity sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==
+  version "2.1.9"
+  resolved "https://registry.yarnpkg.com/@hono/node-server/-/node-server-2.1.9.tgz#0e4fc55e787316d882c6f04fd5577e6a8ad55c72"
+  integrity sha512-Sk4NQd3GFY0WZWCzndwFMPwJhtD0y9qjsQ+pjID0/03nK9pxyBCUoUHCho8QYBLBVhi0ssL8UkNPHqbgSOFPIQ==
 
 "@humanfs/core@^0.19.2":
   version "0.19.2"
@@ -5050,9 +5050,9 @@ highlight.js@^11.11.1:
   integrity sha512-nbfWpyRMcMrPMmDwJB+dhX/eiaPKtc2RB+0QZskqJ3WjRA/FDS0e9hZrx8EC/lbEv8gXy98FcDbNa/dspAaJMg==
 
 hono@^4.11.4:
-  version "4.13.13"
-  resolved "https://registry.yarnpkg.com/hono/-/hono-4.13.13.tgz#8dd5459ce4aa44b3e297f0b350f86b0f6d4a79f0"
-  integrity sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==
+  version "4.13.19"
+  resolved "https://registry.yarnpkg.com/hono/-/hono-4.13.19.tgz#262deddee9ca079195f23ee0c6419eca8027ea2d"
+  integrity sha512-KmXvQAXwcAHV+muzbIwoJ23niEB5nMoDVr9WcRkU8mvjUECm/1+7v4Jgp7P7a+H6MLFrh+vXrGonGrGS+RQfkA==
 
 hookable@^5.5.3:
   version "5.5.3"
