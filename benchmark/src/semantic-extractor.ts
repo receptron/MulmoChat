@@ -134,6 +134,19 @@ function findAdjacentCells(
 }
 
 /**
+ * Every cell of the sheet, row by row
+ */
+function* cellsOf(
+  data: SpreadsheetSheet["data"],
+): Generator<{ row: number; col: number; cell: SpreadsheetCell }> {
+  for (let row = 0; row < data.length; row++) {
+    for (let col = 0; col < data[row].length; col++) {
+      yield { row, col, cell: data[row][col] };
+    }
+  }
+}
+
+/**
  * Find value associated with a label
  * Searches the entire row and prioritizes formula cells over static values
  */
@@ -145,87 +158,84 @@ export function findByLabel(
   const data = sheet.data;
 
   // Search all cells for the label
-  for (let row = 0; row < data.length; row++) {
-    for (let col = 0; col < data[row].length; col++) {
-      const cell = data[row][col];
-      const cellStr = extractStringValue(cell);
+  for (const { row, col, cell } of cellsOf(data)) {
+    const cellStr = extractStringValue(cell);
 
-      if (matchesLabel(cellStr, label, caseSensitive)) {
-        // Found the label, now look for value in the same row
-        // Collect all numeric cells in the same row (to the right of the label)
-        const numericCells: Array<{
-          location: CellLocation;
-          value: number;
-          hasFormula: boolean;
-        }> = [];
+    if (matchesLabel(cellStr, label, caseSensitive)) {
+      // Found the label, now look for value in the same row
+      // Collect all numeric cells in the same row (to the right of the label)
+      const numericCells: Array<{
+        location: CellLocation;
+        value: number;
+        hasFormula: boolean;
+      }> = [];
 
-        for (let c = col + 1; c < data[row].length; c++) {
-          const candidateCell = data[row][c];
-          const numValue = extractNumericValue(candidateCell);
-          if (numValue !== null) {
-            numericCells.push({
-              location: {
-                row,
-                col: c,
-                value: candidateCell,
-                formula: extractFormula(candidateCell) || undefined,
-              },
-              value: numValue,
-              hasFormula: hasFormula(candidateCell),
-            });
-          }
+      for (let c = col + 1; c < data[row].length; c++) {
+        const candidateCell = data[row][c];
+        const numValue = extractNumericValue(candidateCell);
+        if (numValue !== null) {
+          numericCells.push({
+            location: {
+              row,
+              col: c,
+              value: candidateCell,
+              formula: extractFormula(candidateCell) || undefined,
+            },
+            value: numValue,
+            hasFormula: hasFormula(candidateCell),
+          });
         }
+      }
 
-        // Prioritize cells with formulas over static values
-        const formulaCells = numericCells.filter((c) => c.hasFormula);
-        if (formulaCells.length > 0) {
-          // Return the rightmost formula cell (often the final result)
-          const bestCell = formulaCells[formulaCells.length - 1];
+      // Prioritize cells with formulas over static values
+      const formulaCells = numericCells.filter((c) => c.hasFormula);
+      if (formulaCells.length > 0) {
+        // Return the rightmost formula cell (often the final result)
+        const bestCell = formulaCells[formulaCells.length - 1];
+        return {
+          label,
+          value: bestCell.value,
+          location: bestCell.location,
+          confidence: 1.0,
+        };
+      }
+
+      // If no formula cells, return the first numeric cell
+      if (numericCells.length > 0) {
+        const bestCell = numericCells[0];
+        return {
+          label,
+          value: bestCell.value,
+          location: bestCell.location,
+          confidence: 0.9,
+        };
+      }
+
+      // If no numeric cells in the row, check adjacent cells (fallback)
+      const adjacent = findAdjacentCells(data, row, col);
+
+      for (const adjCell of adjacent) {
+        const numValue = extractNumericValue(adjCell.value);
+        if (numValue !== null) {
           return {
             label,
-            value: bestCell.value,
-            location: bestCell.location,
-            confidence: 1.0,
+            value: numValue,
+            location: adjCell,
+            confidence: 0.8,
           };
         }
+      }
 
-        // If no formula cells, return the first numeric cell
-        if (numericCells.length > 0) {
-          const bestCell = numericCells[0];
+      // If still no numeric value, return string value if available
+      for (const adjCell of adjacent) {
+        const strValue = extractStringValue(adjCell.value);
+        if (strValue && strValue !== label) {
           return {
             label,
-            value: bestCell.value,
-            location: bestCell.location,
-            confidence: 0.9,
+            value: strValue,
+            location: adjCell,
+            confidence: 0.7,
           };
-        }
-
-        // If no numeric cells in the row, check adjacent cells (fallback)
-        const adjacent = findAdjacentCells(data, row, col);
-
-        for (const adjCell of adjacent) {
-          const numValue = extractNumericValue(adjCell.value);
-          if (numValue !== null) {
-            return {
-              label,
-              value: numValue,
-              location: adjCell,
-              confidence: 0.8,
-            };
-          }
-        }
-
-        // If still no numeric value, return string value if available
-        for (const adjCell of adjacent) {
-          const strValue = extractStringValue(adjCell.value);
-          if (strValue && strValue !== label) {
-            return {
-              label,
-              value: strValue,
-              location: adjCell,
-              confidence: 0.7,
-            };
-          }
         }
       }
     }
@@ -244,32 +254,29 @@ export function extractAllLabeledValues(
   const data = sheet.data;
   const processed = new Set<string>();
 
-  for (let row = 0; row < data.length; row++) {
-    for (let col = 0; col < data[row].length; col++) {
-      const cell = data[row][col];
-      const cellStr = extractStringValue(cell);
+  for (const { row, col, cell } of cellsOf(data)) {
+    const cellStr = extractStringValue(cell);
 
-      // Skip if empty or already processed
-      if (!cellStr || processed.has(`${row},${col}`)) continue;
+    // Skip if empty or already processed
+    if (!cellStr || processed.has(`${row},${col}`)) continue;
 
-      // Check if this looks like a label (non-numeric string)
-      const numValue = extractNumericValue(cell);
-      if (numValue !== null) continue; // This is a value, not a label
+    // Check if this looks like a label (non-numeric string)
+    const numValue = extractNumericValue(cell);
+    if (numValue !== null) continue; // This is a value, not a label
 
-      // Look for adjacent numeric value
-      const adjacent = findAdjacentCells(data, row, col);
-      for (const adjCell of adjacent) {
-        const adjNumValue = extractNumericValue(adjCell.value);
-        if (adjNumValue !== null) {
-          results.push({
-            label: cellStr,
-            value: adjNumValue,
-            location: adjCell,
-            confidence: 1.0,
-          });
-          processed.add(`${adjCell.row},${adjCell.col}`);
-          break; // Take first adjacent value
-        }
+    // Look for adjacent numeric value
+    const adjacent = findAdjacentCells(data, row, col);
+    for (const adjCell of adjacent) {
+      const adjNumValue = extractNumericValue(adjCell.value);
+      if (adjNumValue !== null) {
+        results.push({
+          label: cellStr,
+          value: adjNumValue,
+          location: adjCell,
+          confidence: 1.0,
+        });
+        processed.add(`${adjCell.row},${adjCell.col}`);
+        break; // Take first adjacent value
       }
     }
   }
@@ -284,21 +291,18 @@ export function extractFormulas(sheet: SpreadsheetSheet): FormulaInfo[] {
   const formulas: FormulaInfo[] = [];
   const data = sheet.data;
 
-  for (let row = 0; row < data.length; row++) {
-    for (let col = 0; col < data[row].length; col++) {
-      const cell = data[row][col];
-      const formula = extractFormula(cell);
+  for (const { row, col, cell } of cellsOf(data)) {
+    const formula = extractFormula(cell);
 
-      if (formula) {
-        // Extract function names from formula
-        const functions = extractFunctionNames(formula);
+    if (formula) {
+      // Extract function names from formula
+      const functions = extractFunctionNames(formula);
 
-        formulas.push({
-          cell: columnToLetter(col) + (row + 1),
-          formula,
-          functions,
-        });
-      }
+      formulas.push({
+        cell: columnToLetter(col) + (row + 1),
+        formula,
+        functions,
+      });
     }
   }
 
@@ -347,18 +351,15 @@ export function extractLabels(sheet: SpreadsheetSheet): string[] {
   const labels = new Set<string>();
   const data = sheet.data;
 
-  for (let row = 0; row < data.length; row++) {
-    for (let col = 0; col < data[row].length; col++) {
-      const cell = data[row][col];
-      const cellStr = extractStringValue(cell);
+  for (const { cell } of cellsOf(data)) {
+    const cellStr = extractStringValue(cell);
 
-      // Skip empty cells and cells that look like numbers/formulas
-      if (!cellStr || cellStr.startsWith("=")) continue;
+    // Skip empty cells and cells that look like numbers/formulas
+    if (!cellStr || cellStr.startsWith("=")) continue;
 
-      const numValue = extractNumericValue(cell);
-      if (numValue === null) {
-        labels.add(cellStr);
-      }
+    const numValue = extractNumericValue(cell);
+    if (numValue === null) {
+      labels.add(cellStr);
     }
   }
 
@@ -375,19 +376,16 @@ export function findValue(
 ): CellLocation | null {
   const data = sheet.data;
 
-  for (let row = 0; row < data.length; row++) {
-    for (let col = 0; col < data[row].length; col++) {
-      const cell = data[row][col];
-      const numValue = extractNumericValue(cell);
+  for (const { row, col, cell } of cellsOf(data)) {
+    const numValue = extractNumericValue(cell);
 
-      if (numValue !== null && Math.abs(numValue - targetValue) <= tolerance) {
-        return {
-          row,
-          col,
-          value: cell,
-          formula: extractFormula(cell) || undefined,
-        };
-      }
+    if (numValue !== null && Math.abs(numValue - targetValue) <= tolerance) {
+      return {
+        row,
+        col,
+        value: cell,
+        formula: extractFormula(cell) || undefined,
+      };
     }
   }
 

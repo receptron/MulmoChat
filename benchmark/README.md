@@ -310,6 +310,9 @@ benchmark/
     ├── verifier.ts      # Spreadsheet verification logic
     ├── semantic-extractor.ts  # Structure-agnostic value extraction
     ├── test-runner.ts   # Single test execution
+    ├── re-evaluate.ts   # Re-verify saved results
+    ├── stats.ts         # Summary, per-level and per-category statistics
+    ├── testCases.ts     # Test case loading
     ├── config.ts        # Configuration and API key management
     └── types.ts         # TypeScript type definitions
 ```

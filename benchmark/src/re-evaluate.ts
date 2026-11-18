@@ -8,39 +8,20 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 import type { TestCase, BenchmarkRun, VerificationResult } from "./types";
 import { verifySpreadsheet } from "./verifier";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, "..");
+import {
+  calculateSummary,
+  calculateByLevel,
+  calculateByCategory,
+} from "./stats";
+import { benchmarkRootDir as rootDir, readTestCaseFiles } from "./testCases";
 
 /**
- * Load all test cases from prompts directory
+ * Load all test cases from prompts directory, keyed by id
  */
 function loadAllTestCases(): Map<string, TestCase> {
-  const promptsDir = path.join(rootDir, "prompts");
-  const testCases = new Map<string, TestCase>();
-
-  const categories = fs.readdirSync(promptsDir);
-  for (const category of categories) {
-    const categoryPath = path.join(promptsDir, category);
-    if (!fs.statSync(categoryPath).isDirectory()) continue;
-
-    const files = fs.readdirSync(categoryPath);
-    for (const file of files) {
-      if (file.endsWith(".json")) {
-        const filePath = path.join(categoryPath, file);
-        const testCase = JSON.parse(
-          fs.readFileSync(filePath, "utf-8"),
-        ) as TestCase;
-        testCases.set(testCase.id, testCase);
-      }
-    }
-  }
-
-  return testCases;
+  return new Map(readTestCaseFiles().map((testCase) => [testCase.id, testCase]));
 }
 
 /**
@@ -79,128 +60,6 @@ async function reVerifyResult(
 ): Promise<VerificationResult> {
   const llmOutputJson = JSON.stringify(result.generatedOutput);
   return await verifySpreadsheet(llmOutputJson, testCase);
-}
-
-/**
- * Calculate summary statistics
- */
-function calculateSummary(results: VerificationResult[]): BenchmarkRun["summary"] {
-  if (results.length === 0) {
-    return {
-      totalPrompts: 0,
-      averageScore: 0,
-      medianScore: 0,
-      passRate: 0,
-      perfectRate: 0,
-    };
-  }
-
-  const scores = results.map((r) => r.score);
-  const sortedScores = [...scores].sort((a, b) => a - b);
-
-  const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-  const medianScore =
-    sortedScores.length % 2 === 0
-      ? (sortedScores[sortedScores.length / 2 - 1] +
-          sortedScores[sortedScores.length / 2]) /
-        2
-      : sortedScores[Math.floor(sortedScores.length / 2)];
-
-  const passCount = results.filter((r) => r.passed).length;
-  const perfectCount = results.filter((r) => r.score === r.maxScore).length;
-
-  return {
-    totalPrompts: results.length,
-    averageScore: Math.round(averageScore * 10) / 10,
-    medianScore: Math.round(medianScore * 10) / 10,
-    passRate: Math.round((passCount / results.length) * 100) / 100,
-    perfectRate: Math.round((perfectCount / results.length) * 100) / 100,
-  };
-}
-
-/**
- * Calculate statistics by level
- */
-function calculateByLevel(
-  results: VerificationResult[],
-  testCasesMap: Map<string, TestCase>,
-): BenchmarkRun["byLevel"] {
-  const byLevel: BenchmarkRun["byLevel"] = {};
-
-  for (const result of results) {
-    const testCase = testCasesMap.get(result.testCaseId);
-    if (!testCase) continue;
-
-    if (!byLevel[testCase.level]) {
-      byLevel[testCase.level] = {
-        count: 0,
-        avgScore: 0,
-        passRate: 0,
-      };
-    }
-
-    byLevel[testCase.level].count++;
-  }
-
-  for (const level in byLevel) {
-    const levelResults = results.filter((r) => {
-      const tc = testCasesMap.get(r.testCaseId);
-      return tc && tc.level === parseInt(level);
-    });
-
-    const avgScore =
-      levelResults.reduce((sum, r) => sum + r.score, 0) / levelResults.length;
-    const passCount = levelResults.filter((r) => r.passed).length;
-
-    byLevel[level].avgScore = Math.round(avgScore * 10) / 10;
-    byLevel[level].passRate =
-      Math.round((passCount / levelResults.length) * 100) / 100;
-  }
-
-  return byLevel;
-}
-
-/**
- * Calculate statistics by category
- */
-function calculateByCategory(
-  results: VerificationResult[],
-  testCasesMap: Map<string, TestCase>,
-): BenchmarkRun["byCategory"] {
-  const byCategory: BenchmarkRun["byCategory"] = {};
-
-  for (const result of results) {
-    const testCase = testCasesMap.get(result.testCaseId);
-    if (!testCase) continue;
-
-    if (!byCategory[testCase.category]) {
-      byCategory[testCase.category] = {
-        count: 0,
-        avgScore: 0,
-        passRate: 0,
-      };
-    }
-
-    byCategory[testCase.category].count++;
-  }
-
-  for (const category in byCategory) {
-    const categoryResults = results.filter((r) => {
-      const tc = testCasesMap.get(r.testCaseId);
-      return tc && tc.category === category;
-    });
-
-    const avgScore =
-      categoryResults.reduce((sum, r) => sum + r.score, 0) /
-      categoryResults.length;
-    const passCount = categoryResults.filter((r) => r.passed).length;
-
-    byCategory[category].avgScore = Math.round(avgScore * 10) / 10;
-    byCategory[category].passRate =
-      Math.round((passCount / categoryResults.length) * 100) / 100;
-  }
-
-  return byCategory;
 }
 
 /**
@@ -246,8 +105,9 @@ async function reEvaluateFile(
   // Update the benchmark run with new results
   benchmarkRun.results = newResults;
   benchmarkRun.summary = calculateSummary(newResults);
-  benchmarkRun.byLevel = calculateByLevel(newResults, testCasesMap);
-  benchmarkRun.byCategory = calculateByCategory(newResults, testCasesMap);
+  const findTestCase = (id: string) => testCasesMap.get(id);
+  benchmarkRun.byLevel = calculateByLevel(newResults, findTestCase);
+  benchmarkRun.byCategory = calculateByCategory(newResults, findTestCase);
 
   // Save updated file (unless dry run)
   if (!dryRun && changes > 0) {

@@ -463,70 +463,39 @@ function findByLabelWithFormulasInternal(
     const bestMatch = potentialMatches[0];
     const numericCells = bestMatch.numericCells;
 
+    // Each candidate list takes its rightmost cell (often the final result)
+    const rightmost = <T>(cells: T[], confidence: number) =>
+      cells.length > 0 ? { cell: cells[cells.length - 1], confidence } : null;
+
     // Prioritize cells with formulas over static values
     const formulaCells = numericCells.filter((c) => c.hasFormula);
-    const numericFormulaCells = formulaCells.filter(
-      (c) => typeof c.value === "number",
-    );
-    if (numericFormulaCells.length > 0) {
+    const best =
       // Prefer formula-driven numeric results (e.g., averages) over string formulas
-      const bestCell = numericFormulaCells[numericFormulaCells.length - 1];
-      return {
-        label,
-        value: bestCell.value,
-        location: {
-          row: bestMatch.row,
-          col: bestCell.col,
-          value: calculatedData[bestMatch.row][bestCell.col],
-        },
-        confidence: 1.0,
-      };
-    }
-
-    if (formulaCells.length > 0) {
+      rightmost(
+        formulaCells.filter((c) => typeof c.value === "number"),
+        1.0,
+      ) ??
       // Fall back to any formula cell (may be string results like letter grades)
-      const bestCell = formulaCells[formulaCells.length - 1];
+      rightmost(formulaCells, 1.0) ??
+      rightmost(
+        numericCells.filter((c) => typeof c.value === "number"),
+        0.9,
+      ) ??
+      // If only string cells remain, fall back to the rightmost entry (string data)
+      rightmost(numericCells, 0.9);
+
+    if (best) {
       return {
         label,
-        value: bestCell.value,
+        value: best.cell.value,
         location: {
           row: bestMatch.row,
-          col: bestCell.col,
-          value: calculatedData[bestMatch.row][bestCell.col],
+          col: best.cell.col,
+          value: calculatedData[bestMatch.row][best.cell.col],
         },
-        confidence: 1.0,
+        confidence: best.confidence,
       };
     }
-
-    const numericValueCells = numericCells.filter(
-      (c) => typeof c.value === "number",
-    );
-    if (numericValueCells.length > 0) {
-      const bestCell = numericValueCells[numericValueCells.length - 1];
-      return {
-        label,
-        value: bestCell.value,
-        location: {
-          row: bestMatch.row,
-          col: bestCell.col,
-          value: calculatedData[bestMatch.row][bestCell.col],
-        },
-        confidence: 0.9,
-      };
-    }
-
-    // If only string cells remain, fall back to the rightmost entry (string data)
-    const bestCell = numericCells[numericCells.length - 1];
-    return {
-      label,
-      value: bestCell.value,
-      location: {
-        row: bestMatch.row,
-        col: bestCell.col,
-        value: calculatedData[bestMatch.row][bestCell.col],
-      },
-      confidence: 0.9,
-    };
   }
 
   return null;
