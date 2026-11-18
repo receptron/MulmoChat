@@ -5,44 +5,19 @@
  */
 
 import * as fs from "fs";
-import * as path from "path";
-import { fileURLToPath } from "url";
 import type { TestCase } from "./types";
 import { verifySpreadsheet } from "./verifier";
-
-// Get current directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, "..");
+import { readTestCaseFiles } from "./testCases";
 
 /**
  * Load test case from JSON file
  */
 function loadTestCase(testCaseId: string): TestCase {
-  // Find the test case file
-  const promptsDir = path.join(rootDir, "prompts");
-  const categories = fs.readdirSync(promptsDir);
-
-  for (const category of categories) {
-    const categoryPath = path.join(promptsDir, category);
-    if (!fs.statSync(categoryPath).isDirectory()) continue;
-
-    const files = fs.readdirSync(categoryPath);
-    for (const file of files) {
-      if (file.endsWith(".json")) {
-        const filePath = path.join(categoryPath, file);
-        const testCase = JSON.parse(
-          fs.readFileSync(filePath, "utf-8"),
-        ) as TestCase;
-
-        if (testCase.id === testCaseId) {
-          return testCase;
-        }
-      }
-    }
+  const testCase = readTestCaseFiles().find((tc) => tc.id === testCaseId);
+  if (!testCase) {
+    throw new Error(`Test case not found: ${testCaseId}`);
   }
-
-  throw new Error(`Test case not found: ${testCaseId}`);
+  return testCase;
 }
 
 /**

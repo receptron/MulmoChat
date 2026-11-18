@@ -8,6 +8,92 @@
 import type { LLMClient, LLMConfig, LLMResponse } from "./types";
 
 /**
+ * Time a request; a thrown error becomes an empty response carrying the message
+ */
+async function timedRequest(
+  request: () => Promise<Omit<LLMResponse, "latency">>,
+): Promise<LLMResponse> {
+  const startTime = Date.now();
+
+  try {
+    const response = await request();
+    return { ...response, latency: Date.now() - startTime };
+  } catch (error) {
+    return {
+      content: "",
+      latency: Date.now() - startTime,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+async function postJSON(
+  providerLabel: string,
+  url: string,
+  headers: Record<string, string>,
+  body: unknown,
+) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`${providerLabel} API error: ${response.status} ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+interface ChatMessage {
+  role: "system" | "user";
+  content: string;
+}
+
+function chatMessages(prompt: string, systemPrompt?: string): ChatMessage[] {
+  return [
+    ...(systemPrompt
+      ? [{ role: "system" as const, content: systemPrompt }]
+      : []),
+    { role: "user" as const, content: prompt },
+  ];
+}
+
+interface ChatCompletionBody {
+  choices?: Array<{ message?: { content?: string | null } }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
+/**
+ * Parse an OpenAI-compatible chat completion (OpenAI, Grok)
+ */
+function chatCompletionResponse(
+  data: ChatCompletionBody,
+): Omit<LLMResponse, "latency"> {
+  // Use optional chaining to handle potential API variations
+  const message = data.choices?.[0]?.message;
+  const content = message?.content ?? "";
+
+  return {
+    content,
+    usage: {
+      promptTokens: data.usage?.prompt_tokens || 0,
+      completionTokens: data.usage?.completion_tokens || 0,
+      totalTokens: data.usage?.total_tokens || 0,
+    },
+  };
+}
+
+/**
  * OpenAI API Client
  */
 class OpenAIClient implements LLMClient {
@@ -26,9 +112,7 @@ class OpenAIClient implements LLMClient {
     prompt: string,
     systemPrompt?: string,
   ): Promise<LLMResponse> {
-    const startTime = Date.now();
-
-    try {
+    return timedRequest(async () => {
       // Determine which token parameter to use based on model
       // GPT-5+ models use max_completion_tokens, older models use max_tokens
       const useNewTokenParam = this.config.model.startsWith("gpt-5");
@@ -52,44 +136,14 @@ class OpenAIClient implements LLMClient {
       // Add the appropriate token limit parameter
       requestBody[tokenParam] = this.config.maxTokens || 4000;
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.config.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
-      }
-
-      const data = await response.json();
-      const latency = Date.now() - startTime;
-
-      // Use optional chaining to handle potential API variations
-      const message = data.choices?.[0]?.message;
-      const content = message?.content ?? "";
-
-      return {
-        content,
-        usage: {
-          promptTokens: data.usage?.prompt_tokens || 0,
-          completionTokens: data.usage?.completion_tokens || 0,
-          totalTokens: data.usage?.total_tokens || 0,
-        },
-        latency,
-      };
-    } catch (error) {
-      const latency = Date.now() - startTime;
-      return {
-        content: "",
-        latency,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+      const data = await postJSON(
+        "OpenAI",
+        "https://api.openai.com/v1/chat/completions",
+        { Authorization: `Bearer ${this.config.apiKey}` },
+        requestBody,
+      );
+      return chatCompletionResponse(data);
+    });
   }
 }
 
@@ -112,17 +166,15 @@ class AnthropicClient implements LLMClient {
     prompt: string,
     systemPrompt?: string,
   ): Promise<LLMResponse> {
-    const startTime = Date.now();
-
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    return timedRequest(async () => {
+      const data = await postJSON(
+        "Anthropic",
+        "https://api.anthropic.com/v1/messages",
+        {
           "x-api-key": this.config.apiKey,
           "anthropic-version": "2023-06-01",
         },
-        body: JSON.stringify({
+        {
           model: this.config.model,
           max_tokens: this.config.maxTokens || 4000,
           temperature: this.config.temperature || 0,
@@ -133,16 +185,8 @@ class AnthropicClient implements LLMClient {
               content: prompt,
             },
           ],
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Anthropic API error: ${response.status} ${errorText}`);
-      }
-
-      const data = await response.json();
-      const latency = Date.now() - startTime;
+        },
+      );
 
       // Use optional chaining to handle potential API variations
       const content = data.content?.[0]?.text ?? "";
@@ -154,16 +198,8 @@ class AnthropicClient implements LLMClient {
           completionTokens: data.usage?.output_tokens || 0,
           totalTokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
         },
-        latency,
       };
-    } catch (error) {
-      const latency = Date.now() - startTime;
-      return {
-        content: "",
-        latency,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    });
   }
 }
 
@@ -186,44 +222,28 @@ class GeminiClient implements LLMClient {
     prompt: string,
     systemPrompt?: string,
   ): Promise<LLMResponse> {
-    const startTime = Date.now();
-
-    try {
+    return timedRequest(async () => {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`;
 
       const fullPrompt = systemPrompt
         ? `${systemPrompt}\n\n${prompt}`
         : `${this.config.systemPrompt}\n\n${prompt}`;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: fullPrompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: this.config.temperature || 0,
-            maxOutputTokens: this.config.maxTokens || 4000,
+      const data = await postJSON("Gemini", url, {}, {
+        contents: [
+          {
+            parts: [
+              {
+                text: fullPrompt,
+              },
+            ],
           },
-        }),
+        ],
+        generationConfig: {
+          temperature: this.config.temperature || 0,
+          maxOutputTokens: this.config.maxTokens || 4000,
+        },
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Gemini API error: ${response.status} ${errorText}`);
-      }
-
-      const data = await response.json();
-      const latency = Date.now() - startTime;
 
       // Extract text from Gemini response
       const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -235,16 +255,8 @@ class GeminiClient implements LLMClient {
           completionTokens: data.usageMetadata?.candidatesTokenCount || 0,
           totalTokens: data.usageMetadata?.totalTokenCount || 0,
         },
-        latency,
       };
-    } catch (error) {
-      const latency = Date.now() - startTime;
-      return {
-        content: "",
-        latency,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    });
   }
 }
 
@@ -269,59 +281,21 @@ class OllamaClient implements LLMClient {
     prompt: string,
     systemPrompt?: string,
   ): Promise<LLMResponse> {
-    const startTime = Date.now();
-
-    try {
-      const messages: any[] = [];
-
-      if (systemPrompt || this.config.systemPrompt) {
-        messages.push({
-          role: "system",
-          content: systemPrompt || this.config.systemPrompt,
-        });
-      }
-
-      messages.push({
-        role: "user",
-        content: prompt,
-      });
-
-      const response = await fetch(`${this.baseUrl}/api/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    return timedRequest(async () => {
+      const data = await postJSON("Ollama", `${this.baseUrl}/api/chat`, {}, {
+        model: this.config.model,
+        messages: chatMessages(prompt, systemPrompt || this.config.systemPrompt),
+        stream: false,
+        options: {
+          temperature: this.config.temperature || 0,
+          num_predict: this.config.maxTokens || 4000,
         },
-        body: JSON.stringify({
-          model: this.config.model,
-          messages,
-          stream: false,
-          options: {
-            temperature: this.config.temperature || 0,
-            num_predict: this.config.maxTokens || 4000,
-          },
-        }),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Ollama API error: ${response.status} ${errorText}`);
-      }
-
-      const data = await response.json();
-      const latency = Date.now() - startTime;
 
       return {
         content: data.message?.content || data.response || "",
-        latency,
       };
-    } catch (error) {
-      const latency = Date.now() - startTime;
-      return {
-        content: "",
-        latency,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    });
   }
 }
 
@@ -344,66 +318,20 @@ class GrokClient implements LLMClient {
     prompt: string,
     systemPrompt?: string,
   ): Promise<LLMResponse> {
-    const startTime = Date.now();
-
-    try {
-      const messages: any[] = [];
-
-      if (systemPrompt || this.config.systemPrompt) {
-        messages.push({
-          role: "system",
-          content: systemPrompt || this.config.systemPrompt,
-        });
-      }
-
-      messages.push({
-        role: "user",
-        content: prompt,
-      });
-
-      const response = await fetch("https://api.x.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.config.apiKey}`,
-        },
-        body: JSON.stringify({
+    return timedRequest(async () => {
+      const data = await postJSON(
+        "Grok",
+        "https://api.x.ai/v1/chat/completions",
+        { Authorization: `Bearer ${this.config.apiKey}` },
+        {
           model: this.config.model,
-          messages,
+          messages: chatMessages(prompt, systemPrompt || this.config.systemPrompt),
           temperature: this.config.temperature || 0,
           max_tokens: this.config.maxTokens || 4000,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Grok API error: ${response.status} ${errorText}`);
-      }
-
-      const data = await response.json();
-      const latency = Date.now() - startTime;
-
-      // Use optional chaining like server implementation
-      const message = data.choices?.[0]?.message;
-      const content = message?.content ?? "";
-
-      return {
-        content,
-        usage: {
-          promptTokens: data.usage?.prompt_tokens || 0,
-          completionTokens: data.usage?.completion_tokens || 0,
-          totalTokens: data.usage?.total_tokens || 0,
         },
-        latency,
-      };
-    } catch (error) {
-      const latency = Date.now() - startTime;
-      return {
-        content: "",
-        latency,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+      );
+      return chatCompletionResponse(data);
+    });
   }
 }
 
