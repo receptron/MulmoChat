@@ -7,17 +7,19 @@
 import * as fs from "fs";
 import type { TestCase } from "./types";
 import { verifySpreadsheet } from "./verifier";
-import { readTestCaseFiles } from "./testCases";
+import { testCaseFiles } from "./testCases";
 
 /**
  * Load test case from JSON file
  */
 function loadTestCase(testCaseId: string): TestCase {
-  const testCase = readTestCaseFiles().find((tc) => tc.id === testCaseId);
-  if (!testCase) {
-    throw new Error(`Test case not found: ${testCaseId}`);
+  for (const testCase of testCaseFiles()) {
+    if (testCase.id === testCaseId) {
+      return testCase;
+    }
   }
-  return testCase;
+
+  throw new Error(`Test case not found: ${testCaseId}`);
 }
 
 /**

@@ -56,12 +56,9 @@ interface ChatMessage {
 }
 
 function chatMessages(prompt: string, systemPrompt?: string): ChatMessage[] {
-  return [
-    ...(systemPrompt
-      ? [{ role: "system" as const, content: systemPrompt }]
-      : []),
-    { role: "user" as const, content: prompt },
-  ];
+  const userMessage: ChatMessage = { role: "user", content: prompt };
+  if (!systemPrompt) return [userMessage];
+  return [{ role: "system", content: systemPrompt }, userMessage];
 }
 
 interface ChatCompletionBody {

@@ -12,22 +12,24 @@ const __dirname = path.dirname(__filename);
 export const benchmarkRootDir = path.resolve(__dirname, "..");
 
 /**
- * Load every test case under prompts/<category>/*.json, in directory order
+ * Every test case under prompts/<category>/*.json, in directory order, read one file at a time
  */
-export function readTestCaseFiles(): TestCase[] {
+export function* testCaseFiles(): Generator<TestCase> {
   const promptsDir = path.join(benchmarkRootDir, "prompts");
 
-  return fs
-    .readdirSync(promptsDir)
-    .map((category) => path.join(promptsDir, category))
-    .filter((categoryPath) => fs.statSync(categoryPath).isDirectory())
-    .flatMap((categoryPath) =>
-      fs
-        .readdirSync(categoryPath)
-        .filter((file) => file.endsWith(".json"))
-        .map((file) => path.join(categoryPath, file)),
-    )
-    .map(
-      (filePath) => JSON.parse(fs.readFileSync(filePath, "utf-8")) as TestCase,
-    );
+  for (const category of fs.readdirSync(promptsDir)) {
+    const categoryPath = path.join(promptsDir, category);
+    if (!fs.statSync(categoryPath).isDirectory()) continue;
+
+    for (const file of fs.readdirSync(categoryPath)) {
+      if (file.endsWith(".json")) {
+        const filePath = path.join(categoryPath, file);
+        yield JSON.parse(fs.readFileSync(filePath, "utf-8")) as TestCase;
+      }
+    }
+  }
+}
+
+export function readTestCaseFiles(): TestCase[] {
+  return [...testCaseFiles()];
 }

@@ -18,8 +18,8 @@ The duplication-scan workflow (jscpd) reports copy-pasted blocks in `benchmark/s
 - `benchmark/src/stats.ts` (new, pure): `calculateSummary`, and `calculateByLevel` / `calculateByCategory`
   on one grouping function. They take a `findTestCase` lookup, so the runner (array) and
   re-evaluation (map) share them.
-- `benchmark/src/testCases.ts` (new): `readTestCaseFiles()` and the benchmark root directory, used by
-  `runner.ts`, `re-evaluate.ts` and `test-runner.ts`.
+- `benchmark/src/testCases.ts` (new): a lazy `testCaseFiles()` generator (so `test-runner.ts` still stops at
+  the first match), `readTestCaseFiles()`, and the benchmark root directory.
 - `llm-client.ts`: `timedRequest`, `postJSON`, `chatMessages`, `chatCompletionResponse` helpers.
 - `verifier.ts`: one ordered fallback (`rightmost(cells, confidence) ?? …`) and one return.
 - `semantic-extractor.ts`: a `cellsOf(data)` generator.
@@ -30,6 +30,13 @@ The duplication-scan workflow (jscpd) reports copy-pasted blocks in `benchmark/s
   the members of `UseRealtimeSessionReturn`. There is nothing shared to extract.
 - `benchmark/` imports `src/tools/models/spreadsheet*`, which was removed when the spreadsheet moved to
   `@gui-chat-plugin/spreadsheet`. The benchmark cannot run as it stands, and this change does not fix that.
+
+## Known difference
+
+Statistics differ only when two prompt files share an id. The old runner then emitted a count that
+disagreed with its average and `NaN` stats for one of the groups, and `re-evaluate.ts` already disagreed
+with it; the shared helper groups every result under the first matching test case. Prompt ids are unique
+today.
 
 ## Verification
 
