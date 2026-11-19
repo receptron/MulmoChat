@@ -21,12 +21,25 @@ const DEFAULT_MODELS: Record<TextLLMProviderId, string> = {
   grok: "grok-4.7",
 };
 
-// At most three per company, its newest, default first (checked against
-// each API's model list, 2026-10-01).
+// A few per company, default first, then its newest (checked against each
+// API's model list and with a tool call, 2026-11-19).
 const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
   {
-    openai: ["gpt-6.1-sol", "gpt-6-astra", "gpt-6-luna"],
-    anthropic: ["claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1"],
+    openai: [
+      "gpt-6.1-sol",
+      "gpt-6.2-sol",
+      "gpt-6.2-astra",
+      "gpt-6.1-terra",
+      "gpt-6-astra",
+      "gpt-6-luna",
+    ],
+    anthropic: [
+      "claude-sonnet-5-5",
+      "claude-opus-5-5",
+      "claude-fable-5-2",
+      "claude-fable-5-1",
+      "claude-haiku-5-5",
+    ],
     google: [
       "gemini-3.8-flash",
       "gemini-3.1-pro-preview",

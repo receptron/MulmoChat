@@ -146,4 +146,37 @@ describe("generateWithOpenAI request body", () => {
       JSON.stringify({ model: "gpt-5.6-mini", messages: SENT_MESSAGES }),
     );
   });
+
+  it("sends gpt-6-astra and gpt-6.x models to /v1/responses", async () => {
+    for (const model of [
+      "gpt-6-astra",
+      "gpt-6.1-sol",
+      "gpt-6.1-terra",
+      "gpt-6.2-sol",
+      "gpt-6.2-astra",
+    ]) {
+      sentBodies = [];
+      assert.equal(
+        await withTools(model),
+        JSON.stringify({
+          model,
+          input: [
+            { role: "user", content: [{ type: "input_text", text: "q" }] },
+          ],
+          store: false,
+          tools: [
+            {
+              type: "function",
+              name: "f",
+              description: "d",
+              parameters: {},
+              strict: false,
+            },
+          ],
+          parallel_tool_calls: true,
+        }),
+        model,
+      );
+    }
+  });
 });
