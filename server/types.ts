@@ -17,6 +17,28 @@ export interface StartApiResponse {
   [key: string]: unknown;
 }
 
+/** `POST /api/start/live/session`: what the browser sends to start a
+ *  gpt-live-1 session, and what it gets back. */
+export interface LiveSessionRequest {
+  /** The browser's WebRTC offer. */
+  sdp: string;
+  /** A `LIVE_VOICE_MODELS` id. */
+  model?: string;
+  voice?: string;
+  /** For the voice model: how to talk and when to hand work to the backend. */
+  instructions: string;
+  /** For the backend model, which has the tools. */
+  backendInstructions: string;
+  tools: unknown[];
+}
+
+export interface LiveSessionResponse {
+  success: true;
+  sessionId: string;
+  /** OpenAI's WebRTC answer. */
+  sdp: string;
+}
+
 export interface TextProvidersResponse {
   success: boolean;
   providers: Array<{

@@ -6,8 +6,15 @@ import {
   ELEVENLABS_VOICE_MODELS,
 } from "../../server/utils/elevenLabsRealtime";
 
+import {
+  DEFAULT_LIVE_VOICE_MODEL_ID,
+  LIVE_VOICE_MODELS,
+} from "../../server/utils/liveModels";
+
 // Defined with the server's mint, which accepts only these.
 export { DEFAULT_ELEVENLABS_VOICE_MODEL_ID, ELEVENLABS_VOICE_MODELS };
+// Defined with the server's session start, which accepts only these.
+export { DEFAULT_LIVE_VOICE_MODEL_ID, LIVE_VOICE_MODELS };
 
 export interface RealtimeModelOption {
   id: string;
@@ -98,6 +105,11 @@ export const VOICE_MODELS_FOR_KIND: Record<
     defaultId: DEFAULT_REALTIME_MODEL_ID,
     fallbackLabel: "GPT Realtime",
   },
+  "voice-openai-live": {
+    models: LIVE_VOICE_MODELS,
+    defaultId: DEFAULT_LIVE_VOICE_MODEL_ID,
+    fallbackLabel: "GPT-Live",
+  },
   "voice-google-live": {
     models: GOOGLE_LIVE_MODELS,
     defaultId: DEFAULT_GOOGLE_LIVE_MODEL_ID,
@@ -139,6 +151,7 @@ export const VOICE_PROVIDER_FOR_KIND: Record<
   VoiceProvider | null
 > = {
   "voice-realtime": "openai",
+  "voice-openai-live": "openai-live",
   "voice-google-live": "google",
   "voice-grok": "xai",
   "voice-elevenlabs": "elevenlabs",

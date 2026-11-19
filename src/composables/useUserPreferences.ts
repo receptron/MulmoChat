@@ -96,6 +96,7 @@ const initVoiceIds = (): Record<VoiceProvider, string> => {
   }
   return {
     openai: resolveVoice("openai", stored.openai),
+    "openai-live": resolveVoice("openai-live", stored["openai-live"]),
     google: resolveVoice("google", stored.google),
     xai: resolveVoice("xai", stored.xai),
     elevenlabs: resolveVoice("elevenlabs", stored.elevenlabs),
@@ -131,6 +132,7 @@ const resolveStoredModelKind = (
   stored: string | null,
 ): SessionTransportKind => {
   if (stored === "text-rest") return "text-rest";
+  if (stored === "voice-openai-live") return "voice-openai-live";
   if (stored === "voice-google-live") return "voice-google-live";
   if (stored === "voice-liquid") return "voice-liquid";
   if (stored === "voice-grok") return "voice-grok";

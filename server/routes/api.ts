@@ -13,7 +13,9 @@ import {
   localClientOnly,
   requireTrustedOrigin,
 } from "../utils/trustedOrigin.js";
-import { StartApiResponse } from "../types.js";
+import OpenAI from "openai";
+import { liveSessionParams } from "../utils/liveSession.js";
+import { LiveSessionResponse, StartApiResponse } from "../types.js";
 import { exaSearch, hasExaApiKey } from "../exaSearch.js";
 import { sendApiError } from "../utils/logger.js";
 import movieRouter from "./movie.js";
@@ -202,6 +204,75 @@ router.post(
   (_req: Request, res: Response): void => {
     res.set("Cache-Control", "no-store");
     res.json({ ...startFlags(), ephemeralKey: "" } satisfies StartApiResponse);
+  },
+);
+
+// OpenAI Live (gpt-live-1) starts in two requests, both guarded as the
+// ElevenLabs start is. This first one returns the flags, which the browser
+// needs to build the instructions and tools the second one sends.
+router.post(
+  "/start/live",
+  localClientOnly("OpenAI Live voice is"),
+  requireTrustedOrigin,
+  (req: Request, res: Response): void => {
+    if (!process.env.OPENAI_API_KEY) {
+      sendApiError(
+        res,
+        req,
+        500,
+        "OPENAI_API_KEY environment variable not set",
+      );
+      return;
+    }
+    res.set("Cache-Control", "no-store");
+    res.json({ ...startFlags(), ephemeralKey: "" } satisfies StartApiResponse);
+  },
+);
+
+// The second: the browser's WebRTC offer and the session's instructions and
+// tools go to OpenAI with OPENAI_API_KEY, and its answer comes back. The key
+// never reaches the browser (the Realtime transport hands it an ephemeral
+// one); a session bills by the minute, hence the guards.
+router.post(
+  "/start/live/session",
+  localClientOnly("OpenAI Live voice is"),
+  requireTrustedOrigin,
+  async (req: Request, res: Response): Promise<void> => {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      sendApiError(
+        res,
+        req,
+        500,
+        "OPENAI_API_KEY environment variable not set",
+      );
+      return;
+    }
+    const request = liveSessionParams(req.body);
+    if ("error" in request) {
+      sendApiError(res, req, 400, request.error);
+      return;
+    }
+    try {
+      const client = new OpenAI({ apiKey, maxRetries: 0 });
+      const result = await client.live.create(request.params);
+      res.set("Cache-Control", "no-store");
+      res.status(201).json({
+        success: true,
+        sessionId: result.session.id,
+        sdp: result.transport.sdp,
+      } satisfies LiveSessionResponse);
+    } catch (error: unknown) {
+      const status =
+        error instanceof OpenAI.APIError && error.status ? error.status : 500;
+      sendApiError(
+        res,
+        req,
+        status,
+        "Failed to start the OpenAI Live session",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    }
   },
 );
 

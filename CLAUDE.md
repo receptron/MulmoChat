@@ -113,6 +113,7 @@ A check in the browser is a courtesy; the boundary is whatever the server refuse
 |---|---|
 | `/api/plugin/*` (server-run plugins) | `requireLocalClient` (loopback socket unless `MULMOCHAT_ALLOW_REMOTE_PLUGINS`), `requireTrustedOrigin` (loopback or `MULMOCHAT_ALLOWED_ORIGINS`, never the Host header), JSON only — `server/utils/trustedOrigin.ts` |
 | `POST /api/start/elevenlabs` (mints an ElevenLabs secret) | `localClientOnly` (loopback socket unless `MULMOCHAT_ALLOW_REMOTE_PLUGINS`) + `requireTrustedOrigin`, JSON only (a GET would let any page's `<img>` make it mint), `Cache-Control: no-store`; model and voice checked against `server/utils/elevenLabsRealtime.ts` and `VOICES.elevenlabs` |
+| `POST /api/start/live`, `POST /api/start/live/session` (starts a `gpt-live-1` session with `OPENAI_API_KEY`, billed by the minute) | the same guards and `Cache-Control: no-store`; model and voice checked against `server/utils/liveModels.ts` and `VOICES["openai-live"]`; only function tools are passed on, rebuilt field by field (`server/utils/liveSession.ts`), and the session's data channel takes only the events the transport sends (`LIVE_CLIENT_EVENTS`: no `session.update`, which could replace the tools afterwards), so the browser can't add a hosted tool or an MCP server to a session the server's key pays for |
 | `/api/plugin-events`, `/api/mulmoscript/media`, `/artifacts/html/*` | `requireLocalClient` + `requireLoopbackHost` (DNS rebinding), CORS header dropped; media is also rate-limited and extension-limited |
 | Plugin files | the rooted `FileOps` (`server/plugins/fileOps.ts`): lexical check, then realpath, so `..` and symlinks out of `artifacts/` are refused |
 | Model-written HTML pages | the response's CSP (`sandbox allow-scripts`, CDN allowlist, `connect-src 'none'`) in `htmlHost.ts`, not the View's iframe attribute |
@@ -147,16 +148,16 @@ precedent:
 
 ## "Can transport X do Y?" is a matrix, not a yes/no
 
-The five transports share one interface (`UseRealtimeSessionReturn`), which hides that they answer
+The transports share one interface (`UseRealtimeSessionReturn`), which hides that they answer
 the same call in different ways. Check the row before assuming a feature works everywhere.
 
-| | OpenAI Realtime | Gemini Live | Grok Voice | ElevenLabs | Text |
-|---|---|---|---|---|---|
-| Key in the browser | ephemeral key from `/api/start` | the raw `GEMINI_API_KEY` | client secret (`?voice=grok`) | client secret from `/api/start/elevenlabs`, model and voice fixed in it | none (server calls providers) |
-| Follow-up instructions | a system message in the conversation, then `response.create` (as the response's `instructions`, which replace the session prompt, the model often skipped them: slide 1 went unexplained) | a user turn | a user message + `response.create` | same as Grok (shared `useRealtimeWebSocketSession`) | a `[System instruction]` user message, sent with the next request; during a conversation any of them gets a follow-up turn right away (with images, at most 3 in a row), and `instructionsRequired` ones also get a turn of their own when none is running |
-| Overlapping replies | held until `response.done`, once, with the held instructions joined; re-held on `conversation_already_has_active_response` | n/a | held until the last running response's `response.done` (kept by id), once. A done also settles the responses that started before it: Grok sends none for one it drops when room noise is taken for a new user turn (a late done of one so settled is ignored). The API drops a `response.create` sent while one runs, with no error, so holding is the only guard; one that crossed the server's response to the user's turn (known from `speech_stopped`) is asked again when that response is done | same as Grok (also drops it silently); the server also chains responses unasked ("let me check", then the tool call) | n/a (turn-based) |
-| Images to the model | `input_image` | `inlineData` (open turn) | **none**: the API drops `input_image` silently | **none**: accepted, but the model says it sees no image | per provider in `server/llm/providers/`; Ollama untested |
-| Text shown as it streams | `response.text.delta` only (no audio transcript) | `part.text` | none | none (Max's transcripts carry tags like `[happy]`) | yes |
+| | OpenAI Realtime | OpenAI Live | Gemini Live | Grok Voice | ElevenLabs | Text |
+|---|---|---|---|---|---|---|
+| Key in the browser | ephemeral key from `/api/start` | none: the server creates the session from the browser's SDP offer (`/api/start/live/session`) | the raw `GEMINI_API_KEY` | client secret (`?voice=grok`) | client secret from `/api/start/elevenlabs`, model and voice fixed in it | none (server calls providers) |
+| Follow-up instructions | a system message in the conversation, then `response.create` (as the response's `instructions`, which replace the session prompt, the model often skipped them: slide 1 went unexplained) | a developer message for the backend model (`response.item.create`), then `response.create`; the voice model says the backend's answer in its own words | a user turn | a user message + `response.create` | same as Grok (shared `useRealtimeWebSocketSession`) | a `[System instruction]` user message, sent with the next request; during a conversation any of them gets a follow-up turn right away (with images, at most 3 in a row), and `instructionsRequired` ones also get a turn of their own when none is running |
+| Overlapping replies | held until `response.done`, once, with the held instructions joined; re-held on `conversation_already_has_active_response` | one `response.create` at a time, held until the backend's running response has ended and every tool call has its output (refused with `tool_outputs_required` before), with the held instructions joined (`liveBackendWork.ts`) | n/a | held until the last running response's `response.done` (kept by id), once. A done also settles the responses that started before it: Grok sends none for one it drops when room noise is taken for a new user turn (a late done of one so settled is ignored). The API drops a `response.create` sent while one runs, with no error, so holding is the only guard; one that crossed the server's response to the user's turn (known from `speech_stopped`) is asked again when that response is done | same as Grok (also drops it silently); the server also chains responses unasked ("let me check", then the tool call) | n/a (turn-based) |
+| Images to the model | `input_image` | `input_image` to the backend, while the message fits the data channel (`sctp.maxMessageSize`); the voice model sees none, and a larger upload is described by a text model | `inlineData` (open turn) | **none**: the API drops `input_image` silently | **none**: accepted, but the model says it sees no image | per provider in `server/llm/providers/`; Ollama untested |
+| Text shown as it streams | `response.text.delta` only (no audio transcript) | none (the transcripts are used only to tell that the user is speaking) | `part.text` | none | none (Max's transcripts carry tags like `[happy]`) | yes |
 
 When adding a transport, `SessionTransportKind` gains a value. The session, its capabilities, its
 models (`VOICE_MODELS_FOR_KIND`, which preferences and HomeView's `getModelId` / `statusLine` read)
@@ -165,7 +166,7 @@ those is a type error. The rest are still `if` chains the compiler won't list:
 `resolveStoredModelKind` (`useUserPreferences.ts`), and in `Sidebar.vue` the option, `isVoiceMode`,
 the model select and `needsConnectionToSend`; plus the server route that mints its key
 (`server/routes/api.ts`, `server/types.ts`). A transport that speaks the OpenAI Realtime events over
-a WebSocket is only a `RealtimeDialect` of `useRealtimeWebSocketSession` (Grok, ElevenLabs). Write a
+a WebSocket is only a `RealtimeDialect` of `useRealtimeWebSocketSession` (Grok, ElevenLabs). OpenAI Live is not one: it is a different protocol with two models, and its tool calls come from the backend one. Write a
 new per-kind table as `Record<SessionTransportKind, …>` so the next one is a type error.
 
 Session lifecycles have their own traps, all found in review of #221: a WebSocket's close handler
@@ -182,6 +183,8 @@ turns on only when the connection is actually open, or a typed message in the ga
 - **The text transport's `isDataChannelOpen()` is always false**, so nothing sends a message between
   an assistant tool call and its outputs (the APIs reject that order). Its images for the model are
   held until the turn's tool outputs are in for the same reason.
+- **OpenAI Live's voice model rewords what the backend wrote**, and may speak ("Sure, let me check") before the backend has answered. The backend's text is not what the user hears word for word; that is the API's design, not a bug in the prompts.
+- **OpenAI Live has two prompts**, and the voice model's copy of the app's instructions has its middle cut out (`liveInstructions.ts`). The language is named at its top because cut from the start, or left to the copy, the voice model answered an English user in Japanese.
 - **Grok's and ElevenLabs' `sendImagesToModel` return false.** Not a TODO: neither API sees images.
 - **ElevenLabs' `session.update` sends no `turn_detection`.** It refuses `server_vad`; the
   `semantic_vad` minted into the secret stays.
