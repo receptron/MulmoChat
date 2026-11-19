@@ -62,13 +62,45 @@ describe("createLiveBackendWork", () => {
     assert.deepEqual(log(), [
       "output:a",
       "output:b",
-      "developer:first",
+      "developer:first\n\nsecond",
       "create",
     ]);
-    // The first request hasn't been answered: the second waits for it.
+    // That request hasn't been answered: the next waits for it.
+    work.instruct("third");
+    assert.equal(sent.length, 4);
     work.responseStarted();
     work.responseEnded();
-    assert.deepEqual(log().slice(4), ["developer:second", "create"]);
+    assert.deepEqual(log().slice(4), ["developer:third", "create"]);
+  });
+
+  it("sends a held request after what follows an output, not before", async () => {
+    // A plugin's waiting message, then its result once the response ended:
+    // the host sends output, images and instructions one after the other.
+    work.responseStarted();
+    work.toolCalled("a");
+    work.instruct("Say you're taking a photo.");
+    work.responseEnded();
+    work.toolOutput("a", "{}");
+    work.showImages(["data:image/png;base64,AAAA"], "photo", 65_536);
+    work.instruct("Describe the photo.");
+    await Promise.resolve();
+    assert.deepEqual(log(), [
+      "output:a",
+      "user:photo+1img",
+      "developer:Say you're taking a photo.\n\nDescribe the photo.",
+      "create",
+    ]);
+  });
+
+  it("sends a held request after an output that nothing follows", async () => {
+    work.responseStarted();
+    work.toolCalled("a");
+    work.instruct("wait");
+    work.responseEnded();
+    work.toolOutput("a", "{}");
+    assert.deepEqual(log(), ["output:a"]);
+    await Promise.resolve();
+    assert.deepEqual(log(), ["output:a", "developer:wait", "create"]);
   });
 
   it("sends images after the outputs and before the instructions", () => {
@@ -76,7 +108,11 @@ describe("createLiveBackendWork", () => {
     work.toolCalled("a");
     work.responseEnded();
     work.toolOutput("a", "1");
-    work.showImages(["data:image/png;base64,AAAA"], "[Image returned by f]", 65_536);
+    work.showImages(
+      ["data:image/png;base64,AAAA"],
+      "[Image returned by f]",
+      65_536,
+    );
     assert.deepEqual(log(), ["output:a"]);
     work.instruct("look at it");
     assert.deepEqual(log(), [
@@ -110,7 +146,7 @@ describe("createLiveBackendWork", () => {
     assert.deepEqual(log().slice(2), ["developer:two", "create"]);
   });
 
-  it("asks again after a request refused for a missing output, once that output goes", () => {
+  it("asks again after a request refused for a missing output, once that output goes", async () => {
     work.instruct("go on");
     const eventId = sent[1].event_id;
     assert.equal(work.rejected("someone_else", "x"), null);
@@ -118,6 +154,7 @@ describe("createLiveBackendWork", () => {
     assert.equal(sent.length, 2);
     work.toolCalled("late");
     work.toolOutput("late", "{}");
+    await Promise.resolve();
     assert.deepEqual(log().slice(2), ["output:late", "create"]);
   });
 
