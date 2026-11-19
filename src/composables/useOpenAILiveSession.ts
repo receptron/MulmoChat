@@ -79,13 +79,18 @@ interface LiveServerEvent {
   };
 }
 
-const postJson = async <T>(url: string, body: unknown): Promise<T> => {
+const postJson = async <T>(
+  url: string,
+  body: unknown,
+  signal: AbortSignal,
+): Promise<T> => {
   // A JSON POST, so another site can't make the server start a session
   // (see requireTrustedOrigin).
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as {
@@ -142,6 +147,9 @@ export function useOpenAILiveSession(
   /** Counts starts and stops: a start that finds it changed after an await
    *  was cancelled. */
   let generation = 0;
+  /** Releases what a start that is still connecting holds: its requests,
+   *  microphone and peer connection. */
+  let cancelStart: (() => void) | null = null;
 
   const sendEvent = (event: Record<string, unknown>): boolean => {
     const dc = connection?.dc;
@@ -377,6 +385,10 @@ export function useOpenAILiveSession(
 
   const stopChat = () => {
     generation += 1;
+    // A start still waiting for the server: its microphone goes now, not
+    // when the request settles.
+    cancelStart?.();
+    cancelStart = null;
     const conn = connection;
     connection = null;
     if (conn) {
@@ -418,9 +430,21 @@ export function useOpenAILiveSession(
 
     let pc: RTCPeerConnection | null = null;
     let localStream: MediaStream | null = null;
+    const abort = new AbortController();
+    // What this start made and hasn't handed over to `connection`.
+    const release = () => {
+      abort.abort();
+      localStream?.getTracks().forEach((track) => track.stop());
+      pc?.close();
+    };
+    cancelStart = release;
     try {
       // The flags the instructions and tools are built from.
-      const flags = await postJson<StartApiResponse>("/api/start/live", {});
+      const flags = await postJson<StartApiResponse>(
+        "/api/start/live",
+        {},
+        abort.signal,
+      );
       if (cancelled()) return;
       startResponse.value = flags;
 
@@ -485,6 +509,7 @@ export function useOpenAILiveSession(
       const session = await postJson<LiveSessionResponse>(
         "/api/start/live/session",
         request,
+        abort.signal,
       );
       // Cancelled while the session was being created: closing the peer
       // connection (below) ends it.
@@ -510,9 +535,9 @@ export function useOpenAILiveSession(
         ),
       );
     } finally {
-      // What a cancelled or failed start made and never handed over.
-      localStream?.getTracks().forEach((track) => track.stop());
-      pc?.close();
+      // A cancelled or failed start; after the handover it holds nothing.
+      release();
+      if (cancelStart === release) cancelStart = null;
     }
   };
 
@@ -571,14 +596,12 @@ export function useOpenAILiveSession(
     if (!isDataChannelOpen() || images.length === 0) return false;
     const limit =
       connection?.pc.sctp?.maxMessageSize ?? DEFAULT_MAX_MESSAGE_BYTES;
-    const size = images.reduce((total, url) => total + url.length, 0);
-    if (size + caption.length + 1024 > limit) {
+    if (!backend.showImages(images, caption, limit)) {
       console.warn(
-        `Images not sent to the model: ${size} bytes is over the data channel's ${limit}.`,
+        `Images not sent to the model: over the data channel's ${limit} bytes.`,
       );
       return false;
     }
-    backend.showImages(images, caption);
     return true;
   };
 

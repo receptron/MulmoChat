@@ -38,9 +38,12 @@ const toolSummary = (tool: unknown): string | null => {
 // with (useUserPreferences' "The user's native language is …") is named in an
 // order of its own at the top.
 const languageRule = (instructions: string): string => {
-  const language = /The user's native language is ([^.\n]+)\./.exec(
-    instructions,
-  )?.[1];
+  // The last one: the app's own line comes after the user's custom
+  // instructions, which may contain the same sentence.
+  const declared = [
+    ...instructions.matchAll(/The user's native language is ([^.\n]+)\./g),
+  ];
+  const language = declared[declared.length - 1]?.[1];
   const fallback = language
     ? `Speak ${language}`
     : "Speak the user's native language, which the end of the assistant's instructions below names";

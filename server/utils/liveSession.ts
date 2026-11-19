@@ -14,6 +14,18 @@ interface FunctionTool {
   strict: false;
 }
 
+// What the browser's data channel may send. Without a list it may send
+// anything, and a `session.update` can replace the backend's tools: a hosted
+// tool or an MCP server, run on the server's key, which is what
+// `functionTools` below keeps out of the session. These are the events
+// useOpenAILiveSession sends.
+export const LIVE_CLIENT_EVENTS = [
+  "response.item.create",
+  "response.create",
+  "session.thinking.append",
+  "session.close",
+];
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -65,6 +77,9 @@ export function liveSessionParams(
         model: live,
         instructions,
         audio: { output: { voice: resolveVoice("openai-live", voice) } },
+        client: {
+          data_channel: { allowed_client_events: [...LIVE_CLIENT_EVENTS] },
+        },
         delegation: {
           type: "responses",
           responses: {

@@ -74,7 +74,10 @@ export function createLiveBackendWork(
       return true;
     },
 
+    /** False when no call waits for it: a tool that finished after its
+     *  session was stopped must not be answered into the next one. */
     toolOutput(callId: string, output: string): boolean {
+      if (!waitingCalls.has(callId)) return false;
       const sent = send({
         type: "response.item.create",
         item: { type: "function_call_output", call_id: callId, output },
@@ -85,14 +88,17 @@ export function createLiveBackendWork(
     },
 
     /** Images for the backend (it sees them; the voice model doesn't). They
-     *  go with the next request to go on, after the tool outputs. */
-    showImages(images: string[], caption: string) {
-      heldItems.push(
-        message("user", [
-          { type: "input_text", text: caption },
-          ...images.map((url) => ({ type: "input_image", image_url: url })),
-        ]),
-      );
+     *  go with the next request to go on, after the tool outputs. False when
+     *  the message would be over `maxBytes`, what the channel can carry. */
+    showImages(images: string[], caption: string, maxBytes: number): boolean {
+      const event = message("user", [
+        { type: "input_text", text: caption },
+        ...images.map((url) => ({ type: "input_image", image_url: url })),
+      ]);
+      const bytes = new TextEncoder().encode(JSON.stringify(event)).length;
+      if (bytes > maxBytes) return false;
+      heldItems.push(event);
+      return true;
     },
 
     /** Something the user typed: the backend answers it. */

@@ -76,7 +76,7 @@ describe("createLiveBackendWork", () => {
     work.toolCalled("a");
     work.responseEnded();
     work.toolOutput("a", "1");
-    work.showImages(["data:image/png;base64,AAAA"], "[Image returned by f]");
+    work.showImages(["data:image/png;base64,AAAA"], "[Image returned by f]", 65_536);
     assert.deepEqual(log(), ["output:a"]);
     work.instruct("look at it");
     assert.deepEqual(log(), [
@@ -134,6 +134,26 @@ describe("createLiveBackendWork", () => {
     open = true;
     work.instruct("next");
     assert.deepEqual(log(), ["developer:next", "create"]);
+  });
+
+  it("drops the output of a call it isn't waiting for", () => {
+    // A tool that finished after its session stopped, in the next session.
+    assert.equal(work.toolOutput("stale", "{}"), false);
+    work.toolCalled("a");
+    assert.equal(work.toolOutput("a", "{}"), true);
+    assert.equal(work.toolOutput("a", "{}"), false);
+    assert.deepEqual(log(), ["output:a"]);
+  });
+
+  it("refuses images whose message is over the channel's limit, in bytes", () => {
+    const image = `data:image/png;base64,${"A".repeat(1000)}`;
+    assert.equal(work.showImages([image], "図", 900), false);
+    // 40 small images: their JSON wrappers count too.
+    const many = Array.from({ length: 40 }, () => "A".repeat(1600));
+    assert.equal(work.showImages(many, "c", 65_536), false);
+    assert.equal(work.showImages([image], "図", 2000), true);
+    work.instruct("");
+    assert.deepEqual(log(), ["user:図+1img", "create"]);
   });
 
   it("starts clean after a reset", () => {

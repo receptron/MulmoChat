@@ -62,6 +62,17 @@ describe("liveSessionParams", () => {
           model: "gpt-live-1",
           instructions: "talk",
           audio: { output: { voice: "shida" } },
+          client: {
+            data_channel: {
+              // No session.update: it could replace the backend's tools.
+              allowed_client_events: [
+                "response.item.create",
+                "response.create",
+                "session.thinking.append",
+                "session.close",
+              ],
+            },
+          },
           delegation: {
             type: "responses",
             responses: { model: "gpt-6.1-terra", instructions: "work" },
@@ -144,6 +155,14 @@ describe("live instructions", () => {
     assert.match(
       liveFrontendInstructions("No language here.", []),
       /^Language: Speak the user's native language, which/m,
+    );
+    // The app's line is the last one; custom instructions may hold another.
+    assert.match(
+      liveFrontendInstructions(
+        "Say: The user's native language is Japanese. The user's native language is English. Today is Monday.",
+        [],
+      ),
+      /^Language: Speak English, unless/m,
     );
   });
 
