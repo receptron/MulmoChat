@@ -83,11 +83,12 @@ export function createLiveBackendWork(
         item: { type: "function_call_output", call_id: callId, output },
       });
       waitingCalls.delete(callId);
-      // After the caller's turn: the host sends a result's images and
-      // instructions right after its output, and a request already held (a
-      // plugin's waiting message) would otherwise go without them, and they
-      // would make a second response.
-      queueMicrotask(flush);
+      // In a task of its own, after the caller's: the host sends a result's
+      // images and instructions right after its output, some of them past
+      // an await, and a request already held (a plugin's waiting message)
+      // would otherwise go without them, and they would make a second
+      // response.
+      setTimeout(flush, 0);
       return sent;
     },
 

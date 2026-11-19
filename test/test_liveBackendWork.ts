@@ -4,6 +4,8 @@ import { createLiveBackendWork } from "../src/composables/liveBackendWork";
 
 type Sent = Record<string, any>;
 
+const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 describe("createLiveBackendWork", () => {
   let sent: Sent[] = [];
   let open = true;
@@ -82,8 +84,10 @@ describe("createLiveBackendWork", () => {
     work.responseEnded();
     work.toolOutput("a", "{}");
     work.showImages(["data:image/png;base64,AAAA"], "photo", 65_536);
+    // The host awaits before its instructions (useToolResults).
+    await Promise.resolve().then(() => undefined);
     work.instruct("Describe the photo.");
-    await Promise.resolve();
+    await nextTask();
     assert.deepEqual(log(), [
       "output:a",
       "user:photo+1img",
@@ -99,7 +103,7 @@ describe("createLiveBackendWork", () => {
     work.responseEnded();
     work.toolOutput("a", "{}");
     assert.deepEqual(log(), ["output:a"]);
-    await Promise.resolve();
+    await nextTask();
     assert.deepEqual(log(), ["output:a", "developer:wait", "create"]);
   });
 
@@ -154,7 +158,7 @@ describe("createLiveBackendWork", () => {
     assert.equal(sent.length, 2);
     work.toolCalled("late");
     work.toolOutput("late", "{}");
-    await Promise.resolve();
+    await nextTask();
     assert.deepEqual(log().slice(2), ["output:late", "create"]);
   });
 
