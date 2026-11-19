@@ -11,7 +11,8 @@ import { DEFAULT_TEXT_MODEL } from "../config/textModels";
 // Grok's and ElevenLabs' voice APIs take no image input
 // (useRealtimeWebSocketSession's sendImagesToModel), so for them a text model
 // of the same company describes the image and the voice model gets the
-// description.
+// description. OpenAI Live shows images to its backend model, but only ones
+// that fit a data channel message, so a larger upload is described as well.
 
 /** Longest side of an image sent to the model: a photo straight from a
  *  phone is several MB, too much for a voice session's message. */
@@ -26,6 +27,10 @@ const DESCRIBER: Partial<
   Record<SessionTransportKind, { provider: string; model: string }>
 > = {
   "voice-grok": { provider: "grok", model: "grok-4.7" },
+  "voice-openai-live": {
+    provider: DEFAULT_TEXT_MODEL.provider,
+    model: DEFAULT_TEXT_MODEL.model,
+  },
   "voice-elevenlabs": {
     provider: DEFAULT_TEXT_MODEL.provider,
     model: DEFAULT_TEXT_MODEL.model,

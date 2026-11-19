@@ -216,6 +216,7 @@
                 class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="voice-realtime">Voice (OpenAI Realtime)</option>
+                <option value="voice-openai-live">Voice (OpenAI Live)</option>
                 <option value="voice-google-live">Voice (Google Live)</option>
                 <option value="voice-liquid">Voice (LFM3 Omni, local)</option>
                 <option value="voice-grok">Voice (Grok)</option>
@@ -267,6 +268,36 @@
               </select>
               <p class="text-xs text-gray-500 mt-1">
                 Chooses the OpenAI realtime model used when connecting.
+              </p>
+            </div>
+
+            <div v-if="isOpenAILive">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Live Model and Backend
+              </label>
+              <select
+                :value="modelId"
+                @change="
+                  $emit(
+                    'update:modelId',
+                    ($event.target as HTMLSelectElement).value,
+                  )
+                "
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option
+                  v-for="model in LIVE_VOICE_MODELS"
+                  :key="model.id"
+                  :value="model.id"
+                >
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                GPT-Live talks (it can listen while it speaks) and hands
+                reasoning and tools to the backend model chosen here: a stronger
+                one uses tools better, a faster one answers sooner. Billed by
+                the minute, plus the backend's tokens.
               </p>
             </div>
 
@@ -665,6 +696,7 @@ import {
 import { ROLES } from "../config/roles";
 import {
   REALTIME_MODELS,
+  LIVE_VOICE_MODELS,
   GOOGLE_LIVE_MODELS,
   GROK_VOICE_MODELS,
   ELEVENLABS_VOICE_MODELS,
@@ -800,6 +832,7 @@ const audioDebugEnabled = isAudioDebugEnabled();
 const isVoiceMode = computed(
   () =>
     props.modelKind === "voice-realtime" ||
+    props.modelKind === "voice-openai-live" ||
     props.modelKind === "voice-google-live" ||
     props.modelKind === "voice-grok" ||
     props.modelKind === "voice-elevenlabs" ||
@@ -807,6 +840,7 @@ const isVoiceMode = computed(
 );
 const isLiquidVoice = computed(() => props.modelKind === "voice-liquid");
 const isOpenAIRealtime = computed(() => props.modelKind === "voice-realtime");
+const isOpenAILive = computed(() => props.modelKind === "voice-openai-live");
 const isGoogleLive = computed(() => props.modelKind === "voice-google-live");
 const isGrokVoice = computed(() => props.modelKind === "voice-grok");
 const isElevenLabsVoice = computed(
@@ -817,6 +851,7 @@ const isElevenLabsVoice = computed(
 const needsConnectionToSend = computed(
   () =>
     isOpenAIRealtime.value ||
+    isOpenAILive.value ||
     isGrokVoice.value ||
     isElevenLabsVoice.value ||
     isLiquidVoice.value,

@@ -1,7 +1,8 @@
 // The voices each voice API speaks with. Browser-safe: the settings screen
 // lists them, and the server checks the OpenAI and ElevenLabs ones it is sent.
 
-export type VoiceProvider = "openai" | "google" | "xai" | "elevenlabs";
+export type VoiceProvider =
+  "openai" | "openai-live" | "google" | "xai" | "elevenlabs";
 
 export interface VoiceOption {
   id: string;
@@ -28,6 +29,43 @@ export const VOICES: Record<VoiceProvider, readonly VoiceOption[]> = {
     "shimmer",
     "verse",
   ].map((id) => option(id)),
+  // gpt-live-1's voices: OpenAI's Realtime ones, then the ones the Live guide
+  // adds, with the language or accent it gives each. The SDK's BuiltInVoice
+  // type lists fewer; harema, nuri and noeul were accepted by the API
+  // (2026-11-19).
+  "openai-live": [
+    ["marin"],
+    ["cedar"],
+    ["alloy"],
+    ["ash"],
+    ["ballad"],
+    ["coral"],
+    ["echo"],
+    ["sage"],
+    ["shimmer"],
+    ["verse"],
+    ["harema", "Japanese"],
+    ["shida", "Japanese"],
+    ["noeul", "Korean"],
+    ["nira", "Hindi"],
+    ["nuri", "German"],
+    ["juni", "German"],
+    ["flitz", "German"],
+    ["brise", "French"],
+    ["sillage", "French"],
+    ["bossa", "Portuguese"],
+    ["tempo", "Portuguese"],
+    ["gleam", "North American"],
+    ["meridian", "North American"],
+    ["quartz", "Australian"],
+    ["ripple", "Australian"],
+    ["vesper", "British"],
+    ["willow", "Irish"],
+    ["stone", "Irish"],
+    ["beacon", "Filipino"],
+    ["delta", "Southern U.S."],
+    ["cinder", "Southern U.S."],
+  ].map(([id, style]) => option(id, style)),
   // Gemini Live's prebuilt voices, with the style Google gives each. The API
   // accepts an unknown name without an error, so this list is the only check.
   google: [
@@ -89,9 +127,11 @@ export const VOICES: Record<VoiceProvider, readonly VoiceOption[]> = {
 
 // shimmer and eve are the voices MulmoChat used before the choice existed;
 // Puck is what Google documents as Gemini Live's default, used when none was
-// sent; brian is the one ElevenLabs' Realtime guide uses.
+// sent; brian is the one ElevenLabs' Realtime guide uses; marin is the Live
+// API's own default.
 export const DEFAULT_VOICES: Record<VoiceProvider, string> = {
   openai: "shimmer",
+  "openai-live": "marin",
   google: "Puck",
   xai: "eve",
   elevenlabs: "brian",

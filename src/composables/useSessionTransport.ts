@@ -10,11 +10,13 @@ import { useGoogleLiveSession } from "./useGoogleLiveSession";
 import { useGrokVoiceSession } from "./useGrokVoiceSession";
 import { useLiquidVoiceSession } from "./useLiquidVoiceSession";
 import { useElevenLabsVoiceSession } from "./useElevenLabsVoiceSession";
+import { useOpenAILiveSession } from "./useOpenAILiveSession";
 
 type MaybeRef<T> = T | Ref<T>;
 
 export type SessionTransportKind =
   | "voice-realtime"
+  | "voice-openai-live"
   | "text-rest"
   | "voice-google-live"
   | "voice-grok"
@@ -44,6 +46,7 @@ const TRANSPORT_CAPABILITIES: Record<
   SessionTransportCapabilities
 > = {
   "voice-realtime": VOICE,
+  "voice-openai-live": VOICE,
   "voice-google-live": { ...VOICE, answersToolOutputs: true },
   "voice-grok": VOICE,
   "voice-elevenlabs": VOICE,
@@ -80,6 +83,7 @@ export function useSessionTransport(
 
   const sessions: Record<SessionTransportKind, UseRealtimeSessionReturn> = {
     "voice-realtime": useVoiceRealtimeSession(realtimeOptions),
+    "voice-openai-live": useOpenAILiveSession(realtimeOptions),
     "text-rest": useTextSession(realtimeOptions),
     "voice-google-live": useGoogleLiveSession(realtimeOptions),
     "voice-grok": useGrokVoiceSession(realtimeOptions),

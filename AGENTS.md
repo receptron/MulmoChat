@@ -4,7 +4,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 
 ## Overview
 - Multi-modal chat client and reference implementation of [gui-chat-protocol](https://github.com/receptron/gui-chat-protocol).
-- Four session transports: OpenAI Realtime (voice, WebRTC), Google Gemini Live (voice, WebSocket), Grok voice (xAI, WebSocket), and text chat through the server (OpenAI, Anthropic, Google, Grok, Ollama).
+- Session transports: OpenAI Realtime (voice, WebRTC), OpenAI Live (`gpt-live-1` voice with a Responses backend model for the tools, WebRTC), Google Gemini Live (voice, WebSocket), Grok voice (xAI, WebSocket), and text chat through the server (OpenAI, Anthropic, Google, Grok, Ollama).
 - Tool calls are executed by ~30 plugins from npm packages; each plugin supplies a view (main canvas) and a preview (sidebar).
 
 ## Repository Layout
@@ -68,7 +68,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 - `TYPESAFE_API_KEY` (optional `JEV_MODEL`, `JEV_URL`) — required by manageKenteiScript, which grades answers with TypeSafe JEV on the server. Without it every manageKenteiScript call fails and tells the model to ask the user to set the key and restart the server.
 - `OLLAMA_BASE_URL`, `COMFYUI_BASE_URL`, `COMFYUI_DEFAULT_MODEL`, `COMFYUI_TIMEOUT_MS`, `COMFYUI_POLL_INTERVAL_MS` — local backends.
 - `MULMOCHAT_ALLOWED_ORIGINS` — extra browser origins allowed to call `/api/plugin/*`. Loopback origins are always allowed, and requests must be JSON.
-- `MULMOCHAT_ALLOW_REMOTE_PLUGINS` — set to `true` to let other machines call `/api/plugin/*` and `/api/start/elevenlabs`, which by default only accept loopback connections.
+- `MULMOCHAT_ALLOW_REMOTE_PLUGINS` — set to `true` to let other machines call `/api/plugin/*` and `/api/start/elevenlabs`, and `/api/start/live*`, which by default only accept loopback connections.
 - `MULMOCHAT_WORKSPACE` — workspace for plugin files. Defaults to `~/mulmoclaude`, which is shared with MulmoClaude and MulmoTerminal, when it exists; otherwise `output/workspace`. Use a scratch folder for tests.
 - `PORT` and `NODE_ENV`. `.env` is ignored by git.
 
