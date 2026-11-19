@@ -11,14 +11,15 @@ import {
   type ChatCompletionResponse,
 } from "./chatCompletions.js";
 
-// gpt-5.6-* and gpt-6-* on /v1/chat/completions (gpt-6-astra and gpt-6.1-*
+// gpt-5.6-* and gpt-6-* on /v1/chat/completions (gpt-6-astra and gpt-6.x-*
 // go to /v1/responses: see USES_RESPONSES_API)
 const NO_REASONING_WITH_TOOLS = /^gpt-(5\.6|6)-/;
 
 // Models that take function tools only on /v1/responses: on
 // /v1/chat/completions they refuse tools with reasoning on, and refuse
-// reasoning_effort "none" (checked 2026-10-01).
-const USES_RESPONSES_API = /^gpt-(6-astra|6\.1-)/;
+// reasoning_effort "none" (gpt-6.1-* checked 2026-10-01, gpt-6.2-*
+// 2026-11-19; a later gpt-6.x is assumed to be the same).
+const USES_RESPONSES_API = /^gpt-(6-astra|6\.\d+-)/;
 
 const OPENAI_CHAT_COMPLETIONS_URL =
   "https://api.openai.com/v1/chat/completions";

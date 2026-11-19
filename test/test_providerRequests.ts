@@ -26,12 +26,15 @@ const REPLY = '{"choices":[{"message":{"role":"assistant","content":"ok"}}]}';
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
 let sentBodies: string[] = [];
+let sentUrls: string[] = [];
 
 beforeEach(() => {
   process.env.XAI_API_KEY = "x";
   process.env.OPENAI_API_KEY = "o";
   sentBodies = [];
-  globalThis.fetch = async (_input, init) => {
+  sentUrls = [];
+  globalThis.fetch = async (input, init) => {
+    sentUrls.push(String(input));
     sentBodies.push(String(init?.body));
     return new Response(REPLY);
   };
@@ -96,6 +99,10 @@ describe("generateWithGrok request body", () => {
 describe("generateWithOpenAI request body", () => {
   const withTools = (model: string) =>
     sentBody(generateWithOpenAI, params(model, { tools: [TOOL] }));
+  const withToolsReset = (model: string) => {
+    sentBodies = [];
+    return withTools(model);
+  };
 
   it("sends parallel_tool_calls with tools, except to o-series models", async () => {
     assert.equal(
@@ -145,5 +152,41 @@ describe("generateWithOpenAI request body", () => {
       await sentBody(generateWithOpenAI, params("gpt-5.6-mini", { tools: [] })),
       JSON.stringify({ model: "gpt-5.6-mini", messages: SENT_MESSAGES }),
     );
+  });
+
+  it("sends gpt-6-astra and gpt-6.x models to /v1/responses", async () => {
+    for (const model of [
+      "gpt-6-astra",
+      "gpt-6.1-sol",
+      "gpt-6.1-terra",
+      "gpt-6.2-sol",
+      "gpt-6.2-astra",
+    ]) {
+      sentBodies = [];
+      assert.equal(
+        await withTools(model),
+        JSON.stringify({
+          model,
+          input: [
+            { role: "user", content: [{ type: "input_text", text: "q" }] },
+          ],
+          store: false,
+          tools: [
+            {
+              type: "function",
+              name: "f",
+              description: "d",
+              parameters: {},
+              strict: false,
+            },
+          ],
+          parallel_tool_calls: true,
+        }),
+        model,
+      );
+      assert.equal(sentUrls.at(-1), "https://api.openai.com/v1/responses");
+    }
+    await withToolsReset("gpt-6-luna");
+    assert.equal(sentUrls.at(-1), "https://api.openai.com/v1/chat/completions");
   });
 });
