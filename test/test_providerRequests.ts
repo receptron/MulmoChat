@@ -26,12 +26,15 @@ const REPLY = '{"choices":[{"message":{"role":"assistant","content":"ok"}}]}';
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
 let sentBodies: string[] = [];
+let sentUrls: string[] = [];
 
 beforeEach(() => {
   process.env.XAI_API_KEY = "x";
   process.env.OPENAI_API_KEY = "o";
   sentBodies = [];
-  globalThis.fetch = async (_input, init) => {
+  sentUrls = [];
+  globalThis.fetch = async (input, init) => {
+    sentUrls.push(String(input));
     sentBodies.push(String(init?.body));
     return new Response(REPLY);
   };
@@ -96,6 +99,10 @@ describe("generateWithGrok request body", () => {
 describe("generateWithOpenAI request body", () => {
   const withTools = (model: string) =>
     sentBody(generateWithOpenAI, params(model, { tools: [TOOL] }));
+  const withToolsReset = (model: string) => {
+    sentBodies = [];
+    return withTools(model);
+  };
 
   it("sends parallel_tool_calls with tools, except to o-series models", async () => {
     assert.equal(
@@ -177,6 +184,9 @@ describe("generateWithOpenAI request body", () => {
         }),
         model,
       );
+      assert.equal(sentUrls.at(-1), "https://api.openai.com/v1/responses");
     }
+    await withToolsReset("gpt-6-luna");
+    assert.equal(sentUrls.at(-1), "https://api.openai.com/v1/chat/completions");
   });
 });
