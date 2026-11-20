@@ -367,6 +367,13 @@ export function useOpenAILiveSession(
       case "session.input_transcript.delta":
         setUserSpeaking(true);
         break;
+      // Standby (see IDLE_TIMEOUT_S in server/utils/liveSession.ts).
+      case "session.paused":
+        backend.setPaused(true);
+        break;
+      case "session.resumed":
+        backend.setPaused(false);
+        break;
       case "response.event":
         await handleBackendEvent(event.event);
         break;
@@ -571,13 +578,25 @@ export function useOpenAILiveSession(
     // The backend answers a typed message; the voice model, which says the
     // answer, is told what was asked.
     appendCount += 1;
-    sendEvent({
+    const mirror = {
       type: "session.thinking.append",
       event_id: `mulmochat_typed_${appendCount}`,
       delegation_id: null,
       content: `The user typed a message instead of speaking: "${text.slice(0, TYPED_MIRROR_CHARS)}". The backend is answering it.`,
-    });
-    backend.userMessage(text);
+    };
+    if (backend.isPaused()) {
+      // On standby the voice model takes nothing in (an append is dropped)
+      // and says nothing, so both wait until it wakes; only speech wakes it.
+      currentHandlers().onError?.(
+        new Error(
+          "The voice is on standby. Say something to wake it, and it will answer your message.",
+        ),
+      );
+      backend.userMessage(text, mirror);
+    } else {
+      sendEvent(mirror);
+      backend.userMessage(text);
+    }
     return true;
   };
 

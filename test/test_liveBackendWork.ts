@@ -197,7 +197,47 @@ describe("createLiveBackendWork", () => {
     assert.deepEqual(log(), ["user:図+1img", "create"]);
   });
 
+  it("asks for nothing while the voice model is on standby, then once", () => {
+    work.setPaused(true);
+    assert.equal(work.isPaused(), true);
+    work.userMessage("typed");
+    // What waits for the request asks again; the same words are held once.
+    work.instruct("next slide");
+    work.instruct("next slide");
+    assert.deepEqual(log(), []);
+    work.setPaused(false);
+    assert.deepEqual(log(), ["user:typed", "developer:next slide", "create"]);
+  });
+
+  it("sends what goes in front of a typed message with it", () => {
+    work.setPaused(true);
+    work.userMessage("typed", { type: "session.thinking.append" });
+    assert.equal(sent.length, 0);
+    work.setPaused(false);
+    assert.deepEqual(
+      sent.map((event) => event.type),
+      ["session.thinking.append", "response.item.create", "response.create"],
+    );
+  });
+
+  it("sends a tool's output during a standby, and asks when it wakes", async () => {
+    work.responseStarted();
+    work.toolCalled("slow");
+    work.responseEnded();
+    work.setPaused(true);
+    work.toolOutput("slow", "{}");
+    work.instruct("Tell the user the movie is ready.");
+    await nextTask();
+    assert.deepEqual(log(), ["output:slow"]);
+    work.setPaused(false);
+    assert.deepEqual(log().slice(1), [
+      "developer:Tell the user the movie is ready.",
+      "create",
+    ]);
+  });
+
   it("starts clean after a reset", () => {
+    work.setPaused(true);
     work.responseStarted();
     work.toolCalled("a");
     work.instruct("held");

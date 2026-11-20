@@ -33,6 +33,16 @@ describe("resolveLiveModels", () => {
     }
     assert.equal(LIVE_VOICE_MODELS[0].id, DEFAULT_LIVE_VOICE_MODEL_ID);
   });
+
+  it("offers the newest voice model first, and the one before it", () => {
+    assert.equal(DEFAULT_LIVE_VOICE_MODEL_ID, "gpt-live-1.1/gpt-6-luna");
+    assert.deepEqual(resolveLiveModels("gpt-live-1.1/gpt-6.2-astra"), {
+      live: "gpt-live-1.1",
+      backend: "gpt-6.2-astra",
+    });
+    // A choice saved before 1.1 existed is kept.
+    assert.equal(resolveLiveModels("gpt-live-1/gpt-6-luna").live, "gpt-live-1");
+  });
 });
 
 describe("liveSessionParams", () => {
@@ -73,6 +83,9 @@ describe("liveSessionParams", () => {
               ],
             },
           },
+          // Standby after a minute of silence, until speech.
+          idle_timeout_s: 60,
+          wake_policy: { type: "speech" },
           delegation: {
             type: "responses",
             responses: { model: "gpt-6.1-terra", instructions: "work" },
@@ -85,7 +98,7 @@ describe("liveSessionParams", () => {
 
   it("uses the defaults for a model or voice it doesn't offer", () => {
     const params = session({ ...BODY, model: "gpt-9", voice: "nobody" });
-    assert.equal(params.session.model, "gpt-live-1");
+    assert.equal(params.session.model, "gpt-live-1.1");
     assert.equal(params.session.audio?.output?.voice, "marin");
   });
 
