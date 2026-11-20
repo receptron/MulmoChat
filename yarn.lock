@@ -687,6 +687,13 @@
     "@pixiv/three-vrm" "^3.5.5"
     three "^0.186.1"
 
+"@gui-chat-plugin/avatarscript@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/avatarscript/-/avatarscript-0.7.0.tgz#4e33d3a17582386ce01adf49068c1643551513cd"
+  integrity sha512-GHe9r0SaNGLzMEypOvgrGylV7oK2NxTjiggtXW7EFclrbzM2/RkC2VY3CWyOIPDCF4UwWwJfJFXfyrnrVQtTxA==
+  dependencies:
+    mesh-avatar "0.1.1"
+
 "@gui-chat-plugin/brep@^0.1.0":
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/brep/-/brep-0.1.0.tgz#aa48e15210ab4d3e8a0ad27eaa1784d188f1b146"
@@ -755,10 +762,10 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/google-map/-/google-map-2.1.0.tgz#521132428a3f987a2439483b9934915a80d66277"
   integrity sha512-eaHBtVy0BE9MLIErSYYayLd5SkVJb5dtlbZxUx09pKVQ1m87um4TtFp5HmjT5G69kNdrnefkc8H7z/c3T0dIwA==
 
-"@gui-chat-plugin/jinglescript@^1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-1.2.1.tgz#d9300fef05f57f68c081ed104e73a9c1fcfb458b"
-  integrity sha512-HV9RGi4+/OXCvr2rPfyJbPzGbzVtbNcNUHIeIgjieTsIT3595Rco27PwLaQIiMJDpofY/hkRagXB7h7CNwxF1g==
+"@gui-chat-plugin/jinglescript@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-1.4.0.tgz#63029b66b287e05e810b53d4ea49c58b590f60d6"
+  integrity sha512-92hlFJqNJjaFt/qb10r7BIxfeVXDNiFcbdPay85G4fxnZJLMMwWalwlO7bz8cCwDVp7xmtOkB5R3YaB1LU9tOw==
   dependencies:
     opensheetmusicdisplay "^2.2.1"
 
@@ -2941,6 +2948,13 @@ ast-walker-scope@^0.10.0:
     "@babel/types" "^8.0.0"
     ast-kit "^3.0.0"
 
+async@^2.0.1:
+  version "2.6.4"
+  resolved "https://registry.yarnpkg.com/async/-/async-2.6.4.tgz#706b7ff6084664cd7eae713f6f965433b5504221"
+  integrity sha512-mzo5dfJYwAn29PeiJ0zvwTo04zj8HDJj0Mn8TD7sno7q12prdbnasKJHhkm2c1LgrhlJ0teaea8860oxi51mGA==
+  dependencies:
+    lodash "^4.17.14"
+
 async@^3.2.3, async@^3.2.4:
   version "3.2.6"
   resolved "https://registry.yarnpkg.com/async/-/async-3.2.6.tgz#1b0728e14929d51b85b449b7f06e27c1145e38ce"
@@ -2974,6 +2988,15 @@ autoprefixer@^10.6.2:
     fraction.js "^5.3.4"
     picocolors "^1.1.1"
     postcss-value-parser "^4.2.0"
+
+avatarscript@^0.7.0:
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/avatarscript/-/avatarscript-0.7.0.tgz#1f2bd7ad119d100c8e773f636906b33eed12090c"
+  integrity sha512-r1sZjbn5s/Lg2h3uwM6tOCuSqWbtYxT4BcTWmcII46usE1Wrve/oNXf/DtVyLIwTQ4gQlryRpy6muzZFqYyHAg==
+  dependencies:
+    kuromoji "^0.1.2"
+    puppeteer "^25.16.0"
+    zod "^4.6.7"
 
 axios@^1.7.7:
   version "1.20.0"
@@ -3973,6 +3996,11 @@ dotenv@^18.0.10, dotenv@^18.0.9:
   version "18.0.10"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-18.0.10.tgz#4171e67ba539a3d1513d7cbc51b8124e60714d28"
   integrity sha512-89FAA1xchzK2mxVWdr5F/0rldwiueXs6zJM86rO66EzekR1iBdiXRthyG+m5GvkJaFH3C2LESzamTkgndmLT2A==
+
+doublearray@0.0.2:
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/doublearray/-/doublearray-0.0.2.tgz#63186fe8d34413276d3621f6aa0ec5f79e227ef9"
+  integrity sha512-aw55FtZzT6AmiamEj2kvmR6BuFqvYgKZUkfQ7teqVRNqD5UE0rw8IeW/3gieHNKQ5sPuDKlljWEn4bzv5+1bHw==
 
 dunder-proto@^1.0.1:
   version "1.0.1"
@@ -5320,10 +5348,18 @@ isexe@^4.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-4.0.0.tgz#48f6576af8e87a18feb796b7ed5e2e5903b43dca"
   integrity sha512-FFUtZMpoZ8RqHS3XeXEmHWLA4thH+ZxCv2lOiPIn1Xc7CxrqhWzNSDzD+/chS/zbYezmiwWLdQC09JdQKmthOw==
 
-jinglescript@^1.0.2, jinglescript@^1.2.1:
+jinglescript@^1.0.2:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-1.2.1.tgz#8f206c1988a216f0794f70f44dc2adc925f76dbf"
   integrity sha512-uY2kEau9AmoVrv29BC6nYUix96yQbchPQlsCQEAZKlneH3Py+JAFmEeQVsN4dAUZX74hAPnfxEmSfnaRRBnLfg==
+  dependencies:
+    "@modelcontextprotocol/sdk" "^1.32.2"
+    zod "^4.6.5"
+
+jinglescript@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-1.4.0.tgz#e357925707a98c1f3405f7a39c96e395846a3094"
+  integrity sha512-SmivNP35bgOp793AkJ97teiBe5z9m740L8iWfQAGdIX7TImkO7xKxCRz479nqiLM2IWHj0ZmC+pv8wiaCgnoAA==
   dependencies:
     "@modelcontextprotocol/sdk" "^1.32.2"
     zod "^4.6.5"
@@ -5530,6 +5566,15 @@ kuler@^2.0.0:
   resolved "https://registry.yarnpkg.com/kuler/-/kuler-2.0.0.tgz#e2c570a3800388fb44407e851531c1d670b061b3"
   integrity sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A==
 
+kuromoji@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/kuromoji/-/kuromoji-0.1.2.tgz#293f0d6706df006112137980588d5daac26d0790"
+  integrity sha512-V0dUf+C2LpcPEXhoHLMAop/bOht16Dyr+mDiIE39yX3vqau7p80De/koFqpiTcL1zzdZlc3xuHZ8u5gjYRfFaQ==
+  dependencies:
+    async "^2.0.1"
+    doublearray "0.0.2"
+    zlibjs "^0.3.1"
+
 layout-base@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/layout-base/-/layout-base-1.0.2.tgz#1291e296883c322a9dd4c5dd82063721b53e26e2"
@@ -5691,6 +5736,11 @@ lodash.merge@^4.6.2:
   version "4.6.2"
   resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.2.tgz#558aa53b43b661e1925a0afdfa36a9a1085fe57a"
   integrity sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==
+
+lodash@^4.17.14:
+  version "4.18.1"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.18.1.tgz#ff2b66c1f6326d59513de2407bf881439812771c"
+  integrity sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==
 
 log-symbols@^7.0.1:
   version "7.0.1"
@@ -5881,6 +5931,13 @@ mermaid@^12.3.0:
     roughjs "^4.6.6"
     stylis "^4.3.6"
     ts-dedent "^2.2.0"
+
+mesh-avatar@0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/mesh-avatar/-/mesh-avatar-0.1.1.tgz#2cf8a3500c61fa2df9484ab8d00b9fb2c875bd71"
+  integrity sha512-RVSizpqYjVX6rbGfdSgwS0/bDcADn5tcDDSyctDi9cPeSdb5cCep8Y2AAzj3WRw258PHDsJ8nTmkREyDLZOF/Q==
+  dependencies:
+    fflate "^0.8.3"
 
 meshoptimizer@~1.1.1:
   version "1.1.1"
@@ -8271,6 +8328,11 @@ zip-stream@^7.0.2:
     compress-commons "^7.0.0"
     normalize-path "^3.0.0"
     readable-stream "^4.0.0"
+
+zlibjs@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/zlibjs/-/zlibjs-0.3.1.tgz#50197edb28a1c42ca659cc8b4e6a9ddd6d444554"
+  integrity sha512-+J9RrgTKOmlxFSDHo0pI1xM6BLVUv+o0ZT9ANtCxGkjIVCCUdx9alUF8Gm+dGLKbkkkidWIHFDZHDMpfITt4+w==
 
 zod-to-json-schema@^3.25.1, zod-to-json-schema@^3.25.2:
   version "3.25.2"
