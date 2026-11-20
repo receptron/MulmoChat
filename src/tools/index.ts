@@ -35,6 +35,7 @@ import MulmoScriptPlugin from "@mulmoclaude/mulmoscript-plugin/vue";
 import ShapeScriptPlugin from "@gui-chat-plugin/shapescript/vue";
 import BrepPlugin from "@gui-chat-plugin/brep/vue";
 import JingleScriptPlugin from "@gui-chat-plugin/jinglescript/vue";
+import AvatarScriptPlugin from "@gui-chat-plugin/avatarscript/vue";
 import KenteiScriptPlugin from "kenteiscript/plugin/vue";
 import CameraPlugin from "@gui-chat-plugin/camera/vue";
 import CanvasPlugin from "@gui-chat-plugin/canvas/vue";
@@ -193,11 +194,24 @@ const ServerBrepPlugin = {
 // inline, which the View plays. A render that takes more than a moment (a long
 // piece, a NEUTRINO vocal) answers at once with a card that shows the score;
 // the View collects the audio through its runtime dispatch
-// (PLUGIN_EXTRA_CONTEXT in server/plugins/config.ts turns this on). Unlike MulmoTerminal, MulmoChat gives it no `files.byPath`, so a score
-// is always passed inline: a `path` gets the package's "pass the score inline"
-// error, as presentDocument's paths stay inside the workspace (see CLAUDE.md).
+// (PLUGIN_EXTRA_CONTEXT in server/plugins/config.ts turns this on). The same
+// entry gives it `files.byPath` over the workspace: a score may be passed as
+// a `path`, and every render's audio and timing map are kept under
+// jinglescript/ there, with their paths told to the model.
 const ServerJingleScriptPlugin = {
   plugin: runOnServer(JingleScriptPlugin.plugin, () => ({})),
+};
+
+// manageAvatarScript shows an avatar that sings or speaks. sing takes the
+// `audioFile` and `timingFile` that manageJingleScript's renderScore answered,
+// read through `files.byPath` (PLUGIN_EXTRA_CONTEXT). The avatar performs in
+// the View itself (`liveAvatar`): the server answers at once with the score
+// and the audio, and the View draws the avatar with the mesh engine. A video
+// is rendered on the server (headless Chrome through puppeteer, and ffmpeg)
+// only when the user presses Download in the View, and kept under
+// avatarscript/ in the workspace.
+const ServerAvatarScriptPlugin = {
+  plugin: runOnServer(AvatarScriptPlugin.plugin, () => ({})),
 };
 
 // manageKenteiScript (kenteiscript) shows a quiz the model wrote and grades
@@ -255,6 +269,7 @@ const registeredPlugins = [
   RenderShapeScriptPlugin,
   ServerBrepPlugin,
   ServerJingleScriptPlugin,
+  ServerAvatarScriptPlugin,
   ServerKenteiScriptPlugin,
   ReadXPostPlugin,
   SearchXPlugin,
