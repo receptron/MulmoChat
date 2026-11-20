@@ -959,6 +959,14 @@ watch(
     if (newKind !== previousKind) {
       stopTransportChatFor(previousKind);
     }
+    // In the visual mode only by default, not by choice: a text model
+    // can't connect there, so back to the layout that has a text entry.
+    if (
+      newKind === "text-rest" &&
+      localStorage.getItem(VISUAL_MODE_KEY) === null
+    ) {
+      visualMode.value = false;
+    }
   },
 );
 </script>
