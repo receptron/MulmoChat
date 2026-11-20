@@ -6296,10 +6296,15 @@ openai@^4.104.0:
     formdata-node "^4.3.2"
     node-fetch "^2.6.7"
 
-openai@^7.20.0, openai@^7.38.0, openai@^7.54.0:
+openai@^7.20.0, openai@^7.38.0:
   version "7.54.0"
   resolved "https://registry.yarnpkg.com/openai/-/openai-7.54.0.tgz#4b1a754e2e8df7a57a222b33575be8d59d92b1d7"
   integrity sha512-1fKNSPuyR4xIhivt69u6eW9bDZ2hzzNa9PAnQ1rYhr9DWqjrl6OUIKMBmKWT3vCT0XoGkjdP/I0nXZmRYRsazw==
+
+openai@^7.62.0:
+  version "7.62.0"
+  resolved "https://registry.yarnpkg.com/openai/-/openai-7.62.0.tgz#075beec2f82c94dc914efea016207a50573b449d"
+  integrity sha512-dehzgY2anBfU3H+FfWHCVjhb9ZRYzahzNpvmMExTmMaeU11i51NJIMJPDctgLiP4+pCh53KIsLVQ66ucKyDNMA==
 
 opensheetmusicdisplay@^2.0.0, opensheetmusicdisplay@^2.2.1:
   version "2.2.1"

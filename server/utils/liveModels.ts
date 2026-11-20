@@ -10,7 +10,12 @@ export interface LiveVoiceModelOption {
   description?: string;
 }
 
-const LIVE_MODEL = "gpt-live-1";
+// The newest first: it is the default. 1.1 hears and pronounces languages
+// better than 1 at the same price; 1 stays for comparison.
+const LIVE_MODELS: Array<{ model: string; name: string }> = [
+  { model: "gpt-live-1.1", name: "GPT-Live 1.1" },
+  { model: "gpt-live-1", name: "GPT-Live 1" },
+];
 
 // The backend decides how well tools are used and how long the user waits.
 // Luna first: OpenAI's guide starts with it, and it called a tool about a
@@ -39,12 +44,13 @@ const BACKENDS: Array<{ model: string; name: string; description: string }> = [
   },
 ];
 
-export const LIVE_VOICE_MODELS: LiveVoiceModelOption[] = BACKENDS.map(
-  ({ model, name, description }) => ({
-    id: `${LIVE_MODEL}/${model}`,
-    label: `GPT-Live 1 + ${name}`,
-    description,
-  }),
+export const LIVE_VOICE_MODELS: LiveVoiceModelOption[] = LIVE_MODELS.flatMap(
+  (live) =>
+    BACKENDS.map(({ model, name, description }) => ({
+      id: `${live.model}/${model}`,
+      label: `${live.name} + ${name}`,
+      description,
+    })),
 );
 
 export const DEFAULT_LIVE_VOICE_MODEL_ID = LIVE_VOICE_MODELS[0].id;

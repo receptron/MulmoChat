@@ -4,7 +4,7 @@ The architecture is described in `docs/architecture.md`; the rules and traps are
 
 ## Overview
 - Multi-modal chat client and reference implementation of [gui-chat-protocol](https://github.com/receptron/gui-chat-protocol).
-- Session transports: OpenAI Realtime (voice, WebRTC), OpenAI Live (`gpt-live-1` voice with a Responses backend model for the tools, WebRTC), Google Gemini Live (voice, WebSocket), Grok voice (xAI, WebSocket), and text chat through the server (OpenAI, Anthropic, Google, Grok, Ollama).
+- Session transports: OpenAI Realtime (voice, WebRTC), OpenAI Live (`gpt-live-1.1` voice with a Responses backend model for the tools, WebRTC), Google Gemini Live (voice, WebSocket), Grok voice (xAI, WebSocket), and text chat through the server (OpenAI, Anthropic, Google, Grok, Ollama).
 - Tool calls are executed by ~30 plugins from npm packages; each plugin supplies a view (main canvas) and a preview (sidebar).
 
 ## Repository Layout

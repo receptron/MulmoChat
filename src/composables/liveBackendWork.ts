@@ -41,9 +41,13 @@ export function createLiveBackendWork(
   /** The event_id of our response.create that no response has answered. */
   let requested: string | null = null;
   let requestCount = 0;
+  /** The voice model is on standby: it would not say an answer, now or
+   *  when it wakes, so nothing is asked for until then. */
+  let paused = false;
 
   const flush = () => {
-    if (!wanted || running || requested || waitingCalls.size > 0) return;
+    if (paused || !wanted || running || requested) return;
+    if (waitingCalls.size > 0) return;
     const items = heldItems;
     const instructions = heldInstructions;
     heldItems = [];
@@ -106,8 +110,10 @@ export function createLiveBackendWork(
       return true;
     },
 
-    /** Something the user typed: the backend answers it. */
-    userMessage(text: string) {
+    /** Something the user typed: the backend answers it. `before` goes in
+     *  front of it (what the voice model is told about the message). */
+    userMessage(text: string, before?: LiveClientEvent) {
+      if (before) heldItems.push(before);
       heldItems.push(message("user", [{ type: "input_text", text }]));
       wanted = true;
       flush();
@@ -115,7 +121,11 @@ export function createLiveBackendWork(
 
     /** Ask the backend to go on, following `instructions`. */
     instruct(instructions: string) {
-      if (instructions) heldInstructions.push(instructions);
+      // Not twice: a request held through a standby is asked for again and
+      // again by what waits for it (a slideshow's keeper).
+      if (instructions && !heldInstructions.includes(instructions)) {
+        heldInstructions.push(instructions);
+      }
       wanted = true;
       flush();
     },
@@ -148,6 +158,14 @@ export function createLiveBackendWork(
 
     isRunning: () => running,
 
+    /** The voice model went on standby, or woke. */
+    setPaused(value: boolean) {
+      paused = value;
+      flush();
+    },
+
+    isPaused: () => paused,
+
     reset() {
       waitingCalls.clear();
       seenCalls.clear();
@@ -156,6 +174,7 @@ export function createLiveBackendWork(
       wanted = false;
       running = false;
       requested = null;
+      paused = false;
     },
   };
 }

@@ -26,6 +26,14 @@ export const LIVE_CLIENT_EVENTS = [
   "session.close",
 ];
 
+// Standby: after this long with nobody speaking (the API takes 5 to 60) the
+// voice model pauses and the minute costs $0.02 instead of $0.05, until the
+// microphone hears speech again. Only speech wakes it: nothing the browser
+// sends does, and what the backend answers meanwhile is never spoken, so
+// useOpenAILiveSession holds its requests while the session is paused. The
+// longest wait, so that a slow tool rarely ends in a pause.
+const IDLE_TIMEOUT_S = 60;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -80,6 +88,8 @@ export function liveSessionParams(
         client: {
           data_channel: { allowed_client_events: [...LIVE_CLIENT_EVENTS] },
         },
+        idle_timeout_s: IDLE_TIMEOUT_S,
+        wake_policy: { type: "speech" },
         delegation: {
           type: "responses",
           responses: {
