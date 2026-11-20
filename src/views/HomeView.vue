@@ -299,10 +299,14 @@ function toggleSidebar(): void {
   );
 }
 
-// The visual mode (persisted to localStorage): see the template.
+// The visual mode (persisted to localStorage): see the template. On until
+// the user leaves it, except with a text model, which can't connect in it.
 const VISUAL_MODE_KEY = "visual_mode_v1";
+const storedVisualMode = localStorage.getItem(VISUAL_MODE_KEY);
 const visualMode = ref<boolean>(
-  localStorage.getItem(VISUAL_MODE_KEY) === "true",
+  storedVisualMode === null
+    ? userPreferences.modelKind !== "text-rest"
+    : storedVisualMode === "true",
 );
 
 function setVisualMode(on: boolean): void {
@@ -954,6 +958,14 @@ watch(
     // by kind (a still-open voice connection would keep the microphone).
     if (newKind !== previousKind) {
       stopTransportChatFor(previousKind);
+    }
+    // In the visual mode only by default, not by choice: a text model
+    // can't connect there, so back to the layout that has a text entry.
+    if (
+      newKind === "text-rest" &&
+      localStorage.getItem(VISUAL_MODE_KEY) === null
+    ) {
+      visualMode.value = false;
     }
   },
 );
