@@ -762,10 +762,10 @@
   resolved "https://registry.yarnpkg.com/@gui-chat-plugin/google-map/-/google-map-2.1.0.tgz#521132428a3f987a2439483b9934915a80d66277"
   integrity sha512-eaHBtVy0BE9MLIErSYYayLd5SkVJb5dtlbZxUx09pKVQ1m87um4TtFp5HmjT5G69kNdrnefkc8H7z/c3T0dIwA==
 
-"@gui-chat-plugin/jinglescript@^1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-1.5.0.tgz#5bd0daae66feb7d6772b4f7264cc5abb44030f2d"
-  integrity sha512-r9eU7cwHpBJnbAtUKWV0m/FgOI0FBsVMlH+0NN8aGmFMgHU7+JnFT7Ri1TtWrEGT3/tYPlceNM2btHaZGpIldg==
+"@gui-chat-plugin/jinglescript@^1.5.1":
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/@gui-chat-plugin/jinglescript/-/jinglescript-1.5.1.tgz#975e03260f6bd89f8096ea07805d1e3cfa019527"
+  integrity sha512-shcwF0omwxXR16qxZUIKcdX2m8h34189tanHLzw99teVM8IERzunXXEjK/6Thao11APXUWycHchMCwefYsUmjA==
   dependencies:
     opensheetmusicdisplay "^2.2.1"
 
@@ -5356,10 +5356,10 @@ jinglescript@^1.0.2:
     "@modelcontextprotocol/sdk" "^1.32.2"
     zod "^4.6.5"
 
-jinglescript@^1.5.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-1.5.0.tgz#3445bbb44d03bceeee7bcca22c14fb0716c264aa"
-  integrity sha512-EyssBg4Dwze2ev+HPDh8lqWsJ8nC7BCZRvqqX0bh3iaTiTWwUMkQqM4cX+1mzab/zOMtgFfaFwIdl+KqQS75yw==
+jinglescript@^1.5.1:
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/jinglescript/-/jinglescript-1.5.1.tgz#92ba54179f4cd32681e85dc2afbbb9243322d4a7"
+  integrity sha512-ys6Ygdpu1ep/P17a8ML20XNX8ldaIGc4A56CIH5/P4j3zfBY1fmGemqpgS2qpBlEof74cWH2sZ4kzTnAai5S9w==
   dependencies:
     "@modelcontextprotocol/sdk" "^1.32.2"
     zod "^4.6.5"
