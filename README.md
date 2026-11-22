@@ -64,7 +64,7 @@ MulmoChat plays music with [JingleScript](https://github.com/receptron/jinglescr
 1. Download NEUTRINO from https://studio-neutrino.com/downloads/ and accept its licence agreement.
 2. Unzip it and put the `NEUTRINO` folder in `/Applications` (the default location is `/Applications/NEUTRINO`).
 3. If you put it somewhere else, set `NEUTRINO_DIR=/path/to/NEUTRINO` in `.env` and restart the server.
-4. On macOS, if the first run is blocked as being from an unidentified developer, run `xattr -dr com.apple.quarantine <NEUTRINO>/bin` yourself.
+4. On macOS, if the first run is blocked as being from an unidentified developer, run `xattr -dr com.apple.quarantine /Applications/NEUTRINO/bin` yourself (for another location, put your own path there, in quotes if it has spaces).
 
 The voice is one you have installed in NEUTRINO: the Artist role asks for `merrow`, and when a voice is missing the error lists the installed ones. Without NEUTRINO, a request to sing fails with a message saying so, and the melody can still be played on an instrument. Details (in Japanese): [docs/singing-neutrino.md](https://github.com/receptron/jinglescript/blob/main/docs/singing-neutrino.md).
 
