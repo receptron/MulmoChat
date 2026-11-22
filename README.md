@@ -44,6 +44,7 @@ OLLAMA_BASE_URL=... (optional, defaults to http://127.0.0.1:11434)
 COMFYUI_BASE_URL=... (optional, defaults to http://127.0.0.1:8000)
 COMFYUI_DEFAULT_MODEL=... (optional, defaults to flux1-schnell-fp8.safetensors)
 COMFYUI_TIMEOUT_MS=... (optional, defaults to 300000ms / 5 minutes)
+NEUTRINO_DIR=... (optional, where NEUTRINO is installed for singing; defaults to /Applications/NEUTRINO)
 ```
 
 Start a development server:
@@ -55,6 +56,17 @@ yarn dev
 When you open the browser, allow it to access the microphone. 
 
 Click the "Start Voice Chat", and start talking to the AI, which has a capability to generate images.
+
+### Singing needs NEUTRINO (optional)
+
+MulmoChat plays music with [JingleScript](https://github.com/receptron/jinglescript) (`manageJingleScript`), and that works with nothing else installed. Having it **sing** the lyrics — which is also the voice an avatar sings with (`manageAvatarScript`) — needs [NEUTRINO](https://studio-neutrino.com/), a free singing synthesizer that you install yourself. MulmoChat and JingleScript neither include nor download it.
+
+1. Download NEUTRINO from https://studio-neutrino.com/downloads/ and accept its licence agreement.
+2. Unzip it and put the `NEUTRINO` folder in `/Applications` (the default location is `/Applications/NEUTRINO`).
+3. If you put it somewhere else, set `NEUTRINO_DIR=/path/to/NEUTRINO` in `.env` and restart the server.
+4. On macOS, if the first run is blocked as being from an unidentified developer, run `xattr -dr com.apple.quarantine <NEUTRINO>/bin` yourself.
+
+The voice is one you have installed in NEUTRINO: the Artist role asks for `merrow`, and when a voice is missing the error lists the installed ones. Without NEUTRINO, a request to sing fails with a message saying so, and the melody can still be played on an instrument. Details (in Japanese): [docs/singing-neutrino.md](https://github.com/receptron/jinglescript/blob/main/docs/singing-neutrino.md).
 
 ## Text Model API
 
