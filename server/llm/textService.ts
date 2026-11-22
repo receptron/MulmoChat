@@ -48,7 +48,12 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
     grok: ["grok-4.7", "grok-4.6"],
     // Installed and checked with tools here; qwen3.5's tag is the MLX
     // build (Apple silicon only), nemotron-3-ultra runs on Ollama's cloud.
-    ollama: ["gemma4:26b", "qwen3.5:27b-mlx", "nemotron-3-ultra:cloud"],
+    ollama: [
+      "gemma4:26b",
+      "qwen3.5:27b-mlx",
+      "nemotron-3-ultra:cloud",
+      "inkling-2-mini",
+    ],
   };
 
 function isSupportedRole(role: string): role is TextMessage["role"] {
