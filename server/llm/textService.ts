@@ -42,6 +42,11 @@ const PROVIDER_MODEL_SUGGESTIONS: Partial<Record<TextLLMProviderId, string[]>> =
     ],
     google: [
       "gemini-3.8-flash",
+      // Gemini 4 (checked 2026-11-23): hydrogen is the general-purpose
+      // one, carbon and neon the reasoning flagships.
+      "gemini-4-hydrogen",
+      "gemini-4-carbon",
+      "gemini-4-neon",
       "gemini-3.1-pro-preview",
       "gemini-3.5-flash-lite",
     ],

@@ -175,15 +175,13 @@ export async function generateWithGoogle(
       },
     ];
 
-    // Configure tool calling mode
-    const allowedFunctionNames: string[] = params.tools.map(
-      (tool) => tool.name,
-    );
+    // AUTO, as the other providers: the model answers in text or calls a
+    // tool. ANY forced a tool call on every turn (a greeting called one too),
+    // and under it Gemini fills an object parameter that declares no
+    // properties with {}: manageJingleScript's `score` arrived empty
+    // (reproduced on gemini-3.8-flash and gemini-4-hydrogen, 2026-11-23).
     config.toolConfig = {
-      functionCallingConfig: {
-        mode: FunctionCallingConfigMode.ANY, // AUTO, ANY, or NONE
-        allowedFunctionNames, // Explicitly list which functions can be called
-      },
+      functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO },
     };
   }
 
